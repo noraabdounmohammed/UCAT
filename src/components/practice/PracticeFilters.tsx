@@ -1,13 +1,15 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { ChevronsUpDown } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Checkbox } from '@/components/ui/checkbox';
 import { cn } from '@/lib/utils';
 import {
+  Difficulty,
   MainTopic,
   PracticeFilterOptions,
-  TOPICS_STRUCTURE
+  TopicStructure
 } from '@/types/practice';
+import { fetchDynamicTopicStructure } from '@/lib/questions';
 
 interface PracticeFiltersProps {
   filters: PracticeFilterOptions;
@@ -23,279 +25,358 @@ interface PracticeFiltersProps {
   isLoading?: boolean;
 }
 
-interface Progress {
+// Interface for progress data (keeping for future use)
+interface ProgressData {
   correct: number;
   incorrect: number;
   total: number;
 }
 
-const getTopicProgress = (topic: MainTopic, userProgress?: PracticeFiltersProps['userProgress']) => {
-  if (userProgress?.topics[topic]) {
-    return userProgress.topics[topic];
-  }
-  return { correct: 0, incorrect: 0, total: 0 };
-};
+const PracticeFilters: React.FC<PracticeFiltersProps> = ({
+  filters,
+  onFiltersChange,
+  questionCounts,
+  userProgress, // Keeping for future progress features
+  isLoading = false
+}) => {
+  const [topicStructure, setTopicStructure] = useState<TopicStructure[]>([]);
+  const [loadingTopics, setLoadingTopics] = useState(true);
+  const [expandedTopics, setExpandedTopics] = useState<Record<string, boolean>>({});
 
-const getSkillProgress = (skillId: string, userProgress?: PracticeFiltersProps['userProgress']) => {
-  if (userProgress?.skills[skillId]) {
-    return userProgress.skills[skillId];
-  }
-  return { correct: 0, incorrect: 0, total: 0 };
-};
-
-const ProgressBar = ({ progress }: { progress: Progress }) => (
-  <div className="hidden md:flex items-center gap-2 flex-1 min-w-0">
-    <div className="h-2 flex-1 rounded-full bg-muted overflow-hidden flex">
-      <div 
-        className="h-full bg-emerald-500/40 transition-all duration-300"
-        style={{ width: `${(progress.correct / progress.total) * 100}%` }}
-      />
-      <div 
-        className="h-full bg-rose-500/40 transition-all duration-300"
-        style={{ width: `${(progress.incorrect / progress.total) * 100}%` }}
-      />
-    </div>
-    <div className="text-xs text-muted-foreground whitespace-nowrap">
-      <span className="text-emerald-600/70 font-medium">{progress.correct}</span>
-      {" "}
-      <span className="text-rose-600/70 font-medium">{progress.incorrect}</span>
-      {" / "}
-      <span className="font-medium">{progress.total}</span>
-    </div>
-  </div>
-);
-
-const ProgressBadge = ({ progress }: { progress: Progress }) => {
-  const percentage = Math.round((progress.correct / progress.total) * 100);
-  return (
-    <Badge 
-      variant="outline" 
-      className={cn(
-        "md:hidden whitespace-nowrap",
-        percentage >= 75 ? "text-emerald-600/70 border-emerald-600/30" :
-        percentage >= 50 ? "text-amber-600/70 border-amber-600/30" :
-        "text-rose-600/70 border-rose-600/30"
-      )}
-    >
-      {percentage}%
-    </Badge>
-  );
-};
-
-const safeTopicsStructure = (Array.isArray(TOPICS_STRUCTURE) ? TOPICS_STRUCTURE : []).map(topic => ({
-  ...topic,
-  skills: Array.isArray(topic.skills) ? topic.skills : []
-}));
-
-export function PracticeFilters({ filters, onFiltersChange, userProgress }: PracticeFiltersProps) {
-  const [expandedTopics, setExpandedTopics] = useState<string[]>([]);
-
-  const allTopics = React.useMemo(() => 
-    safeTopicsStructure.map(t => t.topic), 
-    []
-  );
-
-  const allSkills = React.useMemo(() => 
-    safeTopicsStructure.flatMap(t => t.skills.map(s => s.id)),
-    []
-  );
-
-  const handleTopicToggle = (topic: MainTopic, event: React.MouseEvent) => {
-    event.stopPropagation();
-    
-    const topicSkills = safeTopicsStructure
-      .find(t => t.topic === topic)
-      ?.skills.map(s => s.id) || [];
-    
-    let newTopics: MainTopic[];
-    let newSkills: string[];
-    
-    if (filters.topics.includes(topic)) {
-      newTopics = filters.topics.filter(t => t !== topic);
-      newSkills = filters.microSkills.filter(s => !topicSkills.includes(s));
-    } else {
-      newTopics = [...filters.topics, topic];
-      newSkills = [...new Set([...filters.microSkills, ...topicSkills])];
-      
-      if (!expandedTopics.includes(topic)) {
-        setExpandedTopics(prev => [...prev, topic]);
+  // Fetch the dynamic topic structure on component mount
+  useEffect(() => {
+    const loadTopicStructure = async () => {
+      setLoadingTopics(true);
+      try {
+        const structure = await fetchDynamicTopicStructure();
+        setTopicStructure(structure);
+        
+        // Initialize expanded state for topics
+        const initialExpandedState: Record<string, boolean> = {};
+        structure.forEach(topic => {
+          initialExpandedState[topic.topic] = false;
+        });
+        setExpandedTopics(initialExpandedState);
+      } catch (error) {
+        console.error('Error loading topic structure:', error);
+      } finally {
+        setLoadingTopics(false);
       }
+    };
+
+    loadTopicStructure();
+  }, []);
+
+  // Helper functions
+  const isTopicSelected = (topic: MainTopic): boolean => {
+    return filters.topics.includes(topic);
+  };
+
+  const isMicroSkillSelected = (skillId: string): boolean => {
+    return filters.microSkills.includes(skillId);
+  };
+
+  const getTopicCount = (topic: MainTopic): number => {
+    return questionCounts?.topicCounts[topic] || 0;
+  };
+
+  const getMicroSkillCount = (skillId: string): number => {
+    return questionCounts?.skillCounts[skillId] || 0;
+  };
+
+  // Check if all skills in a topic are selected
+  const areAllSkillsInTopicSelected = (topic: MainTopic): boolean => {
+    const topicData = topicStructure.find(t => t.topic === topic);
+    if (!topicData || topicData.skills.length === 0) return false;
+    
+    return topicData.skills.every(skill => isMicroSkillSelected(skill.id));
+  };
+
+  // Get all skill IDs for a topic
+  const getSkillIdsForTopic = (topic: MainTopic): string[] => {
+    const topicData = topicStructure.find(t => t.topic === topic);
+    if (!topicData) return [];
+    return topicData.skills.map(skill => skill.id);
+  };
+
+  // Toggle functions
+  const toggleTopic = (topic: MainTopic) => {
+    const selecting = !isTopicSelected(topic);
+    let updatedTopics = [...filters.topics];
+    let updatedSkills = [...filters.microSkills];
+    
+    // Update topic selection
+    if (selecting) {
+      if (!updatedTopics.includes(topic)) {
+        updatedTopics.push(topic);
+      }
+      
+      // When selecting a topic, also select all its skills
+      const skillIds = getSkillIdsForTopic(topic);
+      skillIds.forEach(skillId => {
+        if (!updatedSkills.includes(skillId)) {
+          updatedSkills.push(skillId);
+        }
+      });
+    } else {
+      // When deselecting a topic, remove it and all its skills
+      updatedTopics = updatedTopics.filter(t => t !== topic);
+      const skillIds = getSkillIdsForTopic(topic);
+      updatedSkills = updatedSkills.filter(id => !skillIds.includes(id));
     }
 
     onFiltersChange({
       ...filters,
-      topics: newTopics,
-      microSkills: newSkills,
+      topics: updatedTopics,
+      microSkills: updatedSkills
     });
   };
 
-  const handleTopicExpand = (topic: string) => {
-    setExpandedTopics(prev => 
-      prev.includes(topic)
-        ? prev.filter(t => t !== topic)
-        : [...prev, topic]
-    );
-  };
-
-  const handleSkillToggle = (skillId: string, topic: MainTopic) => {
-    const topicSkills = safeTopicsStructure
-      .find(t => t.topic === topic)
-      ?.skills.map(s => s.id) || [];
+  const toggleMicroSkill = (skillId: string) => {
+    const selecting = !isMicroSkillSelected(skillId);
+    let updatedSkills = [...filters.microSkills];
+    let updatedTopics = [...filters.topics];
     
-    let newSkills: string[];
-    let newTopics = [...filters.topics];
+    // Find which topic this skill belongs to
+    const parentTopic = topicStructure.find(topic => 
+      topic.skills.some(skill => skill.id === skillId)
+    )?.topic;
     
-    if (filters.microSkills.includes(skillId)) {
-      newSkills = filters.microSkills.filter(s => s !== skillId);
-      
-      const hasOtherSkillsSelected = topicSkills.some(s => newSkills.includes(s));
-      if (!hasOtherSkillsSelected) {
-        newTopics = newTopics.filter(t => t !== topic);
+    if (!parentTopic) return; // Safety check
+    
+    // Update skill selection
+    if (selecting) {
+      // Add skill if selecting
+      if (!updatedSkills.includes(skillId)) {
+        updatedSkills.push(skillId);
       }
-    } else {
-      newSkills = [...filters.microSkills, skillId];
       
-      const allTopicSkillsSelected = topicSkills.every(s => 
-        newSkills.includes(s)
+      // Check if all skills in topic are now selected, if so, select the topic too
+      const allSkillIds = getSkillIdsForTopic(parentTopic);
+      const allSelected = allSkillIds.every(id => 
+        updatedSkills.includes(id) || id === skillId
       );
-      if (allTopicSkillsSelected && !newTopics.includes(topic)) {
-        newTopics.push(topic);
+      
+      if (allSelected && !updatedTopics.includes(parentTopic)) {
+        updatedTopics.push(parentTopic);
       }
+    } else {
+      // Remove skill if deselecting
+      updatedSkills = updatedSkills.filter(id => id !== skillId);
+      
+      // If deselecting a skill, also deselect its parent topic
+      updatedTopics = updatedTopics.filter(t => t !== parentTopic);
     }
 
     onFiltersChange({
       ...filters,
-      topics: newTopics,
-      microSkills: newSkills,
+      topics: updatedTopics,
+      microSkills: updatedSkills
     });
   };
 
-  const overallProgress = React.useMemo(() => {
-    if (!userProgress) return { correct: 0, incorrect: 0, total: 0 };
-    return Object.values(userProgress.topics).reduce(
-      (acc, curr) => ({
-        correct: acc.correct + curr.correct,
-        incorrect: acc.incorrect + curr.incorrect,
-        total: acc.total + curr.total
-      }),
-      { correct: 0, incorrect: 0, total: 0 }
-    );
-  }, [userProgress]);
+  const toggleTopicExpansion = (topic: MainTopic) => {
+    setExpandedTopics(prev => ({
+      ...prev,
+      [topic]: !prev[topic]
+    }));
+  };
 
+  const toggleDifficulty = (difficulty: Difficulty) => {
+    onFiltersChange({
+      ...filters,
+      difficulty
+    });
+  };
+
+  // Render loading state
+  if (loadingTopics || isLoading) {
+    return (
+      <div className="p-4 space-y-4">
+        <p className="text-sm text-muted-foreground">Loading topics and skills...</p>
+      </div>
+    );
+  }
+
+  // Render no topics state
+  if (topicStructure.length === 0) {
+    return (
+      <div className="p-4 space-y-4">
+        <p className="text-sm text-muted-foreground">No topics available. Please check the question bank.</p>
+      </div>
+    );
+  }
+
+  // Calculate total question count and check if all topics are selected
+  // These calculations must be done after the loading checks to avoid conditional hooks
+  const totalQuestionCount = Object.values(questionCounts?.topicCounts || {}).reduce((sum, count) => sum + count, 0);
+  
+  const areAllTopicsSelected = topicStructure.length > 0 && 
+    topicStructure.every(topicData => isTopicSelected(topicData.topic));
+
+  // Toggle all topics
+  const toggleAllTopics = () => {
+    if (areAllTopicsSelected) {
+      // If all topics are selected, deselect all
+      onFiltersChange({
+        ...filters,
+        topics: [],
+        microSkills: [] // Also clear microskills when deselecting all topics
+      });
+    } else {
+      // If not all topics are selected, select all
+      const allTopics = topicStructure.map(topicData => topicData.topic);
+      onFiltersChange({
+        ...filters,
+        topics: allTopics
+      });
+    }
+  };
+
+  // Render the filters
   return (
-    <div className="divide-y divide-border bg-white rounded-lg overflow-hidden">
-        {/* All QR Topics Section */}
-        <div className="bg-muted/20">
-          <div className="flex items-center gap-3 w-full p-3 md:p-4">
-            <div className="relative">
-              <Checkbox
-                checked={filters.topics.length === allTopics.length}
-                className="transition-transform data-[state=checked]:scale-105"
-                onClick={() => {
-                  const newTopics = filters.topics.length === allTopics.length ? [] : allTopics;
-                  const newSkills = filters.microSkills.length === allSkills.length ? [] : allSkills;
-                  onFiltersChange({
-                    ...filters,
-                    topics: newTopics,
-                    microSkills: newSkills,
-                  });
-                }}
-              />
-            </div>
-            <div className="flex items-center gap-4 flex-1 min-w-0">
-              <span className="font-semibold text-sm md:text-base w-[140px] md:w-[200px] shrink-0 truncate">All QR Topics</span>
-              <ProgressBar progress={overallProgress} />
-              <ProgressBadge progress={overallProgress} />
-            </div>
+    <div className="space-y-4">
+      {/* All Topics section */}
+      <div className="space-y-2">
+        <div 
+          className="flex items-center justify-between p-2 rounded-md hover:bg-accent cursor-pointer"
+          onClick={toggleAllTopics}
+        >
+          <div className="flex items-center gap-2">
+            <Checkbox 
+              id="all-topics"
+              checked={areAllTopicsSelected}
+              onCheckedChange={toggleAllTopics}
+              onClick={(e) => e.stopPropagation()}
+            />
+            <label 
+              htmlFor="all-topics"
+              className="text-sm font-medium cursor-pointer"
+            >
+              All Topics
+            </label>
+            {totalQuestionCount > 0 && (
+              <Badge variant="outline" className="ml-2">
+                {totalQuestionCount}
+              </Badge>
+            )}
           </div>
         </div>
+      </div>
 
-        {/* Individual Topics */}
-        {safeTopicsStructure.map((topicGroup) => {
-          const topicProgress = getTopicProgress(topicGroup.topic, userProgress);
-          const isTopicSelected = filters.topics.includes(topicGroup.topic);
-          const isExpanded = expandedTopics.includes(topicGroup.topic);
-          
-          return (
-            <div 
-              key={topicGroup.topic}
-              className={cn(
-                "transition-colors",
-                isTopicSelected && "bg-primary/5"
-              )}
-            >
-              <div 
-                className={cn(
-                  "flex items-center gap-3 w-full p-3 md:p-4 cursor-pointer transition-all",
-                  "hover:bg-muted/50 group",
-                  isTopicSelected && "bg-primary/5"
-                )}
-                onClick={() => handleTopicExpand(topicGroup.topic)}
-              >
+      {/* Topic filters */}
+      <div className="space-y-2">
+        <h3 className="text-sm font-medium">Topics</h3>
+        <div className="space-y-1">
+          {topicStructure.map((topicData) => {
+            const isExpanded = expandedTopics[topicData.topic] || false;
+            const topicCount = getTopicCount(topicData.topic);
+            
+            return (
+              <div key={topicData.topic} className="space-y-1">
                 <div 
-                  className="relative"
-                  onClick={(e) => handleTopicToggle(topicGroup.topic, e)}
+                  className="flex items-center justify-between p-2 rounded-md hover:bg-accent cursor-pointer"
+                  onClick={() => toggleTopicExpansion(topicData.topic)}
                 >
-                  <Checkbox
-                    checked={isTopicSelected}
-                    className="transition-transform data-[state=checked]:scale-105"
-                  />
+                  <div className="flex items-center gap-2">
+                    <Checkbox 
+                      id={`topic-${topicData.topic}`}
+                      checked={isTopicSelected(topicData.topic)}
+                      onCheckedChange={() => toggleTopic(topicData.topic)}
+                      onClick={(e) => e.stopPropagation()}
+                    />
+                    <label 
+                      htmlFor={`topic-${topicData.topic}`}
+                      className="text-sm font-medium cursor-pointer"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        toggleTopic(topicData.topic);
+                      }}
+                    >
+                      {topicData.topic}
+                    </label>
+                    {topicCount > 0 && (
+                      <Badge variant="outline" className="ml-2">
+                        {topicCount}
+                      </Badge>
+                    )}
+                  </div>
+                  <ChevronsUpDown className={cn("h-4 w-4 transition-transform", {
+                    "transform rotate-180": isExpanded
+                  })} />
                 </div>
                 
-                <div className="flex items-center gap-4 flex-1 min-w-0">
-                  <span className="font-medium text-sm md:text-base w-[140px] md:w-[200px] shrink-0 truncate">
-                    {topicGroup.topic}
-                  </span>
-                  <ProgressBar progress={topicProgress} />
-                  <ProgressBadge progress={topicProgress} />
-                  <ChevronsUpDown 
-                    className={cn(
-                      "h-4 w-4 shrink-0 text-muted-foreground/50 transition-transform duration-200",
-                      isExpanded && "rotate-180"
-                    )}
-                  />
-                </div>
+                {isExpanded && topicData.skills.length > 0 && (
+                  <div className="pl-6 space-y-1 mt-1">
+                    {topicData.skills.map((skill) => {
+                      const skillCount = getMicroSkillCount(skill.id);
+                      
+                      return (
+                        <div 
+                          key={skill.id}
+                          className="flex items-center p-1 rounded-md hover:bg-accent cursor-pointer"
+                          onClick={() => toggleMicroSkill(skill.id)}
+                        >
+                          <div className="flex items-center gap-2">
+                            <Checkbox 
+                              id={`skill-${skill.id}`}
+                              checked={isMicroSkillSelected(skill.id)}
+                              onCheckedChange={() => toggleMicroSkill(skill.id)}
+                              onClick={(e) => e.stopPropagation()}
+                            />
+                            <label 
+                              htmlFor={`skill-${skill.id}`}
+                              className="text-sm cursor-pointer"
+                            >
+                              {skill.name}
+                            </label>
+                            {skillCount > 0 && (
+                              <Badge variant="outline" className="ml-2">
+                                {skillCount}
+                              </Badge>
+                            )}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
               </div>
+            );
+          })}
+        </div>
+      </div>
 
-              {isExpanded && (
-                <div className="space-y-1 p-2 md:p-4 bg-muted/30">
-                  {topicGroup.skills.map((skill) => {
-                    const skillProgress = getSkillProgress(skill.id, userProgress);
-                    const isSkillSelected = filters.microSkills.includes(skill.id);
-                    
-                    return (
-                      <div 
-                        key={skill.id}
-                        className={cn(
-                          "group/skill flex items-center gap-3 py-2 px-2 md:px-3 rounded-md transition-all cursor-pointer",
-                          "hover:bg-muted/50",
-                          isSkillSelected && "bg-primary/5"
-                        )}
-                        onClick={() => handleSkillToggle(skill.id, topicGroup.topic)}
-                      >
-                        <div className="relative">
-                          <Checkbox
-                            checked={isSkillSelected}
-                            className="transition-transform group-hover/skill:scale-105"
-                          />
-                        </div>
-                        <div className="flex items-center gap-4 flex-1 min-w-0">
-                          <span className="text-xs md:text-sm w-[140px] md:w-[200px] shrink-0 truncate">
-                            {skill.name}
-                          </span>
-                          <ProgressBar progress={skillProgress} />
-                          <ProgressBadge progress={skillProgress} />
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              )}
+      {/* Difficulty filters */}
+      <div className="space-y-2">
+        <h3 className="text-sm font-medium">Difficulty</h3>
+        <div className="space-y-1">
+          {(['easy', 'medium', 'hard', 'adaptive'] as Difficulty[]).map((difficulty) => (
+            <div 
+              key={difficulty}
+              className="flex items-center p-2 rounded-md hover:bg-accent cursor-pointer"
+              onClick={() => toggleDifficulty(difficulty)}
+            >
+              <div className="flex items-center gap-2">
+                <Checkbox 
+                  id={`difficulty-${difficulty}`}
+                  checked={filters.difficulty === difficulty}
+                  onCheckedChange={() => toggleDifficulty(difficulty)}
+                  onClick={(e) => e.stopPropagation()}
+                />
+                <label 
+                  htmlFor={`difficulty-${difficulty}`}
+                  className="text-sm cursor-pointer capitalize"
+                >
+                  {difficulty}
+                </label>
+              </div>
             </div>
-          );
-        })}
+          ))}
+        </div>
+      </div>
     </div>
   );
-}
+};
 
 export default PracticeFilters;
