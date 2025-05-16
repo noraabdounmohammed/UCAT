@@ -1,0 +1,41 @@
+{
+  "questions": {
+    "q1": {
+      "id": "q1",
+      "topic": "Percentages",
+      "microSkill": "percent-change",
+      "difficulty": "medium",
+      "content": "If a price increases from $80 to $96, what is the percentage increase?",
+      "options": ["16%", "20%", "24%", "30%"],
+      "correctAnswer": 1,
+      "explanation": "The increase is $16. To find the percentage, divide the increase by the original price: $16/$80 = 0.2 = 20%",
+      "timeLimit": 60
+    },
+    "q2": {
+      "id": "q2",
+      "topic": "Ratios",
+      "microSkill": "simplify-ratio",
+      "difficulty": "easy",
+      "content": "Simplify the ratio 24:36",
+      "options": ["1:1.5", "2:3", "4:6", "8:12"],
+      "correctAnswer": 1,
+      "explanation": "To simplify 24:36, divide both by their GCD (12): 24/12 : 36/12 = 2:3",
+      "timeLimit": 45
+    }
+  },
+  "topicIndex": {
+    "Percentages": ["q1"],
+    "Ratios": ["q2"]
+  },
+  "skillIndex": {
+    "percent-change": ["q1"],
+    "simplify-ratio": ["q2"]
+  },
+  "difficultyIndex": {
+    "easy": ["q2"],
+    "medium": ["q1"],
+    "hard": [],
+    "adaptive": []
+  },
+  "lastUpdated": "2025-05-16T20:12:00.000Z"
+}
