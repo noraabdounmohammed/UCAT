@@ -1,0 +1,127 @@
+{
+  "questions": [
+    {
+      "id": "qr001",
+      "section": "QR",
+      "set_id": "QR001",
+      "set_name": "Bike Store Sales",
+      "question_stem": "The table below shows monthly sales for different bicycle types.",
+      "individual_question": "What was the percentage increase in mountain bike sales from January to March?",
+      "options": ["A. 20%", "B. 25%", "C. 30%", "D. 35%", "E. 40%"],
+      "correct_answer": "C",
+      "worked_solution": "From 100 to 130 → (30/100)*100 = 30%",
+      "data_type": "table",
+      "data_block": [
+        {"type": "Mountain", "January": 100, "February": 110, "March": 130},
+        {"type": "Road", "January": 80, "February": 90, "March": 95}
+      ],
+      "main_topic": "Percentages",
+      "micro_skill": "Percentage Increase",
+      "difficulty": "Medium"
+    },
+    {
+      "id": "qr002",
+      "section": "QR",
+      "set_id": "QR002",
+      "set_name": "Fruit Export Averages",
+      "question_stem": "The table below shows fruit export volumes (in tonnes) for four years.",
+      "individual_question": "Which fruit had the highest average export over four years?",
+      "options": ["A. Apples", "B. Bananas", "C. Oranges", "D. Grapes", "E. Pears"],
+      "correct_answer": "B",
+      "worked_solution": "Bananas: (120+130+135+140)/4 = 131.25",
+      "data_type": "table",
+      "data_block": [
+        {"fruit": "Apples", "2019": 100, "2020": 110, "2021": 105, "2022": 115},
+        {"fruit": "Bananas", "2019": 120, "2020": 130, "2021": 135, "2022": 140}
+      ],
+      "main_topic": "Data Interpretation",
+      "micro_skill": "Average Calculation",
+      "difficulty": "Medium"
+    },
+    {
+      "id": "qr003",
+      "section": "QR",
+      "set_id": "QR003",
+      "set_name": "Ticket Sales",
+      "question_stem": "The bar chart shows ticket sales for 5 events.",
+      "individual_question": "Which event sold the second most tickets?",
+      "options": ["A. Event A", "B. Event B", "C. Event C", "D. Event D", "E. Event E"],
+      "correct_answer": "D",
+      "worked_solution": "Event E is highest. Event D is next highest at 4700.",
+      "data_type": "bar_chart",
+      "data_block": [
+        {"event": "Event A", "tickets": 3000},
+        {"event": "Event B", "tickets": 4000},
+        {"event": "Event C", "tickets": 4500},
+        {"event": "Event D", "tickets": 4700},
+        {"event": "Event E", "tickets": 5000}
+      ],
+      "main_topic": "Data Interpretation",
+      "micro_skill": "Ranking from Bar Chart",
+      "difficulty": "Easy"
+    },
+    {
+      "id": "qr004",
+      "section": "QR",
+      "set_id": "QR004",
+      "set_name": "Department Distribution",
+      "question_stem": "The pie chart shows how 240 employees are distributed across departments.",
+      "individual_question": "How many employees work in the Marketing department?",
+      "options": ["A. 36", "B. 42", "C. 48", "D. 54", "E. 60"],
+      "correct_answer": "C",
+      "worked_solution": "20% of 240 = 48",
+      "data_type": "pie_chart",
+      "data_block": [
+        {"department": "Tech", "percentage": 25},
+        {"department": "HR", "percentage": 15},
+        {"department": "Marketing", "percentage": 20},
+        {"department": "Sales", "percentage": 30},
+        {"department": "Support", "percentage": 10}
+      ],
+      "main_topic": "Percentages",
+      "micro_skill": "Percentage of Total",
+      "difficulty": "Easy"
+    },
+    {
+      "id": "qr005",
+      "section": "QR",
+      "set_id": "QR005",
+      "set_name": "Fuel Consumption",
+      "question_stem": "The table shows fuel usage (litres) and distance (km) for different vehicles.",
+      "individual_question": "Which vehicle had the highest fuel efficiency (km/l)?",
+      "options": ["A. Car A", "B. Car B", "C. Car C", "D. Car D", "E. Car E"],
+      "correct_answer": "B",
+      "worked_solution": "Car B: 450 km / 25 L = 18 km/l → highest",
+      "data_type": "table",
+      "data_block": [
+        {"vehicle": "Car A", "distance_km": 400, "fuel_L": 25},
+        {"vehicle": "Car B", "distance_km": 450, "fuel_L": 25},
+        {"vehicle": "Car C", "distance_km": 420, "fuel_L": 26}
+      ],
+      "main_topic": "Rates & Speed",
+      "micro_skill": "Efficiency (Distance / Fuel)",
+      "difficulty": "Medium"
+    },
+    {
+      "id": "qr006",
+      "section": "QR",
+      "set_id": "QR006",
+      "set_name": "Side Effects",
+      "question_stem": "The table shows side effect rates for four drugs.",
+      "individual_question": "If 500 people take Drug D, how many are likely to experience side effects?",
+      "options": ["A. 20", "B. 25", "C. 30", "D. 35", "E. 40"],
+      "correct_answer": "D",
+      "worked_solution": "7% of 500 = 35",
+      "data_type": "table",
+      "data_block": [
+        {"drug": "Drug A", "side_effects_%": 3},
+        {"drug": "Drug B", "side_effects_%": 4},
+        {"drug": "Drug C", "side_effects_%": 6},
+        {"drug": "Drug D", "side_effects_%": 7}
+      ],
+      "main_topic": "Percentages",
+      "micro_skill": "Percentage of Total",
+      "difficulty": "Easy"
+    }
+  ]
+}
