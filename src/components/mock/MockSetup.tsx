@@ -1,5 +1,4 @@
-import React, { useState } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
@@ -8,11 +7,12 @@ import { Separator } from '@/components/ui/separator';
 import { Badge } from '@/components/ui/badge';
 import { 
   Clock, Timer, Brain, Calculator, BookOpen, Scale,
-  ArrowRight, AlertCircle, CheckCircle2, Timer as TimerIcon,
-  Target
+  ArrowRight, AlertCircle, CheckCircle2, Timer as TimerIcon
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { MockSettings, TimeMode, SectionType } from '@/types/mock';
+import { MockSettings, TimeMode } from '@/types/mock';
+
+type SectionType = 'VR' | 'DM' | 'QR' | 'SJ';
 
 interface MockSetupProps {
   onStart: (settings: MockSettings) => void;
@@ -66,210 +66,219 @@ export function MockSetup({ onStart }: MockSetupProps) {
   };
 
   return (
-    <div className="max-w-4xl mx-auto px-4 md:px-6 pb-6">
-      <Card className="shadow-soft-xl overflow-hidden">
-        <CardHeader className="border-b bg-gradient-to-r from-primary/5 to-transparent pb-6 md:pb-8">
-          <CardTitle className="flex flex-col gap-2">
-            <div className="flex items-center gap-2">
-              <div className="p-2 rounded-md bg-primary/10">
-                <Clock className="h-5 w-5 md:h-6 md:w-6 text-primary" />
-              </div>
-              <div className="text-xl md:text-2xl font-bold">Mock Exams</div>
-            </div>
-            <p className="text-sm text-muted-foreground font-normal">
-              Practice with full-length UCAT mock exams under realistic test conditions
-            </p>
-          </CardTitle>
-        </CardHeader>
-        
-        <CardContent className="p-4 md:p-6 space-y-6 md:space-y-8">
-          {/* Mock Type Selection */}
-          <div className="space-y-4">
-            <div className="flex items-center justify-between flex-wrap gap-2">
-              <h3 className="text-base md:text-lg font-semibold">Exam Type</h3>
-              <Badge variant="outline" className="font-normal">
-                Step 1 of 2
-              </Badge>
-            </div>
-            
-            <Tabs
-              value={mockType}
-              onValueChange={(value) => setMockType(value as 'full' | 'section')}
-              className="w-full"
-            >
-              <TabsList className="grid grid-cols-2 w-full h-auto p-1">
-                <TabsTrigger 
-                  value="full" 
-                  className={cn(
-                    "flex items-center gap-2 py-3 data-[state=active]:bg-background",
-                    "transition-all duration-300"
-                  )}
-                >
-                  <CheckCircle2 className="h-4 w-4" />
-                  <span className="hidden sm:inline">Full Mock Exam</span>
-                  <span className="sm:hidden">Full</span>
-                </TabsTrigger>
-                <TabsTrigger 
-                  value="section" 
-                  className={cn(
-                    "flex items-center gap-2 py-3 data-[state=active]:bg-background",
-                    "transition-all duration-300"
-                  )}
-                >
-                  <BookOpen className="h-4 w-4" />
-                  <span className="hidden sm:inline">Section Practice</span>
-                  <span className="sm:hidden">Section</span>
-                </TabsTrigger>
-              </TabsList>
+    <div className="max-w-4xl mx-auto">
+      {/* Enhanced header with more aesthetic design */}
+      <div className="mb-10 px-6 py-8 bg-gradient-to-r from-indigo-50 to-blue-50 rounded-2xl border border-indigo-100/50 shadow-sm">
+        <div className="flex items-center gap-4 mb-3">
+          <div className="p-3 rounded-full bg-gradient-to-br from-indigo-600 to-blue-600 shadow-md">
+            <Clock className="h-7 w-7 md:h-8 md:w-8 text-white" />
+          </div>
+          <h1 className="text-2xl md:text-3xl font-semibold text-gray-900 tracking-tight">Mock Exams</h1>
+        </div>
+        <p className="text-base md:text-lg text-gray-600 font-normal max-w-2xl">
+          Practice with full-length UCAT mock exams under realistic test conditions
+        </p>
+      </div>
+      
+      {/* Content with enhanced aesthetic design */}
+      <div className="space-y-10">
+        {/* Mock Type Selection */}
+        <div className="bg-white rounded-2xl border border-gray-200/80 shadow-sm p-6 md:p-8 space-y-6">
+          <div className="flex items-center justify-between border-b border-gray-100 pb-4">
+            <h2 className="text-lg md:text-xl font-medium text-gray-900">Exam Type</h2>
+            <Badge className="px-3 py-1 rounded-full text-sm font-medium bg-indigo-50 text-indigo-700 border border-indigo-100">
+              Step 1 of 2
+            </Badge>
+          </div>
+          
+          <Tabs
+            value={mockType}
+            onValueChange={(value) => setMockType(value as 'full' | 'section')}
+            className="w-full pt-4"
+          >
+            <TabsList className="grid grid-cols-2 w-full h-auto p-1.5 bg-indigo-50 rounded-xl">
+              <TabsTrigger 
+                value="full" 
+                className={cn(
+                  "flex items-center justify-center gap-2 py-3.5",
+                  "text-base font-medium rounded-lg",
+                  "transition-all duration-200",
+                  "data-[state=active]:bg-white data-[state=active]:text-indigo-700 data-[state=active]:shadow-sm",
+                  "data-[state=inactive]:text-indigo-600/70"
+                )}
+              >
+                <CheckCircle2 className="h-5 w-5" />
+                <span className="hidden sm:inline">Full Mock Exam</span>
+                <span className="sm:hidden">Full</span>
+              </TabsTrigger>
+              <TabsTrigger 
+                value="section" 
+                className={cn(
+                  "flex items-center justify-center gap-2 py-3.5",
+                  "text-base font-medium rounded-lg",
+                  "transition-all duration-200",
+                  "data-[state=active]:bg-white data-[state=active]:text-indigo-700 data-[state=active]:shadow-sm",
+                  "data-[state=inactive]:text-indigo-600/70"
+                )}
+              >
+                <BookOpen className="h-5 w-5" />
+                <span className="hidden sm:inline">Section Practice</span>
+                <span className="sm:hidden">Section</span>
+              </TabsTrigger>
+            </TabsList>
 
-              <TabsContent value="full" className="mt-4">
-                <div className="bg-muted/30 rounded-lg p-4 space-y-3">
-                  <div className="flex items-start gap-3">
-                    <div className="p-2 rounded-md bg-background shrink-0">
-                      <CheckCircle2 className="h-5 w-5 text-primary" />
+            <TabsContent value="full" className="mt-6">
+              <div className="bg-white rounded-xl p-6 space-y-5 border border-gray-200 shadow-sm">
+                <div className="flex items-start gap-4">
+                  <div className="p-3 rounded-full bg-indigo-50 shrink-0">
+                    <CheckCircle2 className="h-6 w-6 text-indigo-600" />
+                  </div>
+                  <div>
+                    <h3 className="font-medium text-lg text-gray-900 mb-1">Full Mock Exam</h3>
+                    <p className="text-base text-gray-600">
+                      Complete a comprehensive UCAT mock exam covering all sections in sequence
+                    </p>
+                  </div>
+                </div>
+                <Separator className="bg-gray-100" />
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-5 pt-2">
+                  {Object.entries(SECTIONS).map(([key, section]) => (
+                    <div key={key} className="flex items-center gap-3 text-base text-gray-700 p-3 bg-gray-50 rounded-lg border border-gray-100">
+                      <div className="text-indigo-600">{section.icon}</div>
+                      <span className="truncate font-medium">{section.label}</span>
+                      <Badge className="ml-auto shrink-0 bg-indigo-50 text-indigo-700 border border-indigo-100 rounded-full px-2.5 py-0.5">
+                        {section.questions} Q
+                      </Badge>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </TabsContent>
+
+            <TabsContent value="section" className="mt-6">
+              <div className="space-y-6">
+                <div className="bg-white rounded-xl p-6 border border-gray-200 shadow-sm">
+                  <div className="flex items-start gap-4">
+                    <div className="p-3 rounded-full bg-indigo-50 shrink-0">
+                      <BookOpen className="h-6 w-6 text-indigo-600" />
                     </div>
                     <div>
-                      <h4 className="font-medium">Full Mock Exam</h4>
-                      <p className="text-sm text-muted-foreground">
-                        Complete a comprehensive UCAT mock exam covering all sections in sequence
+                      <h3 className="font-medium text-lg text-gray-900 mb-1">Section Practice</h3>
+                      <p className="text-base text-gray-600">
+                        Focus on a specific section to improve your performance
                       </p>
                     </div>
                   </div>
-                  <Separator />
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2">
-                    {Object.entries(SECTIONS).map(([key, section]) => (
-                      <div key={key} className="flex items-center gap-2 text-sm text-muted-foreground">
-                        {section.icon}
-                        <span className="truncate">{section.label}</span>
-                        <Badge variant="secondary" className="ml-auto shrink-0">
-                          {section.questions} Q
-                        </Badge>
-                      </div>
-                    ))}
-                  </div>
                 </div>
-              </TabsContent>
 
-              <TabsContent value="section" className="mt-4">
-                <div className="space-y-4">
-                  <div className="bg-muted/30 rounded-lg p-4">
-                    <div className="flex items-start gap-3">
-                      <div className="p-2 rounded-md bg-background shrink-0">
-                        <BookOpen className="h-5 w-5 text-primary" />
-                      </div>
-                      <div>
-                        <h4 className="font-medium">Section Practice</h4>
-                        <p className="text-sm text-muted-foreground">
-                          Focus on a specific section to improve your performance
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    {Object.entries(SECTIONS).map(([key, section]) => (
-                      <Button
-                        key={key}
-                        variant={selectedSection === key ? 'default' : 'outline'}
-                        className={cn(
-                          "h-auto py-4 px-4 md:px-6",
-                          "flex items-center justify-start gap-3",
-                          selectedSection === key && "shadow-soft-xl"
-                        )}
-                        onClick={() => setSelectedSection(key as SectionType)}
-                      >
-                        <div className={cn(
-                          "p-2 rounded-md shrink-0",
-                          selectedSection === key ? "bg-primary-foreground/20" : "bg-muted"
-                        )}>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+                  {Object.entries(SECTIONS).map(([key, section]) => (
+                    <Button
+                      key={key}
+                      variant={selectedSection === key ? 'default' : 'outline'}
+                      className={cn(
+                        "h-auto py-5 px-6",
+                        "flex items-center justify-start gap-4",
+                        "transition-all duration-200",
+                        "rounded-xl border",
+                        selectedSection === key 
+                          ? "bg-gradient-to-r from-indigo-600 to-blue-600 text-white border-transparent shadow-md" 
+                          : "border-gray-200 bg-white text-gray-800 hover:border-indigo-200 hover:bg-indigo-50/30"
+                      )}
+                      onClick={() => setSelectedSection(key as SectionType)}
+                    >
+                      <div className={cn(
+                        "p-3 rounded-full shrink-0",
+                        selectedSection === key ? "bg-white/20" : "bg-gray-100 group-hover:bg-indigo-100/30"
+                      )}>
+                        <div className={selectedSection === key ? "text-white" : "text-indigo-600"}>
                           {section.icon}
                         </div>
-                        <div className="text-left min-w-0">
-                          <div className="font-medium text-sm truncate">{section.label}</div>
-                          <div className="text-xs text-muted-foreground">
-                            {section.questions} questions
-                          </div>
-                        </div>
-                      </Button>
-                    ))}
-                  </div>
-                </div>
-              </TabsContent>
-            </Tabs>
-          </div>
-
-          <Separator />
-
-          {/* Time Mode Selection */}
-          <div className="space-y-4">
-            <div className="flex items-center justify-between flex-wrap gap-2">
-              <h3 className="text-base md:text-lg font-semibold">Time Settings</h3>
-              <Badge variant="outline" className="font-normal">
-                Step 2 of 2
-              </Badge>
-            </div>
-            
-            <RadioGroup
-              value={timeMode}
-              onValueChange={(value) => setTimeMode(value as TimeMode)}
-              className="grid grid-cols-1 sm:grid-cols-2 gap-4"
-            >
-              {Object.entries(TIME_MODE_INFO).map(([mode, info]) => (
-                <Label
-                  key={mode}
-                  className={cn(
-                    "flex items-start gap-3 p-4 rounded-lg cursor-pointer transition-all",
-                    "border-2 hover:border-primary/50",
-                    timeMode === mode ? "border-primary bg-primary/5" : "border-transparent bg-muted/30"
-                  )}
-                >
-                  <RadioGroupItem value={mode} className="mt-1" />
-                  <div className="space-y-1 min-w-0">
-                    <div className="font-medium flex items-center gap-2">
-                      <div className={cn(
-                        "p-1.5 rounded-md shrink-0",
-                        timeMode === mode ? "bg-primary/10" : "bg-muted"
-                      )}>
-                        {info.icon}
                       </div>
-                      <span className="truncate">{info.label}</span>
-                    </div>
-                    <p className="text-sm text-muted-foreground line-clamp-2">{info.description}</p>
-                    <Badge variant="secondary" className="mt-2">
-                      {info.duration}
-                    </Badge>
-                  </div>
-                </Label>
-              ))}
-            </RadioGroup>
-          </div>
+                      <div className="text-left min-w-0">
+                        <div className="font-medium text-base md:text-lg">{section.label}</div>
+                        <div className={cn(
+                          "text-sm mt-1",
+                          selectedSection === key ? "text-white/80" : "text-gray-500"
+                        )}>
+                          {section.questions} questions
+                        </div>
+                      </div>
+                    </Button>
+                  ))}
+                </div>
+              </div>
+            </TabsContent>
+          </Tabs>
+        </div>
 
-          {/* Start Button */}
-          <div className="flex justify-end pt-4">
-            <Button
-              size="lg"
-              onClick={handleStart}
-              className={cn(
-                "group relative w-full sm:w-auto px-4 sm:px-8 py-4 sm:py-6",
-                "text-base sm:text-lg font-medium",
-                "shadow-soft-xl hover:shadow-soft-2xl",
-                "bg-primary hover:bg-primary/90",
-                "transition-all duration-300"
-              )}
-            >
-              <span className="flex items-center justify-center gap-2">
-                <AlertCircle className="h-5 w-5 text-primary-foreground/80" />
-                <span className="truncate">
-                  Start {mockType === 'full' ? 'Full Mock' : `${SECTIONS[selectedSection].label}`}
-                </span>
-                <ArrowRight className="h-5 w-5 transition-transform group-hover:translate-x-1 shrink-0" />
-              </span>
-              
-              <div className="absolute bottom-0 left-0 w-full h-[2px] bg-gradient-to-r from-transparent via-primary-foreground/30 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-            </Button>
+        {/* Time Mode Selection */}
+        <div className="bg-white rounded-2xl border border-gray-200/80 shadow-sm p-6 md:p-8 space-y-6">
+          <div className="flex items-center justify-between border-b border-gray-100 pb-4">
+            <h2 className="text-lg md:text-xl font-medium text-gray-900">Time Settings</h2>
+            <Badge className="px-3 py-1 rounded-full text-sm font-medium bg-indigo-50 text-indigo-700 border border-indigo-100">
+              Step 2 of 2
+            </Badge>
           </div>
-        </CardContent>
-      </Card>
+          
+          <RadioGroup
+            value={timeMode}
+            onValueChange={(value) => setTimeMode(value as TimeMode)}
+            className="grid grid-cols-1 sm:grid-cols-2 gap-5 pt-2"
+          >
+            {Object.entries(TIME_MODE_INFO).map(([mode, info]) => (
+              <Label
+                key={mode}
+                className={cn(
+                  "flex items-start gap-4 p-5 rounded-xl cursor-pointer transition-all duration-200",
+                  "border hover:shadow-md",
+                  timeMode === mode 
+                    ? "border-indigo-200 bg-indigo-50/50 shadow-sm" 
+                    : "border-gray-200 bg-white hover:border-indigo-200 hover:bg-indigo-50/20"
+                )}
+              >
+                <RadioGroupItem value={mode} className="mt-1 text-indigo-600" />
+                <div className="space-y-2 min-w-0">
+                  <div className="font-medium flex items-center gap-3">
+                    <div className={cn(
+                      "p-2 rounded-full shrink-0",
+                      timeMode === mode ? "bg-indigo-100 text-indigo-700" : "bg-gray-100 text-gray-700"
+                    )}>
+                      {info.icon}
+                    </div>
+                    <span className="text-base md:text-lg text-gray-900">{info.label}</span>
+                  </div>
+                  <p className="text-sm md:text-base text-gray-600 line-clamp-2">{info.description}</p>
+                  <Badge className="mt-2 bg-indigo-50 text-indigo-700 border border-indigo-100 rounded-full px-3 py-1">
+                    {info.duration}
+                  </Badge>
+                </div>
+              </Label>
+            ))}
+          </RadioGroup>
+        </div>
+
+        {/* Enhanced action button */}
+        <div className="flex justify-end pt-8">
+          <Button
+            onClick={handleStart}
+            className={cn(
+              "relative px-8 py-4 md:px-10 md:py-5",
+              "text-base md:text-lg font-medium",
+              "rounded-full",
+              "transition-all duration-200",
+              "shadow-md hover:shadow-lg",
+              "bg-gradient-to-r from-indigo-600 to-blue-600 text-white hover:from-indigo-700 hover:to-blue-700"
+            )}
+          >
+            <span className="flex items-center justify-center gap-3">
+              <Clock className="h-5 w-5 md:h-6 md:w-6" />
+              <span>Start Exam</span>
+              <ArrowRight className="h-5 w-5 md:h-6 md:w-6 transition-transform group-hover:translate-x-1" />
+            </span>
+          </Button>
+        </div>
+      </div>
     </div>
   );
 }

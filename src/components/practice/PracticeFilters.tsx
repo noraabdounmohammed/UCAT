@@ -1,13 +1,10 @@
 import React, { useState } from 'react';
-import { Check, ChevronsUpDown } from 'lucide-react';
-import { Button } from '@/components/ui/button';
+import { ChevronsUpDown } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Checkbox } from '@/components/ui/checkbox';
-import { Card } from '@/components/ui/card';
 import { cn } from '@/lib/utils';
 import {
   MainTopic,
-  MicroSkill,
   PracticeFilterOptions,
   TOPICS_STRUCTURE
 } from '@/types/practice';
@@ -90,15 +87,8 @@ const safeTopicsStructure = (Array.isArray(TOPICS_STRUCTURE) ? TOPICS_STRUCTURE 
   skills: Array.isArray(topic.skills) ? topic.skills : []
 }));
 
-export function PracticeFilters({ filters, onFiltersChange, questionCounts, userProgress, isLoading }: PracticeFiltersProps) {
+export function PracticeFilters({ filters, onFiltersChange, userProgress }: PracticeFiltersProps) {
   const [expandedTopics, setExpandedTopics] = useState<string[]>([]);
-
-  const availableSkills = React.useMemo(() => {
-    if (filters.topics.length === 0) return safeTopicsStructure.flatMap(t => t.skills);
-    return safeTopicsStructure
-      .filter(t => filters.topics.includes(t.topic))
-      .flatMap(t => t.skills);
-  }, [filters.topics]);
 
   const allTopics = React.useMemo(() => 
     safeTopicsStructure.map(t => t.topic), 
@@ -193,8 +183,7 @@ export function PracticeFilters({ filters, onFiltersChange, questionCounts, user
   }, [userProgress]);
 
   return (
-    <Card className="overflow-hidden border shadow-soft-xl">
-      <div className="rounded-lg bg-card/50 backdrop-blur-sm divide-y divide-border">
+    <div className="divide-y divide-border bg-white rounded-lg overflow-hidden">
         {/* All QR Topics Section */}
         <div className="bg-muted/20">
           <div className="flex items-center gap-3 w-full p-3 md:p-4">
@@ -305,8 +294,7 @@ export function PracticeFilters({ filters, onFiltersChange, questionCounts, user
             </div>
           );
         })}
-      </div>
-    </Card>
+    </div>
   );
 }
 
