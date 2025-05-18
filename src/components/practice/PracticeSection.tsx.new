@@ -4,7 +4,7 @@ import { PracticeFilters } from './PracticeFilters';
 import { PracticeSession } from './PracticeSession';
 import { Target, ArrowRight, Calculator, BookOpen, Brain, Scale, Loader2 } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
-// UI components
+import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
 import { getAvailableSections } from '@/utils/questionBank';
 import { fetchQuestions, fetchQuestionCounts, fetchUserProgress } from '@/lib/questions';
@@ -43,7 +43,7 @@ export function PracticeSection(): JSX.Element {
   const [filters, setFilters] = useState<FilterType>({
     topics: [],
     microSkills: [],
-    difficulty: 'medium' // Default to medium difficulty instead of 'all'
+    difficulty: 'all'
   });
   const [questions, setQuestions] = useState<Question[]>([]);
   const [showPractice, setShowPractice] = useState(false);
@@ -233,9 +233,8 @@ export function PracticeSection(): JSX.Element {
                   section={activeSection}
                   questionCounts={questionCounts}
                   userProgress={userProgress}
-                  onFiltersChange={handleFiltersChange}
+                  onChange={handleFiltersChange}
                   filters={filters}
-                  isLoading={isLoading}
                 />
 
                 <div className="pt-4 border-t border-gray-100 flex justify-end">

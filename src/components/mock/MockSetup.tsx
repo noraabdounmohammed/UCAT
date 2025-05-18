@@ -7,7 +7,7 @@ import { Separator } from '@/components/ui/separator';
 import { Badge } from '@/components/ui/badge';
 import { 
   Clock, Timer, Brain, Calculator, BookOpen, Scale,
-  ArrowRight, AlertCircle, CheckCircle2, Timer as TimerIcon
+  ArrowRight, CheckCircle2, Timer as TimerIcon
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { MockSettings, TimeMode } from '@/types/mock';

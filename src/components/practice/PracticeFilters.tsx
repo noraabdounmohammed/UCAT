@@ -12,6 +12,7 @@ import {
 import { fetchDynamicTopicStructure } from '@/lib/questions';
 
 interface PracticeFiltersProps {
+  section?: string; // Added section prop for filtering by section
   filters: PracticeFilterOptions;
   onFiltersChange: (filters: PracticeFilterOptions) => void;
   questionCounts?: {
@@ -25,30 +26,25 @@ interface PracticeFiltersProps {
   isLoading?: boolean;
 }
 
-// Interface for progress data (keeping for future use)
-interface ProgressData {
-  correct: number;
-  incorrect: number;
-  total: number;
-}
+// Progress data types will be implemented in a future update
 
 const PracticeFilters: React.FC<PracticeFiltersProps> = ({
+  section,
   filters,
   onFiltersChange,
   questionCounts,
-  userProgress, // Keeping for future progress features
   isLoading = false
 }) => {
   const [topicStructure, setTopicStructure] = useState<TopicStructure[]>([]);
   const [loadingTopics, setLoadingTopics] = useState(true);
   const [expandedTopics, setExpandedTopics] = useState<Record<string, boolean>>({});
 
-  // Fetch the dynamic topic structure on component mount
+  // Fetch the dynamic topic structure on component mount or when section changes
   useEffect(() => {
     const loadTopicStructure = async () => {
       setLoadingTopics(true);
       try {
-        const structure = await fetchDynamicTopicStructure();
+        const structure = await fetchDynamicTopicStructure(section);
         setTopicStructure(structure);
         
         // Initialize expanded state for topics
@@ -65,7 +61,7 @@ const PracticeFilters: React.FC<PracticeFiltersProps> = ({
     };
 
     loadTopicStructure();
-  }, []);
+  }, [section]); // Re-fetch when section changes
 
   // Helper functions
   const isTopicSelected = (topic: MainTopic): boolean => {
@@ -84,12 +80,13 @@ const PracticeFilters: React.FC<PracticeFiltersProps> = ({
     return questionCounts?.skillCounts[skillId] || 0;
   };
 
-  // Check if all skills in a topic are selected
-  const areAllSkillsInTopicSelected = (topic: MainTopic): boolean => {
+  // This function checks if all skills in a topic are selected
+  // Currently used internally by the toggleMicroSkill function
+  const checkIfAllSkillsSelected = (topic: MainTopic, skillsArray: string[]): boolean => {
     const topicData = topicStructure.find(t => t.topic === topic);
     if (!topicData || topicData.skills.length === 0) return false;
     
-    return topicData.skills.every(skill => isMicroSkillSelected(skill.id));
+    return topicData.skills.every(skill => skillsArray.includes(skill.id));
   };
 
   // Get all skill IDs for a topic
@@ -152,11 +149,12 @@ const PracticeFilters: React.FC<PracticeFiltersProps> = ({
       }
       
       // Check if all skills in topic are now selected, if so, select the topic too
-      const allSkillIds = getSkillIdsForTopic(parentTopic);
-      const allSelected = allSkillIds.every(id => 
-        updatedSkills.includes(id) || id === skillId
-      );
+      const tempSkills = [...updatedSkills];
+      if (!tempSkills.includes(skillId)) {
+        tempSkills.push(skillId);
+      }
       
+      const allSelected = checkIfAllSkillsSelected(parentTopic, tempSkills);
       if (allSelected && !updatedTopics.includes(parentTopic)) {
         updatedTopics.push(parentTopic);
       }
@@ -216,19 +214,22 @@ const PracticeFilters: React.FC<PracticeFiltersProps> = ({
 
   // Toggle all topics
   const toggleAllTopics = () => {
+    const allTopics = topicStructure.map(t => t.topic);
+    const allSkills = topicStructure.flatMap(t => t.skills.map(s => s.id));
+    
     if (areAllTopicsSelected) {
-      // If all topics are selected, deselect all
+      // Deselect all topics and skills
       onFiltersChange({
         ...filters,
         topics: [],
-        microSkills: [] // Also clear microskills when deselecting all topics
+        microSkills: []
       });
     } else {
-      // If not all topics are selected, select all
-      const allTopics = topicStructure.map(topicData => topicData.topic);
+      // Select all topics and skills
       onFiltersChange({
         ...filters,
-        topics: allTopics
+        topics: allTopics,
+        microSkills: allSkills
       });
     }
   };
@@ -379,4 +380,5 @@ const PracticeFilters: React.FC<PracticeFiltersProps> = ({
   );
 };
 
+export { PracticeFilters };
 export default PracticeFilters;

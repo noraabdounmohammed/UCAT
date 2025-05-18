@@ -9,11 +9,7 @@ import {
   Clock,
   GraduationCap,
   Menu,
-  LogOut,
-  BarChart3,
-  Settings,
-  BookOpen,
-  HelpCircle
+  LogOut
 } from 'lucide-react';
 
 interface SidebarProps {
@@ -86,58 +82,16 @@ const SidebarContent = ({ currentPage, onNavigate }: Pick<SidebarProps, 'current
             <span>Mock Exams</span>
           </Button>
           
-          <Button
-            variant="ghost"
-            className="w-full justify-start gap-3 px-4 py-3 h-auto text-sm font-medium text-gray-700 hover:text-indigo-600 hover:bg-indigo-50/40 rounded-xl border border-transparent"
-          >
-            <div className="p-2 rounded-full bg-gray-100 text-gray-600">
-              <BarChart3 className="h-4 w-4" />
-            </div>
-            <span>Performance</span>
-          </Button>
+
         </div>
       </div>
       
-      <div className="px-4 py-4 mt-2">
-        <p className="text-xs font-medium text-indigo-500 mb-3 px-2 uppercase tracking-wider">Resources</p>
-        
-        <div className="space-y-2">
-          <Button
-            variant="ghost"
-            className="w-full justify-start gap-3 px-4 py-3 h-auto text-sm font-medium text-gray-700 hover:text-indigo-600 hover:bg-indigo-50/40 rounded-xl border border-transparent"
-          >
-            <div className="p-2 rounded-full bg-gray-100 text-gray-600">
-              <BookOpen className="h-4 w-4" />
-            </div>
-            <span>Study Materials</span>
-          </Button>
-          
-          <Button
-            variant="ghost"
-            className="w-full justify-start gap-3 px-4 py-3 h-auto text-sm font-medium text-gray-700 hover:text-indigo-600 hover:bg-indigo-50/40 rounded-xl border border-transparent"
-          >
-            <div className="p-2 rounded-full bg-gray-100 text-gray-600">
-              <HelpCircle className="h-4 w-4" />
-            </div>
-            <span>Help & Support</span>
-          </Button>
-        </div>
-      </div>
+
       
-      {/* Enhanced bottom actions with new aesthetic design */}
+      {/* Bottom action with sign out */}
       <div className="mt-auto px-4 pt-5 pb-6">
         <Separator className="mb-5 bg-gray-100" />
-        <div className="space-y-2">
-          <Button 
-            variant="ghost" 
-            className="w-full justify-start gap-3 px-4 py-3 h-auto text-sm font-medium text-gray-700 hover:text-indigo-600 hover:bg-indigo-50/40 rounded-xl border border-transparent"
-          >
-            <div className="p-2 rounded-full bg-gray-100 text-gray-600">
-              <Settings className="h-4 w-4" />
-            </div>
-            <span>Settings</span>
-          </Button>
-          
+        <div className="space-y-2">          
           <Button 
             variant="ghost" 
             className="w-full justify-start gap-3 px-4 py-3 h-auto text-sm font-medium text-red-600 hover:text-red-700 hover:bg-red-50/60 rounded-xl border border-transparent"

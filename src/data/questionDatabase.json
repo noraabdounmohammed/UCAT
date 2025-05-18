@@ -2,6 +2,7 @@
   "questions": {
     "q1": {
       "id": "q1",
+      "section": "QR",
       "topic": "Percentages",
       "microSkill": "percent-change",
       "difficulty": "medium",
@@ -13,6 +14,7 @@
     },
     "q2": {
       "id": "q2",
+      "section": "QR",
       "topic": "Ratios",
       "microSkill": "simplify-ratio",
       "difficulty": "easy",
@@ -21,21 +23,222 @@
       "correctAnswer": 1,
       "explanation": "To simplify 24:36, divide both by their GCD (12): 24/12 : 36/12 = 2:3",
       "timeLimit": 45
+    },
+    "q3": {
+      "id": "q3",
+      "section": "QR",
+      "topic": "Percentages",
+      "microSkill": "percent-of",
+      "difficulty": "easy",
+      "content": "What is 15% of 80?",
+      "options": ["8", "12", "15", "16"],
+      "correctAnswer": 1,
+      "explanation": "To find 15% of 80, multiply: 0.15 × 80 = 12",
+      "timeLimit": 30
+    },
+    "q4": {
+      "id": "q4",
+      "section": "QR",
+      "topic": "Percentages",
+      "microSkill": "percent-to-decimal",
+      "difficulty": "easy",
+      "content": "Convert 35% to a decimal.",
+      "options": ["0.035", "0.35", "3.5", "35.0"],
+      "correctAnswer": 1,
+      "explanation": "To convert a percentage to a decimal, divide by 100: 35/100 = 0.35",
+      "timeLimit": 20
+    },
+    "q5": {
+      "id": "q5",
+      "section": "QR",
+      "topic": "Ratios",
+      "microSkill": "ratio-to-fraction",
+      "difficulty": "medium",
+      "content": "Express the ratio 5:8 as a fraction in its simplest form.",
+      "options": ["5/8", "8/5", "5/13", "8/13"],
+      "correctAnswer": 0,
+      "explanation": "The ratio 5:8 as a fraction is 5/8, which is already in its simplest form.",
+      "timeLimit": 45
+    },
+    "q6": {
+      "id": "q6",
+      "section": "QR",
+      "topic": "Fractions",
+      "microSkill": "add-fractions",
+      "difficulty": "medium",
+      "content": "What is 2/3 + 1/4?",
+      "options": ["3/7", "7/12", "8/12", "11/12"],
+      "correctAnswer": 2,
+      "explanation": "To add fractions with different denominators, find a common denominator: 2/3 = 8/12 and 1/4 = 3/12. Then add: 8/12 + 3/12 = 11/12",
+      "timeLimit": 60
+    },
+    "q7": {
+      "id": "q7",
+      "section": "QR",
+      "topic": "Fractions",
+      "microSkill": "multiply-fractions",
+      "difficulty": "easy",
+      "content": "Calculate 3/4 × 2/5",
+      "options": ["6/9", "5/9", "6/20", "3/10"],
+      "correctAnswer": 3,
+      "explanation": "To multiply fractions, multiply the numerators and the denominators: (3×2)/(4×5) = 6/20 = 3/10",
+      "timeLimit": 45
+    },
+    "q8": {
+      "id": "q8",
+      "section": "QR",
+      "topic": "Algebra",
+      "microSkill": "solve-linear-equation",
+      "difficulty": "medium",
+      "content": "Solve for x: 3x - 7 = 14",
+      "options": ["x = 5", "x = 7", "x = 9", "x = 21"],
+      "correctAnswer": 1,
+      "explanation": "3x - 7 = 14\n3x = 14 + 7\n3x = 21\nx = 7",
+      "timeLimit": 60
+    },
+    "q9": {
+      "id": "q9",
+      "section": "QR",
+      "topic": "Algebra",
+      "microSkill": "solve-quadratic-equation",
+      "difficulty": "hard",
+      "content": "Solve for x: x² - 5x + 6 = 0",
+      "options": ["x = 2, x = 3", "x = -2, x = -3", "x = 2, x = -3", "x = -2, x = 3"],
+      "correctAnswer": 0,
+      "explanation": "Using the quadratic formula or factoring: x² - 5x + 6 = 0\n(x - 2)(x - 3) = 0\nx = 2 or x = 3",
+      "timeLimit": 90
+    },
+    "q10": {
+      "id": "q10",
+      "section": "QR",
+      "topic": "Geometry",
+      "microSkill": "area-rectangle",
+      "difficulty": "easy",
+      "content": "What is the area of a rectangle with length 8 cm and width 5 cm?",
+      "options": ["13 cm²", "26 cm²", "40 cm²", "80 cm²"],
+      "correctAnswer": 2,
+      "explanation": "The area of a rectangle is length × width: 8 cm × 5 cm = 40 cm²",
+      "timeLimit": 30
+    },
+    "q11": {
+      "id": "q11",
+      "section": "QR",
+      "topic": "Geometry",
+      "microSkill": "area-triangle",
+      "difficulty": "medium",
+      "content": "Find the area of a triangle with base 12 cm and height 9 cm.",
+      "options": ["54 cm²", "108 cm²", "48 cm²", "24 cm²"],
+      "correctAnswer": 0,
+      "explanation": "The area of a triangle is (1/2) × base × height: (1/2) × 12 cm × 9 cm = 54 cm²",
+      "timeLimit": 45
+    },
+    "q12": {
+      "id": "q12",
+      "section": "QR",
+      "topic": "Statistics",
+      "microSkill": "find-mean",
+      "difficulty": "easy",
+      "content": "What is the mean of the numbers 15, 20, 25, 30, and 35?",
+      "options": ["20", "25", "30", "35"],
+      "correctAnswer": 1,
+      "explanation": "The mean is the sum divided by the count: (15 + 20 + 25 + 30 + 35) ÷ 5 = 125 ÷ 5 = 25",
+      "timeLimit": 45
+    },
+    "q13": {
+      "id": "q13",
+      "section": "QR",
+      "topic": "Statistics",
+      "microSkill": "find-median",
+      "difficulty": "medium",
+      "content": "What is the median of the numbers 7, 3, 9, 5, 1, 8?",
+      "options": ["5", "6", "6.5", "7"],
+      "correctAnswer": 1,
+      "explanation": "First, arrange the numbers in order: 1, 3, 5, 7, 8, 9. Since there are 6 numbers (even), the median is the average of the middle two: (5 + 7) ÷ 2 = 6",
+      "timeLimit": 60
+    },
+    "q14": {
+      "id": "q14",
+      "section": "QR",
+      "topic": "Probability",
+      "microSkill": "basic-probability",
+      "difficulty": "medium",
+      "content": "A bag contains 3 red marbles, 4 blue marbles, and 5 green marbles. If a marble is drawn at random, what is the probability of drawing a blue marble?",
+      "options": ["1/4", "1/3", "4/12", "4/7"],
+      "correctAnswer": 1,
+      "explanation": "The probability is the number of favorable outcomes divided by the total number of possible outcomes: 4/(3+4+5) = 4/12 = 1/3",
+      "timeLimit": 60
+    },
+    "q15": {
+      "id": "q15",
+      "section": "QR",
+      "topic": "Probability",
+      "microSkill": "compound-probability",
+      "difficulty": "hard",
+      "content": "If you flip a fair coin twice, what is the probability of getting heads both times?",
+      "options": ["1/4", "1/3", "1/2", "3/4"],
+      "correctAnswer": 0,
+      "explanation": "The probability of heads on one flip is 1/2. For independent events, multiply the probabilities: 1/2 × 1/2 = 1/4",
+      "timeLimit": 45
+    },
+    "q16": {
+      "id": "q16",
+      "section": "VR",
+      "topic": "Reading Comprehension",
+      "microSkill": "main-idea",
+      "difficulty": "medium",
+      "content": "The passage suggests that climate change will have the most immediate impact on:",
+      "options": ["Polar ice caps", "Coastal cities", "Agricultural production", "Mountain ecosystems"],
+      "correctAnswer": 1,
+      "explanation": "The passage emphasizes rising sea levels as the most immediate threat, which would primarily affect coastal cities.",
+      "timeLimit": 90
+    },
+    "q17": {
+      "id": "q17",
+      "section": "VR",
+      "topic": "Critical Reasoning",
+      "microSkill": "identify-assumption",
+      "difficulty": "hard",
+      "content": "Which of the following is an assumption made in the argument that increased funding for public transportation will reduce traffic congestion?",
+      "options": ["People prefer public transportation to driving", "Public transportation is more environmentally friendly", "People will use public transportation if it's available", "Traffic congestion is caused by too many vehicles"],
+      "correctAnswer": 2,
+      "explanation": "The argument assumes that people will actually use public transportation if it's available and funded, which is not necessarily true.",
+      "timeLimit": 120
+    },
+    "q18": {
+      "id": "q18",
+      "section": "DM",
+      "topic": "Logical Reasoning",
+      "microSkill": "deductive-reasoning",
+      "difficulty": "medium",
+      "content": "All doctors in the hospital wear white coats. Sarah is wearing a white coat. Therefore:",
+      "options": ["Sarah is a doctor", "Sarah works at the hospital", "Not enough information to determine if Sarah is a doctor", "Sarah is not a doctor"],
+      "correctAnswer": 2,
+      "explanation": "This is a logical fallacy called affirming the consequent. Just because all doctors wear white coats doesn't mean all people wearing white coats are doctors.",
+      "timeLimit": 60
+    },
+    "q19": {
+      "id": "q19",
+      "section": "DM",
+      "topic": "Data Analysis",
+      "microSkill": "interpret-graph",
+      "difficulty": "hard",
+      "content": "Based on the graph showing patient wait times, which department has shown the most improvement over the past year?",
+      "options": ["Emergency", "Radiology", "Outpatient", "Pediatrics"],
+      "correctAnswer": 1,
+      "explanation": "The graph shows that Radiology reduced wait times by 45%, which is the largest percentage improvement among all departments.",
+      "timeLimit": 90
+    },
+    "q20": {
+      "id": "q20",
+      "section": "SJ",
+      "topic": "Professional Behavior",
+      "microSkill": "ethical-dilemma",
+      "difficulty": "hard",
+      "content": "A colleague has made a minor error in patient documentation. The best course of action is to:",
+      "options": ["Report them to the supervisor immediately", "Ignore it as it's a minor error", "Discuss it privately with the colleague", "Correct it yourself without telling anyone"],
+      "correctAnswer": 2,
+      "explanation": "The most professional approach is to discuss the error privately with your colleague, giving them the opportunity to correct it themselves.",
+      "timeLimit": 60
     }
-  },
-  "topicIndex": {
-    "Percentages": ["q1"],
-    "Ratios": ["q2"]
-  },
-  "skillIndex": {
-    "percent-change": ["q1"],
-    "simplify-ratio": ["q2"]
-  },
-  "difficultyIndex": {
-    "easy": ["q2"],
-    "medium": ["q1"],
-    "hard": [],
-    "adaptive": []
-  },
-  "lastUpdated": "2025-05-16T20:12:00.000Z"
+  }
 }

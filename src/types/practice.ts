@@ -96,6 +96,7 @@ export const TOPICS_STRUCTURE: TopicStructure[] = [
 ];
 
 export interface PracticeFilterOptions {
+  section?: string;
   topics: MainTopic[];
   microSkills: string[];
   difficulty: Difficulty;

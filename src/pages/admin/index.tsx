@@ -10,17 +10,10 @@ const AdminDashboard: React.FC = () => {
   const adminModules = [
     {
       title: 'Question Manager',
-      description: 'Add, edit, and delete individual questions in the question bank',
+      description: 'Manage all questions in a single centralized database with advanced filtering and editing capabilities',
       icon: <FileQuestion className="h-8 w-8" />,
-      path: '/admin/QuestionManager',
+      path: '/admin/questions',
       color: 'bg-blue-100 text-blue-700'
-    },
-    {
-      title: 'Question Editor',
-      description: 'Edit all questions in JSON format with advanced filtering',
-      icon: <FileQuestion className="h-8 w-8" />,
-      path: '/admin/QuestionEditor',
-      color: 'bg-indigo-100 text-indigo-700'
     },
     {
       title: 'Topic Manager',

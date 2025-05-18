@@ -1,10 +1,13 @@
 import { useState, useEffect } from 'react';
-import { useSupabaseClient, useUser } from '@supabase/auth-helpers-react';
+import { useUser } from '@supabase/auth-helpers-react';
+import { Routes, Route, Navigate } from 'react-router-dom';
 import Dashboard from '@/components/dashboard/Dashboard';
 import { MockExam } from '@/pages/MockExam';
 import { MainLayout } from '@/components/layout/MainLayout';
 import { AuthForm } from '@/components/auth/AuthForm';
 import { DashboardProps } from '@/types/dashboard';
+import AdminDashboard from '@/pages/admin';
+import SingleFileQuestionManager from '@/pages/admin/SingleFileQuestionManager';
 
 // Mock user data
 const mockUserData: DashboardProps['userData'] = {
@@ -123,7 +126,7 @@ function App() {
   const [userData, setUserData] = useState<DashboardProps['userData']>(mockUserData);
   const [currentPage, setCurrentPage] = useState<'dashboard' | 'mock'>('dashboard');
   
-  const supabase = useSupabaseClient();
+  // We need the user object for authentication state
   const user = useUser();
   
   useEffect(() => {
@@ -133,7 +136,7 @@ function App() {
     
     return () => clearTimeout(timer);
   }, []);
-  
+
   // Handlers
   const handlePracticeStart = (section: string) => {
     console.log(`Starting practice for section: ${section}`);
@@ -163,19 +166,31 @@ function App() {
   }
   
   return (
-    <MainLayout currentPage={currentPage} onNavigate={setCurrentPage}>
-      {currentPage === 'dashboard' ? (
-        <Dashboard 
-          userData={userData}
-          onPracticeStart={handlePracticeStart}
-          onMockStart={() => setCurrentPage('mock')}
-          onRecommendationAction={handleRecommendationAction}
-          isLoading={loading}
-        />
-      ) : (
-        <MockExam onNavigateToTargetPractice={() => setCurrentPage('dashboard')} />
-      )}
-    </MainLayout>
+    <Routes>
+      {/* Admin Routes */}
+      <Route path="/admin" element={<AdminDashboard />} />
+      <Route path="/admin/questions" element={<SingleFileQuestionManager />} />
+      
+      {/* Main App Routes */}
+      <Route path="/" element={
+        <MainLayout currentPage={currentPage} onNavigate={setCurrentPage}>
+          {currentPage === 'dashboard' ? (
+            <Dashboard 
+              userData={userData}
+              onPracticeStart={handlePracticeStart}
+              onMockStart={() => setCurrentPage('mock')}
+              onRecommendationAction={handleRecommendationAction}
+              isLoading={loading}
+            />
+          ) : (
+            <MockExam />
+          )}
+        </MainLayout>
+      } />
+      
+      {/* Redirect any unknown routes to home */}
+      <Route path="*" element={<Navigate to="/" replace />} />
+    </Routes>
   );
 }
 

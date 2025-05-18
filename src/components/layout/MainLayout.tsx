@@ -1,6 +1,5 @@
 import React from 'react';
 import { Sidebar } from './Sidebar';
-import { cn } from '@/lib/utils';
 
 interface MainLayoutProps {
   children: React.ReactNode;
@@ -14,11 +13,17 @@ export function MainLayout({ children, currentPage, onNavigate }: MainLayoutProp
       <Sidebar
         currentPage={currentPage}
         onNavigate={onNavigate}
-        className="w-64"
+        className="w-72"
       />
-      <main className="flex-1 overflow-auto pt-14 lg:pt-6 px-4 md:px-6 pb-6">
-        {children}
-      </main>
+      <div className="flex-1 flex flex-col">
+        {/* Empty padded space at the top */}
+        <div className="h-16 bg-gray-50/50"></div>
+        
+        {/* Main content with Apple-style spacing and design */}
+        <main className="flex-1 overflow-auto px-8 py-8 bg-gray-50/50">
+          {children}
+        </main>
+      </div>
     </div>
   );
 }
