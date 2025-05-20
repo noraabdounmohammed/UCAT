@@ -26,16 +26,23 @@ export function AuthForm() {
     resolver: zodResolver(formSchema),
   });
 
-  const getErrorMessage = (error: any): string => {
-    if (error?.message?.includes('invalid_credentials')) {
-      return mode === 'signin' 
-        ? 'Invalid email or password. Please check your credentials and try again.'
-        : 'Unable to create account. Please try again with different credentials.';
+  const getErrorMessage = (error: unknown): string => {
+    // Type guard to check if error is an object with a message property
+    const hasMessage = (err: unknown): err is { message: string } => 
+      typeof err === 'object' && err !== null && 'message' in err && typeof (err as Record<string, unknown>).message === 'string';
+    
+    if (hasMessage(error)) {
+      if (error.message.includes('invalid_credentials')) {
+        return mode === 'signin' 
+          ? 'Invalid email or password. Please check your credentials and try again.'
+          : 'Unable to create account. Please try again with different credentials.';
+      }
+      if (error.message.includes('User already registered')) {
+        return 'An account with this email already exists. Please sign in instead.';
+      }
+      return error.message;
     }
-    if (error?.message?.includes('User already registered')) {
-      return 'An account with this email already exists. Please sign in instead.';
-    }
-    return error?.message || 'An unexpected error occurred. Please try again.';
+    return 'An unexpected error occurred. Please try again.';
   };
 
   const onSubmit = async (data: FormData) => {

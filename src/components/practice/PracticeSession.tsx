@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { PracticeQuestion } from './PracticeQuestion';
 import { useSupabaseClient, useUser } from '@supabase/auth-helpers-react';
 import { toast } from 'sonner';
@@ -112,7 +112,7 @@ export function PracticeSession({ questions, onComplete }: PracticeSessionProps)
         }
         
         const correctAnswers = questions.filter(
-          (q, i) => selectedAnswers[q.id] === q.correct_answer
+          (q) => selectedAnswers[q.id] === q.correct_answer
         ).length;
 
         const accuracy = Math.round((correctAnswers / questions.length) * 100);

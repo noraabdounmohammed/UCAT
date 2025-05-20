@@ -27,7 +27,8 @@ const PracticePage: React.FC = () => {
   
   const [questions, setQuestions] = useState<Question[]>([]);
   const [loading, setLoading] = useState(false);
-  const [loadingCounts, setLoadingCounts] = useState(true);
+  // We'll use a different approach for loading state
+  const [_, setLoadingCounts] = useState(true); // Using _ to indicate unused variable
   const [error, setError] = useState<Error | null>(null);
   
   // Load question counts on mount
@@ -121,7 +122,6 @@ const PracticePage: React.FC = () => {
             <QuestionBankFilters 
               onFiltersChange={handleFiltersChange}
               questionCounts={questionCounts || undefined}
-              isLoading={loadingCounts}
             />
           </div>
           

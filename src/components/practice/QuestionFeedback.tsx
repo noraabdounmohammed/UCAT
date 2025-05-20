@@ -1,4 +1,4 @@
-import React from 'react';
+// React is used implicitly for JSX
 import { Card, CardContent, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';

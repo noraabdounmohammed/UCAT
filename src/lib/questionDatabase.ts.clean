@@ -95,22 +95,13 @@ export const rebuildDatabaseIndices = (database: QuestionDatabase): QuestionData
  */
 export const loadQuestionDatabase = async (): Promise<QuestionDatabase> => {
   try {
-    // Import the question database directly in development
-    // In production, we'll include it as a static asset
-    let data;
-    
-    if (import.meta.env.DEV) {
-      // In development, import directly from the source
-      const module = await import('../data/questionDatabase.json');
-      data = module.default;
-    } else {
-      // In production, fetch from the root path
-      const response = await fetch('/questionDatabase.json');
-      if (!response.ok) {
-        throw new Error(`Failed to load question database: ${response.statusText}`);
-      }
-      data = await response.json();
+    // Always load directly from the JSON file
+    const response = await fetch('/src/data/questionDatabase.json');
+    if (!response.ok) {
+      throw new Error(`Failed to load question database: ${response.statusText}`);
     }
+    
+    const data = await response.json();
     
     // Handle the case where the JSON file contains only questions without indices
     // This allows users to maintain a simpler JSON file with just questions

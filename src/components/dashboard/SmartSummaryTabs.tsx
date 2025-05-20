@@ -6,7 +6,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { SectionInsights, SectionType } from '@/types/dashboard';
+import { SectionInsights } from '@/types/dashboard';
 import { 
   HelpCircle, TrendingUp, TrendingDown, Clock, Target, 
   Zap, Play, ArrowRight 

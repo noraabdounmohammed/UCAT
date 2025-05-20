@@ -9,7 +9,7 @@ import {
   BarChart2, Clock, Trophy, ChevronRight 
 } from 'lucide-react';
 import { SectionData, SectionType } from '@/types/dashboard';
-import { cn } from '@/lib/utils';
+// import { cn } from '@/lib/utils';
 
 interface SectionGridProps {
   sections: Record<SectionType, SectionData>;

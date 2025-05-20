@@ -2,7 +2,7 @@ import React from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Badge } from '@/components/ui/badge';
+// import { Badge } from '@/components/ui/badge';
 import { Flame } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -15,7 +15,7 @@ interface WelcomeStripProps {
 }
 
 const WelcomeStrip = React.memo(
-  ({ name, targetScore, currentScore, streak, isLoading }: WelcomeStripProps) => {
+  ({ targetScore, currentScore, streak, isLoading }: WelcomeStripProps) => {
     // Calculate percentage of target score
     const scorePercentage = Math.min(
       Math.round((currentScore / targetScore) * 100),
