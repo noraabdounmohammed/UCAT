@@ -11,9 +11,12 @@ interface Question {
   section: string;
 }
 
-const Dashboard: React.FC<Omit<DashboardProps, 'onPracticeStart'>> = ({ 
+const Dashboard: React.FC<DashboardProps> = ({ 
   userData, 
-  isLoading = false
+  isLoading = false,
+  onPracticeStart,
+  onMockStart,
+  onRecommendationAction
 }) => {
   const [practiceQuestions, setPracticeQuestions] = useState<Question[]>([]);
   
@@ -47,7 +50,7 @@ const Dashboard: React.FC<Omit<DashboardProps, 'onPracticeStart'>> = ({
           </div>
         </div>
       ) : (
-        <PracticeSection />
+        <PracticeSection onPracticeStart={onPracticeStart} onMockStart={onMockStart} onRecommendationAction={onRecommendationAction} />
       )}
     </>
   );

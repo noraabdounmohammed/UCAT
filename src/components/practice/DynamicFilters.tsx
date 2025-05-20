@@ -3,7 +3,7 @@ import { useSections, useTopics } from '../../utils/questionBank';
 import { QuestionIndex } from '../../utils/questionBank';
 import { Badge } from '../ui/badge';
 import { Checkbox } from '../ui/checkbox';
-import { Difficulty, PracticeFilterOptions } from '@/types/practice';
+import { Difficulty, PracticeFilterOptions, MainTopic } from '@/types/practice';
 
 interface DynamicFiltersProps {
   onFiltersChange: (filters: PracticeFilterOptions) => void;
@@ -13,14 +13,12 @@ interface DynamicFiltersProps {
     skills: Record<string, number>;
     total: number;
   };
-  isLoading?: boolean;
 }
 
 const DynamicFilters: React.FC<DynamicFiltersProps> = ({
   onFiltersChange,
   defaultSection = 'QR',
-  questionCounts,
-  isLoading = false,
+  questionCounts
 }) => {
   const [selectedSection, setSelectedSection] = useState<string>(defaultSection);
   const [selectedTopics, setSelectedTopics] = useState<string[]>([]);
@@ -82,7 +80,7 @@ const DynamicFilters: React.FC<DynamicFiltersProps> = ({
   useEffect(() => {
     onFiltersChange({
       section: selectedSection,
-      topics: selectedTopics as any[],
+      topics: selectedTopics as MainTopic[],
       microSkills: selectedMicroSkills,
       difficulty: selectedDifficulty,
     });

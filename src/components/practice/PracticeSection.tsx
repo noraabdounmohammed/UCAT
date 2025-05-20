@@ -10,14 +10,11 @@ import { getAvailableSections } from '@/utils/questionBank';
 import { fetchQuestions, fetchQuestionCounts, fetchUserProgress } from '@/lib/questions';
 import { toast } from 'sonner';
 
-import { MainTopic, Difficulty } from '@/types/practice';
+import { PracticeFilterOptions } from '@/types/practice';
 import { Question } from '@/utils/questionBank';
 
-interface FilterType {
-  topics: MainTopic[];
-  microSkills: string[];
-  difficulty: Difficulty;
-}
+// Use the PracticeFilterOptions type directly from the practice types
+type FilterType = PracticeFilterOptions;
 
 // Section definitions with icons and descriptions
 const SECTION_DETAILS: Record<string, { name: string, icon: LucideIcon, description: string }> = {
@@ -27,7 +24,13 @@ const SECTION_DETAILS: Record<string, { name: string, icon: LucideIcon, descript
   'SJ': { name: 'Situational Judgement', icon: Scale, description: 'Respond appropriately to real-world scenarios' }
 };
 
-export function PracticeSection(): JSX.Element {
+interface PracticeSectionProps {
+  onPracticeStart?: (section: string) => void;
+  onMockStart?: (type: 'timed' | 'untimed') => void;
+  onRecommendationAction?: (id: string, action: string) => void;
+}
+
+export function PracticeSection({ onPracticeStart, onMockStart, onRecommendationAction }: PracticeSectionProps): JSX.Element {
   const [activeSection, setActiveSection] = useState('QR');
   const [isLoading, setIsLoading] = useState(false);
   const [loadingSections, setLoadingSections] = useState(true);
@@ -105,24 +108,37 @@ export function PracticeSection(): JSX.Element {
     setFilters(newFilters);
   };
 
-  const handleStartPractice = async () => {
+  const handleStartPractice = () => {
     setIsLoading(true);
-    try {
-      const fetchedQuestions = await fetchQuestions({
-        section: activeSection,
-        topics: filters.topics,
-        microSkills: filters.microSkills,
-        difficulty: filters.difficulty
-      });
-      
-      setQuestions(fetchedQuestions);
-      setShowPractice(true);
-    } catch (error) {
-      console.error('Error fetching questions:', error);
-      toast.error('Failed to load questions');
-    } finally {
-      setIsLoading(false);
+    
+    // Call the onPracticeStart prop if provided
+    if (onPracticeStart) {
+      onPracticeStart(activeSection);
     }
+    
+    // Fetch questions based on filters
+    fetchQuestions({
+      section: activeSection,
+      topics: filters.topics,
+      microSkills: filters.microSkills,
+      difficulty: filters.difficulty
+    })
+      .then((questions) => {
+        if (questions.length === 0) {
+          toast.error('No questions found with the selected filters. Try adjusting your filters.');
+          setIsLoading(false);
+          return;
+        }
+        
+        setQuestions(questions);
+        setShowPractice(true);
+        setIsLoading(false);
+      })
+      .catch((error) => {
+        console.error('Error fetching questions:', error);
+        toast.error('Failed to load questions. Please try again.');
+        setIsLoading(false);
+      });
   };
 
   const handlePracticeComplete = () => {
@@ -180,7 +196,7 @@ export function PracticeSection(): JSX.Element {
                     variant={isActive ? 'default' : 'outline'}
                     className={cn(
                       "h-auto py-5 px-6",
-                      "flex items-center justify-start gap-5",
+                      "flex items-center justify-start gap-4",
                       "transition-all duration-200",
                       "rounded-xl border",
                       "group hover:shadow-md",
@@ -199,14 +215,8 @@ export function PracticeSection(): JSX.Element {
                         isActive ? "text-white" : "text-indigo-600"
                       )} />
                     </div>
-                    <div className="text-left min-w-0">
+                    <div className="text-left min-w-0 flex-1">
                       <div className="font-medium text-base md:text-lg">{section.name}</div>
-                      <div className={cn(
-                        "text-sm line-clamp-1 mt-1",
-                        isActive ? "text-white/80" : "text-gray-500"
-                      )}>
-                        {details.description}
-                      </div>
                     </div>
                   </Button>
                 );
@@ -215,6 +225,29 @@ export function PracticeSection(): JSX.Element {
           </div>
         </div>
 
+        {/* Recommendations section */}
+        <div className="bg-white rounded-2xl border border-gray-200/80 shadow-sm p-6 md:p-8 space-y-6">
+          <div className="flex items-center justify-between border-b border-gray-100 pb-4">
+            <h2 className="text-lg md:text-xl font-medium text-gray-900">Recommended Practice</h2>
+          </div>
+          
+          <div className="grid gap-4">
+            <div className="p-4 border border-indigo-100 rounded-lg bg-indigo-50/50 flex justify-between items-center">
+              <div>
+                <h3 className="font-medium text-indigo-900">Quantitative Reasoning: Percentages</h3>
+                <p className="text-sm text-indigo-700">Improve your percentage calculation skills</p>
+              </div>
+              <Button 
+                onClick={() => onRecommendationAction && onRecommendationAction('rec-1', 'start')}
+                size="sm"
+                className="bg-indigo-600 hover:bg-indigo-700 text-white"
+              >
+                Practice Now
+              </Button>
+            </div>
+          </div>
+        </div>
+        
         {/* Topic selection with enhanced aesthetics */}
         {activeSection && (
           <div className="bg-white rounded-2xl border border-gray-200/80 shadow-sm p-6 md:p-8 space-y-6">
@@ -238,7 +271,17 @@ export function PracticeSection(): JSX.Element {
                   isLoading={isLoading}
                 />
 
-                <div className="pt-4 border-t border-gray-100 flex justify-end">
+                <div className="pt-4 border-t border-gray-100 flex justify-between">
+                  {/* Mock Exam button */}
+                  <Button
+                    onClick={() => onMockStart && onMockStart('timed')}
+                    variant="outline"
+                    className="border-indigo-200 text-indigo-700 hover:bg-indigo-50"
+                  >
+                    Start Mock Exam
+                  </Button>
+                  
+                  {/* Start Practice button */}
                   <Button
                     onClick={handleStartPractice}
                     disabled={!hasSelectedTopics || isLoading}

@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { Checkbox } from '../ui/checkbox';
 import { Badge } from '../ui/badge';
-import { Difficulty, PracticeFilterOptions } from '@/types/practice';
-import { loadQuestionIndex, Question } from '@/utils/questionBank';
+import { Difficulty, PracticeFilterOptions, MainTopic } from '@/types/practice';
+import { loadQuestionIndex } from '@/utils/questionBank';
 
 interface QuestionBankFiltersProps {
   onFiltersChange: (filters: PracticeFilterOptions) => void;
@@ -11,13 +11,12 @@ interface QuestionBankFiltersProps {
     skills: Record<string, number>;
     total: number;
   };
-  isLoading?: boolean;
+
 }
 
 const QuestionBankFilters: React.FC<QuestionBankFiltersProps> = ({
   onFiltersChange,
-  questionCounts,
-  isLoading = false
+  questionCounts
 }) => {
   const [sections, setSections] = useState<{id: string, name: string}[]>([]);
   const [topics, setTopics] = useState<{[section: string]: string[]}>({});
@@ -84,7 +83,7 @@ const QuestionBankFilters: React.FC<QuestionBankFiltersProps> = ({
   useEffect(() => {
     onFiltersChange({
       section: selectedSection,
-      topics: selectedTopics as any[],
+      topics: selectedTopics as MainTopic[],
       microSkills: selectedMicroSkills,
       difficulty: selectedDifficulty
     });

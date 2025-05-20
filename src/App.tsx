@@ -6,8 +6,6 @@ import { MockExam } from '@/pages/MockExam';
 import { MainLayout } from '@/components/layout/MainLayout';
 import { AuthForm } from '@/components/auth/AuthForm';
 import { DashboardProps } from '@/types/dashboard';
-import AdminDashboard from '@/pages/admin';
-import SingleFileQuestionManager from '@/pages/admin/SingleFileQuestionManager';
 
 // Mock user data
 const mockUserData: DashboardProps['userData'] = {
@@ -167,10 +165,6 @@ function App() {
   
   return (
     <Routes>
-      {/* Admin Routes */}
-      <Route path="/admin" element={<AdminDashboard />} />
-      <Route path="/admin/questions" element={<SingleFileQuestionManager />} />
-      
       {/* Main App Routes */}
       <Route path="/" element={
         <MainLayout currentPage={currentPage} onNavigate={setCurrentPage}>
