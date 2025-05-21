@@ -51,6 +51,18 @@ export async function loadQuestionIndex(): Promise<QuestionIndex> {
         'QR': {
           name: 'Quantitative Reasoning',
           topics: {}
+        },
+        'VR': {
+          name: 'Verbal Reasoning',
+          topics: {}
+        },
+        'DM': {
+          name: 'Decision Making',
+          topics: {}
+        },
+        'SJ': {
+          name: 'Situational Judgement',
+          topics: {}
         }
       },
       lastUpdated: database.lastUpdated
@@ -60,6 +72,17 @@ export async function loadQuestionIndex(): Promise<QuestionIndex> {
     Object.entries(database.topicIndex).forEach(([topicKey, questionIds]) => {
       // Get all microSkills for this topic
       const microSkills = new Set<string>();
+      let sectionKey = 'QR'; // Default section
+      
+      // Find which section this topic belongs to by checking the first question
+      if (questionIds.length > 0) {
+        const firstQuestion = database.questions[questionIds[0]];
+        if (firstQuestion && firstQuestion.section) {
+          sectionKey = firstQuestion.section;
+        }
+      }
+      
+      // Collect all microSkills for this topic
       questionIds.forEach(id => {
         const question = database.questions[id];
         if (question && question.microSkill) {
@@ -67,12 +90,14 @@ export async function loadQuestionIndex(): Promise<QuestionIndex> {
         }
       });
       
-      // Add the topic to the index
-      index.sections['QR'].topics[topicKey] = {
-        file: '', // No longer using file paths
-        count: questionIds.length,
-        microSkills: Array.from(microSkills)
-      };
+      // Add the topic to the appropriate section index
+      if (index.sections[sectionKey]) {
+        index.sections[sectionKey].topics[topicKey] = {
+          file: '', // No longer using file paths
+          count: questionIds.length,
+          microSkills: Array.from(microSkills)
+        };
+      }
     });
     
     return index;
@@ -160,9 +185,15 @@ export async function getDynamicTopicStructure(section?: string): Promise<TopicS
         
         // Store skill details if not already stored
         if (!skillDetailsMap[microSkill]) {
+          // Create a more user-friendly display name from the ID
+          const displayName = microSkill
+            .split('-')
+            .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+            .join(' ');
+            
           skillDetailsMap[microSkill] = {
             id: microSkill,
-            name: microSkill, // Using the ID as the name since we don't have a separate name
+            name: displayName, // Convert ID to a readable name
             topic: topicName as MainTopic
           };
         }
@@ -262,6 +293,7 @@ export async function getAvailableSections(): Promise<string[]> {
 
 export async function loadQuestionsForSection(section: string): Promise<Question[]> {
   try {
+    console.log(`Loading questions for section: ${section}`);
     // Load questions directly from the centralized database
     const database = await loadQuestionDatabase();
     
@@ -273,20 +305,63 @@ export async function loadQuestionsForSection(section: string): Promise<Question
       return [];
     }
     
+    console.log(`Found ${questionIds.length} questions for section ${section}`);
+    
     // Map the questions to the expected format
     const questions = questionIds.map(id => {
       const dbQuestion = database.questions[id];
       if (!dbQuestion) return null;
       
-      return {
+      // Log the database question for debugging
+      console.log('Database question:', dbQuestion);
+      
+      // Map all required fields from the database question to our Question type
+      // Ensure all required fields are present and properly formatted
+      const mappedQuestion = {
         id: dbQuestion.id,
-        section: section,
+        section: dbQuestion.section,
+        set_id: dbQuestion.id,
+        set_name: dbQuestion.topic,
+        
+        // For the question content, use content field or create from question data
+        question_stem: '',
         individual_question: dbQuestion.content,
-        options: dbQuestion.options || [],
-        correct_answer: String.fromCharCode(65 + (dbQuestion.correctAnswer || 0)),
+        
+        // Ensure options is an array of strings
+        options: Array.isArray(dbQuestion.options) ? dbQuestion.options : [],
+        
+        // Convert correctAnswer from index to letter format (0 -> A, 1 -> B, etc.)
+        correct_answer: typeof dbQuestion.correctAnswer === 'number' 
+          ? String.fromCharCode(65 + dbQuestion.correctAnswer) 
+          : 'A',
+        
+        // Use explanation field for worked solution
+        worked_solution: dbQuestion.explanation || '',
+        
+        // Initialize empty data fields
+        data_type: '',
+        data_block: [],
+        explanation_audio_url: null,
+        
+        // Topic and skill information
+        main_topic: dbQuestion.topic,
+        micro_skill: dbQuestion.microSkill, // This must match exactly with the ID in filters
+        
+        // Format difficulty with first letter capitalized
+        difficulty: typeof dbQuestion.difficulty === 'string'
+          ? dbQuestion.difficulty.charAt(0).toUpperCase() + dbQuestion.difficulty.slice(1) as 'Easy' | 'Medium' | 'Hard'
+          : 'Medium',
+          
+        created_at: new Date().toISOString()
       } as Question;
+      
+      // Log the mapped question for debugging
+      console.log('Mapped question:', mappedQuestion);
+      
+      return mappedQuestion;
     }).filter(q => q !== null) as Question[];
     
+    console.log(`Successfully mapped ${questions.length} questions for section ${section}`);
     return questions;
   } catch (error) {
     console.error('Failed to load questions for section from database:', error);

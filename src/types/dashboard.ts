@@ -78,8 +78,7 @@ export interface DashboardProps {
     recommendations: Recommendation[];
     lastMockData: MockData;
   };
-  onPracticeStart: (section: string) => void;
+  onPracticeStart?: (section: string) => void;
   onMockStart: (type: 'timed' | 'untimed') => void;
-  onRecommendationAction: (id: string, action: string) => void;
   isLoading?: boolean;
 }

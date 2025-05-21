@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { ChevronsUpDown } from 'lucide-react';
+import { ChevronsUpDown, XCircle, Eye, SkipForward, CheckCircle, Flag } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Checkbox } from '@/components/ui/checkbox';
 import { cn } from '@/lib/utils';
@@ -7,7 +7,9 @@ import {
   Difficulty,
   MainTopic,
   PracticeFilterOptions,
-  TopicStructure
+  TopicStructure,
+  ProgressData,
+  InteractionStatus
 } from '@/types/practice';
 import { fetchDynamicTopicStructure } from '@/lib/questions';
 
@@ -33,6 +35,7 @@ const PracticeFilters: React.FC<PracticeFiltersProps> = ({
   filters,
   onFiltersChange,
   questionCounts,
+  userProgress,
   isLoading = false
 }) => {
   const [topicStructure, setTopicStructure] = useState<TopicStructure[]>([]);
@@ -72,16 +75,33 @@ const PracticeFilters: React.FC<PracticeFiltersProps> = ({
     return filters.microSkills.includes(skillId);
   };
 
-  const getTopicCount = (topic: MainTopic): number => {
-    return questionCounts?.topicCounts[topic] || 0;
+  const getTopicCount = (topic: MainTopic): { total: number; attempted: number } => {
+    const total = questionCounts?.topicCounts[topic] || 0;
+    const attempted = Math.min(userProgress?.topics[topic]?.total || 0, total);
+    return { total, attempted };
   };
 
-  const getMicroSkillCount = (skillId: string): number => {
-    return questionCounts?.skillCounts[skillId] || 0;
+  const getMicroSkillCount = (skillId: string): { total: number; attempted: number } => {
+    const total = questionCounts?.skillCounts[skillId] || 0;
+    const attempted = Math.min(userProgress?.skills[skillId]?.total || 0, total);
+    return { total, attempted };
   };
 
-  // This function checks if all skills in a topic are selected
-  // Currently used internally by the toggleMicroSkill function
+  // Get all skill IDs for a topic - used for rendering and filtering
+  const getSkillIdsForTopic = (topic: MainTopic): string[] => {
+    const topicData = topicStructure.find(t => t.topic === topic);
+    if (!topicData) return [];
+    return topicData.skills.map(skill => skill.id);
+  };
+  
+  // Count selected skills for a topic - used in the UI
+  const getSelectedSkillsCount = (topic: MainTopic): { selected: number; total: number } => {
+    const skillIds = getSkillIdsForTopic(topic);
+    const selectedCount = skillIds.filter(id => filters.microSkills.includes(id)).length;
+    return { selected: selectedCount, total: skillIds.length };
+  };
+
+  // Check if all skills in a topic are selected
   const checkIfAllSkillsSelected = (topic: MainTopic, skillsArray: string[]): boolean => {
     const topicData = topicStructure.find(t => t.topic === topic);
     if (!topicData || topicData.skills.length === 0) return false;
@@ -89,21 +109,15 @@ const PracticeFilters: React.FC<PracticeFiltersProps> = ({
     return topicData.skills.every(skill => skillsArray.includes(skill.id));
   };
 
-  // Get all skill IDs for a topic
-  const getSkillIdsForTopic = (topic: MainTopic): string[] => {
-    const topicData = topicStructure.find(t => t.topic === topic);
-    if (!topicData) return [];
-    return topicData.skills.map(skill => skill.id);
-  };
-
   // Toggle functions
   const toggleTopic = (topic: MainTopic) => {
     const selecting = !isTopicSelected(topic);
     let updatedTopics = [...filters.topics];
-    let updatedSkills = [...filters.microSkills];
+    const updatedSkills = [...filters.microSkills];
     
-    // Update topic selection
+    // Update topic selection and its skills
     if (selecting) {
+      // Add topic if selecting
       if (!updatedTopics.includes(topic)) {
         updatedTopics.push(topic);
       }
@@ -116,10 +130,17 @@ const PracticeFilters: React.FC<PracticeFiltersProps> = ({
         }
       });
     } else {
-      // When deselecting a topic, remove it and all its skills
+      // When deselecting a topic, remove it
       updatedTopics = updatedTopics.filter(t => t !== topic);
+      
+      // Also deselect all skills in this topic
       const skillIds = getSkillIdsForTopic(topic);
-      updatedSkills = updatedSkills.filter(id => !skillIds.includes(id));
+      skillIds.forEach(skillId => {
+        const index = updatedSkills.indexOf(skillId);
+        if (index !== -1) {
+          updatedSkills.splice(index, 1);
+        }
+      });
     }
 
     onFiltersChange({
@@ -131,7 +152,7 @@ const PracticeFilters: React.FC<PracticeFiltersProps> = ({
 
   const toggleMicroSkill = (skillId: string) => {
     const selecting = !isMicroSkillSelected(skillId);
-    let updatedSkills = [...filters.microSkills];
+    const updatedSkills = [...filters.microSkills];
     let updatedTopics = [...filters.topics];
     
     // Find which topic this skill belongs to
@@ -139,7 +160,10 @@ const PracticeFilters: React.FC<PracticeFiltersProps> = ({
       topic.skills.some(skill => skill.id === skillId)
     )?.topic;
     
-    if (!parentTopic) return; // Safety check
+    if (!parentTopic) {
+      console.error(`Could not find parent topic for skill ${skillId}`);
+      return; // Safety check
+    }
     
     // Update skill selection
     if (selecting) {
@@ -148,19 +172,19 @@ const PracticeFilters: React.FC<PracticeFiltersProps> = ({
         updatedSkills.push(skillId);
       }
       
-      // Check if all skills in topic are now selected, if so, select the topic too
-      const tempSkills = [...updatedSkills];
-      if (!tempSkills.includes(skillId)) {
-        tempSkills.push(skillId);
-      }
+      // Check if all skills in the topic are now selected
+      const allSkillsSelected = checkIfAllSkillsSelected(parentTopic, updatedSkills);
       
-      const allSelected = checkIfAllSkillsSelected(parentTopic, tempSkills);
-      if (allSelected && !updatedTopics.includes(parentTopic)) {
+      // If all skills are selected, also select the topic
+      if (allSkillsSelected && !updatedTopics.includes(parentTopic)) {
         updatedTopics.push(parentTopic);
       }
     } else {
       // Remove skill if deselecting
-      updatedSkills = updatedSkills.filter(id => id !== skillId);
+      const skillIndex = updatedSkills.indexOf(skillId);
+      if (skillIndex !== -1) {
+        updatedSkills.splice(skillIndex, 1);
+      }
       
       // If deselecting a skill, also deselect its parent topic
       updatedTopics = updatedTopics.filter(t => t !== parentTopic);
@@ -184,6 +208,31 @@ const PracticeFilters: React.FC<PracticeFiltersProps> = ({
     onFiltersChange({
       ...filters,
       difficulty
+    });
+  };
+
+  // Toggle interaction status
+  const toggleInteractionStatus = (status: InteractionStatus) => {
+    console.log(`Toggling interaction status: ${status}`);
+    
+    // Ensure we have a valid array to work with
+    const currentStatuses = filters.interactionStatus || [];
+    
+    // Check if the status is already included
+    const isAlreadySelected = currentStatuses.includes(status);
+    console.log(`Status ${status} is already selected: ${isAlreadySelected}`);
+    
+    // Create the updated array
+    const updatedStatuses = isAlreadySelected
+      ? currentStatuses.filter(s => s !== status)
+      : [...currentStatuses, status];
+    
+    console.log('Updated statuses:', updatedStatuses);
+      
+    // Call the filter change handler with the updated filters
+    onFiltersChange({
+      ...filters,
+      interactionStatus: updatedStatuses
     });
   };
 
@@ -253,12 +302,19 @@ const PracticeFilters: React.FC<PracticeFiltersProps> = ({
             <label 
               htmlFor="all-topics"
               className="text-sm font-medium cursor-pointer"
+              onClick={(e) => {
+                e.stopPropagation();
+                toggleAllTopics();
+              }}
             >
               All Topics
             </label>
             {totalQuestionCount > 0 && (
               <Badge variant="outline" className="ml-2">
-                {totalQuestionCount}
+                {Math.min(
+                  Object.values(userProgress?.topics || {}).reduce((sum, data: ProgressData) => sum + (data.total || 0), 0),
+                  totalQuestionCount
+                )} of {totalQuestionCount}
               </Badge>
             )}
           </div>
@@ -266,8 +322,10 @@ const PracticeFilters: React.FC<PracticeFiltersProps> = ({
       </div>
 
       {/* Topic filters */}
-      <div className="space-y-2">
-        <h3 className="text-sm font-medium">Topics</h3>
+      <div className="space-y-4">
+        <div className="flex items-center justify-between">
+          <h3 className="text-sm font-medium">Topics & Skills</h3>
+        </div>
         <div className="space-y-1">
           {topicStructure.map((topicData) => {
             const isExpanded = expandedTopics[topicData.topic] || false;
@@ -279,32 +337,36 @@ const PracticeFilters: React.FC<PracticeFiltersProps> = ({
                   className="flex items-center justify-between p-2 rounded-md hover:bg-accent cursor-pointer"
                   onClick={() => toggleTopicExpansion(topicData.topic)}
                 >
-                  <div className="flex items-center gap-2">
-                    <Checkbox 
-                      id={`topic-${topicData.topic}`}
-                      checked={isTopicSelected(topicData.topic)}
-                      onCheckedChange={() => toggleTopic(topicData.topic)}
-                      onClick={(e) => e.stopPropagation()}
-                    />
-                    <label 
-                      htmlFor={`topic-${topicData.topic}`}
-                      className="text-sm font-medium cursor-pointer"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        toggleTopic(topicData.topic);
-                      }}
-                    >
-                      {topicData.topic}
-                    </label>
-                    {topicCount > 0 && (
-                      <Badge variant="outline" className="ml-2">
-                        {topicCount}
-                      </Badge>
-                    )}
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <Checkbox 
+                        id={`topic-${topicData.topic}`}
+                        checked={isTopicSelected(topicData.topic)}
+                        onCheckedChange={() => toggleTopic(topicData.topic)}
+                        onClick={(e) => e.stopPropagation()}
+                      />
+                      <label 
+                        htmlFor={`topic-${topicData.topic}`}
+                        className="text-sm font-medium cursor-pointer"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          toggleTopic(topicData.topic);
+                        }}
+                      >
+                        {topicData.topic}
+                      </label>
+                      {topicCount.total > 0 && (
+                        <Badge variant="outline" className="ml-2">
+                          {topicCount.attempted} of {topicCount.total}
+                        </Badge>
+                      )}
+                      
+                      {/* No skills count badge */}
+                    </div>
+                    <ChevronsUpDown className={cn("h-4 w-4 transition-transform", {
+                      "transform rotate-180": isExpanded
+                    })} />
                   </div>
-                  <ChevronsUpDown className={cn("h-4 w-4 transition-transform", {
-                    "transform rotate-180": isExpanded
-                  })} />
                 </div>
                 
                 {isExpanded && topicData.skills.length > 0 && (
@@ -328,12 +390,16 @@ const PracticeFilters: React.FC<PracticeFiltersProps> = ({
                             <label 
                               htmlFor={`skill-${skill.id}`}
                               className="text-sm cursor-pointer"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                toggleMicroSkill(skill.id);
+                              }}
                             >
                               {skill.name}
                             </label>
-                            {skillCount > 0 && (
+                            {skillCount.total > 0 && (
                               <Badge variant="outline" className="ml-2">
-                                {skillCount}
+                                {skillCount.attempted} of {skillCount.total}
                               </Badge>
                             )}
                           </div>
@@ -367,13 +433,91 @@ const PracticeFilters: React.FC<PracticeFiltersProps> = ({
                 />
                 <label 
                   htmlFor={`difficulty-${difficulty}`}
-                  className="text-sm cursor-pointer capitalize"
+                  className="text-sm cursor-pointer"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    toggleDifficulty(difficulty);
+                  }}
                 >
-                  {difficulty}
+                  {difficulty.charAt(0).toUpperCase() + difficulty.slice(1)}
                 </label>
               </div>
             </div>
           ))}
+        </div>
+      </div>
+      
+      {/* Question History Filters */}
+      <div className="space-y-4 mt-6">
+        <div className="flex items-center justify-between">
+          <h3 className="text-sm font-medium text-slate-700">Question History</h3>
+        </div>
+        
+        <div className="flex flex-wrap gap-2">
+          <div 
+            className="inline-block" 
+            onClick={() => toggleInteractionStatus('incorrect')}
+          >
+            <Badge
+              variant={filters.interactionStatus?.includes('incorrect') ? "destructive" : "outline"}
+              className={`cursor-pointer select-none transition-colors ${filters.interactionStatus?.includes('incorrect') ? "" : "hover:bg-red-100"}`}
+            >
+              <XCircle className="h-3 w-3 mr-1" />
+              Incorrect
+            </Badge>
+          </div>
+          
+          <div 
+            className="inline-block" 
+            onClick={() => toggleInteractionStatus('unseen')}
+          >
+            <Badge
+              variant={filters.interactionStatus?.includes('unseen') ? "default" : "outline"}
+              className={`cursor-pointer select-none transition-colors ${filters.interactionStatus?.includes('unseen') ? "" : "hover:bg-blue-100"}`}
+            >
+              <Eye className="h-3 w-3 mr-1" />
+              Unseen
+            </Badge>
+          </div>
+          
+          <div 
+            className="inline-block" 
+            onClick={() => toggleInteractionStatus('skipped')}
+          >
+            <Badge
+              variant={filters.interactionStatus?.includes('skipped') ? "secondary" : "outline"}
+              className={`cursor-pointer select-none transition-colors ${filters.interactionStatus?.includes('skipped') ? "bg-purple-100 text-purple-800" : "hover:bg-purple-100"}`}
+            >
+              <SkipForward className="h-3 w-3 mr-1" />
+              Skipped
+            </Badge>
+          </div>
+          
+          <div 
+            className="inline-block" 
+            onClick={() => toggleInteractionStatus('correct')}
+          >
+            <Badge
+              variant={filters.interactionStatus?.includes('correct') ? "default" : "outline"}
+              className={`cursor-pointer select-none transition-colors ${filters.interactionStatus?.includes('correct') ? "bg-green-100 text-green-800" : "hover:bg-green-100"}`}
+            >
+              <CheckCircle className="h-3 w-3 mr-1" />
+              Correct
+            </Badge>
+          </div>
+          
+          <div 
+            className="inline-block" 
+            onClick={() => toggleInteractionStatus('flagged')}
+          >
+            <Badge
+              variant={filters.interactionStatus?.includes('flagged') ? "secondary" : "outline"}
+              className={`cursor-pointer select-none transition-colors ${filters.interactionStatus?.includes('flagged') ? "bg-amber-100 text-amber-800" : "hover:bg-amber-100"}`}
+            >
+              <Flag className="h-3 w-3 mr-1" />
+              Flagged
+            </Badge>
+          </div>
         </div>
       </div>
     </div>

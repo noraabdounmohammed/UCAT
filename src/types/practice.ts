@@ -95,11 +95,20 @@ export const TOPICS_STRUCTURE: TopicStructure[] = [
   }
 ];
 
+export type InteractionStatus = 'incorrect' | 'unseen' | 'skipped' | 'correct' | 'flagged';
+
 export interface PracticeFilterOptions {
   section?: string;
   topics: MainTopic[];
   microSkills: string[];
   difficulty: Difficulty;
+  interactionStatus: InteractionStatus[];
+}
+
+export interface ProgressData {
+  correct: number;
+  incorrect: number;
+  total: number;
 }
 
 export interface Question {

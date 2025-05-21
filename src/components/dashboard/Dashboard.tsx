@@ -1,41 +1,19 @@
-import React, { useCallback, useState } from 'react';
+import React from 'react';
+import { useNavigate } from 'react-router-dom';
 import { DashboardProps } from '@/types/dashboard';
 import { PracticeSection } from '@/components/practice/PracticeSection';
-import { PracticeSession } from '@/components/practice/PracticeSession';
-
-interface Question {
-  id: string;
-  text: string;
-  options: string[];
-  correctAnswer: string;
-  section: string;
-}
 
 const Dashboard: React.FC<DashboardProps> = ({ 
   userData, 
   isLoading = false,
-  onPracticeStart,
-  onMockStart,
-  onRecommendationAction
+  onMockStart
 }) => {
-  const [practiceQuestions, setPracticeQuestions] = useState<Question[]>([]);
+  const navigate = useNavigate();
   
-  // Note: This function is temporarily unused after the PracticeSection refactoring
-  // It will be reintegrated when we implement the practice flow in a future update
-  // For now, we're keeping it as a reference for the expected behavior
-
-  const handlePracticeComplete = useCallback(() => {
-    setPracticeQuestions([]);
-  }, []);
-  
-  if (practiceQuestions.length > 0) {
-    return (
-      <PracticeSession 
-        questions={practiceQuestions}
-        onComplete={handlePracticeComplete}
-      />
-    );
-  }
+  // Navigate to the dedicated practice page with section parameter
+  const handlePracticeStart = (section: string) => {
+    navigate(`/practice?section=${section}`);
+  };
   
   return (
     <>
@@ -50,7 +28,10 @@ const Dashboard: React.FC<DashboardProps> = ({
           </div>
         </div>
       ) : (
-        <PracticeSection onPracticeStart={onPracticeStart} onMockStart={onMockStart} onRecommendationAction={onRecommendationAction} />
+        <PracticeSection 
+          onMockStart={onMockStart} 
+          onPracticeStart={handlePracticeStart}
+        />
       )}
     </>
   );

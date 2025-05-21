@@ -1,40 +1,106 @@
 // Supabase will be used for user progress tracking in the future
 import { PracticeFilterOptions, TopicStructure } from '@/types/practice';
-import { loadQuestionsForTopics, getDynamicQuestionCounts, getDynamicTopicStructure, Question } from '../utils/questionBank';
+import { loadQuestionsForSection, getDynamicQuestionCounts, getDynamicTopicStructure, Question } from '../utils/questionBank';
 
 export async function fetchQuestions(filters: PracticeFilterOptions) {
   try {
-    // Default to QR section if not specified
-    const section = filters.section || 'QR';
+    // Make sure we have a section specified
+    if (!filters.section) {
+      console.error('No section specified in filters');
+      return [];
+    }
+    const section = filters.section;
     
-    // Load questions based on selected topics
+    // Load questions based on selected topics and/or skills
     let questions: Question[] = [];
     
-    if (filters.topics.length > 0) {
-      // Load questions for selected topics
-      questions = await loadQuestionsForTopics(section, filters.topics);
-    } else {
-      // If no topics selected, return empty array
+    // Check if we have either topics or skills selected
+    const hasTopics = filters.topics.length > 0;
+    const hasSkills = filters.microSkills.length > 0;
+    
+    if (!hasTopics && !hasSkills) {
+      // If neither topics nor skills are selected, return empty array
+      console.log('No topics or skills selected');
       return [];
     }
     
-    // Apply micro skill filters if any are selected
-    if (filters.microSkills.length > 0) {
-      questions = questions.filter(q => 
-        filters.microSkills.includes(q.micro_skill)
-      );
+    // Always load all questions for the section first
+    console.log(`Loading all questions for section ${section}`);
+    questions = await loadQuestionsForSection(section);
+    
+    // Debug the loaded questions
+    console.log('Loaded questions:', questions);
+    
+    let finalQuestions: Question[] = [];
+    
+    // If we have topics selected, get questions for those topics
+    if (hasTopics) {
+      console.log('Filtering by topics:', filters.topics);
+      // Check for topic compatibility with more flexible matching
+      const topicQuestions = questions.filter(q => {
+        // Get the topic from the question, with fallbacks for different formats
+        const questionTopic = q.main_topic || (q as any).topic;
+        if (!questionTopic) return false;
+        
+        // Check if any of the selected topics match this question
+        return filters.topics.some(topic => {
+          // Handle both string and object topics
+          const topicValue = typeof topic === 'string' ? topic : String(topic);
+          return String(questionTopic).toLowerCase() === topicValue.toLowerCase();
+        });
+      });
+      finalQuestions = [...finalQuestions, ...topicQuestions];
+      console.log(`After topic filtering: ${topicQuestions.length} questions`);
     }
+    
+    // If we have skills selected, get questions for those skills
+    if (hasSkills) {
+      console.log('Filtering by micro skills:', filters.microSkills);
+      
+      // Log all available micro_skills in the questions for debugging
+      const availableMicroSkills = new Set(questions.map(q => q.micro_skill));
+      console.log('Available micro_skills in questions:', Array.from(availableMicroSkills));
+      
+      // Log each question's micro_skill for detailed debugging
+      questions.forEach(q => {
+        console.log(`Question ${q.id} has micro_skill: '${q.micro_skill}'`);
+      });
+      
+      const skillQuestions = questions.filter(q => {
+        const matches = filters.microSkills.includes(q.micro_skill);
+        console.log(`Question ${q.id} with micro_skill '${q.micro_skill}' matches filter: ${matches}`);
+        return matches;
+      });
+      
+      finalQuestions = [...finalQuestions, ...skillQuestions];
+      console.log(`After skill filtering: ${skillQuestions.length} questions`);
+    }
+    
+    // Remove duplicates
+    const uniqueIds = new Set();
+    questions = finalQuestions.filter(q => {
+      if (uniqueIds.has(q.id)) return false;
+      uniqueIds.add(q.id);
+      return true;
+    });
+    
+    console.log(`Final question count after filtering: ${questions.length} questions`);
     
     // Apply difficulty filter if not adaptive
     if (filters.difficulty !== 'adaptive') {
-      questions = questions.filter(q => 
-        q.difficulty.toLowerCase() === filters.difficulty.toLowerCase()
-      );
+      console.log('Filtering by difficulty:', filters.difficulty);
+      questions = questions.filter(q => {
+        const difficultyMatches = q.difficulty.toLowerCase() === filters.difficulty.toLowerCase();
+        return difficultyMatches;
+      });
+      console.log(`After difficulty filtering: ${questions.length} questions`);
     }
     
     // Shuffle questions and limit to 5
     const shuffled = [...questions].sort(() => Math.random() - 0.5);
-    return shuffled.slice(0, 5);
+    const result = shuffled.slice(0, 5);
+    console.log(`Returning ${result.length} questions after shuffling and limiting`);
+    return result;
   } catch (error) {
     console.error('Error in fetchQuestions:', error);
     throw error;
@@ -75,70 +141,143 @@ export async function fetchDynamicTopicStructure(section?: string): Promise<Topi
 // Function to fetch user progress data
 export async function fetchUserProgress(section?: string) {
   try {
-    // In a real app, this would be an API call
-    // For now, we'll simulate with static data based on section
-    if (section === 'QR') {
+    // In a real app, this would be an API call to fetch the user's actual progress
+    // For now, we'll simulate with data that would come from a user progress tracking system
+    
+    // This function simulates fetching question attempt data from a database
+    // In a real app, this would be actual user data from a database
+    const fetchUserAttemptData = () => {
+      // This simulates the raw data of which questions the user has attempted
+      // In a real app, this would be fetched from a database based on the user's ID
       return {
-        topics: {
-          'Percentages': { correct: 12, incorrect: 3, total: 15 },
-          'Ratios': { correct: 8, incorrect: 7, total: 15 },
-          'Fractions': { correct: 5, incorrect: 2, total: 7 },
-          'Algebra': { correct: 3, incorrect: 5, total: 8 },
-        },
-        skills: {
-          'percent-change': { correct: 5, incorrect: 1, total: 6 },
-          'percent-of': { correct: 7, incorrect: 2, total: 9 },
-          'ratio-simplification': { correct: 4, incorrect: 3, total: 7 },
-          'fraction-operations': { correct: 5, incorrect: 2, total: 7 },
+        // Each key is a question ID, and the value indicates if it was answered correctly
+        'qr-percent-change-1': true,  // correct
+        'qr-percent-change-2': false, // incorrect
+        'qr-percent-of-1': true,      // correct
+        'qr-ratio-simplification-1': true, // correct
+        'vr-main-idea-1': true,       // correct
+        'vr-inference-1': false,      // incorrect
+        'dm-deductive-1': true,       // correct
+        'sj-ethical-1': true,         // correct
+      } as Record<string, boolean>;
+    };
+    
+    // This function simulates fetching the mapping of questions to skills and topics
+    // In a real app, this would be fetched from a database or derived from the question metadata
+    const fetchQuestionMetadata = () => {
+      return {
+        // QR section
+        'qr-percent-change-1': { skill: 'percent-change', topic: 'Percentages' },
+        'qr-percent-change-2': { skill: 'percent-change', topic: 'Percentages' },
+        'qr-percent-change-3': { skill: 'percent-change', topic: 'Percentages' },
+        'qr-percent-of-1': { skill: 'percent-of', topic: 'Percentages' },
+        'qr-percent-of-2': { skill: 'percent-of', topic: 'Percentages' },
+        'qr-ratio-simplification-1': { skill: 'ratio-simplification', topic: 'Ratios' },
+        'qr-ratio-simplification-2': { skill: 'ratio-simplification', topic: 'Ratios' },
+        'qr-ratio-word-problems-1': { skill: 'ratio-word-problems', topic: 'Ratios' },
+        'qr-ratio-proportions-1': { skill: 'ratio-proportions', topic: 'Ratios' },
+        'qr-fraction-operations-1': { skill: 'fraction-operations', topic: 'Fractions' },
+        'qr-fraction-operations-2': { skill: 'fraction-operations', topic: 'Fractions' },
+        'qr-algebra-equations-1': { skill: 'algebra-equations', topic: 'Algebra' },
+        'qr-algebra-word-problems-1': { skill: 'algebra-word-problems', topic: 'Algebra' },
+        
+        // VR section
+        'vr-main-idea-1': { skill: 'identify-main-idea', topic: 'Reading Comprehension' },
+        'vr-main-idea-2': { skill: 'identify-main-idea', topic: 'Reading Comprehension' },
+        'vr-inference-1': { skill: 'draw-inferences', topic: 'Reading Comprehension' },
+        'vr-arguments-1': { skill: 'evaluate-arguments', topic: 'Critical Reasoning' },
+        'vr-strengthen-1': { skill: 'strengthen-weaken', topic: 'Critical Reasoning' },
+        
+        // DM section
+        'dm-deductive-1': { skill: 'deductive-reasoning', topic: 'Logical Reasoning' },
+        'dm-inductive-1': { skill: 'inductive-reasoning', topic: 'Logical Reasoning' },
+        'dm-probability-1': { skill: 'basic-probability', topic: 'Probability' },
+        'dm-conditional-1': { skill: 'conditional-probability', topic: 'Probability' },
+        
+        // SJ section
+        'sj-ethical-1': { skill: 'ethical-dilemma', topic: 'Ethical Dilemmas' },
+        'sj-conflict-1': { skill: 'conflict-resolution', topic: 'Ethical Dilemmas' },
+        'sj-conduct-1': { skill: 'professional-conduct', topic: 'Professional Behavior' },
+      } as Record<string, { skill: string; topic: string }>;
+    };
+    
+    // Get the user's attempt data and question metadata
+    const userAttempts = fetchUserAttemptData();
+    const questionMetadata = fetchQuestionMetadata();
+    
+    // Filter questions by section if specified
+    const sectionPrefix = section ? section.toLowerCase() + '-' : '';
+    
+    // Initialize progress tracking objects
+    const skillProgress: Record<string, { correct: number; incorrect: number; total: number }> = {};
+    const topicProgress: Record<string, { correct: number; incorrect: number; total: number }> = {};
+    
+    // Process each question in the metadata
+    Object.entries(questionMetadata).forEach(([questionId, metadata]) => {
+      // Skip if not in the requested section
+      if (section && !questionId.startsWith(sectionPrefix)) return;
+      
+      const { skill, topic } = metadata;
+      
+      // Initialize skill progress if not exists
+      if (!skillProgress[skill]) {
+        skillProgress[skill] = { correct: 0, incorrect: 0, total: 0 };
+      }
+      
+      // Initialize topic progress if not exists
+      if (!topicProgress[topic]) {
+        topicProgress[topic] = { correct: 0, incorrect: 0, total: 0 };
+      }
+      
+      // Check if the user has attempted this question
+      if (questionId in userAttempts) {
+        // Update skill progress
+        if (userAttempts[questionId]) {
+          skillProgress[skill].correct += 1;
+        } else {
+          skillProgress[skill].incorrect += 1;
         }
-      };
-    } else if (section === 'VR') {
-      return {
-        topics: {
-          'Reading Comprehension': { correct: 8, incorrect: 4, total: 12 },
-          'Critical Reasoning': { correct: 6, incorrect: 5, total: 11 },
-        },
-        skills: {
-          'identify-main-idea': { correct: 4, incorrect: 2, total: 6 },
-          'draw-inferences': { correct: 4, incorrect: 2, total: 6 },
-          'evaluate-arguments': { correct: 3, incorrect: 3, total: 6 },
-          'strengthen-weaken': { correct: 3, incorrect: 2, total: 5 },
+        skillProgress[skill].total += 1;
+      }
+    });
+    
+    // Calculate topic totals based on skills
+    // Group skills by topic
+    const topicSkillMap: Record<string, string[]> = {};
+    Object.entries(questionMetadata).forEach(([, metadata]) => {
+      const { skill, topic } = metadata;
+      if (!topicSkillMap[topic]) {
+        topicSkillMap[topic] = [];
+      }
+      if (!topicSkillMap[topic].includes(skill)) {
+        topicSkillMap[topic].push(skill);
+      }
+    });
+    
+    // Calculate topic totals
+    Object.entries(topicSkillMap).forEach(([topic, skills]) => {
+      if (!topicProgress[topic]) {
+        topicProgress[topic] = { correct: 0, incorrect: 0, total: 0 };
+      }
+      
+      skills.forEach(skill => {
+        if (skillProgress[skill]) {
+          topicProgress[topic].correct += skillProgress[skill].correct;
+          topicProgress[topic].incorrect += skillProgress[skill].incorrect;
+          topicProgress[topic].total += skillProgress[skill].total;
         }
-      };
-    } else if (section === 'DM') {
-      return {
-        topics: {
-          'Logical Reasoning': { correct: 7, incorrect: 3, total: 10 },
-          'Data Analysis': { correct: 5, incorrect: 6, total: 11 },
-        },
-        skills: {
-          'logical-deduction': { correct: 4, incorrect: 1, total: 5 },
-          'pattern-recognition': { correct: 3, incorrect: 2, total: 5 },
-          'data-interpretation': { correct: 3, incorrect: 3, total: 6 },
-          'decision-analysis': { correct: 2, incorrect: 3, total: 5 },
-        }
-      };
-    } else if (section === 'SJ') {
-      return {
-        topics: {
-          'Professional Behavior': { correct: 6, incorrect: 2, total: 8 },
-          'Ethical Dilemmas': { correct: 4, incorrect: 3, total: 7 },
-        },
-        skills: {
-          'ethical-dilemma': { correct: 4, incorrect: 1, total: 5 },
-          'conflict-resolution': { correct: 3, incorrect: 2, total: 5 },
-          'professional-conduct': { correct: 3, incorrect: 2, total: 5 },
-        }
-      };
-    } else {
-      // Default or other sections
-      return {
-        topics: {},
-        skills: {}
-      };
-    }
+      });
+    });
+    
+    return {
+      topics: topicProgress,
+      skills: skillProgress
+    };
   } catch (error) {
     console.error('Error fetching user progress:', error);
-    throw error;
+    return {
+      topics: {},
+      skills: {}
+    };
   }
 }

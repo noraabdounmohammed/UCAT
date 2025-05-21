@@ -2,15 +2,15 @@ import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { PracticeFilters } from './PracticeFilters';
 import { PracticeSession } from './PracticeSession';
-import { Target, ArrowRight, Calculator, BookOpen, Brain, Scale, Loader2 } from 'lucide-react';
+import { Target, ArrowRight, Calculator, BookOpen, Brain, Scale, Loader2, ArrowLeft } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 // UI components
 import { cn } from '@/lib/utils';
 import { getAvailableSections } from '@/utils/questionBank';
-import { fetchQuestions, fetchQuestionCounts, fetchUserProgress } from '@/lib/questions';
+import { fetchQuestions, fetchQuestionCounts, fetchUserProgress, fetchDynamicTopicStructure } from '@/lib/questions';
 import { toast } from 'sonner';
 
-import { PracticeFilterOptions } from '@/types/practice';
+import { PracticeFilterOptions, ProgressData } from '@/types/practice';
 import { Question } from '@/utils/questionBank';
 
 // Use the PracticeFilterOptions type directly from the practice types
@@ -27,10 +27,10 @@ const SECTION_DETAILS: Record<string, { name: string, icon: LucideIcon, descript
 interface PracticeSectionProps {
   onPracticeStart?: (section: string) => void;
   onMockStart?: (type: 'timed' | 'untimed') => void;
-  onRecommendationAction?: (id: string, action: string) => void;
+  onBackToDashboard?: () => void;
 }
 
-export function PracticeSection({ onPracticeStart, onMockStart, onRecommendationAction }: PracticeSectionProps): JSX.Element {
+export function PracticeSection({ onPracticeStart, onMockStart, onBackToDashboard }: PracticeSectionProps): JSX.Element {
   const [activeSection, setActiveSection] = useState('QR');
   const [isLoading, setIsLoading] = useState(false);
   const [loadingSections, setLoadingSections] = useState(true);
@@ -40,16 +40,19 @@ export function PracticeSection({ onPracticeStart, onMockStart, onRecommendation
     skillCounts: Record<string, number>;
   }>();
   const [userProgress, setUserProgress] = useState<{
-    topics: Record<string, { correct: number; incorrect: number; total: number }>;
-    skills: Record<string, { correct: number; incorrect: number; total: number }>;
+    topics: Record<string, ProgressData>;
+    skills: Record<string, ProgressData>;
   }>();
   const [filters, setFilters] = useState<FilterType>({
+    section: 'QR',
     topics: [],
     microSkills: [],
-    difficulty: 'medium' // Default to medium difficulty instead of 'all'
+    difficulty: 'medium', // Default to medium difficulty instead of 'all'
+    interactionStatus: [] // Initialize with empty array
   });
   const [questions, setQuestions] = useState<Question[]>([]);
   const [showPractice, setShowPractice] = useState(false);
+  const [mode, setMode] = useState<'filter' | 'practice'>('filter');
 
   // Load available sections from the database
   useEffect(() => {
@@ -82,17 +85,27 @@ export function PracticeSection({ onPracticeStart, onMockStart, onRecommendation
     const loadInitialData = async () => {
       setIsLoading(true);
       try {
+        // Fetch dynamic topic structure
+        await fetchDynamicTopicStructure(activeSection);
+        
         // Fetch question counts
         const counts = await fetchQuestionCounts(activeSection);
         setQuestionCounts(counts);
 
         // Fetch user progress data
         const progress = await fetchUserProgress(activeSection);
-        // Type assertion to ensure compatibility with state type
-        setUserProgress(progress as {
-          topics: Record<string, { correct: number; incorrect: number; total: number }>;
-          skills: Record<string, { correct: number; incorrect: number; total: number }>;
+        setUserProgress(progress);
+        
+        // Reset filters when changing sections
+        setFilters({
+          section: activeSection,
+          topics: [],
+          microSkills: [],
+          difficulty: 'medium',
+          interactionStatus: []
         });
+        
+        console.log(`Loaded data for section: ${activeSection}`);
       } catch (err) {
         console.error('Error loading initial data:', err);
         toast.error('Failed to load question data');
@@ -105,51 +118,118 @@ export function PracticeSection({ onPracticeStart, onMockStart, onRecommendation
   }, [activeSection]);
 
   const handleFiltersChange = (newFilters: FilterType) => {
-    setFilters(newFilters);
+    // Always ensure the section is set in the filters
+    setFilters({
+      ...newFilters,
+      section: activeSection
+    });
   };
 
-  const handleStartPractice = () => {
-    setIsLoading(true);
-    
-    // Call the onPracticeStart prop if provided
-    if (onPracticeStart) {
-      onPracticeStart(activeSection);
-    }
-    
-    // Fetch questions based on filters
-    fetchQuestions({
-      section: activeSection,
-      topics: filters.topics,
-      microSkills: filters.microSkills,
-      difficulty: filters.difficulty
-    })
-      .then((questions) => {
-        if (questions.length === 0) {
-          toast.error('No questions found with the selected filters. Try adjusting your filters.');
-          setIsLoading(false);
-          return;
-        }
-        
-        setQuestions(questions);
-        setShowPractice(true);
+  const handleStartPractice = async () => {
+    console.log('handleStartPractice called with filters:', filters);
+    try {
+      setIsLoading(true);
+      
+      // Validate filters - either topics or skills must be selected
+      const hasTopics = filters.topics.length > 0;
+      const hasSkills = filters.microSkills.length > 0;
+      
+      console.log('Filter validation:', { hasTopics, hasSkills, microSkills: filters.microSkills });
+      
+      if (!hasTopics && !hasSkills) {
+        toast.error('Please select at least one topic or skill to practice');
         setIsLoading(false);
-      })
-      .catch((error) => {
-        console.error('Error fetching questions:', error);
-        toast.error('Failed to load questions. Please try again.');
-        setIsLoading(false);
+        return;
+      }
+      
+      // Call the onPracticeStart prop if provided with all filter information
+      if (onPracticeStart) {
+        // Convert filters to a serializable format and pass to the callback
+        onPracticeStart(activeSection);
+        return; // Early return as we're navigating away
+      }
+      
+      console.log('Fetching questions with filters:', {
+        section: activeSection,
+        topics: filters.topics,
+        skills: filters.microSkills,
+        difficulty: filters.difficulty
       });
+      
+      // Fetch questions based on filters
+      const fetchedQuestions = await fetchQuestions({...filters, section: activeSection});
+      console.log('Fetched questions:', fetchedQuestions);
+      
+      if (!fetchedQuestions || fetchedQuestions.length === 0) {
+        toast.error('No questions found with the selected filters. Try different filters.');
+        setIsLoading(false);
+        return;
+      }
+      
+      // Update state
+      setQuestions(fetchedQuestions);
+      setMode('practice');
+      setShowPractice(true);
+      setIsLoading(false);
+      
+      console.log('Practice session started with', fetchedQuestions.length, 'questions');
+    } catch (error) {
+      console.error('Error starting practice:', error);
+      toast.error('Failed to load questions. Please try again.');
+      setIsLoading(false);
+    }
   };
 
-  const handlePracticeComplete = () => {
-    setShowPractice(false);
-    setQuestions([]);
+  const handlePracticeComplete = async () => {
+    try {
+      // Refresh user progress after completing practice
+      const updatedProgress = await fetchUserProgress(activeSection);
+      setUserProgress(updatedProgress);
+      
+      // Reset to filter selection
+      setMode('filter');
+      setShowPractice(false);
+      setQuestions([]);
+      
+      toast.success('Practice completed! Your progress has been updated.');
+    } catch (error) {
+      console.error('Error updating progress:', error);
+      toast.error('Failed to update progress. Please try again.');
+    }
+  };
+  
+  const handleBackToDashboard = () => {
+    if (onBackToDashboard) {
+      onBackToDashboard();
+    } else {
+      // Fallback if no callback provided
+      setMode('filter');
+      setShowPractice(false);
+    }
   };
 
-  const hasSelectedTopics = filters.topics.length > 0 || filters.microSkills.length > 0;
+  // Check if any topics or skills are selected directly in the button's disabled prop
 
-  if (showPractice && questions.length > 0) {
-    return <PracticeSession questions={questions} onComplete={handlePracticeComplete} />;
+  if (mode === 'practice' && showPractice && questions.length > 0) {
+    return (
+      <div className="max-w-4xl mx-auto">
+        <div className="mb-6 flex items-center gap-2">
+          <Button 
+            variant="ghost" 
+            size="icon" 
+            onClick={handleBackToDashboard}
+            className="rounded-full"
+          >
+            <ArrowLeft className="h-5 w-5" />
+          </Button>
+          <h1 className="text-2xl font-bold">Target Practice</h1>
+        </div>
+        <PracticeSession 
+          questions={questions} 
+          onComplete={handlePracticeComplete} 
+        />
+      </div>
+    );
   }
 
   return (
@@ -224,29 +304,6 @@ export function PracticeSection({ onPracticeStart, onMockStart, onRecommendation
             )}
           </div>
         </div>
-
-        {/* Recommendations section */}
-        <div className="bg-white rounded-2xl border border-gray-200/80 shadow-sm p-6 md:p-8 space-y-6">
-          <div className="flex items-center justify-between border-b border-gray-100 pb-4">
-            <h2 className="text-lg md:text-xl font-medium text-gray-900">Recommended Practice</h2>
-          </div>
-          
-          <div className="grid gap-4">
-            <div className="p-4 border border-indigo-100 rounded-lg bg-indigo-50/50 flex justify-between items-center">
-              <div>
-                <h3 className="font-medium text-indigo-900">Quantitative Reasoning: Percentages</h3>
-                <p className="text-sm text-indigo-700">Improve your percentage calculation skills</p>
-              </div>
-              <Button 
-                onClick={() => onRecommendationAction && onRecommendationAction('rec-1', 'start')}
-                size="sm"
-                className="bg-indigo-600 hover:bg-indigo-700 text-white"
-              >
-                Practice Now
-              </Button>
-            </div>
-          </div>
-        </div>
         
         {/* Topic selection with enhanced aesthetics */}
         {activeSection && (
@@ -271,20 +328,11 @@ export function PracticeSection({ onPracticeStart, onMockStart, onRecommendation
                   isLoading={isLoading}
                 />
 
-                <div className="pt-4 border-t border-gray-100 flex justify-between">
-                  {/* Mock Exam button */}
-                  <Button
-                    onClick={() => onMockStart && onMockStart('timed')}
-                    variant="outline"
-                    className="border-indigo-200 text-indigo-700 hover:bg-indigo-50"
-                  >
-                    Start Mock Exam
-                  </Button>
-                  
+                <div className="pt-4 border-t border-gray-100 flex justify-end">
                   {/* Start Practice button */}
                   <Button
                     onClick={handleStartPractice}
-                    disabled={!hasSelectedTopics || isLoading}
+                    disabled={(filters.topics.length === 0 && filters.microSkills.length === 0) || isLoading}
                     className="bg-gradient-to-r from-indigo-600 to-blue-600 hover:from-indigo-700 hover:to-blue-700 text-white px-6"
                   >
                     {isLoading ? (

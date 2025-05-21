@@ -3,6 +3,7 @@ import { useUser } from '@supabase/auth-helpers-react';
 import { Routes, Route, Navigate } from 'react-router-dom';
 import Dashboard from '@/components/dashboard/Dashboard';
 import { MockExam } from '@/pages/MockExam';
+import { QuestionPracticePage } from '@/pages/QuestionPracticePage';
 import { MainLayout } from '@/components/layout/MainLayout';
 import { AuthForm } from '@/components/auth/AuthForm';
 import { DashboardProps } from '@/types/dashboard';
@@ -121,7 +122,7 @@ const mockUserData: DashboardProps['userData'] = {
 
 function App() {
   const [loading, setLoading] = useState(true);
-  const [userData, setUserData] = useState<DashboardProps['userData']>(mockUserData);
+  const [userData] = useState<DashboardProps['userData']>(mockUserData);
   const [currentPage, setCurrentPage] = useState<'dashboard' | 'mock'>('dashboard');
   
   // We need the user object for authentication state
@@ -135,25 +136,12 @@ function App() {
     return () => clearTimeout(timer);
   }, []);
 
-  // Handlers
-  const handlePracticeStart = (section: string) => {
-    console.log(`Starting practice for section: ${section}`);
-    alert(`Starting practice for ${section}`);
+  // Mock exam handler
+  const handleMockStart = () => {
+    setCurrentPage('mock');
   };
   
-  const handleRecommendationAction = (id: string, action: string) => {
-    if (action === 'dismiss') {
-      setUserData(prev => ({
-        ...prev,
-        recommendations: prev.recommendations.filter(rec => rec.id !== id)
-      }));
-      console.log(`Dismissed recommendation: ${id}`);
-    } else if (action === 'start') {
-      const rec = userData.recommendations.find(r => r.id === id);
-      console.log(`Starting recommendation: ${rec?.title}`);
-      alert(`Starting: ${rec?.title}`);
-    }
-  };
+  // Recommendation action handler removed as part of the recommended practice box removal
 
   if (!user) {
     return (
@@ -165,15 +153,13 @@ function App() {
   
   return (
     <Routes>
-      {/* Main App Routes */}
+      {/* Single Main Route with conditional rendering based on currentPage */}
       <Route path="/" element={
         <MainLayout currentPage={currentPage} onNavigate={setCurrentPage}>
           {currentPage === 'dashboard' ? (
             <Dashboard 
               userData={userData}
-              onPracticeStart={handlePracticeStart}
-              onMockStart={() => setCurrentPage('mock')}
-              onRecommendationAction={handleRecommendationAction}
+              onMockStart={handleMockStart}
               isLoading={loading}
             />
           ) : (
@@ -182,7 +168,10 @@ function App() {
         </MainLayout>
       } />
       
-      {/* Redirect any unknown routes to home */}
+      {/* Dedicated route for Question Practice without sidebar */}
+      <Route path="/practice" element={<QuestionPracticePage />} />
+      
+      {/* Redirect any routes to home */}
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
   );

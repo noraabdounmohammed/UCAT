@@ -28,7 +28,7 @@ const PracticePage: React.FC = () => {
   const [questions, setQuestions] = useState<Question[]>([]);
   const [loading, setLoading] = useState(false);
   // We'll use a different approach for loading state
-  const [_, setLoadingCounts] = useState(true); // Using _ to indicate unused variable
+  const [, setLoadingCounts] = useState(true); // Using empty slot to indicate unused variable
   const [error, setError] = useState<Error | null>(null);
   
   // Load question counts on mount
