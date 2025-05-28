@@ -1,16 +1,16 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
 import { PracticeFilters } from './PracticeFilters';
 import { ModernPracticeSession, QuestionData } from './ModernPracticeSession';
 import { Target, ArrowRight, Calculator, BookOpen, Brain, Scale, Loader2 } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { getAvailableSections, Question } from '@/utils/questionBank';
+import { getAvailableSections } from '@/utils/questionBank';
 import { fetchQuestions, fetchQuestionCounts, fetchDynamicTopicStructure, countFilteredQuestions } from '@/lib/questions';
 import { toast } from 'sonner';
-import { Card, CardContent, CardFooter } from '@/components/ui/card';
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { PracticeFilterOptions, MainTopic, Difficulty, InteractionStatus } from '@/types/practice';
-import { ScrollPreservationWrapper } from './ScrollPreservationWrapper';
+import { Question } from '@/utils/questionBank';
 
 // Section definitions with icons and descriptions
 const SECTION_DETAILS: Record<string, { name: string, icon: LucideIcon, description: string }> = {
@@ -39,17 +39,19 @@ export function PracticeSection({ onPracticeStart }: PracticeSectionProps): JSX.
     microSkills: []
   });
   
-  // Function to update topic structure - we don't need to track the state
-  const setTopicStructure = (structure: Record<string, MainTopic[]>) => {
-    // We use the structure to set filters but don't need to track it as state
-    console.log('Topic structure updated:', Object.keys(structure).length, 'sections');
-  };
+  // No need to store topic structure in state since we're using it directly from the API response
   
   // Question counts by topic and skill
   const [questionCounts, setQuestionCounts] = useState<{
+    topics: Record<string, number>;
+    skills: Record<string, number>;
+    total: number;
     topicCounts: Record<string, number>;
     skillCounts: Record<string, number>;
   }>({
+    topics: {},
+    skills: {},
+    total: 0,
     topicCounts: {},
     skillCounts: {}
   });
@@ -66,6 +68,24 @@ export function PracticeSection({ onPracticeStart }: PracticeSectionProps): JSX.
   // Track filtered question count
   const [filteredCount, setFilteredCount] = useState(0);
   
+  // Clean up debounce timeout when component unmounts
+  useEffect(() => {
+    return () => {
+      if (filterDebounceRef.current) {
+        clearTimeout(filterDebounceRef.current);
+      }
+    };
+  }, []);
+
+  // Clean up debounce timeout when component unmounts
+  useEffect(() => {
+    return () => {
+      if (filterDebounceRef.current) {
+        clearTimeout(filterDebounceRef.current);
+      }
+    };
+  }, []);
+
   // Fetch available sections on component mount
   useEffect(() => {
     const fetchSections = async () => {
@@ -85,7 +105,7 @@ export function PracticeSection({ onPracticeStart }: PracticeSectionProps): JSX.
     };
     
     fetchSections();
-  }, [activeSection]); // Include activeSection in dependency array
+  }, [activeSection]);
   
   // Fetch topic structure and question counts when active section changes
   useEffect(() => {
@@ -98,12 +118,6 @@ export function PracticeSection({ onPracticeStart }: PracticeSectionProps): JSX.
         const structure = await fetchDynamicTopicStructure(activeSection);
         
         if (structure && Array.isArray(structure)) {
-          // Store topic structure for reference
-          const topicsBySection: Record<string, MainTopic[]> = {
-            [activeSection]: structure.map(item => item.topic)
-          };
-          setTopicStructure(topicsBySection);
-          
           // Extract topic names for default selection
           const topicNames = structure.map(item => item.topic);
           
@@ -116,28 +130,10 @@ export function PracticeSection({ onPracticeStart }: PracticeSectionProps): JSX.
         }
         
         // Fetch question counts for the active section
-        const countsData = await fetchQuestionCounts(activeSection);
-        if (countsData) {
-          // Ensure counts is the correct type (Record<string, number>)
-          const topicCounts: Record<string, number> = {};
-          
-          // Extract only the numeric counts from the response
-          // This handles the case where the API might return a complex object
-          if (typeof countsData === 'object' && countsData !== null) {
-            // Use a more specific type for the data structure
-            const data = countsData as Record<string, unknown>;
-            Object.keys(data).forEach(key => {
-              // Only include numeric values in our topicCounts
-              if (typeof data[key] === 'number') {
-                topicCounts[key] = data[key] as number;
-              }
-            });
-          }
-          
-          setQuestionCounts({
-            topicCounts,
-            skillCounts: {}
-          });
+        const counts = await fetchQuestionCounts(activeSection);
+        if (counts) {
+          // Update state with all required properties
+          setQuestionCounts(counts);
           
           // Set up mock user progress data
           if (structure && Array.isArray(structure)) {
@@ -146,8 +142,8 @@ export function PracticeSection({ onPracticeStart }: PracticeSectionProps): JSX.
             
             topicNames.forEach(topic => {
               const topicKey = String(topic);
-              // Safely access the count from topicCounts
-              const count = topicKey in topicCounts ? topicCounts[topicKey] : 0;
+              // Access the topics property from counts
+              const count = counts.topics[topicKey] || 0;
               progressData[topicKey] = { 
                 correct: 0, 
                 incorrect: 0, 
@@ -191,14 +187,13 @@ export function PracticeSection({ onPracticeStart }: PracticeSectionProps): JSX.
         // Transform questions to the format expected by ModernPracticeSession
         const questionData: QuestionData[] = fetchedQuestions.map((q: Question) => ({
           id: q.id,
-          question_stem: q.question_stem,
-          individual_question: q.individual_question,
+          question: q.question_stem || q.individual_question,
           options: q.options,
           correctAnswer: q.correct_answer,
           explanation: q.worked_solution,
           topic: q.main_topic,
-          difficulty: q.difficulty.toLowerCase() as 'easy' | 'medium' | 'hard',
-          tags: [q.micro_skill] // Use micro_skill as tags
+          difficulty: q.difficulty,
+          tags: [q.micro_skill] // Use micro_skill as a tag
         }));
         
         setQuestions(questionData);
@@ -225,24 +220,40 @@ export function PracticeSection({ onPracticeStart }: PracticeSectionProps): JSX.
     setQuestions([]);
   };
   
-  // Handle filter changes
-  const handleFilterChange = (newFilters: PracticeFilterOptions) => {
+  // Debounce timer reference for filter updates
+  const filterDebounceRef = useRef<NodeJS.Timeout | null>(null);
+  
+  // Handle filter changes with debouncing to prevent flickering
+  const handleFilterChange = useCallback((newFilters: PracticeFilterOptions) => {
     const updatedFilters = {
       ...newFilters,
       section: activeSection
     };
+    
+    // Update filter options immediately without triggering count update
     setFilterOptions(updatedFilters);
     
-    // Update filtered count
-    countFilteredQuestions(updatedFilters)
-      .then(count => {
-        setFilteredCount(count);
-      })
-      .catch(error => {
-        console.error('Error counting filtered questions:', error);
-        setFilteredCount(0);
-      });
-  };
+    // Clear any existing timeout to debounce multiple rapid changes
+    if (filterDebounceRef.current) {
+      clearTimeout(filterDebounceRef.current);
+    }
+    
+    // Set a new timeout to update the filtered count after a delay
+    filterDebounceRef.current = setTimeout(() => {
+      // Use the memoized countFilteredQuestions function
+      countFilteredQuestions(updatedFilters)
+        .then(count => {
+          // Only update if the count has actually changed to prevent unnecessary re-renders
+          if (count !== filteredCount) {
+            setFilteredCount(count);
+          }
+        })
+        .catch((error: Error) => {
+          console.error('Error counting filtered questions:', error);
+          setFilteredCount(0);
+        });
+    }, 300); // 300ms debounce delay
+  }, [activeSection, filteredCount]);
   
   // Handle section change
   const handleSectionChange = (section: string) => {
@@ -254,7 +265,7 @@ export function PracticeSection({ onPracticeStart }: PracticeSectionProps): JSX.
   // If loading sections, show skeleton UI
   if (loadingSections) {
     return (
-      <div className="max-w-4xl mx-auto p-4">
+      <div className="max-w-4xl mx-auto pt-4">
         <div className="animate-pulse space-y-4">
           <div className="h-8 bg-gray-200 rounded w-1/3"></div>
           <div className="h-32 bg-gray-200 rounded"></div>
@@ -269,23 +280,20 @@ export function PracticeSection({ onPracticeStart }: PracticeSectionProps): JSX.
       <ModernPracticeSession
         questions={questions}
         onComplete={handleCompletePractice}
+        // section prop removed as it's not in PracticeSessionProps interface
       />
     );
   }
   
   // Render practice setup UI
   return (
-    <div className="max-w-4xl mx-auto pt-8">
-      
-      <div className="flex flex-col space-y-1.5 mb-8">
-        <h3 className="tracking-tight text-lg sm:text-xl font-bold flex items-center gap-2">
-          <Target className="h-5 w-5" />
-          Target Practice
-        </h3>
-        <p className="text-sm text-muted-foreground">
-          Practice questions from specific topics and track your progress
-        </p>
-      </div>
+    <div className="max-w-4xl mx-auto">
+        <div className="mb-6">
+          <h1 className="text-xl sm:text-2xl font-bold mb-2">Practice</h1>
+          <p className="text-sm sm:text-base text-gray-600">
+            Select a section and customize your practice session
+          </p>
+        </div>
       
       <div className="flex flex-wrap gap-2 mb-6">
         {availableSections.map(section => {
@@ -311,19 +319,26 @@ export function PracticeSection({ onPracticeStart }: PracticeSectionProps): JSX.
       
       {!isPracticing && (
         <Card>
-          <CardContent className="pb-3 pt-6">
-            <ScrollPreservationWrapper>
-              <PracticeFilters
-                section={activeSection}
-                filters={filterOptions}
-                onFiltersChange={handleFilterChange}
-                questionCounts={questionCounts}
-                userProgress={userProgress}
-                isLoading={isLoading}
-                filteredQuestionCount={filteredCount}
-                onFilteredCountChange={setFilteredCount}
-              />
-            </ScrollPreservationWrapper>
+          <CardHeader className="pb-3">
+            <CardTitle className="text-lg sm:text-xl font-bold flex items-center gap-2">
+              <Target className="h-5 w-5" />
+              Target Practice
+            </CardTitle>
+            <CardDescription>
+              Practice questions from specific topics and track your progress
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="pb-3">
+            <PracticeFilters
+              section={activeSection}
+              filters={filterOptions}
+              onFiltersChange={handleFilterChange}
+              questionCounts={questionCounts}
+              userProgress={userProgress}
+              isLoading={isLoading}
+              filteredQuestionCount={filteredCount}
+              onFilteredCountChange={setFilteredCount}
+            />
           </CardContent>
           <CardFooter className="px-4 py-3 bg-gray-50 border-t border-gray-100 flex justify-between items-center">
             <div className="text-xs text-gray-500">

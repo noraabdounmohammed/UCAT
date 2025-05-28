@@ -2,6 +2,19 @@
 import { PracticeFilterOptions, TopicStructure } from '@/types/practice';
 import { loadQuestionsForSection, getDynamicQuestionCounts, getDynamicTopicStructure, Question } from '../utils/questionBank';
 
+// Define a type for question with topic property
+interface QuestionWithTopic extends Question {
+  topic?: string;
+}
+
+// Define a type for question with user interaction
+interface QuestionWithInteraction extends Question {
+  user_interaction?: string;
+}
+
+// Cache for storing previously computed question counts to prevent redundant calculations
+const questionCountCache: Record<string, number> = {};
+
 export async function fetchQuestions(filters: PracticeFilterOptions) {
   try {
     // Make sure we have a section specified
@@ -39,7 +52,7 @@ export async function fetchQuestions(filters: PracticeFilterOptions) {
       // Check for topic compatibility with more flexible matching
       const topicQuestions = questions.filter(q => {
         // Get the topic from the question, with fallbacks for different formats
-        const questionTopic = q.main_topic || (q as any).topic;
+        const questionTopic = q.main_topic || (q as QuestionWithTopic).topic;
         if (!questionTopic) return false;
         
         // Check if any of the selected topics match this question
@@ -135,6 +148,113 @@ export async function fetchDynamicTopicStructure(section?: string): Promise<Topi
   } catch (error) {
     console.error('Error in fetchDynamicTopicStructure:', error);
     return [];
+  }
+}
+
+// Create a cache key from filter options to enable memoization
+function createCacheKey(filters: PracticeFilterOptions): string {
+  return JSON.stringify({
+    section: filters.section,
+    topics: [...filters.topics].sort(),
+    microSkills: [...filters.microSkills].sort(),
+    difficulty: Array.isArray(filters.difficulty) ? [...filters.difficulty].sort() : filters.difficulty,
+    interactionStatus: [...filters.interactionStatus].sort()
+  });
+}
+
+/**
+ * Count the number of questions that match the given filters
+ * This function is optimized to prevent flickering by:
+ * 1. Using a cache to avoid redundant calculations
+ * 2. Minimizing console logs that can slow down rendering
+ * 3. Using a single pass through the data where possible
+ */
+export async function countFilteredQuestions(filters: PracticeFilterOptions): Promise<number> {
+  try {
+    // Check if we have a cached result for these exact filters
+    const cacheKey = createCacheKey(filters);
+    if (questionCountCache[cacheKey] !== undefined) {
+      return questionCountCache[cacheKey];
+    }
+    
+    // Make sure we have a section specified
+    if (!filters.section) {
+      return 0;
+    }
+    
+    // Load all questions for the section
+    const allQuestions = await loadQuestionsForSection(filters.section);
+    
+    // If no questions found, return 0
+    if (!allQuestions || allQuestions.length === 0) {
+      questionCountCache[cacheKey] = 0;
+      return 0;
+    }
+    
+    // If no filters are applied, return the total count
+    if (filters.topics.length === 0 && filters.microSkills.length === 0) {
+      const count = allQuestions.length;
+      questionCountCache[cacheKey] = count;
+      return count;
+    }
+    
+    // Filter questions based on selected criteria (using a single pass through the data)
+    const filteredQuestions = allQuestions.filter(question => {
+      // Topic filter
+      if (filters.topics.length > 0) {
+        const questionTopic = question.main_topic || (question as QuestionWithTopic).topic;
+        if (!questionTopic) return false;
+        
+        // Check if any of the selected topics match this question
+        const topicMatches = filters.topics.some(topic => {
+          const topicValue = typeof topic === 'string' ? topic : String(topic);
+          return String(questionTopic).toLowerCase() === topicValue.toLowerCase();
+        });
+        
+        if (!topicMatches) return false;
+      }
+      
+      // Micro skill filter
+      if (filters.microSkills.length > 0) {
+        if (!filters.microSkills.includes(question.micro_skill)) {
+          return false;
+        }
+      }
+      
+      // Difficulty filter
+      if (filters.difficulty) {
+        const difficulties = Array.isArray(filters.difficulty) ? filters.difficulty : [filters.difficulty];
+        if (difficulties.length > 0 && difficulties[0] !== 'adaptive') {
+          const normalizedDifficulty = question.difficulty.toLowerCase();
+          if (!difficulties.some(d => d.toLowerCase() === normalizedDifficulty)) {
+            return false;
+          }
+        }
+      }
+      
+      // Interaction status filter (if applicable)
+      if (filters.interactionStatus && filters.interactionStatus.length > 0) {
+        // In a real app, this would check the user's interaction status with this question
+        // For now, we'll assume all questions are 'unseen' unless specified otherwise
+        const status = (question as QuestionWithInteraction).user_interaction || 'unseen';
+        if (!filters.interactionStatus.includes(status)) {
+          return false;
+        }
+      }
+      
+      // If it passed all filters, include it
+      return true;
+    });
+    
+    const finalCount = filteredQuestions.length;
+    
+    // Cache the result for future use
+    questionCountCache[cacheKey] = finalCount;
+    
+    return finalCount;
+  } catch (error) {
+    console.error('Error counting filtered questions:', error);
+    return 0;
   }
 }
 
