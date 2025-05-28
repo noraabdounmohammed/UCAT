@@ -12,6 +12,10 @@ import { ArrowLeft, BarChart, ChevronDown, ChevronUp, Filter, X } from 'lucide-r
 import { cn } from '@/lib/utils';
 import { AnimatePresence, motion } from 'framer-motion';
 import { useUser } from '@supabase/auth-helpers-react';
+import '../components/practice/apple-styles.css';
+import './apple-page-styles.css';
+import '../components/practice/apple-styles.css';
+import './apple-page-styles.css';
 
 // Define the state type for our reducer
 type PracticeState = {
@@ -232,71 +236,62 @@ export function QuestionPracticePage() {
   
   return (
     <div className={cn(
-      "h-screen w-full flex flex-col bg-slate-50 overflow-hidden",
+      "apple-page",
       mode === 'practice' ? "immersive-mode" : ""
     )} data-component-name="QuestionPracticePage">
-      {/* Minimal Header - only shown when not in practice mode */}
+      {/* Apple-style Header - only shown when not in practice mode */}
       {mode !== 'practice' && (
-        <header className="bg-white border-b border-slate-200 px-4 py-3 flex items-center justify-between shadow-sm z-10">
-          <div className="flex items-center gap-2">
-            <Button 
-              variant="ghost" 
-              size="icon" 
+        <header className="apple-header">
+          <div className="apple-flex apple-items-center apple-gap-md">
+            <button 
+              className="apple-back-button apple-flex apple-items-center"
               onClick={handleBackToDashboard}
-              className="rounded-full hover:bg-slate-100"
             >
-              <ArrowLeft className="h-5 w-5 text-slate-700" />
-            </Button>
-            <h1 className="text-xl font-bold text-slate-800">Target Practice</h1>
+              <ArrowLeft className="h-5 w-5" />
+              <span>Back</span>
+            </button>
+            <h1 className="apple-header-title">Target Practice</h1>
           </div>
           
-          <div className="flex items-center gap-2">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={toggleStats}
+          <div className="apple-flex apple-items-center apple-gap-sm">
+            <button
               className={cn(
-                "flex items-center gap-1 text-sm font-medium",
-                showStats ? "bg-indigo-50 text-indigo-700 border-indigo-200" : "text-slate-600"
+                "apple-button apple-button-icon",
+                showStats ? "apple-button-primary" : "apple-button-secondary"
               )}
+              onClick={toggleStats}
+              aria-label="Statistics"
             >
               <BarChart className="h-4 w-4" />
-              <span className="hidden sm:inline">Stats</span>
-              {showStats ? <ChevronUp className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />}
-            </Button>
+            </button>
             
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={toggleFilters}
+            <button
               className={cn(
-                "flex items-center gap-1 text-sm font-medium",
-                showFilters ? "bg-indigo-50 text-indigo-700 border-indigo-200" : "text-slate-600"
+                "apple-button apple-button-icon",
+                showFilters ? "apple-button-primary" : "apple-button-secondary"
               )}
+              onClick={toggleFilters}
+              aria-label="Filters"
             >
               <Filter className="h-4 w-4" />
-              <span className="hidden sm:inline">Filters</span>
-              {showFilters ? <ChevronUp className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />}
-            </Button>
+            </button>
           </div>
         </header>
       )}
       
       {/* Main content */}
-      <main className="flex-1 overflow-hidden relative">
+      <main className="apple-content">
         {mode === 'practice' ? (
           // Practice mode content
           <div className="h-full w-full relative">
             {/* Exit button at the top-right corner */}
             <div className="absolute top-4 right-4 z-50">
-              <Button 
-                variant="outline" 
-                size="sm"
-                className="flex items-center gap-1.5 bg-white"
+              <button 
+                className="apple-button apple-button-secondary"
                 onClick={handlePracticeComplete}
               >
                 Exit Session
-              </Button>
+              </button>
             </div>
             
             {/* Practice session content */}
@@ -311,16 +306,16 @@ export function QuestionPracticePage() {
                 onComplete={handlePracticeComplete}
               />
             ) : (
-              <div className="h-full w-full flex flex-col items-center justify-center p-6">
-                <div className="bg-white rounded-xl shadow-md p-8 max-w-md text-center">
-                  <h2 className="text-xl font-semibold text-slate-800 mb-4">No Questions Available</h2>
-                  <p className="text-slate-600 mb-6">There are no questions available for the selected topics. Please try selecting different topics.</p>
-                  <Button 
+              <div className="h-full w-full apple-flex-col apple-items-center justify-center p-6">
+                <div className="apple-card apple-p-md max-w-md text-center">
+                  <h2 className="apple-heading-1 apple-mb-sm">No Questions Available</h2>
+                  <p className="apple-body apple-mb-md">There are no questions available for the selected topics. Please try selecting different topics.</p>
+                  <button 
                     onClick={handleBackToDashboard} 
-                    className="px-6"
+                    className="apple-button apple-button-primary"
                   >
                     Return to Dashboard
-                  </Button>
+                  </button>
                 </div>
               </div>
             )}
@@ -328,9 +323,9 @@ export function QuestionPracticePage() {
         ) : (
           // Filter mode content
           <div className="container mx-auto py-6 px-4 sm:px-6 lg:px-8">
-            <div className="mb-6">
-              <h1 className="text-2xl font-bold text-slate-900 mb-1">Practice Questions</h1>
-              <p className="text-slate-500">Select topics and skills to practice</p>
+            <div className="apple-mb-md">
+              <h1 className="apple-heading-1">Practice Questions</h1>
+              <p className="apple-caption">Select topics and skills to practice</p>
             </div>
             {/* Stats Panel */}
             <AnimatePresence>
@@ -340,30 +335,35 @@ export function QuestionPracticePage() {
                   animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0, y: -20 }}
                   transition={{ duration: 0.2 }}
-                  className="w-full max-w-3xl mb-6 bg-white rounded-xl shadow-md overflow-hidden"
+                  className="w-full max-w-3xl mb-6 apple-card"
                 >
-                  <div className="p-5 border-b border-slate-200 flex justify-between items-center">
-                    <h2 className="text-lg font-semibold text-slate-800">Your Progress</h2>
-                    <Button variant="ghost" size="icon" onClick={() => setShowStats(false)}>
-                      <X className="h-4 w-4 text-slate-500" />
-                    </Button>
+                  <div className="apple-card-header">
+                    <h2 className="apple-card-title">Your Progress</h2>
+                    <button className="apple-button apple-button-icon apple-button-secondary" onClick={() => setShowStats(false)}>
+                      <X className="h-4 w-4" />
+                    </button>
                   </div>
                   
-                  <div className="p-5 space-y-4">
+                  <div className="apple-card-content">
                     {Object.entries(userProgress.topics).length > 0 ? (
                       <div className="space-y-4">
                         {Object.entries(userProgress.topics).slice(0, 5).map(([topic, data]) => (
                           <div key={topic} className="space-y-1">
-                            <div className="flex justify-between text-sm">
-                              <span className="font-medium text-slate-700">{topic}</span>
-                              <span className="text-slate-500">{data.correct}/{data.total} completed</span>
+                            <div className="apple-flex apple-justify-between">
+                              <span className="apple-body">{topic}</span>
+                              <span className="apple-caption">{data.correct}/{data.total} completed</span>
                             </div>
-                            <Progress value={(data.correct / Math.max(data.total, 1)) * 100} className="h-2" />
+                            <div className="apple-progress-container">
+                              <div 
+                                className="apple-progress-bar" 
+                                style={{ width: `${(data.correct / Math.max(data.total, 1)) * 100}%` }}
+                              ></div>
+                            </div>
                           </div>
                         ))}
                       </div>
                     ) : (
-                      <p className="text-slate-500 text-center py-4">
+                      <p className="apple-caption text-center py-4">
                         No progress data available yet. Start practicing to see your stats!
                       </p>
                     )}
@@ -380,13 +380,13 @@ export function QuestionPracticePage() {
                   animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0, y: -20 }}
                   transition={{ duration: 0.2 }}
-                  className="w-full max-w-3xl mb-6 bg-white rounded-xl shadow-md overflow-hidden"
+                  className="w-full max-w-3xl mb-6 apple-card"
                 >
-                  <div className="p-5 border-b border-slate-200 flex justify-between items-center">
-                    <h2 className="text-lg font-semibold text-slate-800">Customize Your Practice</h2>
-                    <Button variant="ghost" size="icon" onClick={() => setShowFilters(false)}>
-                      <X className="h-4 w-4 text-slate-500" />
-                    </Button>
+                  <div className="apple-card-header">
+                    <h2 className="apple-card-title">Customize Your Practice</h2>
+                    <button className="apple-button apple-button-icon apple-button-secondary" onClick={() => setShowFilters(false)}>
+                      <X className="h-4 w-4" />
+                    </button>
                   </div>
                   
                   <div className="p-5">

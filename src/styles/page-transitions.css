@@ -1,0 +1,35 @@
+/* 
+ * Page Transitions CSS
+ * This file contains simplified styles to prevent page flashing
+ */
+
+/* Prevent layout shifts during navigation */
+.page-content {
+  min-height: 100vh;
+}
+
+/* Simple fade transitions */
+.fade-in {
+  animation: fadeIn 0.3s ease-in-out;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+/* Prevent layout shifts during content loading */
+.content-wrapper {
+  min-height: 200px;
+}
+
+/* Simple anti-flicker class */
+.no-flicker {
+  transform: translateZ(0);
+}
+
+/* Prevent scroll jumps */
+html, body {
+  scroll-behavior: smooth;
+  overflow-anchor: none;
+}

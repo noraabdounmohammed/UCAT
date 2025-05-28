@@ -1,0 +1,54 @@
+/* 
+ * Layout transitions and anti-flickering CSS
+ * This file contains styles to prevent layout flickering and improve transitions
+ */
+
+/* Apply GPU acceleration to reduce flickering */
+.will-change-contents {
+  will-change: contents;
+  transform: translateZ(0);
+  backface-visibility: hidden;
+}
+
+/* Prevent scroll anchoring from causing jumps */
+.overflow-anchor-none {
+  overflow-anchor: none;
+}
+
+/* Improve rendering performance */
+.contain-paint {
+  contain: paint;
+}
+
+/* Smooth transitions for layout changes */
+.content-container {
+  transition: opacity 150ms ease;
+  min-height: 200px; /* Prevent collapse during loading */
+}
+
+/* Prevent layout shifts during loading */
+.layout-stable {
+  contain-intrinsic-size: auto;
+  content-visibility: auto;
+}
+
+/* Optimize rendering for large content areas */
+main {
+  isolation: isolate;
+}
+
+/* Prevent flickering during state changes */
+.transition-opacity {
+  transition-property: opacity;
+  transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Prevent FOUC (Flash of Unstyled Content) */
+.opacity-transition {
+  opacity: 0;
+  animation: fadeIn 150ms ease forwards;
+}
+
+@keyframes fadeIn {
+  to { opacity: 1; }
+}

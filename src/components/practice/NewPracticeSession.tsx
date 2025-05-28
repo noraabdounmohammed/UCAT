@@ -2,11 +2,10 @@ import { useState, useEffect, useRef, useMemo } from 'react';
 import { useSupabaseClient, useUser } from '@supabase/auth-helpers-react';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
-import { Progress } from '@/components/ui/progress';
 import { Clock, BarChart3, Flag, SkipForward, CheckCircle, XCircle, ArrowRight, BookOpen, X } from 'lucide-react';
-import { Card } from '@/components/ui/card';
 import { cn } from '@/lib/utils';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import './apple-styles.css';
 
 // Define properly typed interfaces for the centralized database questions
 export interface QuestionData {
@@ -374,13 +373,18 @@ export function NewPracticeSession({ questions, onComplete }: PracticeSessionPro
   // Render the component
   return (
     <div className="flex flex-col h-full bg-slate-50">
-      {/* Top navigation bar */}
-      <div className="bg-white border-b border-slate-200 p-4 flex justify-between items-center">
+      {/* Top navigation bar - Apple style */}
+      <div className="apple-nav flex justify-between items-center">
         <div className="flex items-center gap-4">
-          <div className="text-sm text-slate-500">
+          <div className="apple-caption">
             Question {currentIndex + 1} of {questions.length}
           </div>
-          <Progress value={progressPercentage} className="w-32 h-2" />
+          <div className="w-32 apple-progress-track">
+            <div 
+              className="apple-progress-bar" 
+              style={{ width: `${progressPercentage}%` }}
+            ></div>
+          </div>
         </div>
         
         <div className="flex items-center gap-4">
@@ -468,7 +472,7 @@ export function NewPracticeSession({ questions, onComplete }: PracticeSessionPro
       </div>
       
       {/* Main content area */}
-      <div className="flex-1 overflow-y-auto p-4 md:p-6">
+      <div className="flex-1 overflow-y-auto p-4 md:p-6 bg-[#F5F5F7]">
         <div className="max-w-3xl mx-auto">
           {showStats ? (
             <div className="bg-white rounded-xl shadow-md p-6">
@@ -485,7 +489,7 @@ export function NewPracticeSession({ questions, onComplete }: PracticeSessionPro
           ) : (
             <div 
               className={cn(
-                "bg-white rounded-xl shadow-md p-6 transition-opacity",
+                "apple-card p-6 transition-opacity apple-fade-in",
                 isTransitioning ? "opacity-0" : "opacity-100"
               )}
               style={{ 
@@ -497,24 +501,27 @@ export function NewPracticeSession({ questions, onComplete }: PracticeSessionPro
                 transition: 'opacity 0.15s ease-in-out'
               }}
             >
-              <Card className="border-none shadow-sm rounded-xl overflow-hidden">
                 {showFeedback && (
                   <div className={cn(
-                    "px-6 py-3 text-sm font-medium",
+                    "px-6 py-4 apple-subheading apple-fade-in",
                     selectedAnswers[questionId] === questionContent.correctAnswer ? 
-                      "bg-green-50 text-green-700" : "bg-red-50 text-red-700"
+                      "bg-[#E9F9EF] text-[#34C759]" : "bg-[#FFEBE9] text-[#FF3B30]"
                   )}>
                     {selectedAnswers[questionId] === questionContent.correctAnswer ? (
                       <div className="flex justify-center gap-4 mt-6">
-                        <Button 
-                          variant="outline" 
+                        <button 
+                          className="apple-button apple-button-secondary"
                           onClick={handleExitClick}
                         >
                           Exit Session
-                        </Button>
-                        <Button onClick={handleNextQuestion} disabled={isTransitioning}>
+                        </button>
+                        <button 
+                          className="apple-button apple-button-primary"
+                          onClick={handleNextQuestion} 
+                          disabled={isTransitioning}
+                        >
                           Next Question <ArrowRight className="ml-2 h-4 w-4" />
-                        </Button>
+                        </button>
                       </div>
                     ) : (
                       <div className="flex items-center gap-2">
@@ -525,23 +532,23 @@ export function NewPracticeSession({ questions, onComplete }: PracticeSessionPro
                   </div>
                 )}
                 
-                <div className="p-6 space-y-6">
+                <div className="p-6 space-y-6 apple-text">
                   {/* Question Stem */}
                   {questionContent.stem && (
-                    <div className="bg-slate-50 rounded-lg p-4 border border-slate-100">
-                      <p className="text-slate-700 text-sm leading-relaxed whitespace-pre-line">
+                    <div className="bg-[#F2F2F7] rounded-lg p-4 border border-[#E5E5EA]">
+                      <p className="text-[#1D1D1F] text-[15px] leading-relaxed whitespace-pre-line">
                         {questionContent.stem}
                       </p>
                     </div>
                   )}
 
                   {/* Question */}
-                  <div className="text-base md:text-lg font-medium text-slate-800">
+                  <div className="apple-heading">
                     {questionContent.question}
                   </div>
 
                   {/* Options */}
-                  <div className="space-y-3">
+                  <div className="space-y-3 apple-slide-up">
                     {questionContent.options.map((option, index) => {
                       const optionLetter = String.fromCharCode(65 + index);
                       const optionText = typeof option === 'string' 
@@ -557,45 +564,23 @@ export function NewPracticeSession({ questions, onComplete }: PracticeSessionPro
                           disabled={showFeedback || isTransitioning}
                           onClick={() => handleAnswerSelect(optionLetter)}
                           className={cn(
-                            "w-full text-left flex items-center gap-3 p-4 rounded-lg border",
-                            "transition-all duration-200 focus:outline-none",
-                            showFeedback ? (
-                              isCorrect
-                                ? "bg-green-50 border-green-200 text-green-800"
-                                : isSelected
-                                ? "bg-red-50 border-red-200 text-red-800"
-                                : "bg-slate-50 border-slate-200 text-slate-500"
-                            ) : (
-                              isSelected
-                                ? "bg-indigo-50 border-indigo-200 text-indigo-700"
-                                : "bg-white border-slate-200 hover:bg-slate-50 text-slate-700"
-                            )
+                            "apple-option",
+                            showFeedback && isCorrect && "correct",
+                            showFeedback && isSelected && !isCorrect && "incorrect",
+                            !showFeedback && isSelected && "selected"
                           )}
                         >
-                          <div className={cn(
-                            "flex items-center justify-center w-7 h-7 rounded-full text-sm font-medium",
-                            showFeedback ? (
-                              isCorrect
-                                ? "bg-green-100 text-green-700"
-                                : isSelected
-                                ? "bg-red-100 text-red-700"
-                                : "bg-slate-200 text-slate-600"
-                            ) : (
-                              isSelected
-                                ? "bg-indigo-100 text-indigo-700"
-                                : "bg-slate-100 text-slate-600"
-                            )
-                          )}>
+                          <div className="apple-option-indicator">
                             {optionLetter}
                           </div>
-                          <span className="text-base flex-1">{optionText}</span>
+                          <span className="apple-body flex-1">{optionText}</span>
                           {showFeedback && (
                             <div>
                               {isCorrect && (
-                                <CheckCircle className="h-5 w-5 text-green-600" />
+                                <CheckCircle className="h-5 w-5 text-[#34C759]" />
                               )}
                               {isSelected && !isCorrect && (
-                                <XCircle className="h-5 w-5 text-red-600" />
+                                <XCircle className="h-5 w-5 text-[#FF3B30]" />
                               )}
                             </div>
                           )}
@@ -606,38 +591,37 @@ export function NewPracticeSession({ questions, onComplete }: PracticeSessionPro
 
                   {/* Worked Solution */}
                   {showFeedback && questionContent.explanation && (
-                    <div className="bg-indigo-50 border border-indigo-100 rounded-lg p-4 space-y-2">
-                      <div className="flex items-center gap-2 text-indigo-700">
+                    <div className="bg-[#F0F0FF] border border-[#E0E0FF] rounded-lg p-4 space-y-2 mt-4">
+                      <div className="flex items-center gap-2 text-[#007AFF]">
                         <BookOpen className="h-4 w-4" />
                         <h3 className="font-medium">Explanation</h3>
                       </div>
-                      <p className="text-sm leading-relaxed text-slate-700">
+                      <p className="text-[15px] leading-relaxed text-[#1D1D1F]">
                         {questionContent.explanation}
                       </p>
                     </div>
                   )}
                 </div>
-              </Card>
             </div>
           )}
         </div>
       </div>
       
-      {/* Bottom navigation bar */}
-      <div className="bg-white border-t border-slate-200 p-4 flex justify-between items-center">
+      {/* Bottom navigation bar - Apple style */}
+      <div className="apple-nav flex justify-between items-center">
         <div className="flex items-center gap-2">
           {showFeedback && selectedAnswers[questionId] === questionContent.correctAnswer ? (
-            <div className="flex items-center gap-1.5 text-green-600 text-sm font-medium">
+            <div className="flex items-center gap-1.5 text-[#34C759] apple-caption">
               <CheckCircle className="h-4 w-4" />
               <span>Correct</span>
             </div>
           ) : showFeedback ? (
-            <div className="flex items-center gap-1.5 text-red-600 text-sm font-medium">
+            <div className="flex items-center gap-1.5 text-[#FF3B30] apple-caption">
               <XCircle className="h-4 w-4" />
               <span>Incorrect</span>
             </div>
           ) : (
-            <div className="text-sm text-slate-500">
+            <div className="apple-caption text-[#8E8E93]">
               Select an answer to continue
             </div>
           )}
@@ -645,27 +629,24 @@ export function NewPracticeSession({ questions, onComplete }: PracticeSessionPro
         
         <div className="flex items-center gap-3">
           {/* Exit button always visible */}
-          <Button 
-            variant="outline"
+          <button 
+            className="apple-button apple-button-secondary flex items-center gap-1.5"
             onClick={handleExitClick}
-            className="px-4 py-2 flex items-center gap-1.5"
-            size="lg"
           >
             <X className="h-4 w-4 mr-1" />
             Exit
-          </Button>
+          </button>
           
           {/* Next question button only visible after answering */}
           {showFeedback && (
-            <Button 
+            <button 
               onClick={handleNextQuestion}
-              className="px-6 py-2 flex items-center gap-1.5"
-              size="lg"
+              className="apple-button apple-button-primary flex items-center gap-1.5"
               disabled={isTransitioning}
             >
               {currentIndex === questions.length - 1 ? 'Complete Session' : 'Next Question'}
-              {currentIndex !== questions.length - 1 && <ArrowRight className="h-4 w-4" />}
-            </Button>
+              {currentIndex !== questions.length - 1 && <ArrowRight className="h-4 w-4 ml-1" />}
+            </button>
           )}
         </div>
       </div>

@@ -1,0 +1,212 @@
+/* Apple Human Interface Guidelines inspired styles */
+
+:root {
+  /* Apple's color palette */
+  --apple-blue: #007AFF;
+  --apple-blue-light: #E5F2FF;
+  --apple-green: #34C759;
+  --apple-green-light: #E9F9EF;
+  --apple-red: #FF3B30;
+  --apple-red-light: #FFEBE9;
+  --apple-gray: #8E8E93;
+  --apple-gray-light: #F2F2F7;
+  --apple-gray-medium: #AEAEB2;
+  --apple-background: #F5F5F7;
+  --apple-card-background: #FFFFFF;
+  --apple-text-primary: #1D1D1F;
+  --apple-text-secondary: #86868B;
+  
+  /* Apple's spacing */
+  --apple-spacing-xs: 4px;
+  --apple-spacing-sm: 8px;
+  --apple-spacing-md: 16px;
+  --apple-spacing-lg: 24px;
+  --apple-spacing-xl: 32px;
+  
+  /* Apple's border radius */
+  --apple-radius-sm: 6px;
+  --apple-radius-md: 10px;
+  --apple-radius-lg: 14px;
+  
+  /* Apple's shadows */
+  --apple-shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.05);
+  --apple-shadow-md: 0 2px 8px rgba(0, 0, 0, 0.08);
+}
+
+/* Typography - Using system font stack that resembles SF Pro */
+.apple-text {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+}
+
+.apple-heading {
+  font-weight: 600;
+  color: var(--apple-text-primary);
+  font-size: 20px;
+  line-height: 1.3;
+}
+
+.apple-subheading {
+  font-weight: 500;
+  color: var(--apple-text-primary);
+  font-size: 17px;
+  line-height: 1.3;
+}
+
+.apple-body {
+  font-weight: 400;
+  color: var(--apple-text-primary);
+  font-size: 17px;
+  line-height: 1.5;
+}
+
+.apple-caption {
+  font-weight: 400;
+  color: var(--apple-text-secondary);
+  font-size: 13px;
+  line-height: 1.3;
+}
+
+/* Card styles */
+.apple-card {
+  background-color: var(--apple-card-background);
+  border-radius: var(--apple-radius-lg);
+  box-shadow: var(--apple-shadow-md);
+  overflow: hidden;
+}
+
+/* Option button styles */
+.apple-option {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  padding: var(--apple-spacing-md);
+  border-radius: var(--apple-radius-md);
+  border: 1px solid var(--apple-gray-light);
+  background-color: var(--apple-card-background);
+  transition: all 0.2s ease;
+  text-align: left;
+  cursor: pointer;
+}
+
+.apple-option:hover {
+  background-color: var(--apple-gray-light);
+}
+
+.apple-option.selected {
+  background-color: var(--apple-blue-light);
+  border-color: var(--apple-blue);
+}
+
+.apple-option.correct {
+  background-color: var(--apple-green-light);
+  border-color: var(--apple-green);
+}
+
+.apple-option.incorrect {
+  background-color: var(--apple-red-light);
+  border-color: var(--apple-red);
+}
+
+.apple-option-indicator {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  margin-right: var(--apple-spacing-md);
+  background-color: var(--apple-gray-light);
+  color: var(--apple-text-primary);
+  font-weight: 500;
+  font-size: 15px;
+}
+
+.apple-option.selected .apple-option-indicator {
+  background-color: var(--apple-blue);
+  color: white;
+}
+
+.apple-option.correct .apple-option-indicator {
+  background-color: var(--apple-green);
+  color: white;
+}
+
+.apple-option.incorrect .apple-option-indicator {
+  background-color: var(--apple-red);
+  color: white;
+}
+
+/* Button styles */
+.apple-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 10px 20px;
+  border-radius: var(--apple-radius-md);
+  font-weight: 500;
+  font-size: 15px;
+  transition: all 0.2s ease;
+  cursor: pointer;
+}
+
+.apple-button-primary {
+  background-color: var(--apple-blue);
+  color: white;
+  border: none;
+}
+
+.apple-button-primary:hover {
+  background-color: #0062CC;
+}
+
+.apple-button-secondary {
+  background-color: var(--apple-gray-light);
+  color: var(--apple-text-primary);
+  border: 1px solid var(--apple-gray-medium);
+}
+
+.apple-button-secondary:hover {
+  background-color: #E5E5EA;
+}
+
+/* Navigation bar */
+.apple-nav {
+  background-color: rgba(255, 255, 255, 0.8);
+  backdrop-filter: blur(10px);
+  border-bottom: 1px solid var(--apple-gray-light);
+  padding: var(--apple-spacing-md);
+}
+
+/* Progress indicator */
+.apple-progress-track {
+  height: 4px;
+  background-color: var(--apple-gray-light);
+  border-radius: 2px;
+  overflow: hidden;
+}
+
+.apple-progress-bar {
+  height: 100%;
+  background-color: var(--apple-blue);
+  border-radius: 2px;
+  transition: width 0.3s ease;
+}
+
+/* Animations */
+@keyframes apple-fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.apple-fade-in {
+  animation: apple-fade-in 0.3s ease forwards;
+}
+
+@keyframes apple-slide-up {
+  from { transform: translateY(10px); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
+}
+
+.apple-slide-up {
+  animation: apple-slide-up 0.3s ease forwards;
+}

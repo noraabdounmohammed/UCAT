@@ -1,4 +1,5 @@
-export type Difficulty = 'easy' | 'medium' | 'hard' | 'adaptive';
+export type DifficultyOption = 'easy' | 'medium' | 'hard' | 'adaptive';
+export type Difficulty = DifficultyOption | DifficultyOption[];
 
 export type MainTopic = 
   | 'Percentages'
@@ -101,7 +102,7 @@ export interface PracticeFilterOptions {
   section?: string;
   topics: MainTopic[];
   microSkills: string[];
-  difficulty: Difficulty;
+  difficulty: DifficultyOption[];
   interactionStatus: InteractionStatus[];
 }
 

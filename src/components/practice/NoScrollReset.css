@@ -1,0 +1,84 @@
+/* 
+ * Enhanced CSS to prevent the page from scrolling to the top when filters are toggled
+ * and to prevent flashing when interacting with components
+ */
+
+/* Global anti-flash and scroll reset prevention */
+html {
+  scroll-behavior: auto !important; /* Override any smooth scrolling to prevent visual jumps */
+}
+
+body {
+  overflow-anchor: none !important; /* Prevent scroll anchoring from causing jumps */
+  background-color: #f5f5f7; /* Apple-style light gray background */
+  height: 100%;
+  width: 100%;
+  overscroll-behavior-y: none; /* Prevent scroll chaining and bouncing effects */
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Prevent flash of unstyled content */
+* {
+  -webkit-backface-visibility: hidden;
+  -moz-backface-visibility: hidden;
+  backface-visibility: hidden;
+}
+
+/* Container for scroll preservation */
+.scroll-preservation-container {
+  isolation: isolate; /* Create a new stacking context */
+  contain: layout; /* Improve performance by isolating layout changes */
+  width: 100%;
+}
+
+/* Apply to filter containers to prevent scroll reset */
+.no-scroll-reset {
+  overscroll-behavior: none;
+  transform: translateZ(0); /* Force GPU acceleration for smoother rendering */
+  will-change: transform; /* Hint to browser about upcoming animations */
+}
+
+/* Prevent content shifts during interactions */
+.filter-section, 
+.practice-controls,
+.section-selection {
+  contain: layout style; /* Contain layout changes to prevent shifts */
+  transform: translateZ(0); /* Force GPU acceleration */
+  perspective: 1000px; /* Enhance 3D rendering */
+}
+
+/* Prevent flashing on interactive elements */
+button, 
+a, 
+[role="button"], 
+input, 
+select, 
+textarea, 
+[tabindex] {
+  transform: translateZ(0);
+  transition: background-color 0.01s linear !important;
+}
+
+/* Anti-flash for the entire practice section */
+.max-w-6xl {
+  transform: translateZ(0);
+  will-change: transform;
+  contain: paint style;
+}
+
+/* Prevent transition flashing */
+.transition-all,
+.transition-colors,
+.transition {
+  transition-duration: 0.01s !important;
+}
+
+/* Fix for Safari */
+@media not all and (min-resolution:.001dpcm) { 
+  @supports (-webkit-appearance:none) {
+    .filter-section, .section-selection, .practice-controls {
+      transform: translate3d(0,0,0);
+    }
+  }
+}
