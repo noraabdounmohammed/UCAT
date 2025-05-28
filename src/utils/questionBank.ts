@@ -291,9 +291,16 @@ export async function getAvailableSections(): Promise<string[]> {
   }
 }
 
+// Cache for storing questions by section to prevent redundant loading
+const questionsBySection: Record<string, Question[]> = {};
+
 export async function loadQuestionsForSection(section: string): Promise<Question[]> {
   try {
-    console.log(`Loading questions for section: ${section}`);
+    // Check cache first to avoid redundant loading
+    if (questionsBySection[section]) {
+      return questionsBySection[section];
+    }
+    
     // Load questions directly from the centralized database
     const database = await loadQuestionDatabase();
     
@@ -301,19 +308,14 @@ export async function loadQuestionsForSection(section: string): Promise<Question
     const questionIds = database.sectionIndex[section] || [];
     
     if (questionIds.length === 0) {
-      console.warn(`No questions found for section ${section}`);
+      // Silently return empty array instead of logging warning
       return [];
     }
     
-    console.log(`Found ${questionIds.length} questions for section ${section}`);
-    
-    // Map the questions to the expected format
+    // Map the questions to the expected format - avoid logging each question
     const questions = questionIds.map(id => {
       const dbQuestion = database.questions[id];
       if (!dbQuestion) return null;
-      
-      // Log the database question for debugging
-      console.log('Database question:', dbQuestion);
       
       // Map all required fields from the database question to our Question type
       // Ensure all required fields are present and properly formatted
@@ -355,13 +357,12 @@ export async function loadQuestionsForSection(section: string): Promise<Question
         created_at: new Date().toISOString()
       } as Question;
       
-      // Log the mapped question for debugging
-      console.log('Mapped question:', mappedQuestion);
-      
       return mappedQuestion;
     }).filter(q => q !== null) as Question[];
     
-    console.log(`Successfully mapped ${questions.length} questions for section ${section}`);
+    // Store in cache for future use
+    questionsBySection[section] = questions;
+    
     return questions;
   } catch (error) {
     console.error('Failed to load questions for section from database:', error);

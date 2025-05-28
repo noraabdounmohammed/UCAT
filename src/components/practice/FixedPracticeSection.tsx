@@ -174,6 +174,14 @@ export function PracticeSection({ onPracticeStart }: PracticeSectionProps): JSX.
     
     setIsLoading(true);
     try {
+      console.log('Starting practice with filters:', {
+        section: activeSection,
+        topics: filterOptions.topics,
+        difficulty: filterOptions.difficulty,
+        interactionStatus: filterOptions.interactionStatus,
+        microSkills: filterOptions.microSkills
+      });
+      
       // Fetch questions based on current filters
       const fetchedQuestions = await fetchQuestions({
         section: activeSection,
@@ -183,19 +191,28 @@ export function PracticeSection({ onPracticeStart }: PracticeSectionProps): JSX.
         microSkills: filterOptions.microSkills
       });
       
+      console.log('Fetched questions:', fetchedQuestions);
+      
       if (fetchedQuestions && fetchedQuestions.length > 0) {
         // Transform questions to the format expected by ModernPracticeSession
-        const questionData: QuestionData[] = fetchedQuestions.map((q: Question) => ({
-          id: q.id,
-          question: q.question_stem || q.individual_question,
-          options: q.options,
-          correctAnswer: q.correct_answer,
-          explanation: q.worked_solution,
-          topic: q.main_topic,
-          difficulty: q.difficulty,
-          tags: [q.micro_skill] // Use micro_skill as a tag
-        }));
+        const questionData: QuestionData[] = fetchedQuestions.map((q: Question) => {
+          // Ensure all required fields are present
+          const mappedQuestion = {
+            id: q.id,
+            question: q.question_stem || q.individual_question || 'Question content not available',
+            options: Array.isArray(q.options) && q.options.length > 0 ? q.options : ['Option A', 'Option B', 'Option C', 'Option D'],
+            correctAnswer: q.correct_answer || 'A',
+            explanation: q.worked_solution || 'Explanation not available',
+            topic: q.main_topic || 'General',
+            difficulty: q.difficulty || 'Medium',
+            tags: [q.micro_skill || 'General'] // Use micro_skill as a tag
+          };
+          
+          console.log('Mapped question:', mappedQuestion);
+          return mappedQuestion;
+        });
         
+        console.log('Setting questions and starting practice session');
         setQuestions(questionData);
         setIsPracticing(true);
         
@@ -204,6 +221,7 @@ export function PracticeSection({ onPracticeStart }: PracticeSectionProps): JSX.
           onPracticeStart(activeSection);
         }
       } else {
+        console.error('No questions matched the filters');
         toast.error('No questions match your filters. Please adjust and try again.');
       }
     } catch (error) {

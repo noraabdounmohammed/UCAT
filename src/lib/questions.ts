@@ -1,15 +1,15 @@
 // Supabase will be used for user progress tracking in the future
-import { PracticeFilterOptions, TopicStructure } from '@/types/practice';
+import { PracticeFilterOptions, TopicStructure, InteractionStatus } from '@/types/practice';
 import { loadQuestionsForSection, getDynamicQuestionCounts, getDynamicTopicStructure, Question } from '../utils/questionBank';
 
 // Define a type for question with topic property
 interface QuestionWithTopic extends Question {
-  topic?: string;
+  topic: string;
 }
 
 // Define a type for question with user interaction
 interface QuestionWithInteraction extends Question {
-  user_interaction?: string;
+  user_interaction: InteractionStatus;
 }
 
 // Cache for storing previously computed question counts to prevent redundant calculations
@@ -24,96 +24,142 @@ export async function fetchQuestions(filters: PracticeFilterOptions) {
     }
     const section = filters.section;
     
-    // Load questions based on selected topics and/or skills
-    let questions: Question[] = [];
+    // Load all questions for the section
+    const allQuestions = await loadQuestionsForSection(section);
     
-    // Check if we have either topics or skills selected
-    const hasTopics = filters.topics.length > 0;
-    const hasSkills = filters.microSkills.length > 0;
-    
-    if (!hasTopics && !hasSkills) {
-      // If neither topics nor skills are selected, return empty array
-      console.log('No topics or skills selected');
+    if (!allQuestions || allQuestions.length === 0) {
+      console.error(`No questions found for section: ${section}`);
       return [];
     }
     
-    // Always load all questions for the section first
-    console.log(`Loading all questions for section ${section}`);
-    questions = await loadQuestionsForSection(section);
+    // Use the same filtering logic as in countFilteredQuestions to ensure consistency
+    const hasTopicFilter = filters.topics.length > 0;
+    const hasSkillFilter = filters.microSkills.length > 0;
+    const hasDifficultyFilter = filters.difficulty && filters.difficulty !== 'adaptive';
+    const hasStatusFilter = filters.interactionStatus && filters.interactionStatus.length > 0;
     
-    // Debug the loaded questions
-    console.log('Loaded questions:', questions);
+    // If no filters are applied, use all questions
+    if (!hasTopicFilter && !hasSkillFilter && !hasDifficultyFilter && !hasStatusFilter) {
+      // Shuffle questions and limit to 10 (or another appropriate number)
+      const shuffled = [...allQuestions].sort(() => Math.random() - 0.5);
+      return shuffled.slice(0, 10);
+    }
     
-    let finalQuestions: Question[] = [];
-    
-    // If we have topics selected, get questions for those topics
-    if (hasTopics) {
-      console.log('Filtering by topics:', filters.topics);
-      // Check for topic compatibility with more flexible matching
-      const topicQuestions = questions.filter(q => {
-        // Get the topic from the question, with fallbacks for different formats
-        const questionTopic = q.main_topic || (q as QuestionWithTopic).topic;
+    // Filter questions based on selected criteria
+    const filteredQuestions = allQuestions.filter(question => {
+      // Topic filter
+      if (hasTopicFilter) {
+        const questionTopic = question.main_topic || (question as QuestionWithTopic).topic;
         if (!questionTopic) return false;
         
+        // Normalize the question topic for comparison
+        const normalizedQuestionTopic = String(questionTopic).toLowerCase().trim();
+        
         // Check if any of the selected topics match this question
-        return filters.topics.some(topic => {
-          // Handle both string and object topics
+        const topicMatches = filters.topics.some(topic => {
+          // Normalize the filter topic for comparison
           const topicValue = typeof topic === 'string' ? topic : String(topic);
-          return String(questionTopic).toLowerCase() === topicValue.toLowerCase();
+          const normalizedFilterTopic = topicValue.toLowerCase().trim();
+          
+          // Use flexible matching to handle variations in topic naming
+          return normalizedQuestionTopic === normalizedFilterTopic || 
+                 normalizedQuestionTopic.includes(normalizedFilterTopic) || 
+                 normalizedFilterTopic.includes(normalizedQuestionTopic);
         });
-      });
-      finalQuestions = [...finalQuestions, ...topicQuestions];
-      console.log(`After topic filtering: ${topicQuestions.length} questions`);
-    }
-    
-    // If we have skills selected, get questions for those skills
-    if (hasSkills) {
-      console.log('Filtering by micro skills:', filters.microSkills);
+        
+        if (!topicMatches) return false;
+      }
       
-      // Log all available micro_skills in the questions for debugging
-      const availableMicroSkills = new Set(questions.map(q => q.micro_skill));
-      console.log('Available micro_skills in questions:', Array.from(availableMicroSkills));
+      // Micro skill filter
+      if (hasSkillFilter) {
+        const questionMicroSkill = question.micro_skill;
+        if (!questionMicroSkill) return false;
+        
+        // Normalize the question micro skill for comparison
+        const normalizedQuestionMicroSkill = String(questionMicroSkill).toLowerCase().trim();
+        
+        // Check if any of the selected micro skills match this question
+        const microSkillMatches = filters.microSkills.some(skill => {
+          // Normalize the filter micro skill for comparison
+          const normalizedFilterMicroSkill = String(skill).toLowerCase().trim();
+          
+          // Use flexible matching to handle variations in skill naming
+          return normalizedQuestionMicroSkill === normalizedFilterMicroSkill || 
+                 normalizedQuestionMicroSkill.includes(normalizedFilterMicroSkill) || 
+                 normalizedFilterMicroSkill.includes(normalizedQuestionMicroSkill) ||
+                 // Handle ID-based matching (e.g., 'percent-change' vs 'Percentage Change')
+                 (normalizedQuestionMicroSkill.replace(/\s+/g, '-') === normalizedFilterMicroSkill) ||
+                 (normalizedFilterMicroSkill.replace(/\s+/g, '-') === normalizedQuestionMicroSkill);
+        });
+        
+        if (!microSkillMatches) return false;
+      }
       
-      // Log each question's micro_skill for detailed debugging
-      questions.forEach(q => {
-        console.log(`Question ${q.id} has micro_skill: '${q.micro_skill}'`);
-      });
+      // Difficulty filter
+      if (hasDifficultyFilter) {
+        // Skip difficulty filtering if 'adaptive' is selected
+        if (filters.difficulty === 'adaptive') {
+          // Adaptive difficulty means we include all difficulties
+          // No filtering needed
+        } else {
+          // Get the difficulty from the question, defaulting to 'medium' if not present
+          const questionDifficulty = question.difficulty || 'Medium';
+          
+          // Normalize the question difficulty for comparison
+          const normalizedQuestionDifficulty = String(questionDifficulty).toLowerCase().trim();
+          
+          // Get the filter difficulties as an array
+          const difficulties = Array.isArray(filters.difficulty) ? filters.difficulty : [filters.difficulty];
+          
+          // Check if any of the selected difficulties match this question
+          const difficultyMatches = difficulties.some(difficulty => {
+            // Skip 'adaptive' as it's a special case that includes all difficulties
+            if (difficulty === 'adaptive') return true;
+            
+            // Normalize the filter difficulty for comparison
+            const normalizedFilterDifficulty = String(difficulty).toLowerCase().trim();
+            
+            return normalizedQuestionDifficulty === normalizedFilterDifficulty;
+          });
+          
+          if (!difficultyMatches) return false;
+        }
+      }
       
-      const skillQuestions = questions.filter(q => {
-        const matches = filters.microSkills.includes(q.micro_skill);
-        console.log(`Question ${q.id} with micro_skill '${q.micro_skill}' matches filter: ${matches}`);
-        return matches;
-      });
+      // Interaction status filter (if applicable)
+      if (hasStatusFilter) {
+        // In a real app, this would check the user's interaction status with this question
+        // For now, we'll assume all questions are 'unseen' unless specified otherwise
+        const defaultStatus: InteractionStatus = 'unseen';
+        const questionStatus = (question as QuestionWithInteraction).user_interaction || defaultStatus;
+        
+        // Normalize the question status for comparison
+        const normalizedQuestionStatus = String(questionStatus).toLowerCase().trim();
+        
+        // Check if any of the selected interaction statuses match this question
+        const statusMatches = filters.interactionStatus.some(status => {
+          // Normalize the filter status for comparison
+          const normalizedFilterStatus = String(status).toLowerCase().trim();
+          
+          return normalizedQuestionStatus === normalizedFilterStatus;
+        });
+        
+        if (!statusMatches) return false;
+      }
       
-      finalQuestions = [...finalQuestions, ...skillQuestions];
-      console.log(`After skill filtering: ${skillQuestions.length} questions`);
-    }
-    
-    // Remove duplicates
-    const uniqueIds = new Set();
-    questions = finalQuestions.filter(q => {
-      if (uniqueIds.has(q.id)) return false;
-      uniqueIds.add(q.id);
+      // If it passed all filters, include it
       return true;
     });
     
-    console.log(`Final question count after filtering: ${questions.length} questions`);
-    
-    // Apply difficulty filter if not adaptive
-    if (filters.difficulty !== 'adaptive') {
-      console.log('Filtering by difficulty:', filters.difficulty);
-      questions = questions.filter(q => {
-        const difficultyMatches = q.difficulty.toLowerCase() === filters.difficulty.toLowerCase();
-        return difficultyMatches;
-      });
-      console.log(`After difficulty filtering: ${questions.length} questions`);
+    // If no questions match the filters, return an empty array
+    if (filteredQuestions.length === 0) {
+      console.warn('No questions match the selected filters');
+      return [];
     }
     
-    // Shuffle questions and limit to 5
-    const shuffled = [...questions].sort(() => Math.random() - 0.5);
-    const result = shuffled.slice(0, 5);
-    console.log(`Returning ${result.length} questions after shuffling and limiting`);
-    return result;
+    // Shuffle questions and limit to 10 (or another appropriate number)
+    const shuffled = [...filteredQuestions].sort(() => Math.random() - 0.5);
+    return shuffled.slice(0, 10);
   } catch (error) {
     console.error('Error in fetchQuestions:', error);
     throw error;
@@ -171,6 +217,17 @@ function createCacheKey(filters: PracticeFilterOptions): string {
  */
 export async function countFilteredQuestions(filters: PracticeFilterOptions): Promise<number> {
   try {
+    // Clear the cache if it gets too large to prevent memory issues
+    if (Object.keys(questionCountCache).length > 100) {
+      // Keep only the 20 most recently used keys
+      const keysToKeep = Object.keys(questionCountCache).slice(-20);
+      const newCache: Record<string, number> = {};
+      keysToKeep.forEach(key => {
+        newCache[key] = questionCountCache[key];
+      });
+      Object.assign(questionCountCache, newCache);
+    }
+    
     // Check if we have a cached result for these exact filters
     const cacheKey = createCacheKey(filters);
     if (questionCountCache[cacheKey] !== undefined) {
@@ -191,8 +248,13 @@ export async function countFilteredQuestions(filters: PracticeFilterOptions): Pr
       return 0;
     }
     
-    // If no filters are applied, return the total count
-    if (filters.topics.length === 0 && filters.microSkills.length === 0) {
+    // If no specific filters are applied, return the total count
+    const hasTopicFilter = filters.topics.length > 0;
+    const hasSkillFilter = filters.microSkills.length > 0;
+    const hasDifficultyFilter = filters.difficulty && filters.difficulty !== 'adaptive';
+    const hasStatusFilter = filters.interactionStatus && filters.interactionStatus.length > 0;
+    
+    if (!hasTopicFilter && !hasSkillFilter && !hasDifficultyFilter && !hasStatusFilter) {
       const count = allQuestions.length;
       questionCountCache[cacheKey] = count;
       return count;
@@ -201,43 +263,122 @@ export async function countFilteredQuestions(filters: PracticeFilterOptions): Pr
     // Filter questions based on selected criteria (using a single pass through the data)
     const filteredQuestions = allQuestions.filter(question => {
       // Topic filter
-      if (filters.topics.length > 0) {
+      if (hasTopicFilter) {
+        // Get the topic from either main_topic or topic property
         const questionTopic = question.main_topic || (question as QuestionWithTopic).topic;
-        if (!questionTopic) return false;
+        
+        // If question has no topic, it can't match a topic filter
+        if (!questionTopic) {
+          return false;
+        }
+        
+        // Normalize the question topic for comparison
+        const normalizedQuestionTopic = String(questionTopic).toLowerCase().trim();
         
         // Check if any of the selected topics match this question
+        // Use includes instead of exact match to handle partial matches
         const topicMatches = filters.topics.some(topic => {
+          // Normalize the filter topic for comparison
           const topicValue = typeof topic === 'string' ? topic : String(topic);
-          return String(questionTopic).toLowerCase() === topicValue.toLowerCase();
+          const normalizedFilterTopic = topicValue.toLowerCase().trim();
+          
+          // Check for exact match or if the question topic contains the filter topic
+          return normalizedQuestionTopic === normalizedFilterTopic || 
+                 normalizedQuestionTopic.includes(normalizedFilterTopic) || 
+                 normalizedFilterTopic.includes(normalizedQuestionTopic);
         });
         
-        if (!topicMatches) return false;
+        if (!topicMatches) {
+          return false;
+        }
       }
       
       // Micro skill filter
-      if (filters.microSkills.length > 0) {
-        if (!filters.microSkills.includes(question.micro_skill)) {
+      if (hasSkillFilter) {
+        // Get the micro skill from the question
+        const questionMicroSkill = question.micro_skill;
+        
+        // If question has no micro skill, it can't match a skill filter
+        if (!questionMicroSkill) {
+          return false;
+        }
+        
+        // Normalize the question micro skill for comparison
+        const normalizedQuestionMicroSkill = String(questionMicroSkill).toLowerCase().trim();
+        
+        // Check if any of the selected micro skills match this question
+        const microSkillMatches = filters.microSkills.some(skill => {
+          // Normalize the filter micro skill for comparison
+          const normalizedFilterMicroSkill = String(skill).toLowerCase().trim();
+          
+          // Use flexible matching to handle variations in skill naming
+          return normalizedQuestionMicroSkill === normalizedFilterMicroSkill || 
+                 normalizedQuestionMicroSkill.includes(normalizedFilterMicroSkill) || 
+                 normalizedFilterMicroSkill.includes(normalizedQuestionMicroSkill) ||
+                 // Handle ID-based matching (e.g., 'percent-change' vs 'Percentage Change')
+                 (normalizedQuestionMicroSkill.replace(/\s+/g, '-') === normalizedFilterMicroSkill) ||
+                 (normalizedFilterMicroSkill.replace(/\s+/g, '-') === normalizedQuestionMicroSkill);
+        });
+        
+        if (!microSkillMatches) {
           return false;
         }
       }
       
       // Difficulty filter
-      if (filters.difficulty) {
-        const difficulties = Array.isArray(filters.difficulty) ? filters.difficulty : [filters.difficulty];
-        if (difficulties.length > 0 && difficulties[0] !== 'adaptive') {
-          const normalizedDifficulty = question.difficulty.toLowerCase();
-          if (!difficulties.some(d => d.toLowerCase() === normalizedDifficulty)) {
+      if (hasDifficultyFilter) {
+        // Skip difficulty filtering if 'adaptive' is selected
+        if (filters.difficulty === 'adaptive') {
+          // Adaptive difficulty means we include all difficulties
+          // No filtering needed
+        } else {
+          // Get the difficulty from the question, defaulting to 'medium' if not present
+          const questionDifficulty = question.difficulty || 'Medium';
+          
+          // Normalize the question difficulty for comparison
+          const normalizedQuestionDifficulty = String(questionDifficulty).toLowerCase().trim();
+          
+          // Get the filter difficulties as an array
+          const difficulties = Array.isArray(filters.difficulty) ? filters.difficulty : [filters.difficulty];
+          
+          // Check if any of the selected difficulties match this question
+          const difficultyMatches = difficulties.some(difficulty => {
+            // Skip 'adaptive' as it's a special case that includes all difficulties
+            if (difficulty === 'adaptive') return true;
+            
+            // Normalize the filter difficulty for comparison
+            const normalizedFilterDifficulty = String(difficulty).toLowerCase().trim();
+            
+            return normalizedQuestionDifficulty === normalizedFilterDifficulty;
+          });
+          
+          if (!difficultyMatches) {
             return false;
           }
         }
       }
       
       // Interaction status filter (if applicable)
-      if (filters.interactionStatus && filters.interactionStatus.length > 0) {
+      if (hasStatusFilter) {
         // In a real app, this would check the user's interaction status with this question
         // For now, we'll assume all questions are 'unseen' unless specified otherwise
-        const status = (question as QuestionWithInteraction).user_interaction || 'unseen';
-        if (!filters.interactionStatus.includes(status)) {
+        const defaultStatus: InteractionStatus = 'unseen';
+        
+        // Get the interaction status from the question or use the default
+        const questionStatus = (question as QuestionWithInteraction).user_interaction || defaultStatus;
+        
+        // Normalize the question status for comparison
+        const normalizedQuestionStatus = String(questionStatus).toLowerCase().trim();
+        
+        // Check if any of the selected interaction statuses match this question
+        const statusMatches = filters.interactionStatus.some(status => {
+          // Normalize the filter status for comparison
+          const normalizedFilterStatus = String(status).toLowerCase().trim();
+          
+          return normalizedQuestionStatus === normalizedFilterStatus;
+        });
+        
+        if (!statusMatches) {
           return false;
         }
       }
@@ -247,6 +388,16 @@ export async function countFilteredQuestions(filters: PracticeFilterOptions): Pr
     });
     
     const finalCount = filteredQuestions.length;
+    
+    // Only log minimal information in production
+    if (finalCount === 0 && (hasTopicFilter || hasSkillFilter || hasDifficultyFilter || hasStatusFilter)) {
+      console.log('No questions match the selected filters:', {
+        section: filters.section,
+        topicsCount: filters.topics.length,
+        microSkillsCount: filters.microSkills.length,
+        difficulty: filters.difficulty
+      });
+    }
     
     // Cache the result for future use
     questionCountCache[cacheKey] = finalCount;
