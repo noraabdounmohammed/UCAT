@@ -1,358 +1,355 @@
 import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { PracticeFilters } from './PracticeFilters';
-import { PracticeSession } from './PracticeSession';
-import { Target, ArrowRight, Calculator, BookOpen, Brain, Scale, Loader2, ArrowLeft } from 'lucide-react';
+import { ModernPracticeSession, QuestionData } from './ModernPracticeSession';
+import { Target, ArrowRight, Calculator, BookOpen, Brain, Scale, Loader2 } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
-// UI components
 import { cn } from '@/lib/utils';
-import { getAvailableSections } from '@/utils/questionBank';
-import { fetchQuestions, fetchQuestionCounts, fetchUserProgress, fetchDynamicTopicStructure } from '@/lib/questions';
+import { getAvailableSections, Question } from '@/utils/questionBank';
+import { fetchQuestions, fetchQuestionCounts, fetchDynamicTopicStructure, countFilteredQuestions } from '@/lib/questions';
 import { toast } from 'sonner';
-
-import { PracticeFilterOptions, ProgressData } from '@/types/practice';
-import { Question } from '@/utils/questionBank';
-
-// Use the PracticeFilterOptions type directly from the practice types
-type FilterType = PracticeFilterOptions;
+import { Card, CardContent, CardFooter } from '@/components/ui/card';
+import { PracticeFilterOptions, MainTopic, Difficulty, InteractionStatus } from '@/types/practice';
+import { ScrollPreservationWrapper } from './ScrollPreservationWrapper';
 
 // Section definitions with icons and descriptions
 const SECTION_DETAILS: Record<string, { name: string, icon: LucideIcon, description: string }> = {
   'VR': { name: 'Verbal Reasoning', icon: BookOpen, description: 'Evaluate information presented in written form' },
-  'DM': { name: 'Decision Making', icon: Brain, description: 'Evaluate information to make informed decisions' },
+  'DM': { name: 'Decision Making', icon: Brain, description: 'Make informed decisions based on complex information' },
   'QR': { name: 'Quantitative Reasoning', icon: Calculator, description: 'Test your numerical and analytical skills' },
   'SJ': { name: 'Situational Judgement', icon: Scale, description: 'Respond appropriately to real-world scenarios' }
 };
 
 interface PracticeSectionProps {
   onPracticeStart?: (section: string) => void;
-  onMockStart?: (type: 'timed' | 'untimed') => void;
-  onBackToDashboard?: () => void;
 }
 
-export function PracticeSection({ onPracticeStart, onMockStart, onBackToDashboard }: PracticeSectionProps): JSX.Element {
+export function PracticeSection({ onPracticeStart }: PracticeSectionProps): JSX.Element {
   const [activeSection, setActiveSection] = useState('QR');
   const [isLoading, setIsLoading] = useState(false);
   const [loadingSections, setLoadingSections] = useState(true);
-  const [availableSections, setAvailableSections] = useState<{id: string, name: string}[]>([]);
+  const [availableSections, setAvailableSections] = useState<string[]>([]);
+  const [questions, setQuestions] = useState<QuestionData[]>([]);
+  const [isPracticing, setIsPracticing] = useState(false);
+  const [filterOptions, setFilterOptions] = useState<PracticeFilterOptions>({
+    section: activeSection,
+    topics: ['all'] as MainTopic[],
+    difficulty: ['easy', 'medium', 'hard'] as Difficulty[],
+    interactionStatus: ['unseen', 'correct', 'incorrect'] as InteractionStatus[],
+    microSkills: []
+  });
+  
+  // Function to update topic structure - we don't need to track the state
+  const setTopicStructure = (structure: Record<string, MainTopic[]>) => {
+    // We use the structure to set filters but don't need to track it as state
+    console.log('Topic structure updated:', Object.keys(structure).length, 'sections');
+  };
+  
+  // Question counts by topic and skill
   const [questionCounts, setQuestionCounts] = useState<{
     topicCounts: Record<string, number>;
     skillCounts: Record<string, number>;
-  }>();
-  const [userProgress, setUserProgress] = useState<{
-    topics: Record<string, ProgressData>;
-    skills: Record<string, ProgressData>;
-  }>();
-  const [filters, setFilters] = useState<FilterType>({
-    section: 'QR',
-    topics: [],
-    microSkills: [],
-    difficulty: 'medium', // Default to medium difficulty instead of 'all'
-    interactionStatus: [] // Initialize with empty array
+  }>({
+    topicCounts: {},
+    skillCounts: {}
   });
-  const [questions, setQuestions] = useState<Question[]>([]);
-  const [showPractice, setShowPractice] = useState(false);
-  const [mode, setMode] = useState<'filter' | 'practice'>('filter');
-
-  // Load available sections from the database
+  
+  // User progress tracking
+  const [userProgress, setUserProgress] = useState<{
+    topics: Record<string, { correct: number; incorrect: number; total: number }>;
+    skills: Record<string, { correct: number; incorrect: number; total: number }>;
+  }>({
+    topics: {},
+    skills: {}
+  });
+  
+  // Track filtered question count
+  const [filteredCount, setFilteredCount] = useState(0);
+  
+  // Fetch available sections on component mount
   useEffect(() => {
-    const loadSections = async () => {
+    const fetchSections = async () => {
       setLoadingSections(true);
       try {
-        // Get available sections from the database
-        const sectionIds = await getAvailableSections();
-        
-        // Map section IDs to their names and details using SECTION_DETAILS
-        const sectionsData = sectionIds.map((id: string) => ({
-          id,
-          name: SECTION_DETAILS[id]?.name || id
-        }));
-        
-        setAvailableSections(sectionsData);
-      } catch (err) {
-        console.error('Error loading sections:', err);
+        const sections = await getAvailableSections();
+        setAvailableSections(sections);
+        if (sections.length > 0 && !sections.includes(activeSection)) {
+          setActiveSection(sections[0]);
+        }
+      } catch (error) {
+        console.error('Error fetching sections:', error);
         toast.error('Failed to load available sections');
       } finally {
         setLoadingSections(false);
       }
     };
-
-    loadSections();
-  }, []);
-
-  // Initial data loading
+    
+    fetchSections();
+  }, [activeSection]); // Include activeSection in dependency array
+  
+  // Fetch topic structure and question counts when active section changes
   useEffect(() => {
-    const loadInitialData = async () => {
+    const fetchSectionData = async () => {
+      if (!activeSection) return;
+      
       setIsLoading(true);
       try {
-        // Fetch dynamic topic structure
-        await fetchDynamicTopicStructure(activeSection);
+        // Fetch topic structure for the active section
+        const structure = await fetchDynamicTopicStructure(activeSection);
         
-        // Fetch question counts
-        const counts = await fetchQuestionCounts(activeSection);
-        setQuestionCounts(counts);
-
-        // Fetch user progress data
-        const progress = await fetchUserProgress(activeSection);
-        setUserProgress(progress);
+        if (structure && Array.isArray(structure)) {
+          // Store topic structure for reference
+          const topicsBySection: Record<string, MainTopic[]> = {
+            [activeSection]: structure.map(item => item.topic)
+          };
+          setTopicStructure(topicsBySection);
+          
+          // Extract topic names for default selection
+          const topicNames = structure.map(item => item.topic);
+          
+          // Set all topics as selected by default
+          setFilterOptions(prev => ({
+            ...prev,
+            section: activeSection,
+            topics: topicNames.length > 0 ? topicNames : ['all'] as MainTopic[]
+          }));
+        }
         
-        // Reset filters when changing sections
-        setFilters({
-          section: activeSection,
-          topics: [],
-          microSkills: [],
-          difficulty: 'medium',
-          interactionStatus: []
-        });
-        
-        console.log(`Loaded data for section: ${activeSection}`);
-      } catch (err) {
-        console.error('Error loading initial data:', err);
-        toast.error('Failed to load question data');
+        // Fetch question counts for the active section
+        const countsData = await fetchQuestionCounts(activeSection);
+        if (countsData) {
+          // Ensure counts is the correct type (Record<string, number>)
+          const topicCounts: Record<string, number> = {};
+          
+          // Extract only the numeric counts from the response
+          // This handles the case where the API might return a complex object
+          if (typeof countsData === 'object' && countsData !== null) {
+            // Use a more specific type for the data structure
+            const data = countsData as Record<string, unknown>;
+            Object.keys(data).forEach(key => {
+              // Only include numeric values in our topicCounts
+              if (typeof data[key] === 'number') {
+                topicCounts[key] = data[key] as number;
+              }
+            });
+          }
+          
+          setQuestionCounts({
+            topicCounts,
+            skillCounts: {}
+          });
+          
+          // Set up mock user progress data
+          if (structure && Array.isArray(structure)) {
+            const topicNames = structure.map(item => item.topic);
+            const progressData: Record<string, { correct: number; incorrect: number; total: number }> = {};
+            
+            topicNames.forEach(topic => {
+              const topicKey = String(topic);
+              // Safely access the count from topicCounts
+              const count = topicKey in topicCounts ? topicCounts[topicKey] : 0;
+              progressData[topicKey] = { 
+                correct: 0, 
+                incorrect: 0, 
+                total: count
+              };
+            });
+            
+            setUserProgress({
+              topics: progressData,
+              skills: {}
+            });
+          }
+        }
+      } catch (error) {
+        console.error('Error fetching section data:', error);
+        toast.error('Failed to load practice data');
       } finally {
         setIsLoading(false);
       }
     };
-
-    loadInitialData();
+    
+    fetchSectionData();
   }, [activeSection]);
-
-  const handleFiltersChange = (newFilters: FilterType) => {
-    // Always ensure the section is set in the filters
-    setFilters({
-      ...newFilters,
-      section: activeSection
-    });
-  };
-
+  
+  // Handle starting practice session
   const handleStartPractice = async () => {
-    console.log('handleStartPractice called with filters:', filters);
+    if (!activeSection) return;
+    
+    setIsLoading(true);
     try {
-      setIsLoading(true);
-      
-      // Validate filters - either topics or skills must be selected
-      const hasTopics = filters.topics.length > 0;
-      const hasSkills = filters.microSkills.length > 0;
-      
-      console.log('Filter validation:', { hasTopics, hasSkills, microSkills: filters.microSkills });
-      
-      if (!hasTopics && !hasSkills) {
-        toast.error('Please select at least one topic or skill to practice');
-        setIsLoading(false);
-        return;
-      }
-      
-      // Call the onPracticeStart prop if provided with all filter information
-      if (onPracticeStart) {
-        // Convert filters to a serializable format and pass to the callback
-        onPracticeStart(activeSection);
-        return; // Early return as we're navigating away
-      }
-      
-      console.log('Fetching questions with filters:', {
+      // Fetch questions based on current filters
+      const fetchedQuestions = await fetchQuestions({
         section: activeSection,
-        topics: filters.topics,
-        skills: filters.microSkills,
-        difficulty: filters.difficulty
+        topics: filterOptions.topics,
+        difficulty: filterOptions.difficulty,
+        interactionStatus: filterOptions.interactionStatus,
+        microSkills: filterOptions.microSkills
       });
       
-      // Fetch questions based on filters
-      const fetchedQuestions = await fetchQuestions({...filters, section: activeSection});
-      console.log('Fetched questions:', fetchedQuestions);
-      
-      if (!fetchedQuestions || fetchedQuestions.length === 0) {
-        toast.error('No questions found with the selected filters. Try different filters.');
-        setIsLoading(false);
-        return;
+      if (fetchedQuestions && fetchedQuestions.length > 0) {
+        // Transform questions to the format expected by ModernPracticeSession
+        const questionData: QuestionData[] = fetchedQuestions.map((q: Question) => ({
+          id: q.id,
+          question_stem: q.question_stem,
+          individual_question: q.individual_question,
+          options: q.options,
+          correctAnswer: q.correct_answer,
+          explanation: q.worked_solution,
+          topic: q.main_topic,
+          difficulty: q.difficulty.toLowerCase() as 'easy' | 'medium' | 'hard',
+          tags: [q.micro_skill] // Use micro_skill as tags
+        }));
+        
+        setQuestions(questionData);
+        setIsPracticing(true);
+        
+        // Notify parent component if callback provided
+        if (onPracticeStart) {
+          onPracticeStart(activeSection);
+        }
+      } else {
+        toast.error('No questions match your filters. Please adjust and try again.');
       }
-      
-      // Update state
-      setQuestions(fetchedQuestions);
-      setMode('practice');
-      setShowPractice(true);
-      setIsLoading(false);
-      
-      console.log('Practice session started with', fetchedQuestions.length, 'questions');
     } catch (error) {
       console.error('Error starting practice:', error);
-      toast.error('Failed to load questions. Please try again.');
+      toast.error('Failed to start practice session');
+    } finally {
       setIsLoading(false);
-    }
-  };
-
-  const handlePracticeComplete = async () => {
-    try {
-      // Refresh user progress after completing practice
-      const updatedProgress = await fetchUserProgress(activeSection);
-      setUserProgress(updatedProgress);
-      
-      // Reset to filter selection
-      setMode('filter');
-      setShowPractice(false);
-      setQuestions([]);
-      
-      toast.success('Practice completed! Your progress has been updated.');
-    } catch (error) {
-      console.error('Error updating progress:', error);
-      toast.error('Failed to update progress. Please try again.');
     }
   };
   
-  const handleBackToDashboard = () => {
-    if (onBackToDashboard) {
-      onBackToDashboard();
-    } else {
-      // Fallback if no callback provided
-      setMode('filter');
-      setShowPractice(false);
+  // Handle completing practice session
+  const handleCompletePractice = () => {
+    setIsPracticing(false);
+    setQuestions([]);
+  };
+  
+  // Handle filter changes
+  const handleFilterChange = (newFilters: PracticeFilterOptions) => {
+    const updatedFilters = {
+      ...newFilters,
+      section: activeSection
+    };
+    setFilterOptions(updatedFilters);
+    
+    // Update filtered count
+    countFilteredQuestions(updatedFilters)
+      .then(count => {
+        setFilteredCount(count);
+      })
+      .catch(error => {
+        console.error('Error counting filtered questions:', error);
+        setFilteredCount(0);
+      });
+  };
+  
+  // Handle section change
+  const handleSectionChange = (section: string) => {
+    if (section !== activeSection) {
+      setActiveSection(section);
     }
   };
-
-  // Check if any topics or skills are selected directly in the button's disabled prop
-
-  if (mode === 'practice' && showPractice && questions.length > 0) {
+  
+  // If loading sections, show skeleton UI
+  if (loadingSections) {
     return (
-      <div className="max-w-4xl mx-auto">
-        <div className="mb-6 flex items-center gap-2">
-          <Button 
-            variant="ghost" 
-            size="icon" 
-            onClick={handleBackToDashboard}
-            className="rounded-full"
-          >
-            <ArrowLeft className="h-5 w-5" />
-          </Button>
-          <h1 className="text-2xl font-bold">Target Practice</h1>
+      <div className="max-w-4xl mx-auto p-4">
+        <div className="animate-pulse space-y-4">
+          <div className="h-8 bg-gray-200 rounded w-1/3"></div>
+          <div className="h-32 bg-gray-200 rounded"></div>
         </div>
-        <PracticeSession 
-          questions={questions} 
-          onComplete={handlePracticeComplete} 
-        />
       </div>
     );
   }
-
+  
+  // Render practice session if practicing
+  if (isPracticing && questions.length > 0) {
+    return (
+      <ModernPracticeSession
+        questions={questions}
+        onComplete={handleCompletePractice}
+      />
+    );
+  }
+  
+  // Render practice setup UI
   return (
-    <div className="max-w-4xl mx-auto">
-      {/* Enhanced header with more aesthetic design */}
-      <div className="mb-10 px-6 py-8 bg-gradient-to-r from-indigo-50 to-blue-50 rounded-2xl border border-indigo-100/50 shadow-sm">
-        <div className="flex items-center gap-4 mb-3">
-          <div className="p-3 rounded-full bg-gradient-to-br from-indigo-600 to-blue-600 shadow-md">
-            <Target className="h-7 w-7 md:h-8 md:w-8 text-white" />
-          </div>
-          <h1 className="text-2xl md:text-3xl font-semibold text-gray-900 tracking-tight">Target Practice</h1>
-        </div>
-        <p className="text-base md:text-lg text-gray-600 font-normal max-w-2xl">
-          Focus your practice on specific topics and skills to improve your performance
+    <div className="max-w-4xl mx-auto pt-8">
+      
+      <div className="flex flex-col space-y-1.5 mb-8">
+        <h3 className="tracking-tight text-lg sm:text-xl font-bold flex items-center gap-2">
+          <Target className="h-5 w-5" />
+          Target Practice
+        </h3>
+        <p className="text-sm text-muted-foreground">
+          Practice questions from specific topics and track your progress
         </p>
       </div>
-
-      <div className="space-y-10">
-        {/* Section selection with enhanced aesthetics */}
-        <div className="bg-white rounded-2xl border border-gray-200/80 shadow-sm p-6 md:p-8 space-y-6">
-          <div className="flex items-center justify-between border-b border-gray-100 pb-4">
-            <h2 className="text-lg md:text-xl font-medium text-gray-900">Select Section</h2>
-          </div>
-
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-5 md:gap-6">
-            {loadingSections ? (
-              <div className="col-span-2 flex justify-center py-8">
-                <Loader2 className="h-8 w-8 animate-spin text-indigo-600" />
-                <span className="ml-3 text-gray-600">Loading available sections...</span>
-              </div>
-            ) : (
-              availableSections.map((section) => {
-                const details = SECTION_DETAILS[section.id] || { 
-                  name: section.name, 
-                  icon: Calculator, // Default icon
-                  description: 'Practice questions in this section' 
-                };
-                const Icon = details.icon;
-                const isActive = activeSection === section.id;
-                
-                return (
-                  <Button
-                    key={section.id}
-                    variant={isActive ? 'default' : 'outline'}
-                    className={cn(
-                      "h-auto py-5 px-6",
-                      "flex items-center justify-start gap-4",
-                      "transition-all duration-200",
-                      "rounded-xl border",
-                      "group hover:shadow-md",
-                      isActive 
-                        ? "bg-gradient-to-r from-indigo-600 to-blue-600 text-white border-transparent" 
-                        : "border-gray-200 bg-white text-gray-800 hover:border-indigo-200 hover:bg-indigo-50/30"
-                    )}
-                    onClick={() => setActiveSection(section.id)}
-                  >
-                    <div className={cn(
-                      "p-3 rounded-full shrink-0 transition-colors",
-                      isActive ? "bg-white/20" : "bg-gray-100 group-hover:bg-indigo-100/30"
-                    )}>
-                      <Icon className={cn(
-                        "h-6 w-6",
-                        isActive ? "text-white" : "text-indigo-600"
-                      )} />
-                    </div>
-                    <div className="text-left min-w-0 flex-1">
-                      <div className="font-medium text-base md:text-lg">{section.name}</div>
-                    </div>
-                  </Button>
-                );
-              })
-            )}
-          </div>
-        </div>
-        
-        {/* Topic selection with enhanced aesthetics */}
-        {activeSection && (
-          <div className="bg-white rounded-2xl border border-gray-200/80 shadow-sm p-6 md:p-8 space-y-6">
-            <div className="flex items-center justify-between border-b border-gray-100 pb-4">
-              <h2 className="text-lg md:text-xl font-medium text-gray-900">Customize Practice</h2>
-            </div>
-
-            {isLoading ? (
-              <div className="flex justify-center py-8">
-                <Loader2 className="h-8 w-8 animate-spin text-indigo-600" />
-                <span className="ml-3 text-gray-600">Loading topics and skills...</span>
-              </div>
-            ) : (
-              <>
-                <PracticeFilters
-                  section={activeSection}
-                  questionCounts={questionCounts}
-                  userProgress={userProgress}
-                  onFiltersChange={handleFiltersChange}
-                  filters={filters}
-                  isLoading={isLoading}
-                />
-
-                <div className="pt-4 border-t border-gray-100 flex justify-end">
-                  {/* Start Practice button */}
-                  <Button
-                    onClick={handleStartPractice}
-                    disabled={(filters.topics.length === 0 && filters.microSkills.length === 0) || isLoading}
-                    className="bg-gradient-to-r from-indigo-600 to-blue-600 hover:from-indigo-700 hover:to-blue-700 text-white px-6"
-                  >
-                    {isLoading ? (
-                      <>
-                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                        Loading...
-                      </>
-                    ) : (
-                      <>
-                        Start Practice
-                        <ArrowRight className="ml-2 h-4 w-4" />
-                      </>
-                    )}
-                  </Button>
-                </div>
-              </>
-            )}
-          </div>
-        )}
+      
+      <div className="flex flex-wrap gap-2 mb-6">
+        {availableSections.map(section => {
+          const SectionIcon = SECTION_DETAILS[section]?.icon || Target;
+          return (
+            <Button
+              key={section}
+              onClick={() => handleSectionChange(section)}
+              variant={section === activeSection ? "default" : "outline"}
+              className={cn(
+                "h-9 sm:h-10 px-3 sm:px-4 text-sm rounded-md",
+                section === activeSection 
+                  ? "bg-primary text-primary-foreground" 
+                  : "text-foreground"
+              )}
+            >
+              <SectionIcon className="mr-2 h-4 w-4" />
+              {SECTION_DETAILS[section]?.name || section}
+            </Button>
+          );
+        })}
       </div>
+      
+      {!isPracticing && (
+        <Card>
+          <CardContent className="pb-3 pt-6">
+            <ScrollPreservationWrapper>
+              <PracticeFilters
+                section={activeSection}
+                filters={filterOptions}
+                onFiltersChange={handleFilterChange}
+                questionCounts={questionCounts}
+                userProgress={userProgress}
+                isLoading={isLoading}
+                filteredQuestionCount={filteredCount}
+                onFilteredCountChange={setFilteredCount}
+              />
+            </ScrollPreservationWrapper>
+          </CardContent>
+          <CardFooter className="px-4 py-3 bg-gray-50 border-t border-gray-100 flex justify-between items-center">
+            <div className="text-xs text-gray-500">
+              <span className="font-medium text-gray-700">{filteredCount}</span> questions match your filters
+            </div>
+            <Button
+              onClick={handleStartPractice}
+              disabled={isLoading || filteredCount === 0}
+              className="bg-primary hover:bg-primary/90 text-white h-9 text-sm rounded flex items-center gap-1.5"
+              size="sm"
+            >
+              {isLoading ? (
+                <>
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                  Loading...
+                </>
+              ) : (
+                <>
+                  Start Practice
+                  <ArrowRight className="h-4 w-4" />
+                </>
+              )}
+            </Button>
+          </CardFooter>
+        </Card>
+      )}
     </div>
   );
 }
