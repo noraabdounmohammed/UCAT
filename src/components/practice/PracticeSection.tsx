@@ -1,10 +1,10 @@
 import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { ModernPracticeSession, QuestionData } from './ModernPracticeSession';
-import { Target, ArrowRight, Calculator, BookOpen, Brain, Scale, Loader2, CheckCircle, XCircle, Flag, SkipForward, Eye } from 'lucide-react';
+import { Target, ArrowRight, Calculator, BookOpen, Brain, Scale, Loader2, CheckCircle, XCircle, Flag, SkipForward, Eye, Check } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
-import { cn } from '@/lib/utils';
 import './animations.css';
+import './apple-section-styles.css';
 import { getAvailableSections, Question } from '@/utils/questionBank';
 import { fetchQuestions, fetchQuestionCounts, fetchDynamicTopicStructure, countFilteredQuestions } from '@/lib/questions';
 import { toast } from 'sonner';
@@ -311,40 +311,38 @@ export function PracticeSection({ onPracticeStart }: PracticeSectionProps): JSX.
         </p>
       </div>
       
-      <div className="mb-12">
-        <div className="flex items-center mb-4">
-          <h3 className="text-xl font-medium text-gray-900">Select Section</h3>
-          <div className="ml-auto text-sm text-gray-500 font-light">{availableSections.length} sections available</div>
+      <div className="apple-section-selector">
+        <div className="apple-section-header">
+          <h3 className="apple-heading-2">Select Section</h3>
+          <div className="apple-caption">{availableSections.length} sections available</div>
         </div>
-        <div className="grid grid-cols-4 gap-6">
+        <div className="apple-section-list">
           {availableSections.map((section) => {
             const SectionIcon = SECTION_DETAILS[section]?.icon || Target;
+            const isSelected = activeSection === section;
+            
             return (
               <div
                 key={section}
                 onClick={() => handleSectionChange(section)}
-                className={cn(
-                  "flex flex-col items-center justify-center p-6 rounded-2xl cursor-pointer transition-all duration-200 shadow-sm",
-                  activeSection === section
-                    ? "bg-blue-50 ring-1 ring-blue-200 shadow-md transform scale-[1.02]" 
-                    : "bg-white hover:bg-gray-50 hover:shadow"
-                )}
+                className={`apple-section-item ${isSelected ? 'selected' : ''}`}
               >
-                <div className={cn(
-                  "flex items-center justify-center w-14 h-14 rounded-full mb-3",
-                  activeSection === section ? "bg-blue-100" : "bg-gray-100"
-                )}>
-                  <SectionIcon className={cn(
-                    "h-7 w-7",
-                    activeSection === section ? "text-blue-600" : "text-gray-500"
-                  )} />
+                <div className={`apple-section-icon ${isSelected ? 'selected' : ''}`}>
+                  <SectionIcon className="h-5 w-5" />
                 </div>
-                <span className={cn(
-                  "text-base font-medium",
-                  activeSection === section ? "text-blue-700" : "text-gray-800"
-                )}>
-                  {SECTION_DETAILS[section]?.name || section}
-                </span>
+                <div className="apple-section-content">
+                  <span className="apple-section-title">
+                    {SECTION_DETAILS[section]?.name || section}
+                  </span>
+                  <span className="apple-section-description">
+                    {SECTION_DETAILS[section]?.description}
+                  </span>
+                </div>
+                {isSelected && (
+                  <div className="apple-checkmark">
+                    <Check className="h-5 w-5" />
+                  </div>
+                )}
               </div>
             );
           })}

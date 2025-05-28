@@ -224,6 +224,32 @@ export function StablePracticeSession({ questions, onComplete }: PracticeSession
   // Get a stable question ID
   const questionId = currentQuestion?.id || `question-${currentIndex}`;
 
+  // Handle completion of the practice session
+  const handleComplete = useCallback(async () => {
+    // Save results to database if user is logged in
+    if (user) {
+      try {
+        const stats = getSessionStats();
+        supabase.from('practice_sessions').insert({
+          user_id: user.id,
+          total_questions: questions.length,
+          correct_answers: stats.correct,
+          incorrect_answers: stats.incorrect,
+          skipped_questions: stats.skipped,
+          completed_at: new Date().toISOString(),
+        }).then(({ error }) => {
+          if (error) throw error;
+          toast.success('Practice session completed!');
+        });
+      } catch (error) {
+        console.error('Error saving practice session:', error);
+        toast.error('Failed to save your results');
+      }
+    }
+    
+    onComplete();
+  }, [user, supabase, questions, getSessionStats, onComplete]);
+
   // Validate questions on mount
   useEffect(() => {
     if (!questions || questions.length === 0) {
@@ -248,29 +274,9 @@ export function StablePracticeSession({ questions, onComplete }: PracticeSession
       setTimeRemaining(120);
     } else {
       // End of questions
-      if (user) {
-        try {
-          const stats = getSessionStats();
-          supabase.from('practice_sessions').insert({
-            user_id: user.id,
-            total_questions: questions.length,
-            correct_answers: stats.correct,
-            incorrect_answers: stats.incorrect,
-            skipped_questions: stats.skipped,
-            completed_at: new Date().toISOString(),
-          }).then(({ error }) => {
-            if (error) throw error;
-            toast.success('Practice session completed!');
-          });
-        } catch (error) {
-          console.error('Error saving practice session:', error);
-          toast.error('Failed to save your results');
-        }
-      }
-      
-      onComplete();
+      handleComplete();
     }
-  }, [currentIndex, questions.length, user, getSessionStats, supabase, onComplete]);
+  }, [currentIndex, questions.length, handleComplete]);
 
   // Handle skipping a question
   const handleSkip = useCallback(() => {
@@ -334,41 +340,6 @@ export function StablePracticeSession({ questions, onComplete }: PracticeSession
       }
     });
   }, [questionId]);
-    if (currentIndex < questions.length - 1) {
-      setCurrentIndex(prev => prev + 1);
-      setShowFeedback(false);
-      setTimeRemaining(120);
-    } else {
-      // End of questions
-      handleComplete();
-    }
-  }, [currentIndex, questions.length]);
-
-  // Handle completion of the practice session
-  const handleComplete = useCallback(async () => {
-    // Save results to database if user is logged in
-    if (user) {
-      try {
-        const stats = getSessionStats();
-        const { error } = await supabase.from('practice_sessions').insert({
-          user_id: user.id,
-          total_questions: questions.length,
-          correct_answers: stats.correct,
-          incorrect_answers: stats.incorrect,
-          skipped_questions: stats.skipped,
-          completed_at: new Date().toISOString(),
-        });
-        
-        if (error) throw error;
-        toast.success('Practice session completed!');
-      } catch (error) {
-        console.error('Error saving practice session:', error);
-        toast.error('Failed to save your results');
-      }
-    }
-    
-    onComplete();
-  }, [user, supabase, questions.length, getSessionStats, onComplete]);
 
   // Show stats before completing
   const handleShowStats = useCallback(() => {

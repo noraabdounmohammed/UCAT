@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { NewPracticeSession } from '@/components/practice/NewPracticeSession';
 import { PracticeSection } from '@/components/practice/PracticeSection';
@@ -10,6 +10,19 @@ import { cn } from '@/lib/utils';
 import { AnimatePresence, motion } from 'framer-motion';
 import '../components/practice/apple-styles.css';
 
+// Define a type for the questions
+interface QuestionType {
+  id: string;
+  question_stem: string;
+  options: string[];
+  correct_answer: string;
+  worked_solution: string;
+  main_topic: string;
+  difficulty: string;
+  micro_skill: string;
+  data_block?: Record<string, unknown> | null;
+}
+
 /**
  * SimplePracticePage - A clean, Apple HIG-compliant practice page
  */
@@ -19,7 +32,7 @@ export function SimplePracticePage() {
   // State
   const [isLoading, setIsLoading] = useState(false);
   const [isPracticeMode, setIsPracticeMode] = useState(false);
-  const [questions, setQuestions] = useState<any[]>([]);
+  const [questions, setQuestions] = useState<QuestionType[]>([]);
   const [filterOptions, setFilterOptions] = useState<PracticeFilterOptions>({
     section: 'QR',
     topics: [],
@@ -70,7 +83,7 @@ export function SimplePracticePage() {
       }
       
       // Update state
-      setQuestions(fetchedQuestions);
+      setQuestions(fetchedQuestions as unknown as QuestionType[]);
       setIsPracticeMode(true);
       setIsLoading(false);
       
@@ -149,7 +162,7 @@ export function SimplePracticePage() {
               <NewPracticeSession
                 questions={questions.map(q => ({
                   ...q,
-                  data_block: q.data_block ? q.data_block as unknown as Record<string, unknown> : null
+                  data_block: q.data_block || null
                 }))}
                 onComplete={handlePracticeComplete}
               />
@@ -205,36 +218,85 @@ export function SimplePracticePage() {
               )}
             </AnimatePresence>
             
-            {/* Main practice configuration card */}
-            <div className="w-full max-w-3xl mx-auto bg-white rounded-[14px] shadow-md overflow-hidden">
+            {/* Filters Panel */}
+            <AnimatePresence>
+              {showFilters && (
+                <motion.div
+                  initial={{ opacity: 0, y: -20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -20 }}
+                  transition={{ duration: 0.2 }}
+                  className="w-full max-w-3xl mb-6 bg-white rounded-[14px] shadow-md overflow-hidden"
+                >
+                  <div className="p-4 border-b border-[#E5E5EA] flex justify-between items-center">
+                    <h2 className="text-[17px] font-semibold text-[#1D1D1F]">Practice Filters</h2>
+                    <button 
+                      className="w-8 h-8 flex items-center justify-center rounded-full bg-[#F2F2F7]" 
+                      onClick={() => setShowFilters(false)}
+                    >
+                      <X className="h-4 w-4 text-[#8E8E93]" />
+                    </button>
+                  </div>
+                  
+                  <div className="p-4 space-y-6">
+                    <p className="text-[17px] text-[#1D1D1F]">
+                      Select the topics and skills you want to practice, then click the button below to start your session.
+                    </p>
+                    
+                    {/* Practice Section Component */}
+                    <PracticeSection 
+                      onPracticeStart={(section) => {
+                        console.log('Starting practice for section:', section);
+                        // Update filter options with the selected section
+                        setFilterOptions(prev => ({
+                          ...prev,
+                          section: section
+                        }));
+                        handleStartPractice();
+                      }}
+                    />
+                    
+                    <div className="flex justify-end pt-4">
+                      <button
+                        onClick={handleStartPractice}
+                        disabled={isLoading || filterOptions.topics.length === 0}
+                        className={cn(
+                          "px-6 py-2 rounded-lg font-medium text-[15px]",
+                          "bg-[#007AFF] text-white",
+                          (isLoading || filterOptions.topics.length === 0) && "opacity-50"
+                        )}
+                      >
+                        {isLoading ? 'Loading...' : 'Start Practice'}
+                      </button>
+                    </div>
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
+            
+            {/* Main Practice Card */}
+            <div className="w-full max-w-3xl bg-white rounded-[14px] shadow-md overflow-hidden">
               <div className="p-4 border-b border-[#E5E5EA]">
-                <h2 className="text-[17px] font-semibold text-[#1D1D1F]">Start Your Practice Session</h2>
+                <h2 className="text-[17px] font-semibold text-[#1D1D1F]">Select a Section</h2>
               </div>
               
               <div className="p-4 space-y-6">
-                <p className="text-[17px] text-[#1D1D1F]">
-                  Select the topics and skills you want to practice, then click the button below to start your session.
+                <p className="text-[15px] text-[#86868B]">
+                  Choose a section below to start practicing. Each section contains different types of questions.
                 </p>
                 
-                {/* Practice Section Component */}
-                <PracticeSection
-                  filterOptions={filterOptions}
-                  onFilterChange={handleFilterChange}
+                {/* Apple HIG-compliant Section Selection */}
+                <PracticeSection 
+                  onPracticeStart={(section) => {
+                    console.log('Starting practice for section:', section);
+                    // Update filter options with the selected section
+                    setFilterOptions(prev => ({
+                      ...prev,
+                      section: section
+                    }));
+                    handleStartPractice();
+                  }}
                 />
-                
-                <div className="flex justify-end pt-4">
-                  <button
-                    onClick={handleStartPractice}
-                    disabled={isLoading || filterOptions.topics.length === 0}
-                    className={cn(
-                      "px-6 py-2 rounded-lg font-medium text-[15px]",
-                      "bg-[#007AFF] text-white",
-                      (isLoading || filterOptions.topics.length === 0) && "opacity-50"
-                    )}
-                  >
-                    {isLoading ? 'Loading...' : 'Start Practice'}
-                  </button>
-                </div>
               </div>
             </div>
           </div>
