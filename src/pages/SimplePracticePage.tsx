@@ -17,13 +17,14 @@ import { TitleSection } from '@/components/layout/TitleSection';
 interface QuestionType {
   id: string;
   question_stem: string;
-  options: string[];
+  options: Array<{ text: string; id: string } | string>;
   correct_answer: string;
   worked_solution: string;
   main_topic: string;
   difficulty: string;
   micro_skill: string;
-  data_block?: Record<string, unknown> | null;
+  data_block?: Array<{ label: string; value: number; }> | Record<string, unknown> | null;
+  data_type?: string;
 }
 
 /**
@@ -164,8 +165,15 @@ export function SimplePracticePage() {
             {questions.length > 0 ? (
               <ApplePracticeSession
                 questions={questions.map(q => ({
-                  ...q,
-                  data_block: q.data_block || null
+                  id: q.id,
+                  individual_question: q.question_stem,
+                  content: q.question_stem,
+                  question_stem: q.question_stem,
+                  options: q.options,
+                  correct_answer: q.correct_answer,
+                  worked_solution: q.worked_solution,
+                  data_block: q.data_block,
+                  data_type: q.data_type || 'bar_chart'
                 }))}
                 onComplete={handlePracticeComplete}
               />

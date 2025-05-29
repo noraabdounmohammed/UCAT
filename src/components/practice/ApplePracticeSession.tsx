@@ -12,6 +12,7 @@ import {
   ChevronDown
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { DataVisualization } from './DataVisualization';
 import './apple-question-styles.css';
 
 // Define properly typed interfaces for the questions
@@ -26,7 +27,7 @@ export interface QuestionData {
   correctAnswer?: string | number;
   worked_solution?: string;
   explanation?: string;
-  data_block?: Record<string, unknown> | null;
+  data_block?: Array<{ label: string; value: number }> | Record<string, unknown> | null;
   data_type?: string;
   [key: string]: unknown; 
 }
@@ -88,10 +89,13 @@ export function ApplePracticeSession({ questions, onComplete }: PracticeSessionP
     return currentQuestion?.id || `question-${currentIndex}`;
   }, [currentIndex]);
 
+  // Get the current question
+  const currentQuestion = useMemo(() => {
+    return questionsRef.current[currentIndex];
+  }, [currentIndex]);
+
   // Stable question content with memoization to prevent re-renders
   const questionContent = useMemo((): StableQuestionContent => {
-    const currentQuestion = questionsRef.current[currentIndex];
-    
     if (!currentQuestion) {
       return {
         id: `question-${currentIndex}`,
@@ -103,11 +107,16 @@ export function ApplePracticeSession({ questions, onComplete }: PracticeSessionP
       };
     }
     
+    // For debugging - log the current question to see its structure
+    console.log('Current question:', currentQuestion);
+    console.log('Data type:', currentQuestion.data_type);
+    console.log('Data block:', currentQuestion.data_block);
+    
     return {
       id: questionId,
-      question: currentQuestion.individual_question || 
+      question: currentQuestion.question_stem || 
                currentQuestion.content || 
-               currentQuestion.question || '',
+               currentQuestion.individual_question || '',
       stem: currentQuestion.question_stem || '',
       options: Array.isArray(currentQuestion.options) ? 
                [...currentQuestion.options] : [],
@@ -115,18 +124,8 @@ export function ApplePracticeSession({ questions, onComplete }: PracticeSessionP
       explanation: currentQuestion.worked_solution || 
                   currentQuestion.explanation || ''
     };
-  }, [currentIndex, questionId]);
+  }, [currentIndex, questionId, currentQuestion]);
 
-  // Format time as MM:SS - kept for future use
-  // const formatTime = (seconds: number) => {
-  //   const mins = Math.floor(seconds / 60);
-  //   const secs = seconds % 60;
-  //   return `${mins}:${secs.toString().padStart(2, '0')}`;
-  // };
-
-  // Calculate progress percentage - kept for future use
-  // const progressPercentage = ((currentIndex + 1) / questions.length) * 100;
-  
   // Get stats for the current session
   const getSessionStats = () => {
     const answered = Object.keys(selectedAnswers).length;
@@ -146,247 +145,69 @@ export function ApplePracticeSession({ questions, onComplete }: PracticeSessionP
       accuracy: answered > 0 ? Math.round((correct / answered) * 100) : 0
     };
   };
-  
-  // Check for empty questions
-  useEffect(() => {
-    if (!questions || questions.length === 0) {
-      toast.error('No questions available for practice');
-      onComplete();
-    }
-  }, [questions, onComplete]);
-  
-  // Handle component mount/unmount
-  useEffect(() => {
-    isMountedRef.current = true;
-    
-    return () => {
-      isMountedRef.current = false;
-      if (timerRef.current) {
-        clearInterval(timerRef.current);
-        timerRef.current = null;
-      }
-    };
-  }, []);
-  
-  // Timer logic
-  useEffect(() => {
-    // Don't start timer if feedback is already showing or no questions
-    if (showFeedback || !questions || questions.length === 0 || isTransitioning) {
-      return;
-    }
-    
-    // Clear any existing timer
-    if (timerRef.current) {
-      clearInterval(timerRef.current);
-      timerRef.current = null;
-    }
-    
-    // Start a new timer
-    timerRef.current = setInterval(() => {
-      if (isMountedRef.current) {
-        setTimeRemaining(prev => {
-          // If time is up, show feedback
-          if (prev <= 1) {
-            // Clear the timer
-            if (timerRef.current) {
-              clearInterval(timerRef.current);
-              timerRef.current = null;
-            }
-            
-            // Show feedback only if user has selected an answer
-            if (selectedAnswers[questionId]) {
-              setShowFeedback(true);
-            } else {
-              // If no answer selected, just show a message that time is up
-              toast.info("Time's up! Please select an answer.");
-            }
-            
-            return 0;
-          }
-          
-          return prev - 1;
-        });
-      }
-    }, 1000);
-    
-    // Cleanup timer on unmount
-    return () => {
-      if (timerRef.current) {
-        clearInterval(timerRef.current);
-        timerRef.current = null;
-      }
-    };
-  }, [currentIndex, showFeedback, questionId, selectedAnswers, questions, isTransitioning]);
-  
-  // Handle answer selection
-  const handleAnswerSelect = (answer: string) => {
-    // Only allow selection if feedback isn't already showing
-    if (!showFeedback && !isTransitioning) {
-      // Clear any existing timer
-      if (timerRef.current) {
-        clearInterval(timerRef.current);
-        timerRef.current = null;
-      }
-      
-      // Record the selected answer
-      setSelectedAnswers(prev => ({
-        ...prev,
-        [questionId]: answer
-      }));
-      
-      // Show feedback
-      setShowFeedback(true);
 
-      // Auto-show explanation for incorrect answers
-      if (answer !== questionContent.correctAnswer) {
-        setShowExplanation(true);
-      }
-      
-      // Save the answer to the database if user is logged in
-      if (user) {
-        try {
-          // Use async/await with proper error handling
-          const saveAnswer = async () => {
-            try {
-              const { error } = await supabase
-                .from('practice_answers')
-                .insert({
-                  user_id: user.id,
-                  question_id: questionId,
-                  answer: answer,
-                  correct: answer === questionContent.correctAnswer,
-                  time_spent: 120 - timeRemaining
-                });
-              
-              if (error) {
-                // Log error but don't disrupt user experience
-                console.log('Non-critical error saving answer:', error.message);
-              }
-            } catch (err) {
-              // Catch any unexpected errors but don't disrupt user experience
-              console.log('Error in save answer operation:', err);
-            }
-          };
-          
-          // Execute but don't await - we don't want to block the UI
-          saveAnswer();
-        } catch (e) {
-          // Fallback error handling
-          console.log('Unexpected error in answer handling:', e);
-        }
-      }
+  // Handle selecting an answer
+  const handleAnswerSelect = (answer: string) => {
+    if (showFeedback || isTransitioning) return;
+    
+    // Update selected answer
+    setSelectedAnswers(prev => ({
+      ...prev,
+      [questionId]: answer
+    }));
+    
+    // Show feedback
+    setShowFeedback(true);
+    
+    // Track user progress if authenticated
+    if (user && supabase) {
+      // This would be implemented in a real app
+      console.log('Tracking user progress for question:', questionId);
     }
   };
-  
+
   // Handle moving to the next question
   const handleNextQuestion = () => {
-    // If this is the last question, complete the session
-    if (currentIndex === questions.length - 1 || seenQuestions.size >= questions.length) {
-      // Save session results to database if user is logged in
-      if (user) {
-        try {
-          const stats = getSessionStats();
-          
-          // Use async/await with proper error handling
-          const saveSession = async () => {
-            try {
-              const { error } = await supabase
-                .from('practice_sessions')
-                .insert({
-                  user_id: user.id,
-                  total_questions: questions.length,
-                  correct_count: stats.correct,
-                  incorrect_count: stats.incorrect,
-                  skipped_count: stats.skipped,
-                  accuracy_percentage: stats.accuracy
-                });
-              
-              if (error) {
-                // Log error but don't disrupt user experience
-                console.log('Non-critical error saving session:', error.message);
-              }
-            } catch (err) {
-              // Catch any unexpected errors but don't disrupt user experience
-              console.log('Error in save session operation:', err);
-            }
-          };
-          
-          // Execute but don't await - we don't want to block the UI
-          saveSession();
-        } catch (e) {
-          // Fallback error handling
-          console.log('Unexpected error in session handling:', e);
-        }
-      }
-      
-      // Show completion message and navigate to the main practice section selection page
-      toast.success('Practice session completed!');
-      
-      // Navigate directly to the main practice section selection page (root path)
-      navigate('/');
-      return;
-    }
+    if (isTransitioning) return;
     
-    // Reset state for the next question
+    setIsTransitioning(true);
     setShowFeedback(false);
     setShowExplanation(false);
-    setTimeRemaining(120);
     
-    // Start transition
-    setIsTransitioning(true);
-    
-    // Find the next unseen question
-    let nextIndex = currentIndex + 1;
-    let foundUnseen = false;
-    
-    // Look for an unseen question
-    while (nextIndex < questions.length && !foundUnseen) {
-      const nextQuestionId = questions[nextIndex]?.id;
-      if (nextQuestionId && !seenQuestions.has(nextQuestionId)) {
-        foundUnseen = true;
-        // Add this question to seen questions
-        setSeenQuestions(prev => new Set([...prev, nextQuestionId]));
-      } else {
-        nextIndex++;
-      }
-    }
-    
-    // If we couldn't find an unseen question, end the session
-    if (!foundUnseen) {
-      toast.success('You have completed all available questions!');
-      // Call onComplete to return to the practice filter page
-      onComplete();
-      return;
-    }
-    
-    // Use setTimeout to ensure smooth transition
+    // Use setTimeout to create a smooth transition
     setTimeout(() => {
-      // Set the index to the next unseen question
-      setCurrentIndex(nextIndex);
+      // If we've seen all questions, complete the session
+      if (seenQuestions.size >= questions.length) {
+        onComplete();
+        return;
+      }
       
-      // End transition after a short delay to ensure smooth rendering
-      setTimeout(() => {
-        setIsTransitioning(false);
-      }, 50);
-    }, 100);
+      // Find a question that hasn't been seen yet
+      let nextIndex = currentIndex;
+      const maxAttempts = questions.length;
+      let attempts = 0;
+      
+      while (attempts < maxAttempts) {
+        nextIndex = (nextIndex + 1) % questions.length;
+        const nextQuestionId = questions[nextIndex]?.id;
+        
+        if (nextQuestionId && !seenQuestions.has(nextQuestionId)) {
+          break;
+        }
+        
+        attempts++;
+      }
+      
+      // Update seen questions
+      if (questions[nextIndex]?.id) {
+        setSeenQuestions(prev => new Set([...prev, questions[nextIndex].id]));
+      }
+      
+      // Update current index
+      setCurrentIndex(nextIndex);
+      setIsTransitioning(false);
+    }, 150); // Match the transition duration in the CSS
   };
-
-  // Handle flagging a question - kept for future use
-  // const handleFlag = () => {
-  //   // Toggle the flagged status of the current question
-  //   setFlaggedQuestions((prev: string[]) => {
-  //     if (prev.includes(questionId)) {
-  //       return prev.filter((id: string) => id !== questionId);
-  //     } else {
-  //       return [...prev, questionId];
-  //     }
-  //   });
-  //   // Show toast notification
-  //   const isFlagged = flaggedQuestions.includes(questionId);
-  //   toast.info(isFlagged ? 'Question unflagged' : 'Question flagged for review');
-  // };
-  
-  // Exit functionality removed as the exit button has been removed
 
   // Toggle explanation visibility
   const toggleExplanation = () => {
@@ -396,8 +217,6 @@ export function ApplePracticeSession({ questions, onComplete }: PracticeSessionP
   // Render the component
   return (
     <div className="apple-question-container">
-      {/* We've moved the exit button inside the card for better HIG compliance */}
-      
       {/* Main content */}
       <div className="flex-1 overflow-y-auto">
         {showStats ? (
@@ -430,19 +249,20 @@ export function ApplePracticeSession({ questions, onComplete }: PracticeSessionP
           >
             {/* Question content */}
             <div className="apple-question-content">
-              {/* Question stem */}
-              {questionContent.stem && (
-                <div className="apple-question-stem">
-                  {questionContent.stem}
-                </div>
-              )}
-              
-              {/* Exit button removed as requested */}
-              
               {/* Question title */}
               <h2 className="apple-question-title">
                 {questionContent.question}
               </h2>
+              
+              {/* Data visualization - only show for questions with data blocks */}
+              {currentQuestion && currentQuestion.data_block && Array.isArray(currentQuestion.data_block) && currentQuestion.data_block.length > 0 && (
+                <div className="apple-data-visualization">
+                  <DataVisualization 
+                    type={currentQuestion.data_type || 'bar_chart'} 
+                    data={currentQuestion.data_block} 
+                  />
+                </div>
+              )}
               
               {/* Answer options */}
               <div className="apple-answer-options apple-slide-up">
@@ -510,11 +330,11 @@ export function ApplePracticeSession({ questions, onComplete }: PracticeSessionP
                   </div>
                 </div>
               )}
-              
+
               {/* Explanation */}
               {showFeedback && questionContent.explanation && (
                 <div className="mt-6">
-                  <button 
+                  <button
                     className="flex items-center gap-2 text-[#007AFF] mb-4 py-2 px-3 rounded-md hover:bg-[rgba(0,122,255,0.05)]"
                     onClick={toggleExplanation}
                   >
@@ -528,7 +348,7 @@ export function ApplePracticeSession({ questions, onComplete }: PracticeSessionP
                       <ChevronDown className="h-4 w-4 ml-1" />
                     )}
                   </button>
-                  
+
                   {showExplanation && (
                     <div className="apple-explanation apple-fade-in">
                       <div className="apple-explanation-title">
@@ -543,12 +363,11 @@ export function ApplePracticeSession({ questions, onComplete }: PracticeSessionP
                 </div>
               )}
 
-              
               {/* Action buttons - Apple HIG style */}
               {showFeedback && (
                 <div className="flex justify-center mt-8">
                   {currentIndex === questions.length - 1 || seenQuestions.size >= questions.length ? (
-                    <button 
+                    <button
                       className="py-3 px-6 rounded-full bg-[#007AFF] text-white font-medium text-[17px] flex items-center justify-center w-full max-w-xs transition-all hover:bg-[#0062CC] active:bg-[#0055B3] disabled:opacity-40 shadow-sm"
                       onClick={() => {
                         toast.success('Practice session completed!');
@@ -559,7 +378,7 @@ export function ApplePracticeSession({ questions, onComplete }: PracticeSessionP
                       Complete Session
                     </button>
                   ) : (
-                    <button 
+                    <button
                       className="py-3 px-6 rounded-full bg-[#007AFF] text-white font-medium text-[17px] flex items-center justify-center w-full max-w-xs transition-all hover:bg-[#0062CC] active:bg-[#0055B3] disabled:opacity-40 shadow-sm"
                       onClick={handleNextQuestion}
                       disabled={isTransitioning}
