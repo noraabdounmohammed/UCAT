@@ -1,6 +1,6 @@
 import { useEffect, useReducer, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { NewPracticeSession } from '@/components/practice/NewPracticeSession';
+import { ApplePracticeSession } from '@/components/practice/ApplePracticeSession';
 import { PracticeFilters } from '@/components/practice/PracticeFilters';
 import { fetchQuestions, fetchDynamicTopicStructure, fetchUserProgress } from '@/lib/questions';
 import { PracticeFilterOptions, ProgressData } from '@/types/practice';
@@ -13,8 +13,7 @@ import { cn } from '@/lib/utils';
 import { AnimatePresence, motion } from 'framer-motion';
 import { useUser } from '@supabase/auth-helpers-react';
 import '../components/practice/apple-styles.css';
-import './apple-page-styles.css';
-import '../components/practice/apple-styles.css';
+import '../components/practice/apple-question-styles.css';
 import './apple-page-styles.css';
 
 // Define the state type for our reducer
@@ -206,12 +205,13 @@ export function QuestionPracticePage() {
       
       toast.success('Practice completed! Your progress has been updated.');
       
-      // Navigate back to the previous page
-      navigate(-1);
+      // Instead of navigating back, stay on the page but switch to filter mode
+      // This ensures we return to the section and topic selection interface
     } catch (error) {
       console.error('Error updating progress:', error);
-      // Even if there's an error updating progress, still navigate back
-      navigate(-1);
+      // Even if there's an error updating progress, still reset to filter mode
+      dispatch({ type: 'END_PRACTICE' });
+      dispatch({ type: 'SET_QUESTIONS', payload: [] });
     }
   };
 
@@ -284,21 +284,12 @@ export function QuestionPracticePage() {
         {mode === 'practice' ? (
           // Practice mode content
           <div className="h-full w-full relative">
-            {/* Exit button at the top-right corner */}
-            <div className="absolute top-4 right-4 z-50">
-              <button 
-                className="apple-button apple-button-secondary"
-                onClick={handlePracticeComplete}
-              >
-                Exit Session
-              </button>
-            </div>
             
             {/* Practice session content */}
             
-            {/* Only render NewPracticeSession if we have questions */}
+            {/* Only render ApplePracticeSession if we have questions */}
             {questions.length > 0 ? (
-              <NewPracticeSession
+              <ApplePracticeSession
                 questions={questions.map(q => ({
                   ...q,
                   data_block: q.data_block ? q.data_block as unknown as Record<string, unknown> : null

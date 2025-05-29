@@ -69,13 +69,6 @@ export function MockSetup({ onStart }: MockSetupProps) {
 
   return (
     <div className="apple-container">
-      {/* Apple-style header with SF design principles */}
-      <div className="apple-title-section">
-        <h1 className="apple-heading-1">Mock Exams</h1>
-        <p className="apple-body text-secondary">
-          Practice with full-length UCAT mock exams under realistic test conditions
-        </p>
-      </div>
       
       {/* Content with Apple HIG design */}
       <div className="apple-content-stack">

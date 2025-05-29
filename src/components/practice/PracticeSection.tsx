@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { ModernPracticeSession, QuestionData } from './ModernPracticeSession';
-import { Target, ArrowRight, Calculator, BookOpen, Brain, Scale, Loader2, CheckCircle, XCircle, Flag, SkipForward, Eye, Check } from 'lucide-react';
+import { Target, ArrowRight, Calculator, BookOpen, Brain, Scale, Loader2, CheckCircle, XCircle, Flag, SkipForward, Eye, Check, ChevronRight } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import './animations.css';
 import './apple-section-styles.css';
@@ -33,7 +33,7 @@ export function PracticeSection({ onPracticeStart }: PracticeSectionProps): JSX.
     section: activeSection,
     topics: ['Percentages', 'Ratios', 'Rates & Speed'] as MainTopic[], // Using valid MainTopic values
     difficulty: ['medium'] as DifficultyOption[], // Changed to array to support multiple selections
-    interactionStatus: ['unseen', 'correct', 'incorrect'] as InteractionStatus[],
+    interactionStatus: ['unseen', 'correct', 'incorrect', 'flagged', 'skipped'] as InteractionStatus[], // All options selected by default
     microSkills: []
   });
   
@@ -100,6 +100,21 @@ export function PracticeSection({ onPracticeStart }: PracticeSectionProps): JSX.
     if (skillIds.length === 0) return false;
     return skillIds.every(skillId => filterOptions.microSkills.includes(skillId));
   };
+  
+  // Check if a topic is partially selected (some but not all skills selected)
+  const isTopicPartiallySelected = (topic: MainTopic): boolean => {
+    // Get all skill IDs for this topic
+    const topicData = topicStructure.find((t: {topic: string; skills: Array<{id: string; name: string}>}) => t.topic === topic);
+    const skillIds = topicData?.skills.map(skill => skill.id) || [];
+    
+    if (skillIds.length === 0) return false;
+    
+    // Check if at least one skill is selected but not all
+    const hasSelected = skillIds.some(skillId => filterOptions.microSkills.includes(skillId));
+    const allSelected = skillIds.every(skillId => filterOptions.microSkills.includes(skillId));
+    
+    return hasSelected && !allSelected;
+  };
 
   const isMicroSkillSelected = (skillId: string): boolean => {
     return filterOptions.microSkills.includes(skillId);
@@ -131,11 +146,17 @@ export function PracticeSection({ onPracticeStart }: PracticeSectionProps): JSX.
           // Extract topic names for default selection
           const topicNames = structure.map(item => item.topic);
           
-          // Set all topics as selected by default
+          // Get all skill IDs from all topics to select them all by default
+          const allSkillIds = structure.flatMap(topic => 
+            topic.skills.map(skill => skill.id)
+          );
+          
+          // Set all topics and all their skills as selected by default
           setFilterOptions(prev => ({
             ...prev,
             section: activeSection,
-            topics: topicNames.length > 0 ? topicNames as MainTopic[] : ['Percentages'] as MainTopic[]
+            topics: topicNames.length > 0 ? topicNames as MainTopic[] : ['Percentages'] as MainTopic[],
+            microSkills: allSkillIds
           }));
         }
         
@@ -251,6 +272,20 @@ export function PracticeSection({ onPracticeStart }: PracticeSectionProps): JSX.
   
   // Handle filter changes
   const handleFilterChange = (newFilters: PracticeFilterOptions) => {
+    // Ensure at least one question history option is selected
+    if (newFilters.interactionStatus && newFilters.interactionStatus.length === 0) {
+      // If no interaction status is selected, keep the current selection
+      newFilters.interactionStatus = filterOptions.interactionStatus;
+      toast.error('At least one question history option must be selected');
+    }
+    
+    // Ensure at least one difficulty is selected
+    if (newFilters.difficulty && newFilters.difficulty.length === 0) {
+      // If no difficulty is selected, keep the current selection
+      newFilters.difficulty = filterOptions.difficulty;
+      toast.error('At least one difficulty level must be selected');
+    }
+    
     const updatedFilters = {
       ...newFilters,
       section: activeSection
@@ -301,22 +336,12 @@ export function PracticeSection({ onPracticeStart }: PracticeSectionProps): JSX.
   return (
     <div className="max-w-4xl mx-auto pt-12 px-6">
       
-      <div className="flex flex-col space-y-2 mb-10">
-        <h2 className="text-2xl sm:text-3xl font-semibold text-gray-900 flex items-center gap-3">
-          <Target className="h-6 w-6 text-blue-500" />
-          Target Practice
-        </h2>
-        <p className="text-base text-gray-500 font-light">
-          Practice questions from specific topics and track your progress
-        </p>
-      </div>
+
       
-      <div className="apple-section-selector">
-        <div className="apple-section-header">
-          <h3 className="apple-heading-2">Select Section</h3>
-          <div className="apple-caption">{availableSections.length} sections available</div>
-        </div>
-        <div className="apple-section-list">
+      <div className="apple-section-container">
+        <h3 className="apple-heading-2 mb-4">Select Section</h3>
+        
+        <div className="apple-section-grid">
           {availableSections.map((section) => {
             const SectionIcon = SECTION_DETAILS[section]?.icon || Target;
             const isSelected = activeSection === section;
@@ -325,23 +350,20 @@ export function PracticeSection({ onPracticeStart }: PracticeSectionProps): JSX.
               <div
                 key={section}
                 onClick={() => handleSectionChange(section)}
-                className={`apple-section-item ${isSelected ? 'selected' : ''}`}
+                className={`apple-section-card ${isSelected ? 'selected' : ''}`}
               >
-                <div className={`apple-section-icon ${isSelected ? 'selected' : ''}`}>
-                  <SectionIcon className="h-5 w-5" />
-                </div>
-                <div className="apple-section-content">
-                  <span className="apple-section-title">
-                    {SECTION_DETAILS[section]?.name || section}
-                  </span>
-                  <span className="apple-section-description">
-                    {SECTION_DETAILS[section]?.description}
-                  </span>
+                <div className={`apple-section-card-content`}>
+                  <div className={`apple-section-card-icon ${isSelected ? 'selected' : ''}`}>
+                    <SectionIcon className="h-5 w-5" />
+                  </div>
+                  <div className="apple-section-card-text">
+                    <h4 className="apple-section-card-title">
+                      {SECTION_DETAILS[section]?.name || section}
+                    </h4>
+                  </div>
                 </div>
                 {isSelected && (
-                  <div className="apple-checkmark">
-                    <Check className="h-5 w-5" />
-                  </div>
+                  <div className="apple-section-card-indicator"></div>
                 )}
               </div>
             );
@@ -351,18 +373,15 @@ export function PracticeSection({ onPracticeStart }: PracticeSectionProps): JSX.
       
       {!isPracticing && (
         <div className="space-y-6">
-          {/* Customize Your Practice */}
+          {/* Practice Section Content */}
           <div className="mb-10">
-            <div className="flex items-center mb-6">
-              <h3 className="text-xl font-medium text-gray-900">Customize Your Practice</h3>
-            </div>
 
             {/* Topics */}
             <div className="mb-8">
               <div className="flex items-center mb-4">
-                <h4 className="text-lg font-medium text-gray-800">Topics</h4>
-                <div 
-                  className="ml-auto text-sm text-blue-500 font-medium cursor-pointer hover:text-blue-600 transition-colors duration-200"
+                <h4 className="apple-heading-2">Topics</h4>
+                <button 
+                  className="ml-auto apple-button-small"
                   onClick={() => {
                     // Get all skill IDs from all topics
                     const allSkillIds = topicStructure.flatMap(topic => 
@@ -390,11 +409,11 @@ export function PracticeSection({ onPracticeStart }: PracticeSectionProps): JSX.
                   {topicStructure.flatMap(topic => topic.skills.map(skill => skill.id)).every(id => filterOptions.microSkills.includes(id)) 
                     ? 'Deselect All' 
                     : 'Select All'}
-                </div>
+                </button>
               </div>
               
               {/* Topic list with expandable subtopics - Apple-style UI */}
-              <div className="space-y-2">
+              <div className="apple-topic-list">
                 {filterOptions.topics.map((topic) => {
                   // Get all skills/subtopics for this topic
                   const topicData = topicStructure.find((t: {topic: string; skills: Array<{id: string; name: string}>}) => t.topic === topic);
@@ -403,11 +422,11 @@ export function PracticeSection({ onPracticeStart }: PracticeSectionProps): JSX.
                   const isSelected = isTopicSelected(topic as MainTopic);
                   
                   return (
-                    <div key={topic} className="overflow-hidden">
+                    <div key={topic} className="apple-topic-item-container">
                       {/* Main topic item - Apple-style */}
-                      <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
+                      <div className={`apple-topic-item ${isSelected ? 'selected' : ''}`}>
                         <div 
-                          className="flex items-center p-3 cursor-pointer hover:bg-gray-50 transition-colors duration-200"
+                          className="apple-topic-header"
                           onClick={() => {
                             // Toggle expanded state for this topic
                             setExpandedTopics((prev: Record<string, boolean>) => ({
@@ -418,15 +437,15 @@ export function PracticeSection({ onPracticeStart }: PracticeSectionProps): JSX.
                         >
                           {/* Topic checkbox */}
                           <div 
-                            className="w-5 h-5 rounded-sm border border-gray-300 flex items-center justify-center bg-white mr-3 cursor-pointer"
+                            className={`apple-checkbox ${isSelected ? 'selected' : ''} ${isTopicPartiallySelected(topic as MainTopic) ? 'partial' : ''}`}
                             onClick={(e) => {
                               e.stopPropagation();
                               // Get all skill IDs for this topic
                               const skillIds = getSkillIdsForTopic(topic as MainTopic);
                               
                               // Toggle selection of the entire topic
-                              if (isSelected) {
-                                // If all skills are selected, deselect all of them
+                              if (isSelected || isTopicPartiallySelected(topic as MainTopic)) {
+                                // If all skills are selected or partially selected, deselect all of them
                                 const updatedSkills = filterOptions.microSkills.filter(s => !skillIds.includes(s));
                                 handleFilterChange({
                                   ...filterOptions,
@@ -443,21 +462,17 @@ export function PracticeSection({ onPracticeStart }: PracticeSectionProps): JSX.
                             }}
                           >
                             {isSelected && (
-                              <svg className="w-3 h-3 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                              </svg>
+                              <Check className="h-3 w-3" />
+                            )}
+                            {isTopicPartiallySelected(topic as MainTopic) && (
+                              <div className="apple-checkbox-partial"></div>
                             )}
                           </div>
                           
-                          {/* Topic icon */}
-                          <div className="flex items-center justify-center w-6 h-6 rounded-full bg-blue-50 mr-2">
-                            <BookOpen className="h-3 w-3 text-blue-500" />
-                          </div>
-                          
                           {/* Topic name and info */}
-                          <div className="flex-1">
-                            <div className="text-sm font-medium text-gray-900">{topic}</div>
-                            <div className="text-xs text-gray-500">
+                          <div className="apple-topic-content">
+                            <div className="apple-topic-title">{topic}</div>
+                            <div className="apple-topic-subtitle">
                               {subtopics.length} subtopics
                               {getTopicProgress(topic).total > 0 && (
                                 <span className="ml-2">
@@ -467,19 +482,9 @@ export function PracticeSection({ onPracticeStart }: PracticeSectionProps): JSX.
                             </div>
                           </div>
                           
-                          {/* Disclosure triangle */}
-                          <div className="ml-2">
-                            <svg 
-                              className={`h-4 w-4 text-gray-400 transition-transform duration-200 ${isExpanded ? 'transform rotate-90' : ''}`} 
-                              viewBox="0 0 24 24" 
-                              fill="none" 
-                              stroke="currentColor" 
-                              strokeWidth="2" 
-                              strokeLinecap="round" 
-                              strokeLinejoin="round"
-                            >
-                              <polyline points="9 6 15 12 9 18"></polyline>
-                            </svg>
+                          {/* Disclosure chevron */}
+                          <div className="apple-chevron">
+                            <ChevronRight className={`h-4 w-4 transition-transform duration-200 ${isExpanded ? 'transform rotate-90' : ''}`} />
                           </div>
                         </div>
                         
@@ -539,74 +544,80 @@ export function PracticeSection({ onPracticeStart }: PracticeSectionProps): JSX.
                 <h4 className="text-lg font-medium text-gray-800">Difficulty</h4>
               </div>
               
-              {/* Apple-style checkbox list */}
-              <div className="rounded-xl overflow-hidden shadow-sm border border-gray-100">
+              {/* Apple-style segmented control */}
+              <div className="flex space-x-2">
                 <div 
-                  className="flex items-center p-4 bg-white border-b border-gray-100 cursor-pointer hover:bg-gray-50 transition-colors duration-200"
+                  className={`flex-1 p-3 rounded-xl cursor-pointer ${filterOptions.difficulty.includes('easy') ? 'border border-blue-500 bg-blue-50' : 'border border-gray-200 bg-gray-50'}`}
                   onClick={() => {
                     const isSelected = filterOptions.difficulty.includes('easy');
-                    const updatedDifficulty = isSelected
-                      ? filterOptions.difficulty.filter((d: DifficultyOption) => d !== 'easy')
-                      : [...filterOptions.difficulty, 'easy' as DifficultyOption];
-                    handleFilterChange({...filterOptions, difficulty: updatedDifficulty});
+                    // Only allow deselection if there are other options selected
+                    if (isSelected && filterOptions.difficulty.length > 1) {
+                      const updatedDifficulty = filterOptions.difficulty.filter((d: DifficultyOption) => d !== 'easy');
+                      handleFilterChange({...filterOptions, difficulty: updatedDifficulty});
+                    } else if (!isSelected) {
+                      const updatedDifficulty = [...filterOptions.difficulty, 'easy' as DifficultyOption];
+                      handleFilterChange({...filterOptions, difficulty: updatedDifficulty});
+                    }
                   }}
                 >
-                  <div className="w-6 h-6 rounded-md border border-gray-300 flex items-center justify-center bg-white mr-3">
-                    {filterOptions.difficulty.includes('easy') && (
-                      <svg className="w-4 h-4 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                      </svg>
-                    )}
-                  </div>
-                  <div className="flex-1">
-                    <div className="text-base font-medium text-gray-900">Easy</div>
-                    <div className="text-sm text-gray-500">Beginner-level questions</div>
+                  <div className="flex flex-col items-center justify-center text-center">
+                    <div className="h-6 flex items-center justify-center mb-1">
+                      {filterOptions.difficulty.includes('easy') && (
+                        <Check className="h-4 w-4 text-blue-500" />
+                      )}
+                    </div>
+                    <div className="text-sm font-medium">Easy</div>
+                    <div className="text-xs text-gray-500">Beginner-level</div>
                   </div>
                 </div>
                 
                 <div 
-                  className="flex items-center p-4 bg-white border-b border-gray-100 cursor-pointer hover:bg-gray-50 transition-colors duration-200"
+                  className={`flex-1 p-3 rounded-xl cursor-pointer ${filterOptions.difficulty.includes('medium') ? 'border border-blue-500 bg-blue-50' : 'border border-gray-200 bg-gray-50'} ${filterOptions.difficulty.length === 1 && filterOptions.difficulty.includes('medium') ? 'opacity-90' : ''}`}
                   onClick={() => {
                     const isSelected = filterOptions.difficulty.includes('medium');
-                    const updatedDifficulty = isSelected
-                      ? filterOptions.difficulty.filter((d: DifficultyOption) => d !== 'medium')
-                      : [...filterOptions.difficulty, 'medium' as DifficultyOption];
-                    handleFilterChange({...filterOptions, difficulty: updatedDifficulty});
+                    // Only allow deselection if there are other options selected
+                    if (isSelected && filterOptions.difficulty.length > 1) {
+                      const updatedDifficulty = filterOptions.difficulty.filter((d: DifficultyOption) => d !== 'medium');
+                      handleFilterChange({...filterOptions, difficulty: updatedDifficulty});
+                    } else if (!isSelected) {
+                      const updatedDifficulty = [...filterOptions.difficulty, 'medium' as DifficultyOption];
+                      handleFilterChange({...filterOptions, difficulty: updatedDifficulty});
+                    }
                   }}
                 >
-                  <div className="w-6 h-6 rounded-md border border-gray-300 flex items-center justify-center bg-white mr-3">
-                    {filterOptions.difficulty.includes('medium') && (
-                      <svg className="w-4 h-4 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                      </svg>
-                    )}
-                  </div>
-                  <div className="flex-1">
-                    <div className="text-base font-medium text-gray-900">Medium</div>
-                    <div className="text-sm text-gray-500">Intermediate-level questions</div>
+                  <div className="flex flex-col items-center justify-center text-center">
+                    <div className="h-6 flex items-center justify-center mb-1">
+                      {filterOptions.difficulty.includes('medium') && (
+                        <Check className="h-4 w-4 text-blue-500" />
+                      )}
+                    </div>
+                    <div className="text-sm font-medium">Medium</div>
+                    <div className="text-xs text-gray-500">Intermediate</div>
                   </div>
                 </div>
                 
                 <div 
-                  className="flex items-center p-4 bg-white cursor-pointer hover:bg-gray-50 transition-colors duration-200"
+                  className={`flex-1 p-3 rounded-xl cursor-pointer ${filterOptions.difficulty.includes('hard') ? 'border border-blue-500 bg-blue-50' : 'border border-gray-200 bg-gray-50'} ${filterOptions.difficulty.length === 1 && filterOptions.difficulty.includes('hard') ? 'opacity-90' : ''}`}
                   onClick={() => {
                     const isSelected = filterOptions.difficulty.includes('hard');
-                    const updatedDifficulty = isSelected
-                      ? filterOptions.difficulty.filter((d: DifficultyOption) => d !== 'hard')
-                      : [...filterOptions.difficulty, 'hard' as DifficultyOption];
-                    handleFilterChange({...filterOptions, difficulty: updatedDifficulty});
+                    // Only allow deselection if there are other options selected
+                    if (isSelected && filterOptions.difficulty.length > 1) {
+                      const updatedDifficulty = filterOptions.difficulty.filter((d: DifficultyOption) => d !== 'hard');
+                      handleFilterChange({...filterOptions, difficulty: updatedDifficulty});
+                    } else if (!isSelected) {
+                      const updatedDifficulty = [...filterOptions.difficulty, 'hard' as DifficultyOption];
+                      handleFilterChange({...filterOptions, difficulty: updatedDifficulty});
+                    }
                   }}
                 >
-                  <div className="w-6 h-6 rounded-md border border-gray-300 flex items-center justify-center bg-white mr-3">
-                    {filterOptions.difficulty.includes('hard') && (
-                      <svg className="w-4 h-4 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                      </svg>
-                    )}
-                  </div>
-                  <div className="flex-1">
-                    <div className="text-base font-medium text-gray-900">Hard</div>
-                    <div className="text-sm text-gray-500">Advanced-level questions</div>
+                  <div className="flex flex-col items-center justify-center text-center">
+                    <div className="h-6 flex items-center justify-center mb-1">
+                      {filterOptions.difficulty.includes('hard') && (
+                        <Check className="h-4 w-4 text-blue-500" />
+                      )}
+                    </div>
+                    <div className="text-sm font-medium">Hard</div>
+                    <div className="text-xs text-gray-500">Advanced</div>
                   </div>
                 </div>
               </div>
@@ -624,10 +635,14 @@ export function PracticeSection({ onPracticeStart }: PracticeSectionProps): JSX.
                   className="flex items-center p-4 bg-white border-b border-gray-100 cursor-pointer hover:bg-gray-50 transition-colors duration-200"
                   onClick={() => {
                     const isSelected = filterOptions.interactionStatus.includes('incorrect');
-                    const updatedStatus = isSelected
-                      ? filterOptions.interactionStatus.filter(status => status !== 'incorrect')
-                      : [...filterOptions.interactionStatus, 'incorrect'];
-                    handleFilterChange({...filterOptions, interactionStatus: updatedStatus as InteractionStatus[]});
+                    // Only allow deselection if there are other options selected
+                    if (isSelected && filterOptions.interactionStatus.length > 1) {
+                      const updatedStatus = filterOptions.interactionStatus.filter(status => status !== 'incorrect');
+                      handleFilterChange({...filterOptions, interactionStatus: updatedStatus as InteractionStatus[]});
+                    } else if (!isSelected) {
+                      const updatedStatus = [...filterOptions.interactionStatus, 'incorrect'];
+                      handleFilterChange({...filterOptions, interactionStatus: updatedStatus as InteractionStatus[]});
+                    }
                   }}
                 >
                   <div className="w-8 h-8 rounded-full bg-red-100 flex items-center justify-center mr-3">
@@ -648,10 +663,14 @@ export function PracticeSection({ onPracticeStart }: PracticeSectionProps): JSX.
                   className="flex items-center p-4 bg-white border-b border-gray-100 cursor-pointer hover:bg-gray-50 transition-colors duration-200"
                   onClick={() => {
                     const isSelected = filterOptions.interactionStatus.includes('correct');
-                    const updatedStatus = isSelected
-                      ? filterOptions.interactionStatus.filter(status => status !== 'correct')
-                      : [...filterOptions.interactionStatus, 'correct'];
-                    handleFilterChange({...filterOptions, interactionStatus: updatedStatus as InteractionStatus[]});
+                    // Only allow deselection if there are other options selected
+                    if (isSelected && filterOptions.interactionStatus.length > 1) {
+                      const updatedStatus = filterOptions.interactionStatus.filter(status => status !== 'correct');
+                      handleFilterChange({...filterOptions, interactionStatus: updatedStatus as InteractionStatus[]});
+                    } else if (!isSelected) {
+                      const updatedStatus = [...filterOptions.interactionStatus, 'correct'];
+                      handleFilterChange({...filterOptions, interactionStatus: updatedStatus as InteractionStatus[]});
+                    }
                   }}
                 >
                   <div className="w-8 h-8 rounded-full bg-green-100 flex items-center justify-center mr-3">
@@ -672,10 +691,14 @@ export function PracticeSection({ onPracticeStart }: PracticeSectionProps): JSX.
                   className="flex items-center p-4 bg-white border-b border-gray-100 cursor-pointer hover:bg-gray-50 transition-colors duration-200"
                   onClick={() => {
                     const isSelected = filterOptions.interactionStatus.includes('flagged');
-                    const updatedStatus = isSelected
-                      ? filterOptions.interactionStatus.filter(status => status !== 'flagged')
-                      : [...filterOptions.interactionStatus, 'flagged'];
-                    handleFilterChange({...filterOptions, interactionStatus: updatedStatus as InteractionStatus[]});
+                    // Only allow deselection if there are other options selected
+                    if (isSelected && filterOptions.interactionStatus.length > 1) {
+                      const updatedStatus = filterOptions.interactionStatus.filter(status => status !== 'flagged');
+                      handleFilterChange({...filterOptions, interactionStatus: updatedStatus as InteractionStatus[]});
+                    } else if (!isSelected) {
+                      const updatedStatus = [...filterOptions.interactionStatus, 'flagged'];
+                      handleFilterChange({...filterOptions, interactionStatus: updatedStatus as InteractionStatus[]});
+                    }
                   }}
                 >
                   <div className="w-8 h-8 rounded-full bg-yellow-100 flex items-center justify-center mr-3">
@@ -696,10 +719,14 @@ export function PracticeSection({ onPracticeStart }: PracticeSectionProps): JSX.
                   className="flex items-center p-4 bg-white border-b border-gray-100 cursor-pointer hover:bg-gray-50 transition-colors duration-200"
                   onClick={() => {
                     const isSelected = filterOptions.interactionStatus.includes('skipped');
-                    const updatedStatus = isSelected
-                      ? filterOptions.interactionStatus.filter(status => status !== 'skipped')
-                      : [...filterOptions.interactionStatus, 'skipped'];
-                    handleFilterChange({...filterOptions, interactionStatus: updatedStatus as InteractionStatus[]});
+                    // Only allow deselection if there are other options selected
+                    if (isSelected && filterOptions.interactionStatus.length > 1) {
+                      const updatedStatus = filterOptions.interactionStatus.filter(status => status !== 'skipped');
+                      handleFilterChange({...filterOptions, interactionStatus: updatedStatus as InteractionStatus[]});
+                    } else if (!isSelected) {
+                      const updatedStatus = [...filterOptions.interactionStatus, 'skipped'];
+                      handleFilterChange({...filterOptions, interactionStatus: updatedStatus as InteractionStatus[]});
+                    }
                   }}
                 >
                   <div className="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center mr-3">

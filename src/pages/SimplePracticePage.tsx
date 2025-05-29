@@ -1,14 +1,17 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { NewPracticeSession } from '@/components/practice/NewPracticeSession';
+import { ApplePracticeSession } from '@/components/practice/ApplePracticeSession';
 import { PracticeSection } from '@/components/practice/PracticeSection';
 import { fetchQuestions } from '@/lib/questions';
 import { PracticeFilterOptions } from '@/types/practice';
 import { toast } from 'sonner';
-import { ArrowLeft, BarChart, Filter, X } from 'lucide-react';
+import { ArrowLeft, BarChart, Filter, Target, X } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { AnimatePresence, motion } from 'framer-motion';
 import '../components/practice/apple-styles.css';
+import '../components/practice/apple-question-styles.css';
+import '../components/layout/apple-layout-styles.css';
+import { TitleSection } from '@/components/layout/TitleSection';
 
 // Define a type for the questions
 interface QuestionType {
@@ -58,10 +61,6 @@ export function SimplePracticePage() {
     if (showFilters) setShowFilters(false);
   };
   
-  const handleFilterChange = (newFilters: PracticeFilterOptions) => {
-    setFilterOptions(newFilters);
-  };
-  
   const handleStartPractice = async () => {
     try {
       setIsLoading(true);
@@ -104,41 +103,54 @@ export function SimplePracticePage() {
     <div className="h-screen w-full flex flex-col bg-[#F5F5F7]" data-component-name="SimplePracticePage">
       {/* Apple-style Header - only shown when not in practice mode */}
       {!isPracticeMode && (
-        <header className="bg-white/80 backdrop-blur-md border-b border-[#E5E5EA] px-4 py-3 flex justify-between items-center z-10">
-          <div className="flex items-center gap-2">
-            <button 
-              className="flex items-center text-[#007AFF] font-medium"
-              onClick={handleBackToDashboard}
-            >
-              <ArrowLeft className="h-5 w-5 mr-1" />
-              <span>Back</span>
-            </button>
-            <h1 className="text-[17px] font-semibold text-[#1D1D1F] ml-2">Practice</h1>
+        <header className="bg-white/80 backdrop-blur-md border-b border-[#E5E5EA] px-4 py-3 sticky top-0 z-10">
+          <div className="flex justify-between items-center">
+            <div className="flex items-center gap-2">
+              <button 
+                className="flex items-center text-[#007AFF] font-medium"
+                onClick={handleBackToDashboard}
+              >
+                <ArrowLeft className="h-5 w-5 mr-1" />
+                <span>Back</span>
+              </button>
+            </div>
+            
+            <div className="flex items-center gap-2">
+              <button
+                className={cn(
+                  "w-8 h-8 flex items-center justify-center rounded-full",
+                  showStats ? "bg-[#007AFF] text-white" : "bg-[#F2F2F7] text-[#1D1D1F]"
+                )}
+                onClick={toggleStats}
+                aria-label="Statistics"
+              >
+                <BarChart className="h-4 w-4" />
+              </button>
+              
+              <button
+                className={cn(
+                  "w-8 h-8 flex items-center justify-center rounded-full",
+                  showFilters ? "bg-[#007AFF] text-white" : "bg-[#F2F2F7] text-[#1D1D1F]"
+                )}
+                onClick={toggleFilters}
+                aria-label="Filters"
+              >
+                <Filter className="h-4 w-4" />
+              </button>
+            </div>
           </div>
           
-          <div className="flex items-center gap-2">
-            <button
-              className={cn(
-                "w-8 h-8 flex items-center justify-center rounded-full",
-                showStats ? "bg-[#007AFF] text-white" : "bg-[#F2F2F7] text-[#1D1D1F]"
-              )}
-              onClick={toggleStats}
-              aria-label="Statistics"
-            >
-              <BarChart className="h-4 w-4" />
-            </button>
-            
-            <button
-              className={cn(
-                "w-8 h-8 flex items-center justify-center rounded-full",
-                showFilters ? "bg-[#007AFF] text-white" : "bg-[#F2F2F7] text-[#1D1D1F]"
-              )}
-              onClick={toggleFilters}
-              aria-label="Filters"
-            >
-              <Filter className="h-4 w-4" />
-            </button>
+          <div className="mt-2 mb-1 px-2">
+            <div className="flex items-center gap-2">
+              <Target className="h-5 w-5 text-[#007AFF]" />
+              <h1 className="text-[20px] font-semibold text-[#1D1D1F]">Target Practice</h1>
+            </div>
+            <p className="text-[14px] text-[#86868B] mt-1 ml-7">
+              Practice questions from specific topics and track your progress
+            </p>
           </div>
+          
+
         </header>
       )}
       
@@ -147,19 +159,10 @@ export function SimplePracticePage() {
         {isPracticeMode ? (
           // Practice mode content
           <div className="h-full w-full relative">
-            {/* Exit button at the top-right corner */}
-            <div className="absolute top-4 right-4 z-50">
-              <button 
-                className="flex items-center gap-1.5 px-4 py-2 rounded-lg bg-white border border-[#E5E5EA] text-[#1D1D1F] font-medium text-[15px] shadow-sm"
-                onClick={handlePracticeComplete}
-              >
-                Exit Session
-              </button>
-            </div>
             
             {/* Practice session content */}
             {questions.length > 0 ? (
-              <NewPracticeSession
+              <ApplePracticeSession
                 questions={questions.map(q => ({
                   ...q,
                   data_block: q.data_block || null
@@ -184,10 +187,11 @@ export function SimplePracticePage() {
         ) : (
           // Filter mode content
           <div className="container mx-auto py-6 px-4 sm:px-6 lg:px-8">
-            <div className="mb-6">
-              <h1 className="text-[22px] font-semibold text-[#1D1D1F] mb-1">Practice Questions</h1>
-              <p className="text-[13px] text-[#86868B]">Select topics and skills to practice</p>
-            </div>
+            <TitleSection
+              title="Practice Questions"
+              subtitle="Select topics and skills to practice"
+              icon={<Target className="h-5 w-5" />}
+            />
             
             {/* Stats Panel */}
             <AnimatePresence>
@@ -261,8 +265,7 @@ export function SimplePracticePage() {
                         onClick={handleStartPractice}
                         disabled={isLoading || filterOptions.topics.length === 0}
                         className={cn(
-                          "px-6 py-2 rounded-lg font-medium text-[15px]",
-                          "bg-[#007AFF] text-white",
+                          "apple-button apple-button-primary",
                           (isLoading || filterOptions.topics.length === 0) && "opacity-50"
                         )}
                       >
@@ -275,14 +278,14 @@ export function SimplePracticePage() {
             </AnimatePresence>
             
             {/* Main Practice Card */}
-            <div className="w-full max-w-3xl bg-white rounded-[14px] shadow-md overflow-hidden">
+            <div className="w-full max-w-3xl bg-white rounded-[14px] shadow-md overflow-hidden apple-card">
               <div className="p-4 border-b border-[#E5E5EA]">
                 <h2 className="text-[17px] font-semibold text-[#1D1D1F]">Select a Section</h2>
               </div>
               
               <div className="p-4 space-y-6">
-                <p className="text-[15px] text-[#86868B]">
-                  Choose a section below to start practicing. Each section contains different types of questions.
+                <p className="text-[15px] text-[#86868B] leading-relaxed">
+                  Choose a section below to start practicing. Each section contains different types of questions designed to test your knowledge and skills.
                 </p>
                 
                 {/* Apple HIG-compliant Section Selection */}
