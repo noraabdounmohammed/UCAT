@@ -6,7 +6,8 @@ import {
   CheckCircle, 
   XCircle, 
   BookOpen, 
-  ChevronRight
+  ChevronRight,
+  ArrowLeft
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { DataVisualization } from './DataVisualization';
@@ -55,6 +56,8 @@ export function ApplePracticeSession({ questions, onComplete }: PracticeSessionP
   const [isTransitioning, setIsTransitioning] = useState(false);
   // Track seen questions to prevent repeats
   const [seenQuestions, setSeenQuestions] = useState<Set<string>>(new Set());
+  // State for exit confirmation dialog
+  const [showExitConfirmation, setShowExitConfirmation] = useState(false);
 
   // Services
   const supabase = useSupabaseClient();
@@ -204,9 +207,54 @@ export function ApplePracticeSession({ questions, onComplete }: PracticeSessionP
   // No longer needed as explanation is shown automatically
   // Keeping the showExplanation state for future use
 
+  // Handle exit confirmation
+  const handleExitConfirm = () => {
+    setShowExitConfirmation(false);
+    navigate('/');
+  };
+
+  const handleExitCancel = () => {
+    setShowExitConfirmation(false);
+  };
+
   // Render the component
   return (
-    <div className="apple-question-container">
+    <div className="apple-question-container relative">
+      {/* Discrete exit button */}
+      <button 
+        onClick={() => setShowExitConfirmation(true)}
+        className="absolute top-4 left-4 z-10 p-2 rounded-full bg-[rgba(255,255,255,0.8)] hover:bg-white border border-[rgba(0,0,0,0.1)] transition-all"
+        style={{ backdropFilter: 'blur(4px)' }}
+        aria-label="Exit to main page"
+      >
+        <ArrowLeft className="h-4 w-4 text-[#1D1D1F]" />
+      </button>
+
+      {/* Exit confirmation dialog */}
+      {showExitConfirmation && (
+        <div className="fixed inset-0 bg-black/30 flex items-center justify-center z-50" style={{ backdropFilter: 'blur(4px)' }}>
+          <div className="bg-white rounded-xl p-5 max-w-xs w-full shadow-lg">
+            <h3 className="text-[17px] font-medium text-[#1D1D1F] mb-3">Exit Practice Session?</h3>
+            <p className="text-[15px] text-[#3A3A3C] mb-5">Your progress in this session will not be saved.</p>
+            
+            <div className="flex gap-3">
+              <button 
+                onClick={handleExitCancel}
+                className="flex-1 py-2 px-4 rounded-full border border-[#8E8E93] text-[#1D1D1F] font-medium text-[15px]"
+              >
+                Cancel
+              </button>
+              <button 
+                onClick={handleExitConfirm}
+                className="flex-1 py-2 px-4 rounded-full bg-[#FF3B30] text-white font-medium text-[15px]"
+              >
+                Exit
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Main content */}
       <div className="flex-1 overflow-y-auto">
         {showStats ? (
