@@ -4,13 +4,15 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Label } from '@/components/ui/label';
 import { Separator } from '@/components/ui/separator';
-import { Badge } from '@/components/ui/badge';
 import { 
   Clock, Timer, Brain, Calculator, BookOpen, Scale,
-  ArrowRight, CheckCircle2, Timer as TimerIcon
+  CheckCircle2, Timer as TimerIcon,
+  ChevronRight
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { MockSettings, TimeMode } from '@/types/mock';
+import '../layout/apple-layout-styles.css';
+import './apple-mock-styles.css';
 
 type SectionType = 'VR' | 'DM' | 'QR' | 'SJ';
 
@@ -66,215 +68,181 @@ export function MockSetup({ onStart }: MockSetupProps) {
   };
 
   return (
-    <div className="max-w-4xl mx-auto">
-      {/* Enhanced header with more aesthetic design */}
-      <div className="mb-10 px-6 py-8 bg-gradient-to-r from-indigo-50 to-blue-50 rounded-2xl border border-indigo-100/50 shadow-sm">
-        <div className="flex items-center gap-4 mb-3">
-          <div className="p-3 rounded-full bg-gradient-to-br from-indigo-600 to-blue-600 shadow-md">
-            <Clock className="h-7 w-7 md:h-8 md:w-8 text-white" />
-          </div>
-          <h1 className="text-2xl md:text-3xl font-semibold text-gray-900 tracking-tight">Mock Exams</h1>
-        </div>
-        <p className="text-base md:text-lg text-gray-600 font-normal max-w-2xl">
+    <div className="apple-container">
+      {/* Apple-style header with SF design principles */}
+      <div className="apple-title-section">
+        <h1 className="apple-heading-1">Mock Exams</h1>
+        <p className="apple-body text-secondary">
           Practice with full-length UCAT mock exams under realistic test conditions
         </p>
       </div>
       
-      {/* Content with enhanced aesthetic design */}
-      <div className="space-y-10">
+      {/* Content with Apple HIG design */}
+      <div className="apple-content-stack">
         {/* Mock Type Selection */}
-        <div className="bg-white rounded-2xl border border-gray-200/80 shadow-sm p-6 md:p-8 space-y-6">
-          <div className="flex items-center justify-between border-b border-gray-100 pb-4">
-            <h2 className="text-lg md:text-xl font-medium text-gray-900">Exam Type</h2>
-            <Badge className="px-3 py-1 rounded-full text-sm font-medium bg-indigo-50 text-indigo-700 border border-indigo-100">
-              Step 1 of 2
-            </Badge>
+        <div className="apple-card">
+          <div className="apple-card-header">
+            <div className="flex items-center justify-between">
+              <h2 className="apple-heading-2">Exam Type</h2>
+              <div className="apple-pill-badge">
+                <span>Step 1 of 2</span>
+              </div>
+            </div>
           </div>
           
-          <Tabs
-            value={mockType}
-            onValueChange={(value) => setMockType(value as 'full' | 'section')}
-            className="w-full pt-4"
-          >
-            <TabsList className="grid grid-cols-2 w-full h-auto p-1.5 bg-indigo-50 rounded-xl">
-              <TabsTrigger 
-                value="full" 
-                className={cn(
-                  "flex items-center justify-center gap-2 py-3.5",
-                  "text-base font-medium rounded-lg",
-                  "transition-all duration-200",
-                  "data-[state=active]:bg-white data-[state=active]:text-indigo-700 data-[state=active]:shadow-sm",
-                  "data-[state=inactive]:text-indigo-600/70"
-                )}
-              >
-                <CheckCircle2 className="h-5 w-5" />
-                <span className="hidden sm:inline">Full Mock Exam</span>
-                <span className="sm:hidden">Full</span>
-              </TabsTrigger>
-              <TabsTrigger 
-                value="section" 
-                className={cn(
-                  "flex items-center justify-center gap-2 py-3.5",
-                  "text-base font-medium rounded-lg",
-                  "transition-all duration-200",
-                  "data-[state=active]:bg-white data-[state=active]:text-indigo-700 data-[state=active]:shadow-sm",
-                  "data-[state=inactive]:text-indigo-600/70"
-                )}
-              >
-                <BookOpen className="h-5 w-5" />
-                <span className="hidden sm:inline">Section Practice</span>
-                <span className="sm:hidden">Section</span>
-              </TabsTrigger>
-            </TabsList>
+          <div className="apple-card-content">
+            <Tabs
+              value={mockType}
+              onValueChange={(value) => setMockType(value as 'full' | 'section')}
+              className="w-full"
+            >
+              <TabsList className="apple-segmented-control">
+                <TabsTrigger 
+                  value="full" 
+                  className="apple-segmented-item"
+                >
+                  <CheckCircle2 className="h-4 w-4" />
+                  <span className="hidden sm:inline">Full Mock Exam</span>
+                  <span className="sm:hidden">Full</span>
+                </TabsTrigger>
+                <TabsTrigger 
+                  value="section" 
+                  className="apple-segmented-item"
+                >
+                  <BookOpen className="h-4 w-4" />
+                  <span className="hidden sm:inline">Section Practice</span>
+                  <span className="sm:hidden">Section</span>
+                </TabsTrigger>
+              </TabsList>
 
-            <TabsContent value="full" className="mt-6">
-              <div className="bg-white rounded-xl p-6 space-y-5 border border-gray-200 shadow-sm">
-                <div className="flex items-start gap-4">
-                  <div className="p-3 rounded-full bg-indigo-50 shrink-0">
-                    <CheckCircle2 className="h-6 w-6 text-indigo-600" />
-                  </div>
-                  <div>
-                    <h3 className="font-medium text-lg text-gray-900 mb-1">Full Mock Exam</h3>
-                    <p className="text-base text-gray-600">
-                      Complete a comprehensive UCAT mock exam covering all sections in sequence
-                    </p>
-                  </div>
-                </div>
-                <Separator className="bg-gray-100" />
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-5 pt-2">
-                  {Object.entries(SECTIONS).map(([key, section]) => (
-                    <div key={key} className="flex items-center gap-3 text-base text-gray-700 p-3 bg-gray-50 rounded-lg border border-gray-100">
-                      <div className="text-indigo-600">{section.icon}</div>
-                      <span className="truncate font-medium">{section.label}</span>
-                      <Badge className="ml-auto shrink-0 bg-indigo-50 text-indigo-700 border border-indigo-100 rounded-full px-2.5 py-0.5">
-                        {section.questions} Q
-                      </Badge>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </TabsContent>
-
-            <TabsContent value="section" className="mt-6">
-              <div className="space-y-6">
-                <div className="bg-white rounded-xl p-6 border border-gray-200 shadow-sm">
-                  <div className="flex items-start gap-4">
-                    <div className="p-3 rounded-full bg-indigo-50 shrink-0">
-                      <BookOpen className="h-6 w-6 text-indigo-600" />
+              <TabsContent value="full" className="apple-tabs-content">
+                <div className="apple-info-box">
+                  <div className="apple-info-box-header">
+                    <div className="apple-info-icon">
+                      <CheckCircle2 className="h-5 w-5" />
                     </div>
                     <div>
-                      <h3 className="font-medium text-lg text-gray-900 mb-1">Section Practice</h3>
-                      <p className="text-base text-gray-600">
-                        Focus on a specific section to improve your performance
+                      <h3 className="apple-heading-3">Full Mock Exam</h3>
+                      <p className="apple-body text-secondary">
+                        Complete a comprehensive UCAT mock exam covering all sections in sequence
                       </p>
                     </div>
                   </div>
+                  <Separator className="apple-separator my-4" />
+                  <div className="apple-section-grid">
+                    {Object.entries(SECTIONS).map(([key, section]) => (
+                      <div key={key} className="apple-section-item">
+                        <div className="apple-section-icon">{section.icon}</div>
+                        <span className="apple-section-label">{section.label}</span>
+                        <div className="apple-section-badge">
+                          {section.questions} Q
+                        </div>
+                      </div>
+                    ))}
+                  </div>
                 </div>
+              </TabsContent>
 
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
-                  {Object.entries(SECTIONS).map(([key, section]) => (
-                    <Button
-                      key={key}
-                      variant={selectedSection === key ? 'default' : 'outline'}
-                      className={cn(
-                        "h-auto py-5 px-6",
-                        "flex items-center justify-start gap-4",
-                        "transition-all duration-200",
-                        "rounded-xl border",
-                        selectedSection === key 
-                          ? "bg-gradient-to-r from-indigo-600 to-blue-600 text-white border-transparent shadow-md" 
-                          : "border-gray-200 bg-white text-gray-800 hover:border-indigo-200 hover:bg-indigo-50/30"
-                      )}
-                      onClick={() => setSelectedSection(key as SectionType)}
-                    >
-                      <div className={cn(
-                        "p-3 rounded-full shrink-0",
-                        selectedSection === key ? "bg-white/20" : "bg-gray-100 group-hover:bg-indigo-100/30"
-                      )}>
-                        <div className={selectedSection === key ? "text-white" : "text-indigo-600"}>
-                          {section.icon}
-                        </div>
+              <TabsContent value="section" className="apple-tabs-content">
+                <div className="apple-content-stack">
+                  <div className="apple-info-box">
+                    <div className="apple-info-box-header">
+                      <div className="apple-info-icon">
+                        <BookOpen className="h-5 w-5" />
                       </div>
-                      <div className="text-left min-w-0">
-                        <div className="font-medium text-base md:text-lg">{section.label}</div>
-                        <div className={cn(
-                          "text-sm mt-1",
-                          selectedSection === key ? "text-white/80" : "text-gray-500"
-                        )}>
-                          {section.questions} questions
-                        </div>
+                      <div>
+                        <h3 className="apple-heading-3">Section Practice</h3>
+                        <p className="apple-body text-secondary">
+                          Focus on a specific section to improve your performance
+                        </p>
                       </div>
-                    </Button>
-                  ))}
+                    </div>
+                  </div>
+
+                  <div className="apple-selection-grid">
+                    {Object.entries(SECTIONS).map(([key, section]) => (
+                      <button
+                        key={key}
+                        type="button"
+                        className={cn(
+                          "apple-selection-button",
+                          selectedSection === key && "apple-selection-button-selected"
+                        )}
+                        onClick={() => setSelectedSection(key as SectionType)}
+                      >
+                        <div className="apple-selection-icon-wrapper">
+                          <div className="apple-selection-icon">
+                            {section.icon}
+                          </div>
+                        </div>
+                        <div className="apple-selection-content">
+                          <div className="apple-selection-title">{section.label}</div>
+                          <div className="apple-selection-subtitle">
+                            {section.questions} questions
+                          </div>
+                        </div>
+                        <ChevronRight className="apple-selection-chevron" />
+                      </button>
+                    ))}
+                  </div>
                 </div>
-              </div>
-            </TabsContent>
-          </Tabs>
+              </TabsContent>
+            </Tabs>
+          </div>
         </div>
 
         {/* Time Mode Selection */}
-        <div className="bg-white rounded-2xl border border-gray-200/80 shadow-sm p-6 md:p-8 space-y-6">
-          <div className="flex items-center justify-between border-b border-gray-100 pb-4">
-            <h2 className="text-lg md:text-xl font-medium text-gray-900">Time Settings</h2>
-            <Badge className="px-3 py-1 rounded-full text-sm font-medium bg-indigo-50 text-indigo-700 border border-indigo-100">
-              Step 2 of 2
-            </Badge>
+        <div className="apple-card">
+          <div className="apple-card-header">
+            <div className="flex items-center justify-between">
+              <h2 className="apple-heading-2">Time Settings</h2>
+              <div className="apple-pill-badge">
+                <span>Step 2 of 2</span>
+              </div>
+            </div>
           </div>
           
-          <RadioGroup
-            value={timeMode}
-            onValueChange={(value) => setTimeMode(value as TimeMode)}
-            className="grid grid-cols-1 sm:grid-cols-2 gap-5 pt-2"
-          >
-            {Object.entries(TIME_MODE_INFO).map(([mode, info]) => (
-              <Label
-                key={mode}
-                className={cn(
-                  "flex items-start gap-4 p-5 rounded-xl cursor-pointer transition-all duration-200",
-                  "border hover:shadow-md",
-                  timeMode === mode 
-                    ? "border-indigo-200 bg-indigo-50/50 shadow-sm" 
-                    : "border-gray-200 bg-white hover:border-indigo-200 hover:bg-indigo-50/20"
-                )}
-              >
-                <RadioGroupItem value={mode} className="mt-1 text-indigo-600" />
-                <div className="space-y-2 min-w-0">
-                  <div className="font-medium flex items-center gap-3">
-                    <div className={cn(
-                      "p-2 rounded-full shrink-0",
-                      timeMode === mode ? "bg-indigo-100 text-indigo-700" : "bg-gray-100 text-gray-700"
-                    )}>
-                      {info.icon}
+          <div className="apple-card-content">
+            <RadioGroup
+              value={timeMode}
+              onValueChange={(value) => setTimeMode(value as TimeMode)}
+              className="apple-radio-group"
+            >
+              {Object.entries(TIME_MODE_INFO).map(([mode, info]) => (
+                <Label
+                  key={mode}
+                  className={cn(
+                    "apple-radio-option",
+                    timeMode === mode && "apple-radio-option-selected"
+                  )}
+                >
+                  <RadioGroupItem value={mode} className="apple-radio-input" />
+                  <div className="apple-radio-content">
+                    <div className="apple-radio-header">
+                      <div className="apple-radio-icon">
+                        {info.icon}
+                      </div>
+                      <span className="apple-radio-title">{info.label}</span>
                     </div>
-                    <span className="text-base md:text-lg text-gray-900">{info.label}</span>
+                    <p className="apple-radio-description">{info.description}</p>
+                    <div className="apple-duration-badge">
+                      {info.duration}
+                    </div>
                   </div>
-                  <p className="text-sm md:text-base text-gray-600 line-clamp-2">{info.description}</p>
-                  <Badge className="mt-2 bg-indigo-50 text-indigo-700 border border-indigo-100 rounded-full px-3 py-1">
-                    {info.duration}
-                  </Badge>
-                </div>
-              </Label>
-            ))}
-          </RadioGroup>
+                </Label>
+              ))}
+            </RadioGroup>
+          </div>
         </div>
 
-        {/* Enhanced action button */}
-        <div className="flex justify-end pt-8">
+        {/* Apple-style action button */}
+        <div className="apple-button-container">
           <Button
             onClick={handleStart}
-            className={cn(
-              "relative px-8 py-4 md:px-10 md:py-5",
-              "text-base md:text-lg font-medium",
-              "rounded-full",
-              "transition-all duration-200",
-              "shadow-md hover:shadow-lg",
-              "bg-gradient-to-r from-indigo-600 to-blue-600 text-white hover:from-indigo-700 hover:to-blue-700"
-            )}
+            className="apple-primary-button"
           >
-            <span className="flex items-center justify-center gap-3">
-              <Clock className="h-5 w-5 md:h-6 md:w-6" />
+            <span className="apple-button-content">
               <span>Start Exam</span>
-              <ArrowRight className="h-5 w-5 md:h-6 md:w-6 transition-transform group-hover:translate-x-1" />
             </span>
           </Button>
         </div>
