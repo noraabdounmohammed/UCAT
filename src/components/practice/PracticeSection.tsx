@@ -1,12 +1,13 @@
 import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
-import { ModernPracticeSession, QuestionData } from './ModernPracticeSession';
-import { Target, ArrowRight, Calculator, BookOpen, Brain, Scale, Loader2, CheckCircle, XCircle, Flag, SkipForward, Eye, Check, ChevronRight } from 'lucide-react';
+import { ModernPracticeSession } from './ModernPracticeSession';
+import { Target, ArrowRight, Calculator, BookOpen, Brain, Scale, Loader2, CheckCircle, XCircle, HelpCircle, Flag, SkipForward, Eye, Check, ChevronRight } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import './animations.css';
 import './apple-section-styles.css';
 import { getAvailableSections, Question } from '@/utils/questionBank';
 import { fetchQuestions, fetchQuestionCounts, fetchDynamicTopicStructure, countFilteredQuestions } from '@/lib/questions';
+import { getSectionProgress, getTopicProgress, getSkillProgress } from '@/utils/userProgressStorage';
 import { toast } from 'sonner';
 import { PracticeFilterOptions, MainTopic, DifficultyOption, InteractionStatus } from '@/types/practice';
 
@@ -28,7 +29,7 @@ export function PracticeSection({ onPracticeStart }: PracticeSectionProps): JSX.
   const [isLoading, setIsLoading] = useState(false);
   const [loadingSections, setLoadingSections] = useState(true);
   const [availableSections, setAvailableSections] = useState<string[]>([]);
-  const [questions, setQuestions] = useState<QuestionData[]>([]);
+  const [questions, setQuestions] = useState<Question[]>([]);
   const [isPracticing, setIsPracticing] = useState(false);
   const [filterOptions, setFilterOptions] = useState<PracticeFilterOptions>({
     section: activeSection,
@@ -53,18 +54,54 @@ export function PracticeSection({ onPracticeStart }: PracticeSectionProps): JSX.
     skillCounts: {}
   });
   
-  // User progress tracking - used for displaying progress in UI
-  const [userProgress, setUserProgress] = useState<{
-    topics: Record<string, { correct: number; incorrect: number; total: number }>;
-    skills: Record<string, { correct: number; incorrect: number; total: number }>;
-  }>({
-    topics: {},
-    skills: {}
+  // Track progress data in state to force re-renders when it changes
+  const [progressData, setProgressData] = useState({
+    topics: {} as Record<string, ReturnType<typeof getTopicProgress>>,
+    skills: {} as Record<string, ReturnType<typeof getSkillProgress>>,
+    sections: {} as Record<string, ReturnType<typeof getSectionProgress>>
   });
   
-  // Use userProgress in a utility function to avoid unused variable warning
-  const getTopicProgress = (topic: string) => {
-    return userProgress.topics[topic] || { correct: 0, incorrect: 0, total: 0 };
+  // Force refresh of progress data
+  const refreshProgressData = () => {
+    // Update progress data for current section
+    const sectionProgress = getSectionProgress(activeSection);
+    
+    // Get all topics for the current section
+    const topicsProgress: Record<string, ReturnType<typeof getTopicProgress>> = {};
+    topicStructure.forEach(topic => {
+      topicsProgress[topic.topic] = getTopicProgress(topic.topic);
+    });
+    
+    // Get all skills for the current section
+    const skillsProgress: Record<string, ReturnType<typeof getSkillProgress>> = {};
+    topicStructure.forEach(topic => {
+      topic.skills.forEach(skill => {
+        skillsProgress[skill.id] = getSkillProgress(skill.id);
+      });
+    });
+    
+    // Update state with new progress data
+    setProgressData(prev => ({
+      ...prev,
+      topics: {...prev.topics, ...topicsProgress},
+      skills: {...prev.skills, ...skillsProgress},
+      sections: {...prev.sections, [activeSection]: sectionProgress}
+    }));
+  };
+  
+  // Get topic progress from local storage
+  const getTopicProgressFromStorage = (topic: string) => {
+    return progressData.topics[topic] || getTopicProgress(topic);
+  };
+  
+  // Get section progress from local storage
+  const getSectionProgressFromStorage = (section: string) => {
+    return progressData.sections[section] || getSectionProgress(section);
+  };
+  
+  // Get skill progress from local storage
+  const getSkillProgressFromStorage = (skill: string) => {
+    return progressData.skills[skill] || getSkillProgress(skill);
   };
   
   // Get topic question count directly from the database
@@ -97,7 +134,7 @@ export function PracticeSection({ onPracticeStart }: PracticeSectionProps): JSX.
     };
     
     fetchSections();
-  }, [activeSection]); // Include activeSection in dependency array
+  }, [activeSection]); 
   
   // Helper functions for topic and skill selection
   const isTopicSelected = (topic: MainTopic): boolean => {
@@ -190,26 +227,10 @@ export function PracticeSection({ onPracticeStart }: PracticeSectionProps): JSX.
             total: countsData.total || 0
           });
           
-          // Set up mock user progress data
+          // Load real user progress data from local storage
           if (structure && Array.isArray(structure)) {
-            const topicNames = structure.map(item => item.topic);
-            const progressData: Record<string, { correct: number; incorrect: number; total: number }> = {};
-            
-            topicNames.forEach(topic => {
-              const topicKey = String(topic);
-              // Safely access the count from questionCounts.topicCounts
-              const count = topicKey in questionCounts.topicCounts ? questionCounts.topicCounts[topicKey] : 0;
-              progressData[topicKey] = { 
-                correct: 0, 
-                incorrect: 0, 
-                total: count
-              };
-            });
-            
-            setUserProgress({
-              topics: progressData,
-              skills: {}
-            });
+            // Now that we have the structure, refresh the progress data
+            refreshProgressData();
           }
         }
       } catch (error) {
@@ -240,7 +261,7 @@ export function PracticeSection({ onPracticeStart }: PracticeSectionProps): JSX.
       
       if (fetchedQuestions && fetchedQuestions.length > 0) {
         // Transform questions to the format expected by ModernPracticeSession
-        const questionData: QuestionData[] = fetchedQuestions.map((q: Question) => ({
+        const questionData: Question[] = fetchedQuestions.map((q: Question) => ({
           id: q.id,
           question_stem: q.question_stem,
           individual_question: q.individual_question,
@@ -249,7 +270,7 @@ export function PracticeSection({ onPracticeStart }: PracticeSectionProps): JSX.
           explanation: q.worked_solution,
           topic: q.main_topic,
           difficulty: q.difficulty.toLowerCase() as 'easy' | 'medium' | 'hard',
-          tags: [q.micro_skill] // Use micro_skill as tags
+          tags: [q.micro_skill] 
         }));
         
         setQuestions(questionData);
@@ -274,6 +295,8 @@ export function PracticeSection({ onPracticeStart }: PracticeSectionProps): JSX.
   const handleCompletePractice = () => {
     setIsPracticing(false);
     setQuestions([]);
+    // Refresh progress data when practice is completed
+    setTimeout(() => refreshProgressData(), 100); 
   };
   
   // Handle filter changes
@@ -368,6 +391,13 @@ export function PracticeSection({ onPracticeStart }: PracticeSectionProps): JSX.
                     </h4>
                     <div className="apple-section-card-subtitle">
                       {sectionQuestionCount} questions
+                      {getSectionProgressFromStorage(section).total > 0 && (
+                        <span className="ml-2">
+                          • <span className="text-green-600">{getSectionProgressFromStorage(section).correct} correct</span>
+                          • <span className="text-red-600">{getSectionProgressFromStorage(section).incorrect} incorrect</span>
+                          • <span className="text-amber-600">{getSectionProgressFromStorage(section).skipped} skipped</span>
+                        </span>
+                      )}
                     </div>
                   </div>
                 </div>
@@ -483,10 +513,18 @@ export function PracticeSection({ onPracticeStart }: PracticeSectionProps): JSX.
                             <div className="apple-topic-title">{topic}</div>
                             <div className="apple-topic-subtitle">
                               {subtopics.length} subtopics • {getTopicCount(topic)} questions
-                              {getTopicProgress(topic).total > 0 && (
-                                <span className="ml-2">
-                                  • {getTopicProgress(topic).correct} correct
-                                </span>
+                              {getTopicProgressFromStorage(topic).total > 0 && (
+                                <div className="mt-1 text-xs">
+                                  <span className="text-green-600 mr-2">
+                                    <CheckCircle className="inline h-3 w-3 mr-1" /> {getTopicProgressFromStorage(topic).correct} correct
+                                  </span>
+                                  <span className="text-red-600 mr-2">
+                                    <XCircle className="inline h-3 w-3 mr-1" /> {getTopicProgressFromStorage(topic).incorrect} incorrect
+                                  </span>
+                                  <span className="text-amber-600">
+                                    <HelpCircle className="inline h-3 w-3 mr-1" /> {getTopicProgressFromStorage(topic).skipped} skipped
+                                  </span>
+                                </div>
                               )}
                             </div>
                           </div>
@@ -532,8 +570,21 @@ export function PracticeSection({ onPracticeStart }: PracticeSectionProps): JSX.
                                   <div className="text-xs font-medium text-gray-800">{skill.name}</div>
                                   
                                   {/* Question count */}
-                                  <div className="ml-auto text-xs text-gray-500">
-                                    {getMicroSkillCount(skill.id).total} questions
+                                  <div className="ml-auto text-xs">
+                                    <div className="text-gray-500">{getMicroSkillCount(skill.id).total} questions</div>
+                                    {getSkillProgressFromStorage(skill.id).total > 0 && (
+                                      <div className="flex items-center gap-2 mt-1">
+                                        <span className="text-green-600 flex items-center">
+                                          <CheckCircle className="h-3 w-3 mr-0.5" /> {getSkillProgressFromStorage(skill.id).correct}
+                                        </span>
+                                        <span className="text-red-600 flex items-center">
+                                          <XCircle className="h-3 w-3 mr-0.5" /> {getSkillProgressFromStorage(skill.id).incorrect}
+                                        </span>
+                                        <span className="text-amber-600 flex items-center">
+                                          <HelpCircle className="h-3 w-3 mr-0.5" /> {getSkillProgressFromStorage(skill.id).skipped}
+                                        </span>
+                                      </div>
+                                    )}
                                   </div>
                                 </div>
                               );
@@ -659,7 +710,14 @@ export function PracticeSection({ onPracticeStart }: PracticeSectionProps): JSX.
                   </div>
                   <div className="flex-1">
                     <div className="text-base font-medium text-gray-900">Incorrect</div>
-                    <div className="text-sm text-gray-500">Questions you got wrong</div>
+                    <div className="text-sm text-gray-500">
+                      Questions you got wrong
+                      {getSectionProgressFromStorage(activeSection).incorrect > 0 && (
+                        <span className="ml-2 text-red-600 font-medium">
+                          ({getSectionProgressFromStorage(activeSection).incorrect})
+                        </span>
+                      )}
+                    </div>
                   </div>
                   <div className="w-6 h-6 rounded-full border border-gray-200 flex items-center justify-center">
                     {filterOptions.interactionStatus.includes('incorrect') && (
@@ -687,7 +745,14 @@ export function PracticeSection({ onPracticeStart }: PracticeSectionProps): JSX.
                   </div>
                   <div className="flex-1">
                     <div className="text-base font-medium text-gray-900">Correct</div>
-                    <div className="text-sm text-gray-500">Questions you got right</div>
+                    <div className="text-sm text-gray-500">
+                      Questions you got right
+                      {getSectionProgressFromStorage(activeSection).correct > 0 && (
+                        <span className="ml-2 text-green-600 font-medium">
+                          ({getSectionProgressFromStorage(activeSection).correct})
+                        </span>
+                      )}
+                    </div>
                   </div>
                   <div className="w-6 h-6 rounded-full border border-gray-200 flex items-center justify-center">
                     {filterOptions.interactionStatus.includes('correct') && (
@@ -715,7 +780,14 @@ export function PracticeSection({ onPracticeStart }: PracticeSectionProps): JSX.
                   </div>
                   <div className="flex-1">
                     <div className="text-base font-medium text-gray-900">Flagged</div>
-                    <div className="text-sm text-gray-500">Questions you marked</div>
+                    <div className="text-sm text-gray-500">
+                      Questions you flagged for review
+                      {getSectionProgressFromStorage(activeSection).flagged > 0 && (
+                        <span className="ml-2 text-indigo-600 font-medium">
+                          ({getSectionProgressFromStorage(activeSection).flagged})
+                        </span>
+                      )}
+                    </div>
                   </div>
                   <div className="w-6 h-6 rounded-full border border-gray-200 flex items-center justify-center">
                     {filterOptions.interactionStatus.includes('flagged') && (
@@ -743,7 +815,14 @@ export function PracticeSection({ onPracticeStart }: PracticeSectionProps): JSX.
                   </div>
                   <div className="flex-1">
                     <div className="text-base font-medium text-gray-900">Skipped</div>
-                    <div className="text-sm text-gray-500">Questions you skipped</div>
+                    <div className="text-sm text-gray-500">
+                      Questions you skipped
+                      {getSectionProgressFromStorage(activeSection).skipped > 0 && (
+                        <span className="ml-2 text-amber-600 font-medium">
+                          ({getSectionProgressFromStorage(activeSection).skipped})
+                        </span>
+                      )}
+                    </div>
                   </div>
                   <div className="w-6 h-6 rounded-full border border-gray-200 flex items-center justify-center">
                     {filterOptions.interactionStatus.includes('skipped') && (
@@ -767,7 +846,24 @@ export function PracticeSection({ onPracticeStart }: PracticeSectionProps): JSX.
                   </div>
                   <div className="flex-1">
                     <div className="text-base font-medium text-gray-900">Unseen</div>
-                    <div className="text-sm text-gray-500">Questions you haven't seen</div>
+                    <div className="text-sm text-gray-500">
+                      Questions you haven't seen yet
+                      {(() => {
+                        // Get all tracked questions for this section
+                        const sectionProgress = getSectionProgressFromStorage(activeSection);
+                        const totalTracked = sectionProgress.total || 0;
+                        
+                        // Calculate unseen count - if total tracked is 0 or less than section count, show the difference
+                        // Otherwise, there are no unseen questions (all have been seen)
+                        const unseenCount = Math.max(0, sectionQuestionCount - totalTracked);
+                        
+                        return unseenCount > 0 ? (
+                          <span className="ml-2 text-gray-600 font-medium">({unseenCount})</span>
+                        ) : (
+                          <span className="ml-2 text-green-600 font-medium">(0 - all seen)</span>
+                        );
+                      })()}
+                    </div>
                   </div>
                   <div className="w-6 h-6 rounded-full border border-gray-200 flex items-center justify-center">
                     {filterOptions.interactionStatus.includes('unseen') && (

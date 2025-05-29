@@ -239,11 +239,60 @@ export function ApplePracticeSession({ questions, onComplete }: PracticeSessionP
           >
             {/* Question content */}
             <div className="apple-question-content">
-              {/* Question title in a box */}
-              <div className="apple-question-box">
-                <h2 className="apple-question-title">
-                  {questionContent.question}
-                </h2>
+              {/* Question title in a professional Apple-style card */}
+              <div style={{
+                backgroundColor: '#F5F5F7',
+                borderRadius: '16px',
+                padding: '24px',
+                marginBottom: '24px',
+                boxShadow: '0 2px 8px rgba(0, 0, 0, 0.04)',
+                border: '1px solid rgba(0, 0, 0, 0.06)',
+                position: 'relative',
+                overflow: 'hidden'
+              }}>
+                <div style={{
+                  position: 'absolute',
+                  top: 0,
+                  left: 0,
+                  width: '4px',
+                  height: '100%',
+                  backgroundColor: '#007AFF'
+                }}></div>
+                <div style={{
+                  display: 'flex',
+                  alignItems: 'flex-start',
+                  gap: '16px'
+                }}>
+                  <div style={{
+                    backgroundColor: 'rgba(0, 122, 255, 0.1)',
+                    borderRadius: '8px',
+                    minWidth: '60px',
+                    height: '28px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    flexShrink: 0,
+                    marginTop: '2px',
+                    padding: '0 8px'
+                  }}>
+                    <span style={{
+                      color: '#007AFF',
+                      fontSize: '14px',
+                      fontWeight: 600
+                    }}>{`Q${currentIndex + 1}/${questions.length}`}</span>
+                  </div>
+                  <h2 style={{
+                    fontSize: '17px',
+                    fontWeight: 500,
+                    color: '#1D1D1F',
+                    margin: 0,
+                    lineHeight: 1.5,
+                    letterSpacing: '-0.022em',
+                    fontFamily: '-apple-system, BlinkMacSystemFont, "SF Pro Display", "Helvetica Neue", Arial, sans-serif'
+                  }}>
+                    {questionContent.question}
+                  </h2>
+                </div>
               </div>
               
               {/* Data visualization - only show for questions with data blocks */}
@@ -307,7 +356,7 @@ export function ApplePracticeSession({ questions, onComplete }: PracticeSessionP
                     ? "bg-[rgba(52,199,89,0.08)] border border-[#34C759]" 
                     : "bg-[rgba(255,59,48,0.08)] border border-[#FF3B30]"
                 )}>
-                  <div className="flex items-center gap-2 font-medium text-[14px]">
+                  <div className="flex items-center gap-2 font-medium text-[16px]">
                     {selectedAnswers[questionId] === questionContent.correctAnswer ? (
                       <>
                         <CheckCircle className="h-4 w-4 text-[#34C759]" />
@@ -331,7 +380,7 @@ export function ApplePracticeSession({ questions, onComplete }: PracticeSessionP
                       <BookOpen className="h-4 w-4 text-[#007AFF]" />
                       <span className="font-semibold text-[16px] text-[#1D1D1F]">Explanation</span>
                     </div>
-                    <div className="apple-explanation-content text-[14px] leading-relaxed text-[#3A3A3C]">
+                    <div className="apple-explanation-content text-[16px] leading-relaxed text-[#1D1D1F]">
                       {questionContent.explanation}
                     </div>
                   </div>

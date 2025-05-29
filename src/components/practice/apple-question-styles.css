@@ -191,6 +191,15 @@
   letter-spacing: -0.01em;
 }
 
+.apple-question-box {
+  background-color: #FFFFFF;
+  border-radius: var(--sf-radius-lg);
+  padding: var(--sf-spacing-lg);
+  margin-bottom: var(--sf-spacing-lg);
+  box-shadow: var(--sf-shadow-sm);
+  border: 1px solid var(--sf-separator);
+}
+
 .apple-question-title {
   font-size: 17px;
   font-weight: 400; /* SF Pro Regular - not bold */

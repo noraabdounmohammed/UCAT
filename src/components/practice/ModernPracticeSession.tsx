@@ -1,6 +1,8 @@
 import { useState, useEffect } from 'react';
 import { useSupabaseClient, useUser } from '@supabase/auth-helpers-react';
 import { toast } from 'sonner';
+import { updateQuestionProgress } from '@/utils/userProgressStorage';
+import { InteractionStatus } from '@/types/practice';
 import { 
   Clock, 
   CheckCircle, 
@@ -437,12 +439,52 @@ export function ModernPracticeSession({ questions, onComplete }: PracticeSession
       [normalizedQuestion.id]: optionId
     }));
     
+    // Determine if answer is correct
+    const isAnswerCorrect = optionId === normalizedQuestion.correctAnswer;
+    
+    // Update user progress in local storage
+    const status: InteractionStatus = isAnswerCorrect ? 'correct' : 'incorrect';
+    const question = questions[currentIndex];
+    
+    // Get topic, skill, and section from the question
+    const topic = (question.main_topic || question.topic || '') as string;
+    const skill = (question.micro_skill || question.microSkill || '') as string;
+    const section = (question.section || '') as string;
+    
+    // Update progress in local storage
+    updateQuestionProgress(
+      normalizedQuestion.id,
+      status,
+      topic,
+      skill,
+      section
+    );
+    
     // Auto-show explanation after selecting an answer
     setShowExplanation(true);
   };
   
   // Handle moving to next question
   const handleNextQuestion = () => {
+    // If current question is not answered, mark it as skipped
+    if (!isAnswered) {
+      const question = questions[currentIndex];
+      
+      // Get topic, skill, and section from the question
+      const topic = question.main_topic || question.topic || '';
+      const skill = question.micro_skill || question.microSkill || '';
+      const section = question.section || '';
+      
+      // Update progress in local storage as skipped
+      updateQuestionProgress(
+        normalizedQuestion.id,
+        'skipped',
+        topic as string,
+        skill as string,
+        section as string
+      );
+    }
+    
     if (isLastQuestion && !reviewMode) {
       // Calculate stats and generate answers summary for the performance review
       const stats = calculateStats();
@@ -475,10 +517,31 @@ export function ModernPracticeSession({ questions, onComplete }: PracticeSession
   
   // Toggle bookmark for current question
   const handleToggleBookmark = () => {
+    const newBookmarkState = !isBookmarked;
+    
     if (isBookmarked) {
       setBookmarkedQuestions(prev => prev.filter(id => id !== normalizedQuestion.id));
     } else {
       setBookmarkedQuestions(prev => [...prev, normalizedQuestion.id]);
+    }
+    
+    // If bookmarking, update the question status to flagged in local storage
+    if (newBookmarkState) {
+      const question = questions[currentIndex];
+      
+      // Get topic, skill, and section from the question
+      const topic = question.main_topic || question.topic || '';
+      const skill = question.micro_skill || question.microSkill || '';
+      const section = question.section || '';
+      
+      // Update progress in local storage
+      updateQuestionProgress(
+        normalizedQuestion.id,
+        'flagged',
+        topic as string,
+        skill as string,
+        section as string
+      );
     }
   };
   
