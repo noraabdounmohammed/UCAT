@@ -1,0 +1,234 @@
+/* Apple Authentication Styles */
+.apple-auth-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  max-width: 480px;
+  min-height: 480px;
+  margin: 0 auto;
+  padding: 40px;
+  background-color: rgba(255, 255, 255, 0.9);
+  border-radius: 16px;
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.08);
+}
+
+.apple-auth-header {
+  width: 100%;
+  text-align: center;
+  margin-bottom: 32px;
+}
+
+.apple-auth-title {
+  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Helvetica Neue", sans-serif;
+  font-size: 28px;
+  font-weight: 600;
+  color: #1D1D1F;
+  margin-bottom: 8px;
+  letter-spacing: -0.01em;
+}
+
+.apple-auth-description {
+  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Helvetica Neue", sans-serif;
+  font-size: 15px;
+  line-height: 1.3;
+  font-weight: 400;
+  color: #86868B;
+  margin-bottom: 24px;
+  max-width: 280px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.apple-auth-form {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  justify-content: center;
+}
+
+.apple-auth-field {
+  margin-bottom: 24px;
+  width: 100%;
+}
+
+.apple-auth-label {
+  display: block;
+  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Helvetica Neue", sans-serif;
+  font-size: 14px;
+  font-weight: 500;
+  color: #1D1D1F;
+  margin-bottom: 0.5rem;
+}
+
+.apple-auth-input {
+  width: 100%;
+  height: 44px;
+  padding: 0 16px;
+  border-radius: 10px;
+  border: 1px solid #D2D2D7;
+  background-color: #FFFFFF;
+  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Helvetica Neue", sans-serif;
+  font-size: 16px;
+  color: #1D1D1F;
+  transition: all 0.2s ease;
+  -webkit-appearance: none;
+  appearance: none;
+}
+
+.apple-auth-input:focus {
+  outline: none;
+  border-color: #0066CC;
+  box-shadow: 0 0 0 4px rgba(0, 102, 204, 0.1);
+}
+
+.apple-auth-input.error {
+  border-color: #FF3B30;
+}
+
+.apple-auth-error {
+  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Helvetica Neue", sans-serif;
+  font-size: 12px;
+  color: #FF3B30;
+  margin-top: 0.25rem;
+}
+
+.apple-auth-alert {
+  width: 100%;
+  padding: 0.75rem;
+  margin-bottom: 1rem;
+  border-radius: 8px;
+  background-color: rgba(255, 59, 48, 0.1);
+  border: 1px solid rgba(255, 59, 48, 0.2);
+}
+
+.apple-auth-alert-text {
+  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Helvetica Neue", sans-serif;
+  font-size: 14px;
+  color: #FF3B30;
+}
+
+.apple-auth-button {
+  width: 100%;
+  height: 50px;
+  border-radius: 12px;
+  background-color: #0066CC;
+  color: white;
+  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Helvetica Neue", sans-serif;
+  font-size: 17px;
+  font-weight: 600;
+  border: none;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-top: 8px;
+}
+
+.apple-auth-button:hover {
+  background-color: #0055B3;
+}
+
+.apple-auth-button:active {
+  background-color: #004699;
+}
+
+.apple-auth-button:disabled {
+  background-color: #0066CC;
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.apple-auth-link {
+  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Helvetica Neue", sans-serif;
+  font-size: 14px;
+  color: #0066CC;
+  text-align: center;
+  margin-top: 1rem;
+  cursor: pointer;
+  background: none;
+  border: none;
+  padding: 0;
+  transition: color 0.2s ease;
+}
+
+.apple-auth-link:hover {
+  color: #0055B3;
+  text-decoration: underline;
+}
+
+.apple-auth-spinner {
+  animation: spin 1s linear infinite;
+  margin-right: 0.5rem;
+}
+
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.apple-auth-background {
+  min-height: 100vh;
+  width: 100%;
+  background-color: #F5F5F7;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 4rem;
+  position: relative;
+  overflow: hidden;
+}
+
+.apple-auth-background::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: radial-gradient(circle at 30% 30%, rgba(0, 102, 204, 0.05) 0%, rgba(0, 102, 204, 0) 70%),
+              radial-gradient(circle at 70% 70%, rgba(0, 102, 204, 0.05) 0%, rgba(0, 102, 204, 0) 70%);
+  z-index: 0;
+}
+
+.apple-auth-container {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+.apple-auth-content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  width: 100%;
+  margin-top: 1rem;
+}
+
+/* Apple logo animation */
+.apple-auth-logo {
+  width: 40px;
+  height: 40px;
+  margin-bottom: 1.5rem;
+  opacity: 0.8;
+}
+
+/* Responsive adjustments */
+@media (max-width: 640px) {
+  .apple-auth-container {
+    padding: 1.5rem;
+    max-width: 100%;
+    border-radius: 8px;
+  }
+}

@@ -2,13 +2,9 @@ import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
-import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Loader2 } from 'lucide-react';
+import { Loader2, AlertCircle } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
+import './apple-auth-styles.css';
 
 const formSchema = z.object({
   email: z.string().email('Please enter a valid email address'),
@@ -82,70 +78,79 @@ export function AuthForm() {
   };
 
   return (
-    <Card className="w-full max-w-md mx-auto">
-      <CardHeader>
-        <CardTitle>{mode === 'signin' ? 'Sign In' : 'Create Account'}</CardTitle>
-        <CardDescription>
-          {mode === 'signin' 
-            ? 'Enter your email and password to access your account' 
-            : 'Create a new account to get started'}
-        </CardDescription>
-      </CardHeader>
-      <form onSubmit={handleSubmit(onSubmit)}>
-        <CardContent className="space-y-4">
+    <div className="apple-auth-background">
+      <div className="apple-auth-container">
+        <div className="apple-auth-header">
+          <h1 className="apple-auth-title">
+            {mode === 'signin' ? 'Sign In' : 'Create Account'}
+          </h1>
+          <p className="apple-auth-description">
+            {mode === 'signin' 
+              ? 'Sign in with your email to continue' 
+              : 'Create an account to get started'}
+          </p>
+        </div>
+        <div className="apple-auth-content">
+        
+        <form onSubmit={handleSubmit(onSubmit)} className="apple-auth-form">
           {error && (
-            <Alert variant="destructive">
-              <AlertDescription>{error}</AlertDescription>
-            </Alert>
+            <div className="apple-auth-alert">
+              <div className="apple-auth-alert-text">
+                <AlertCircle className="h-4 w-4" style={{ display: 'inline', marginRight: '6px' }} />
+                {error}
+              </div>
+            </div>
           )}
-          <div className="space-y-2">
-            <Label htmlFor="email">Email</Label>
-            <Input
+          
+          <div className="apple-auth-field">
+            <label htmlFor="email" className="apple-auth-label">Email</label>
+            <input
               id="email"
               type="email"
               placeholder="you@example.com"
               {...register('email')}
-              className={errors.email ? 'border-destructive' : ''}
+              className={`apple-auth-input ${errors.email ? 'error' : ''}`}
             />
             {errors.email && (
-              <p className="text-sm text-destructive">{errors.email.message}</p>
+              <p className="apple-auth-error">{errors.email.message}</p>
             )}
           </div>
-          <div className="space-y-2">
-            <Label htmlFor="password">Password</Label>
-            <Input
+          
+          <div className="apple-auth-field">
+            <label htmlFor="password" className="apple-auth-label">Password</label>
+            <input
               id="password"
               type="password"
               placeholder={mode === 'signup' ? 'Min. 6 characters' : ''}
               {...register('password')}
-              className={errors.password ? 'border-destructive' : ''}
+              className={`apple-auth-input ${errors.password ? 'error' : ''}`}
             />
             {errors.password && (
-              <p className="text-sm text-destructive">{errors.password.message}</p>
+              <p className="apple-auth-error">{errors.password.message}</p>
             )}
           </div>
-        </CardContent>
-        <CardFooter className="flex flex-col space-y-4">
-          <Button 
+          
+          <button 
             type="submit" 
-            className="w-full"
+            className="apple-auth-button"
             disabled={isLoading}
           >
-            {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+            {isLoading && <Loader2 className="h-4 w-4 apple-auth-spinner" />}
             {mode === 'signin' ? 'Sign In' : 'Create Account'}
-          </Button>
-          <Button
+          </button>
+          
+          <button
             type="button"
-            variant="link"
-            className="text-sm"
+            className="apple-auth-link"
             onClick={toggleMode}
           >
             {mode === 'signin' 
-              ? "Don't have an account? Sign up" 
+              ? "Don't have an account? Create one" 
               : 'Already have an account? Sign in'}
-          </Button>
-        </CardFooter>
-      </form>
-    </Card>
+          </button>
+        </form>
+        </div>
+      </div>
+    </div>
   );
 }
