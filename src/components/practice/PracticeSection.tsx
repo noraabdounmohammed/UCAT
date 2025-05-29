@@ -20,6 +20,7 @@ const SECTION_DETAILS: Record<string, { name: string, icon: LucideIcon, descript
 
 interface PracticeSectionProps {
   onPracticeStart?: (section: string) => void;
+  // Removed unused prop
 }
 
 export function PracticeSection({ onPracticeStart }: PracticeSectionProps): JSX.Element {
@@ -66,8 +67,16 @@ export function PracticeSection({ onPracticeStart }: PracticeSectionProps): JSX.
     return userProgress.topics[topic] || { correct: 0, incorrect: 0, total: 0 };
   };
   
+  // Get topic question count directly from the database
+  const getTopicCount = (topic: string): number => {
+    return questionCounts.topicCounts[topic] || 0;
+  };
+  
   // Track filtered question count
   const [filteredCount, setFilteredCount] = useState(0);
+  
+  // Track total question count for the active section
+  const [sectionQuestionCount, setSectionQuestionCount] = useState(0);
   
   // Fetch available sections on component mount
   useEffect(() => {
@@ -162,26 +171,23 @@ export function PracticeSection({ onPracticeStart }: PracticeSectionProps): JSX.
         
         // Fetch question counts for the active section
         const countsData = await fetchQuestionCounts(activeSection);
+        console.log('Fetched counts data:', countsData);
+        
         if (countsData) {
-          // Ensure counts is the correct type (Record<string, number>)
-          const topicCounts: Record<string, number> = {};
-          
-          // Extract only the numeric counts from the response
-          // This handles the case where the API might return a complex object
-          if (typeof countsData === 'object' && countsData !== null) {
-            // Use a more specific type for the data structure
-            const data = countsData as Record<string, unknown>;
-            Object.keys(data).forEach(key => {
-              // Only include numeric values in our topicCounts
-              if (typeof data[key] === 'number') {
-                topicCounts[key] = data[key] as number;
-              }
-            });
-          }
-          
+          // Set the question counts directly from the response
           setQuestionCounts({
-            topicCounts,
-            skillCounts: {}
+            topicCounts: countsData.topicCounts || {},
+            skillCounts: countsData.skillCounts || {}
+          });
+          
+          // Set the total question count for the section
+          setSectionQuestionCount(countsData.total || 0);
+          
+          // Debug log the question counts
+          console.log('Set question counts:', {
+            topicCounts: countsData.topicCounts || {},
+            skillCounts: countsData.skillCounts || {},
+            total: countsData.total || 0
           });
           
           // Set up mock user progress data
@@ -191,8 +197,8 @@ export function PracticeSection({ onPracticeStart }: PracticeSectionProps): JSX.
             
             topicNames.forEach(topic => {
               const topicKey = String(topic);
-              // Safely access the count from topicCounts
-              const count = topicKey in topicCounts ? topicCounts[topicKey] : 0;
+              // Safely access the count from questionCounts.topicCounts
+              const count = topicKey in questionCounts.topicCounts ? questionCounts.topicCounts[topicKey] : 0;
               progressData[topicKey] = { 
                 correct: 0, 
                 incorrect: 0, 
@@ -360,6 +366,9 @@ export function PracticeSection({ onPracticeStart }: PracticeSectionProps): JSX.
                     <h4 className="apple-section-card-title">
                       {SECTION_DETAILS[section]?.name || section}
                     </h4>
+                    <div className="apple-section-card-subtitle">
+                      {sectionQuestionCount} questions
+                    </div>
                   </div>
                 </div>
                 {isSelected && (
@@ -473,7 +482,7 @@ export function PracticeSection({ onPracticeStart }: PracticeSectionProps): JSX.
                           <div className="apple-topic-content">
                             <div className="apple-topic-title">{topic}</div>
                             <div className="apple-topic-subtitle">
-                              {subtopics.length} subtopics
+                              {subtopics.length} subtopics • {getTopicCount(topic)} questions
                               {getTopicProgress(topic).total > 0 && (
                                 <span className="ml-2">
                                   • {getTopicProgress(topic).correct} correct

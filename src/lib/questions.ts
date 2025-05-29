@@ -171,6 +171,9 @@ export async function fetchQuestionCounts(section?: string) {
     // Get dynamic counts by actually loading and counting questions in each file
     const dynamicCounts = await getDynamicQuestionCounts(section);
     
+    // Log the counts for debugging
+    console.log('Fetched question counts:', dynamicCounts);
+    
     // Return in a format that works with both the practice page and dashboard
     return {
       // For the practice page

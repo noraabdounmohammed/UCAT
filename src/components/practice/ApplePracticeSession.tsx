@@ -6,10 +6,7 @@ import {
   CheckCircle, 
   XCircle, 
   BookOpen, 
-  ChevronRight,
-  Info,
-  ChevronUp,
-  ChevronDown
+  ChevronRight
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { DataVisualization } from './DataVisualization';
@@ -53,11 +50,9 @@ export function ApplePracticeSession({ questions, onComplete }: PracticeSessionP
   const [selectedAnswers, setSelectedAnswers] = useState<Record<string, string>>({});
   const [skippedQuestions] = useState<string[]>([]); // Kept for future use
   const [flaggedQuestions] = useState<string[]>([]);
-  const [timeRemaining, setTimeRemaining] = useState(120); // 2 minutes per question
   const [showFeedback, setShowFeedback] = useState(false);
   const [showStats] = useState(false); // Kept for future use
   const [isTransitioning, setIsTransitioning] = useState(false);
-  const [showExplanation, setShowExplanation] = useState(false);
   // Track seen questions to prevent repeats
   const [seenQuestions, setSeenQuestions] = useState<Set<string>>(new Set());
 
@@ -68,8 +63,6 @@ export function ApplePracticeSession({ questions, onComplete }: PracticeSessionP
 
   // Refs to prevent unnecessary re-renders
   const questionsRef = useRef<QuestionData[]>(questions);
-  const timerRef = useRef<NodeJS.Timeout | null>(null);
-  const isMountedRef = useRef(true);
   
   // Update questions ref when prop changes and initialize seen questions
   useEffect(() => {
@@ -156,7 +149,7 @@ export function ApplePracticeSession({ questions, onComplete }: PracticeSessionP
       [questionId]: answer
     }));
     
-    // Show feedback
+    // Show feedback with explanation automatically displayed
     setShowFeedback(true);
     
     // Track user progress if authenticated
@@ -172,7 +165,6 @@ export function ApplePracticeSession({ questions, onComplete }: PracticeSessionP
     
     setIsTransitioning(true);
     setShowFeedback(false);
-    setShowExplanation(false);
     
     // Use setTimeout to create a smooth transition
     setTimeout(() => {
@@ -209,10 +201,8 @@ export function ApplePracticeSession({ questions, onComplete }: PracticeSessionP
     }, 150); // Match the transition duration in the CSS
   };
 
-  // Toggle explanation visibility
-  const toggleExplanation = () => {
-    setShowExplanation((prev: boolean) => !prev);
-  };
+  // No longer needed as explanation is shown automatically
+  // Keeping the showExplanation state for future use
 
   // Render the component
   return (
@@ -249,10 +239,12 @@ export function ApplePracticeSession({ questions, onComplete }: PracticeSessionP
           >
             {/* Question content */}
             <div className="apple-question-content">
-              {/* Question title */}
-              <h2 className="apple-question-title">
-                {questionContent.question}
-              </h2>
+              {/* Question title in a box */}
+              <div className="apple-question-box">
+                <h2 className="apple-question-title">
+                  {questionContent.question}
+                </h2>
+              </div>
               
               {/* Data visualization - only show for questions with data blocks */}
               {currentQuestion && currentQuestion.data_block && Array.isArray(currentQuestion.data_block) && currentQuestion.data_block.length > 0 && (
@@ -281,17 +273,17 @@ export function ApplePracticeSession({ questions, onComplete }: PracticeSessionP
                       disabled={showFeedback || isTransitioning}
                       onClick={() => handleAnswerSelect(optionLetter)}
                       className={cn(
-                        "apple-answer-option rounded-xl border border-[#E5E5EA] bg-white p-4 mb-3 flex items-center transition-all",
+                        "apple-answer-option rounded-xl border border-[#E5E5EA] bg-white p-4 mb-1.5 flex items-center transition-all",
                         showFeedback && isCorrect && "correct border-[#34C759] bg-[rgba(52,199,89,0.05)]",
                         showFeedback && isSelected && !isCorrect && "incorrect border-[#FF3B30] bg-[rgba(255,59,48,0.05)]",
                         !showFeedback && isSelected && "selected border-[#007AFF] bg-[rgba(0,122,255,0.05)]",
                         !showFeedback && !isSelected && "hover:border-[#8E8E93] hover:bg-[#F5F5F7]"
                       )}
                     >
-                      <div className="flex items-center justify-center w-8 h-8 rounded-full bg-[#F5F5F7] mr-3 font-medium text-[15px] text-[#1D1D1F]">
+                      <div className="flex items-center justify-center w-8 h-8 rounded-full bg-[#F5F5F7] mr-3 font-medium text-[14px] text-[#1D1D1F]">
                         {optionLetter}
                       </div>
-                      <div className="flex-1 text-[17px] text-[#1D1D1F] font-normal">{optionText}</div>
+                      <div className="flex-1 text-[16px] text-[#1D1D1F] font-normal">{optionText}</div>
                       {showFeedback && (
                         <div className="ml-2">
                           {isCorrect && (
@@ -310,65 +302,48 @@ export function ApplePracticeSession({ questions, onComplete }: PracticeSessionP
               {/* Feedback section */}
               {showFeedback && (
                 <div className={cn(
-                  "apple-feedback apple-fade-in",
+                  "apple-feedback apple-fade-in rounded-xl p-3 my-4",
                   selectedAnswers[questionId] === questionContent.correctAnswer 
-                    ? "correct" 
-                    : "incorrect"
+                    ? "bg-[rgba(52,199,89,0.08)] border border-[#34C759]" 
+                    : "bg-[rgba(255,59,48,0.08)] border border-[#FF3B30]"
                 )}>
-                  <div className="flex items-center gap-2 font-medium">
+                  <div className="flex items-center gap-2 font-medium text-[14px]">
                     {selectedAnswers[questionId] === questionContent.correctAnswer ? (
                       <>
-                        <CheckCircle className="h-5 w-5" />
-                        <span>Correct Answer</span>
+                        <CheckCircle className="h-4 w-4 text-[#34C759]" />
+                        <span className="text-[#1D1D1F]">Correct Answer</span>
                       </>
                     ) : (
                       <>
-                        <XCircle className="h-5 w-5" />
-                        <span>Incorrect Answer</span>
+                        <XCircle className="h-4 w-4 text-[#FF3B30]" />
+                        <span className="text-[#1D1D1F]">Incorrect Answer</span>
                       </>
                     )}
                   </div>
                 </div>
               )}
 
-              {/* Explanation */}
+              {/* Explanation - automatically shown when question is answered */}
               {showFeedback && questionContent.explanation && (
-                <div className="mt-6">
-                  <button
-                    className="flex items-center gap-2 text-[#007AFF] mb-4 py-2 px-3 rounded-md hover:bg-[rgba(0,122,255,0.05)]"
-                    onClick={toggleExplanation}
-                  >
-                    <Info className="h-4 w-4" />
-                    <span className="font-medium text-[17px]">
-                      {showExplanation ? 'Hide Explanation' : 'Show Explanation'}
-                    </span>
-                    {showExplanation ? (
-                      <ChevronUp className="h-4 w-4 ml-1" />
-                    ) : (
-                      <ChevronDown className="h-4 w-4 ml-1" />
-                    )}
-                  </button>
-
-                  {showExplanation && (
-                    <div className="apple-explanation apple-fade-in">
-                      <div className="apple-explanation-title">
-                        <BookOpen className="h-4 w-4" />
-                        <span>Explanation</span>
-                      </div>
-                      <div className="apple-explanation-content">
-                        {questionContent.explanation}
-                      </div>
+                <div className="mt-4 apple-fade-in">
+                  <div className="apple-explanation bg-[#F5F5F7] rounded-xl p-4 border border-[#E5E5EA]">
+                    <div className="apple-explanation-title flex items-center gap-2 mb-2">
+                      <BookOpen className="h-4 w-4 text-[#007AFF]" />
+                      <span className="font-semibold text-[16px] text-[#1D1D1F]">Explanation</span>
                     </div>
-                  )}
+                    <div className="apple-explanation-content text-[14px] leading-relaxed text-[#3A3A3C]">
+                      {questionContent.explanation}
+                    </div>
+                  </div>
                 </div>
               )}
 
               {/* Action buttons - Apple HIG style */}
               {showFeedback && (
-                <div className="flex justify-center mt-8">
+                <div className="flex justify-center mt-6">
                   {currentIndex === questions.length - 1 || seenQuestions.size >= questions.length ? (
                     <button
-                      className="py-3 px-6 rounded-full bg-[#007AFF] text-white font-medium text-[17px] flex items-center justify-center w-full max-w-xs transition-all hover:bg-[#0062CC] active:bg-[#0055B3] disabled:opacity-40 shadow-sm"
+                      className="py-2.5 px-5 rounded-full bg-[#007AFF] text-white font-medium text-[14px] flex items-center justify-center w-full max-w-xs transition-all hover:bg-[#0062CC] active:bg-[#0055B3] disabled:opacity-40 shadow-sm"
                       onClick={() => {
                         toast.success('Practice session completed!');
                         navigate('/');
@@ -379,12 +354,12 @@ export function ApplePracticeSession({ questions, onComplete }: PracticeSessionP
                     </button>
                   ) : (
                     <button
-                      className="py-3 px-6 rounded-full bg-[#007AFF] text-white font-medium text-[17px] flex items-center justify-center w-full max-w-xs transition-all hover:bg-[#0062CC] active:bg-[#0055B3] disabled:opacity-40 shadow-sm"
+                      className="py-2.5 px-5 rounded-full bg-[#007AFF] text-white font-medium text-[14px] flex items-center justify-center w-full max-w-xs transition-all hover:bg-[#0062CC] active:bg-[#0055B3] disabled:opacity-40 shadow-sm"
                       onClick={handleNextQuestion}
                       disabled={isTransitioning}
                     >
                       <span>Next Question</span>
-                      <ChevronRight className="h-5 w-5 ml-2" />
+                      <ChevronRight className="h-4 w-4 ml-1.5" />
                     </button>
                   )}
                 </div>

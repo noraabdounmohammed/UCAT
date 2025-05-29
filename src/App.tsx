@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useUser } from '@supabase/auth-helpers-react';
 import { Routes, Route, Navigate } from 'react-router-dom';
 import Dashboard from '@/components/dashboard/Dashboard';
@@ -121,24 +121,19 @@ const mockUserData: DashboardProps['userData'] = {
 };
 
 function App() {
-  const [loading, setLoading] = useState(true);
+  // Loading state removed
   const [userData] = useState<DashboardProps['userData']>(mockUserData);
-  const [currentPage, setCurrentPage] = useState<'dashboard' | 'mock'>('dashboard');
+  // No longer need currentPage state since sidebar is removed
   
   // We need the user object for authentication state
   const user = useUser();
   
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      setLoading(false);
-    }, 1500);
-    
-    return () => clearTimeout(timer);
-  }, []);
+  // Loading timer removed
 
   // Mock exam handler
   const handleMockStart = () => {
-    setCurrentPage('mock');
+    // Navigate to mock exam directly instead of changing current page
+    window.location.href = '/mock';
   };
   
   // Recommendation action handler removed as part of the recommended practice box removal
@@ -153,18 +148,19 @@ function App() {
   
   return (
     <Routes>
-      {/* Single Main Route with conditional rendering based on currentPage */}
+      {/* Dashboard route */}
       <Route path="/" element={
-        <MainLayout currentPage={currentPage} onNavigate={setCurrentPage}>
-          {currentPage === 'dashboard' ? (
-            <Dashboard 
-              userData={userData}
-              onMockStart={handleMockStart}
-              isLoading={loading}
-            />
-          ) : (
-            <MockExam />
-          )}
+        <MainLayout currentPage="dashboard" onNavigate={() => {}}>
+          <Dashboard 
+            onMockStart={handleMockStart}
+          />
+        </MainLayout>
+      } />
+      
+      {/* Mock exam route */}
+      <Route path="/mock" element={
+        <MainLayout currentPage="mock" onNavigate={() => {}}>
+          <MockExam />
         </MainLayout>
       } />
       
