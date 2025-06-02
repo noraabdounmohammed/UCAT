@@ -34,7 +34,7 @@ export function PracticeSection({ onPracticeStart }: PracticeSectionProps): JSX.
   const [filterOptions, setFilterOptions] = useState<PracticeFilterOptions>({
     section: activeSection,
     topics: ['Percentages', 'Ratios', 'Rates & Speed'] as MainTopic[], // Using valid MainTopic values
-    difficulty: ['medium'] as DifficultyOption[], // Changed to array to support multiple selections
+    difficulty: ['easy', 'medium', 'hard'] as DifficultyOption[], // All difficulty options selected by default
     interactionStatus: ['unseen', 'correct', 'incorrect', 'flagged', 'skipped'] as InteractionStatus[], // All options selected by default
     microSkills: []
   });
@@ -198,12 +198,25 @@ export function PracticeSection({ onPracticeStart }: PracticeSectionProps): JSX.
           );
           
           // Set all topics and all their skills as selected by default
-          setFilterOptions(prev => ({
-            ...prev,
+          const updatedFilters = {
+            ...filterOptions,
             section: activeSection,
             topics: topicNames.length > 0 ? topicNames as MainTopic[] : ['Percentages'] as MainTopic[],
             microSkills: allSkillIds
-          }));
+          };
+          
+          setFilterOptions(updatedFilters);
+          
+          // Update filtered count immediately after setting filters
+          countFilteredQuestions(updatedFilters)
+            .then(count => {
+              setFilteredCount(count);
+              console.log('Initial filtered count:', count);
+            })
+            .catch(error => {
+              console.error('Error counting initial filtered questions:', error);
+              setFilteredCount(0);
+            });
         }
         
         // Fetch question counts for the active section
