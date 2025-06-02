@@ -76,6 +76,9 @@ export function ApplePracticeSession({ questions, onComplete }: PracticeSessionP
       if (questions[0]?.id) {
         setSeenQuestions(new Set([questions[0].id]));
       }
+      
+      // Clear any previously selected answers to prevent auto-selection
+      setSelectedAnswers({});
     }
   }, [questions]);
 
@@ -198,6 +201,10 @@ export function ApplePracticeSession({ questions, onComplete }: PracticeSessionP
         setSeenQuestions(prev => new Set([...prev, questions[nextIndex].id]));
       }
       
+      // Completely reset selectedAnswers state to ensure no answers are auto-selected
+      // This is more reliable than just deleting a specific key
+      setSelectedAnswers({});
+      
       // Update current index
       setCurrentIndex(nextIndex);
       setIsTransitioning(false);
@@ -219,11 +226,11 @@ export function ApplePracticeSession({ questions, onComplete }: PracticeSessionP
 
   // Render the component
   return (
-    <div className="apple-question-container relative">
-      {/* Discrete exit button */}
+    <div className="apple-question-container relative pt-6 sm:pt-0">
+      {/* Discrete exit button - positioned to avoid overlap on mobile */}
       <button 
         onClick={() => setShowExitConfirmation(true)}
-        className="absolute top-4 left-4 z-10 p-2 rounded-full bg-[rgba(255,255,255,0.8)] hover:bg-white border border-[rgba(0,0,0,0.1)] transition-all"
+        className="fixed top-4 left-4 z-20 p-2 rounded-full bg-[rgba(255,255,255,0.9)] hover:bg-white border border-[rgba(0,0,0,0.1)] transition-all shadow-sm"
         style={{ backdropFilter: 'blur(4px)' }}
         aria-label="Exit to main page"
       >
@@ -291,7 +298,8 @@ export function ApplePracticeSession({ questions, onComplete }: PracticeSessionP
               <div style={{
                 backgroundColor: '#F5F5F7',
                 borderRadius: '16px',
-                padding: '24px',
+                padding: '16px 24px 16px 12px', /* Further reduced left padding for a more compact appearance */
+                marginTop: '16px',             /* Add space at the top to avoid overlap with exit button on mobile */
                 marginBottom: '24px',
                 boxShadow: '0 2px 8px rgba(0, 0, 0, 0.04)',
                 border: '1px solid rgba(0, 0, 0, 0.06)',
@@ -306,41 +314,21 @@ export function ApplePracticeSession({ questions, onComplete }: PracticeSessionP
                   height: '100%',
                   backgroundColor: '#007AFF'
                 }}></div>
-                <div style={{
-                  display: 'flex',
-                  alignItems: 'flex-start',
-                  gap: '16px'
+                {/* Question number removed as requested */}
+                <h2 style={{
+                  fontSize: '18px',
+                  fontWeight: 'normal',
+                  color: '#1D1D1F',
+                  margin: '0 auto',      // Center the text block if narrower than container
+                  lineHeight: 1.5,
+                  letterSpacing: '-0.022em',
+                  fontFamily: '-apple-system, BlinkMacSystemFont, "SF Pro Display", "Helvetica Neue", Arial, sans-serif',
+                  maxWidth: '800px',     // Limit width for better readability
+                  paddingLeft: '16px',   // Increased left padding to shift text more to the right
+                  textAlign: 'center'    // Center the text within its container
                 }}>
-                  <div style={{
-                    backgroundColor: 'rgba(0, 122, 255, 0.1)',
-                    borderRadius: '8px',
-                    minWidth: '60px',
-                    height: '28px',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    flexShrink: 0,
-                    marginTop: '2px',
-                    padding: '0 8px'
-                  }}>
-                    <span style={{
-                      color: '#007AFF',
-                      fontSize: '14px',
-                      fontWeight: 600
-                    }}>{`Q${currentIndex + 1}/${questions.length}`}</span>
-                  </div>
-                  <h2 style={{
-                    fontSize: '17px',
-                    fontWeight: 500,
-                    color: '#1D1D1F',
-                    margin: 0,
-                    lineHeight: 1.5,
-                    letterSpacing: '-0.022em',
-                    fontFamily: '-apple-system, BlinkMacSystemFont, "SF Pro Display", "Helvetica Neue", Arial, sans-serif'
-                  }}>
-                    {questionContent.question}
-                  </h2>
-                </div>
+                  {questionContent.question}
+                </h2>
               </div>
               
               {/* Data visualization - only show for questions with data blocks */}
@@ -361,7 +349,8 @@ export function ApplePracticeSession({ questions, onComplete }: PracticeSessionP
                     ? option 
                     : option.text || '';
                   
-                  const isSelected = selectedAnswers[questionId] === optionLetter;
+                  // Explicitly check if this question has a selected answer to prevent auto-selection
+                  const isSelected = Object.prototype.hasOwnProperty.call(selectedAnswers, questionId) && selectedAnswers[questionId] === optionLetter;
                   const isCorrect = questionContent.correctAnswer === optionLetter;
                   
                   return (
