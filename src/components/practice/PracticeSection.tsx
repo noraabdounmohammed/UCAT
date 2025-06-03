@@ -1,6 +1,6 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
-import { ModernPracticeSession } from './ModernPracticeSession';
+import { ApplePracticeSession, QuestionData } from './ApplePracticeSession';
 import { Target, ArrowRight, Calculator, BookOpen, Brain, Scale, Loader2, CheckCircle, XCircle, HelpCircle, Flag, SkipForward, Eye, Check, ChevronRight } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import './animations.css';
@@ -20,16 +20,15 @@ const SECTION_DETAILS: Record<string, { name: string, icon: LucideIcon, descript
 };
 
 interface PracticeSectionProps {
-  onPracticeStart?: (section: string) => void;
-  // Removed unused prop
+  // No props needed
 }
 
-export function PracticeSection({ onPracticeStart }: PracticeSectionProps): JSX.Element {
+export function PracticeSection(): JSX.Element {
   const [activeSection, setActiveSection] = useState('QR');
   const [isLoading, setIsLoading] = useState(false);
   const [loadingSections, setLoadingSections] = useState(true);
   const [availableSections, setAvailableSections] = useState<string[]>([]);
-  const [questions, setQuestions] = useState<Question[]>([]);
+  const [questions, setQuestions] = useState<QuestionData[]>([]);
   const [isPracticing, setIsPracticing] = useState(false);
   const [filterOptions, setFilterOptions] = useState<PracticeFilterOptions>({
     section: activeSection,
@@ -62,7 +61,7 @@ export function PracticeSection({ onPracticeStart }: PracticeSectionProps): JSX.
   });
   
   // Force refresh of progress data
-  const refreshProgressData = () => {
+  const refreshProgressData = useCallback(() => {
     // Update progress data for current section
     const sectionProgress = getSectionProgress(activeSection);
     
@@ -87,7 +86,7 @@ export function PracticeSection({ onPracticeStart }: PracticeSectionProps): JSX.
       skills: {...prev.skills, ...skillsProgress},
       sections: {...prev.sections, [activeSection]: sectionProgress}
     }));
-  };
+  }, [activeSection, topicStructure]);
   
   // Get topic progress from local storage
   const getTopicProgressFromStorage = (topic: string) => {
@@ -115,26 +114,23 @@ export function PracticeSection({ onPracticeStart }: PracticeSectionProps): JSX.
   // Track total question count for the active section
   const [sectionQuestionCount, setSectionQuestionCount] = useState(0);
   
-  // Fetch available sections on component mount
+  // Load available sections
   useEffect(() => {
-    const fetchSections = async () => {
-      setLoadingSections(true);
+    const loadSections = async () => {
       try {
         const sections = await getAvailableSections();
         setAvailableSections(sections);
-        if (sections.length > 0 && !sections.includes(activeSection)) {
-          setActiveSection(sections[0]);
-        }
+        setLoadingSections(false);
       } catch (error) {
-        console.error('Error fetching sections:', error);
+        console.error('Error loading sections:', error);
         toast.error('Failed to load available sections');
-      } finally {
         setLoadingSections(false);
       }
     };
     
-    fetchSections();
-  }, [activeSection]); 
+    loadSections();
+    refreshProgressData();
+  }, [activeSection, refreshProgressData]); 
   
   // Helper functions for topic and skill selection
   const isTopicSelected = (topic: MainTopic): boolean => {
@@ -246,8 +242,6 @@ export function PracticeSection({ onPracticeStart }: PracticeSectionProps): JSX.
   
   // Handle starting practice session
   const handleStartPractice = async () => {
-    if (!activeSection) return;
-    
     setIsLoading(true);
     try {
       // Fetch questions based on current filters
@@ -260,26 +254,25 @@ export function PracticeSection({ onPracticeStart }: PracticeSectionProps): JSX.
       });
       
       if (fetchedQuestions && fetchedQuestions.length > 0) {
-        // Transform questions to the format expected by ModernPracticeSession
-        const questionData: Question[] = fetchedQuestions.map((q: Question) => ({
+        // Transform fetched questions to match QuestionData interface expected by ApplePracticeSession
+        const questionData = fetchedQuestions.map((q: Question) => ({
           id: q.id,
           question_stem: q.question_stem,
           individual_question: q.individual_question,
-          options: q.options,
+          options: q.options.map(option => typeof option === 'string' ? option : option),
           correctAnswer: q.correct_answer,
           explanation: q.worked_solution,
           topic: q.main_topic,
           difficulty: q.difficulty.toLowerCase() as 'easy' | 'medium' | 'hard',
-          tags: [q.micro_skill] 
+          tags: [q.micro_skill],
+          data_block: {} as Record<string, unknown>, // Add empty data_block as Record
+          data_type: 'none'
         }));
         
-        setQuestions(questionData);
+        // Cast to QuestionData[] to match ApplePracticeSession props
+        setQuestions(questionData as unknown as QuestionData[]);
         setIsPracticing(true);
-        
-        // Notify parent component if callback provided
-        if (onPracticeStart) {
-          onPracticeStart(activeSection);
-        }
+        console.log('Filtered questions count:', questionData.length);
       } else {
         toast.error('No questions match your filters. Please adjust and try again.');
       }
@@ -353,8 +346,9 @@ export function PracticeSection({ onPracticeStart }: PracticeSectionProps): JSX.
   
   // Render practice session if practicing
   if (isPracticing && questions.length > 0) {
+    console.log('Starting practice with filtered questions:', questions.length);
     return (
-      <ModernPracticeSession
+      <ApplePracticeSession
         questions={questions}
         onComplete={handleCompletePractice}
       />

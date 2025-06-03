@@ -210,7 +210,8 @@ export function ApplePracticeSession({ questions, onComplete }: PracticeSessionP
   // Handle exit confirmation
   const handleExitConfirm = () => {
     setShowExitConfirmation(false);
-    navigate('/');
+    // Call the onComplete callback to return to the practice section
+    onComplete();
   };
 
   const handleExitCancel = () => {
@@ -443,7 +444,7 @@ export function ApplePracticeSession({ questions, onComplete }: PracticeSessionP
                       className="py-2.5 px-5 rounded-full bg-[#007AFF] text-white font-medium text-[14px] flex items-center justify-center w-full max-w-xs transition-all hover:bg-[#0062CC] active:bg-[#0055B3] disabled:opacity-40 shadow-sm"
                       onClick={() => {
                         toast.success('Practice session completed!');
-                        navigate('/');
+                        onComplete();
                       }}
                       disabled={isTransitioning}
                     >
