@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
 import { ApplePracticeSession, QuestionData } from './ApplePracticeSession';
-import { Target, ArrowRight, Calculator, BookOpen, Brain, Scale, Loader2, CheckCircle, XCircle, HelpCircle, Flag, SkipForward, Eye, Check, ChevronRight } from 'lucide-react';
+import { Target, ArrowRight, Calculator, BookOpen, Brain, Scale, Loader2, CheckCircle, XCircle, Flag, Eye, Check, ChevronRight } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import './animations.css';
 import './apple-section-styles.css';
@@ -30,7 +30,7 @@ export function PracticeSection(): JSX.Element {
     section: activeSection,
     topics: ['Percentages', 'Ratios', 'Rates & Speed'] as MainTopic[], // Using valid MainTopic values
     difficulty: ['medium'] as DifficultyOption[], // Changed to array to support multiple selections
-    interactionStatus: ['unseen', 'correct', 'incorrect', 'flagged', 'skipped'] as InteractionStatus[], // All options selected by default
+    interactionStatus: ['unseen', 'correct', 'incorrect', 'flagged'] as InteractionStatus[], // Skip option removed as we don't have skip functionality yet
     microSkills: []
   });
   
@@ -855,40 +855,7 @@ export function PracticeSection(): JSX.Element {
                   </div>
                 </div>
                 
-                <div 
-                  className="flex items-center p-4 bg-white border-b border-gray-100 cursor-pointer hover:bg-gray-50 transition-colors duration-200"
-                  onClick={() => {
-                    const isSelected = filterOptions.interactionStatus.includes('skipped');
-                    // Only allow deselection if there are other options selected
-                    if (isSelected && filterOptions.interactionStatus.length > 1) {
-                      const updatedStatus = filterOptions.interactionStatus.filter(status => status !== 'skipped');
-                      handleFilterChange({...filterOptions, interactionStatus: updatedStatus as InteractionStatus[]});
-                    } else if (!isSelected) {
-                      const updatedStatus = [...filterOptions.interactionStatus, 'skipped'];
-                      handleFilterChange({...filterOptions, interactionStatus: updatedStatus as InteractionStatus[]});
-                    }
-                  }}
-                >
-                  <div className="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center mr-3">
-                    <SkipForward className="h-4 w-4 text-blue-500" />
-                  </div>
-                  <div className="flex-1">
-                    <div className="text-base font-medium text-gray-900">Skipped</div>
-                    <div className="text-sm text-gray-500">
-                      Questions you skipped
-                      {getSectionProgressFromStorage(activeSection).skipped > 0 && (
-                        <span className="ml-2 text-amber-600 font-medium">
-                          ({getSectionProgressFromStorage(activeSection).skipped})
-                        </span>
-                      )}
-                    </div>
-                  </div>
-                  <div className="w-6 h-6 rounded-full border border-gray-200 flex items-center justify-center">
-                    {filterOptions.interactionStatus.includes('skipped') && (
-                      <div className="w-4 h-4 rounded-full bg-blue-500"></div>
-                    )}
-                  </div>
-                </div>
+                {/* Skipped filter removed as we don't have skip functionality yet */}
                 
                 <div 
                   className="flex items-center p-4 bg-white cursor-pointer hover:bg-gray-50 transition-colors duration-200"
