@@ -1,15 +1,11 @@
 // Supabase will be used for user progress tracking in the future
 import { PracticeFilterOptions, TopicStructure, InteractionStatus } from '@/types/practice';
 import { loadQuestionsForSection, getDynamicQuestionCounts, getDynamicTopicStructure, Question } from '../utils/questionBank';
+import { getUserProgress } from '../utils/userProgressStorage';
 
 // Define a type for question with topic property
 interface QuestionWithTopic extends Question {
   topic: string;
-}
-
-// Define a type for question with user interaction
-interface QuestionWithInteraction extends Question {
-  user_interaction: InteractionStatus;
 }
 
 // Cache for storing previously computed question counts to prevent redundant calculations
@@ -35,7 +31,8 @@ export async function fetchQuestions(filters: PracticeFilterOptions) {
     // Use the same filtering logic as in countFilteredQuestions to ensure consistency
     const hasTopicFilter = filters.topics.length > 0;
     const hasSkillFilter = filters.microSkills.length > 0;
-    const hasDifficultyFilter = filters.difficulty && filters.difficulty !== 'adaptive';
+    const hasDifficultyFilter = filters.difficulty && 
+      (typeof filters.difficulty === 'string' ? filters.difficulty !== 'adaptive' : true);
     const hasStatusFilter = filters.interactionStatus && filters.interactionStatus.length > 0;
     
     // If no filters are applied, use all questions
@@ -98,7 +95,7 @@ export async function fetchQuestions(filters: PracticeFilterOptions) {
       // Difficulty filter
       if (hasDifficultyFilter) {
         // Skip difficulty filtering if 'adaptive' is selected
-        if (filters.difficulty === 'adaptive') {
+        if (typeof filters.difficulty === 'string' && filters.difficulty === 'adaptive') {
           // Adaptive difficulty means we include all difficulties
           // No filtering needed
         } else {
@@ -128,10 +125,21 @@ export async function fetchQuestions(filters: PracticeFilterOptions) {
       
       // Interaction status filter (if applicable)
       if (hasStatusFilter) {
-        // In a real app, this would check the user's interaction status with this question
-        // For now, we'll assume all questions are 'unseen' unless specified otherwise
+        // Get the user's progress from local storage
+        const userProgress = getUserProgress();
+        const questionId = String(question.id);
+        
+        // Get the question's status from user progress, default to 'unseen' if not found
         const defaultStatus: InteractionStatus = 'unseen';
-        const questionStatus = (question as QuestionWithInteraction).user_interaction || defaultStatus;
+        let questionStatus: InteractionStatus = defaultStatus;
+        
+        // Check if this question exists in the user's progress
+        if (userProgress.questions[questionId]) {
+          questionStatus = userProgress.questions[questionId].status;
+        }
+        
+        // For debugging
+        console.log(`Question ${questionId} status:`, questionStatus);
         
         // Normalize the question status for comparison
         const normalizedQuestionStatus = String(questionStatus).toLowerCase().trim();
@@ -143,6 +151,9 @@ export async function fetchQuestions(filters: PracticeFilterOptions) {
           
           return normalizedQuestionStatus === normalizedFilterStatus;
         });
+        
+        // For debugging
+        console.log(`Question ${questionId} matches filter:`, statusMatches);
         
         if (!statusMatches) return false;
       }
@@ -247,21 +258,15 @@ export async function countFilteredQuestions(filters: PracticeFilterOptions): Pr
     
     // If no questions found, return 0
     if (!allQuestions || allQuestions.length === 0) {
-      questionCountCache[cacheKey] = 0;
       return 0;
     }
     
-    // If no specific filters are applied, return the total count
+    // Determine which filters are active
     const hasTopicFilter = filters.topics.length > 0;
     const hasSkillFilter = filters.microSkills.length > 0;
-    const hasDifficultyFilter = filters.difficulty && filters.difficulty !== 'adaptive';
+    const hasDifficultyFilter = filters.difficulty && 
+      (typeof filters.difficulty === 'string' ? filters.difficulty !== 'adaptive' : true);
     const hasStatusFilter = filters.interactionStatus && filters.interactionStatus.length > 0;
-    
-    if (!hasTopicFilter && !hasSkillFilter && !hasDifficultyFilter && !hasStatusFilter) {
-      const count = allQuestions.length;
-      questionCountCache[cacheKey] = count;
-      return count;
-    }
     
     // Filter questions based on selected criteria (using a single pass through the data)
     const filteredQuestions = allQuestions.filter(question => {
@@ -331,7 +336,7 @@ export async function countFilteredQuestions(filters: PracticeFilterOptions): Pr
       // Difficulty filter
       if (hasDifficultyFilter) {
         // Skip difficulty filtering if 'adaptive' is selected
-        if (filters.difficulty === 'adaptive') {
+        if (typeof filters.difficulty === 'string' && filters.difficulty === 'adaptive') {
           // Adaptive difficulty means we include all difficulties
           // No filtering needed
         } else {
@@ -363,12 +368,18 @@ export async function countFilteredQuestions(filters: PracticeFilterOptions): Pr
       
       // Interaction status filter (if applicable)
       if (hasStatusFilter) {
-        // In a real app, this would check the user's interaction status with this question
-        // For now, we'll assume all questions are 'unseen' unless specified otherwise
-        const defaultStatus: InteractionStatus = 'unseen';
+        // Get the user's progress from local storage
+        const userProgress = getUserProgress();
+        const questionId = String(question.id);
         
-        // Get the interaction status from the question or use the default
-        const questionStatus = (question as QuestionWithInteraction).user_interaction || defaultStatus;
+        // Get the question's status from user progress, default to 'unseen' if not found
+        const defaultStatus: InteractionStatus = 'unseen';
+        let questionStatus: InteractionStatus = defaultStatus;
+        
+        // Check if this question exists in the user's progress
+        if (userProgress.questions[questionId]) {
+          questionStatus = userProgress.questions[questionId].status;
+        }
         
         // Normalize the question status for comparison
         const normalizedQuestionStatus = String(questionStatus).toLowerCase().trim();

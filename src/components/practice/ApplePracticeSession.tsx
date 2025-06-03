@@ -12,6 +12,7 @@ import {
 import { cn } from '@/lib/utils';
 import { DataVisualization } from './DataVisualization';
 import './apple-question-styles.css';
+import { updateQuestionProgress } from '../../utils/userProgressStorage';
 
 // Define properly typed interfaces for the questions
 export interface QuestionData {
@@ -155,10 +156,36 @@ export function ApplePracticeSession({ questions, onComplete }: PracticeSessionP
     // Show feedback with explanation automatically displayed
     setShowFeedback(true);
     
-    // Track user progress if authenticated
+    // Determine if the answer is correct
+    const isCorrect = answer === questionContent.correctAnswer;
+    const status = isCorrect ? 'correct' : 'incorrect';
+    
+    // Log the current question to debug its structure
+    console.log('Current question structure:', currentQuestion);
+    
+    // Extract topic, skill, and section from the question
+    // Using optional chaining and fallbacks for safety
+    const topic = currentQuestion?.topic || '';
+    const skill = Array.isArray(currentQuestion?.tags) && currentQuestion.tags.length > 0 
+      ? currentQuestion.tags[0] 
+      : '';
+    // Use a default section name if not available
+    const section = 'QR'; // Default to Quantitative Reasoning
+    
+    // Update user progress in local storage
+    // Ensure all parameters are strings
+    updateQuestionProgress(
+      String(questionId), 
+      status, 
+      String(topic || 'General'), 
+      String(skill || 'General'), 
+      String(section)
+    );
+    console.log(`Question ${questionId} marked as ${status} for topic: ${topic}, skill: ${skill}, section: ${section}`);
+    
+    // Track user progress if authenticated (for future server-side tracking)
     if (user && supabase) {
-      // This would be implemented in a real app
-      console.log('Tracking user progress for question:', questionId);
+      console.log('Tracking user progress for question:', questionId, 'Status:', status);
     }
   };
 
