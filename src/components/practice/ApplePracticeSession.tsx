@@ -1,6 +1,5 @@
 import { useState, useEffect, useRef, useMemo } from 'react';
 import { useSupabaseClient, useUser } from '@supabase/auth-helpers-react';
-import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 import { 
   CheckCircle, 
@@ -63,7 +62,6 @@ export function ApplePracticeSession({ questions, onComplete }: PracticeSessionP
   // Services
   const supabase = useSupabaseClient();
   const user = useUser();
-  const navigate = useNavigate(); // Add navigation hook
 
   // Refs to prevent unnecessary re-renders
   const questionsRef = useRef<QuestionData[]>(questions);
