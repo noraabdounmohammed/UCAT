@@ -484,8 +484,8 @@ export function PracticeSection(): JSX.Element {
                 </button>
               </div>
               
-              {/* Topic list with expandable subtopics - Apple-style UI */}
-              <div className="apple-topic-list">
+              {/* Topic list with gamified, visually engaging UI */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {filterOptions.topics.map((topic) => {
                   // Get all skills/subtopics for this topic
                   const topicData = topicStructure.find((t: {topic: string; skills: Array<{id: string; name: string}>}) => t.topic === topic);
@@ -493,23 +493,51 @@ export function PracticeSection(): JSX.Element {
                   const isExpanded = expandedTopics[topic] || false;
                   const isSelected = isTopicSelected(topic as MainTopic);
                   
+                  // Get progress data for visual indicators
+                  const topicProgress = getTopicProgressFromStorage(topic);
+                  const totalAttempted = topicProgress.total;
+                  
+                  // We no longer need the mastery level calculation since we're using a simpler progress bar
+                  
+                  // Calculate background gradient for the entire card
+                  const cardBackground = totalAttempted > 0 ? 
+                    `linear-gradient(to right, 
+                      rgba(16, 185, 129, 0.15) 0%, 
+                      rgba(16, 185, 129, 0.15) ${(topicProgress.correct / getTopicCount(topic)) * 100}%, 
+                      rgba(239, 68, 68, 0.15) ${(topicProgress.correct / getTopicCount(topic)) * 100}%, 
+                      rgba(239, 68, 68, 0.15) ${((topicProgress.correct + topicProgress.incorrect) / getTopicCount(topic)) * 100}%, 
+                      white ${((topicProgress.correct + topicProgress.incorrect) / getTopicCount(topic)) * 100}%, 
+                      white 100%)` : 
+                    (isSelected ? '#ebf5ff' : 'white');
+                    
                   return (
-                    <div key={topic} className="apple-topic-item-container">
-                      {/* Main topic item - Apple-style */}
-                      <div className={`apple-topic-item ${isSelected ? 'selected' : ''}`}>
-                        <div 
-                          className="apple-topic-header"
-                          onClick={() => {
-                            // Toggle expanded state for this topic
-                            setExpandedTopics((prev: Record<string, boolean>) => ({
-                              ...prev,
-                              [topic]: !prev[topic]
-                            }));
-                          }}
-                        >
-                          {/* Topic checkbox */}
+                    <div 
+                      key={topic} 
+                      className={`rounded-xl border overflow-hidden shadow-sm transition-all duration-300 hover:shadow-md ${isSelected ? 'border-blue-300 ring-2 ring-blue-100' : 'border-gray-200'}`}
+                      style={{ background: cardBackground }}
+                    >
+                      {/* Topic header */}
+                      <div 
+                        className="relative p-4 cursor-pointer overflow-hidden"
+                        onClick={() => {
+                          // Toggle expanded state for this topic
+                          setExpandedTopics((prev: Record<string, boolean>) => ({
+                            ...prev,
+                            [topic]: !prev[topic]
+                          }));
+                        }}
+                      >
+                        
+                        <div className="flex items-start">
+                          {/* Topic checkbox with animated check */}
                           <div 
-                            className={`apple-checkbox ${isSelected ? 'selected' : ''} ${isTopicPartiallySelected(topic as MainTopic) ? 'partial' : ''}`}
+                            className={`flex-shrink-0 w-6 h-6 rounded-md mr-3 flex items-center justify-center transition-colors duration-200 cursor-pointer ${
+                              isSelected 
+                                ? 'bg-blue-500 text-white' 
+                                : isTopicPartiallySelected(topic as MainTopic)
+                                  ? 'bg-blue-200 border border-blue-300' 
+                                  : 'border-2 border-gray-300 bg-white'
+                            }`}
                             onClick={(e) => {
                               e.stopPropagation();
                               // Get all skill IDs for this topic
@@ -534,97 +562,84 @@ export function PracticeSection(): JSX.Element {
                             }}
                           >
                             {isSelected && (
-                              <Check className="h-3 w-3" />
+                              <Check className="h-3 w-3 animate-checkmark" />
                             )}
                             {isTopicPartiallySelected(topic as MainTopic) && (
-                              <div className="apple-checkbox-partial"></div>
+                              <div className="w-2 h-2 bg-blue-500 rounded-sm"></div>
                             )}
                           </div>
                           
-                          {/* Topic name and info */}
-                          <div className="apple-topic-content">
-                            <div className="apple-topic-title">{topic}</div>
-                            <div className="apple-topic-subtitle">
-                              {subtopics.length} subtopics • {getTopicCount(topic)} questions
-                              {getTopicProgressFromStorage(topic).total > 0 && (
-                                <div className="mt-1 text-xs">
-                                  <span className="text-green-600 mr-2">
-                                    <CheckCircle className="inline h-3 w-3 mr-1" /> {getTopicProgressFromStorage(topic).correct} correct
-                                  </span>
-                                  <span className="text-red-600 mr-2">
-                                    <XCircle className="inline h-3 w-3 mr-1" /> {getTopicProgressFromStorage(topic).incorrect} incorrect
-                                  </span>
-                                  <span className="text-amber-600">
-                                    <HelpCircle className="inline h-3 w-3 mr-1" /> {getTopicProgressFromStorage(topic).skipped} skipped
-                                  </span>
-                                </div>
-                              )}
+                          {/* Topic content */}
+                          <div className="flex-grow">
+                            <div className="flex items-center justify-between">
+                              <h3 className="font-medium text-gray-900">{topic}</h3>
+                              <ChevronRight className={`h-4 w-4 text-gray-500 transition-transform duration-200 ${isExpanded ? 'transform rotate-90' : ''}`} />
                             </div>
-                          </div>
-                          
-                          {/* Disclosure chevron */}
-                          <div className="apple-chevron">
-                            <ChevronRight className={`h-4 w-4 transition-transform duration-200 ${isExpanded ? 'transform rotate-90' : ''}`} />
+                            
+                            <div className="mt-1 flex items-center text-sm text-gray-600">
+                              {/* Count of attempted subtopics out of total */}
+                              <span className="mr-2">
+                                {subtopics.filter(skill => filterOptions.microSkills.includes(skill.id)).length}/{subtopics.length} subtopics
+                              </span>
+                              <span>•</span>
+                              {/* Count of attempted questions out of total */}
+                              <span className="mx-2">
+                                {totalAttempted}/{getTopicCount(topic)} questions
+                              </span>
+                            </div>
+                            
+                            {/* Visual progress indicators */}
+                            {/* Progress percentage text removed per user request */}
+                            
+                            {totalAttempted === 0 && (
+                              <div className="mt-2 text-xs text-gray-500 italic">
+                                Start practicing to track your progress!
+                              </div>
+                            )}
                           </div>
                         </div>
-                        
-                        {/* Subtopics container - only visible when expanded */}
-                        {isExpanded && subtopics.length > 0 && (
-                          <div className="border-t border-gray-100 bg-gray-50 animate-slideDown">
-                            {subtopics.map((skill: {id: string; name: string}) => {
-                              const isSkillSelected = isMicroSkillSelected(skill.id);
-                              
-                              return (
-                                <div 
-                                  key={skill.id}
-                                  className="flex items-center p-3 pl-10 border-b border-gray-100 last:border-b-0 hover:bg-gray-100 transition-colors duration-200 cursor-pointer"
-                                  onClick={() => {
-                                    // Toggle selection of this skill
-                                    const updatedSkills = isSkillSelected
-                                      ? filterOptions.microSkills.filter(s => s !== skill.id)
-                                      : [...filterOptions.microSkills, skill.id];
-                                      
-                                    handleFilterChange({
-                                      ...filterOptions,
-                                      microSkills: updatedSkills
-                                    });
-                                  }}
-                                >
-                                  {/* Subtopic checkbox */}
-                                  <div className="w-5 h-5 rounded-sm border border-gray-300 flex items-center justify-center bg-white mr-3">
-                                    {isSkillSelected && (
-                                      <svg className="w-3 h-3 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                                      </svg>
-                                    )}
-                                  </div>
-                                  
-                                  {/* Subtopic name */}
-                                  <div className="text-xs font-medium text-gray-800">{skill.name}</div>
-                                  
-                                  {/* Question count */}
-                                  <div className="ml-auto text-xs">
-                                    <div className="text-gray-500">{getMicroSkillCount(skill.id).total} questions</div>
-                                    {getSkillProgressFromStorage(skill.id).total > 0 && (
-                                      <div className="flex items-center gap-2 mt-1">
-                                        <span className="text-green-600 flex items-center">
-                                          <CheckCircle className="h-3 w-3 mr-0.5" /> {getSkillProgressFromStorage(skill.id).correct}
-                                        </span>
-                                        <span className="text-red-600 flex items-center">
-                                          <XCircle className="h-3 w-3 mr-0.5" /> {getSkillProgressFromStorage(skill.id).incorrect}
-                                        </span>
-                                        <span className="text-amber-600 flex items-center">
-                                          <HelpCircle className="h-3 w-3 mr-0.5" /> {getSkillProgressFromStorage(skill.id).skipped}
-                                        </span>
-                                      </div>
-                                    )}
-                                  </div>
-                                </div>
-                              );
-                            })}
-                          </div>
-                        )}
                       </div>
+                      
+                      {/* Subtopics with animated expansion */}
+                      {isExpanded && subtopics.length > 0 && (
+                        <div className="bg-gray-50 animate-slideDown divide-y divide-gray-100">
+                          {subtopics.map((skill: {id: string; name: string}) => {
+                            const isSkillSelected = isMicroSkillSelected(skill.id);
+                            
+                            return (
+                              <div 
+                                key={skill.id}
+                                className="flex items-center p-3 pl-8 hover:bg-gray-100 transition-colors duration-200 cursor-pointer"
+                                onClick={() => {
+                                  // Toggle selection of this skill
+                                  const updatedSkills = isSkillSelected
+                                    ? filterOptions.microSkills.filter(s => s !== skill.id)
+                                    : [...filterOptions.microSkills, skill.id];
+                                    
+                                  handleFilterChange({
+                                    ...filterOptions,
+                                    microSkills: updatedSkills
+                                  });
+                                }}
+                              >
+                                {/* Subtopic checkbox with animated check */}
+                                <div 
+                                  className={`w-5 h-5 rounded-md flex items-center justify-center mr-3 transition-all duration-200 ${
+                                    isSkillSelected 
+                                      ? 'bg-blue-500 text-white' 
+                                      : 'border-2 border-gray-300 bg-white'
+                                  }`}
+                                >
+                                  {isSkillSelected && (
+                                    <Check className="h-3 w-3 animate-checkmark" />
+                                  )}
+                                </div>
+                                <span className="text-sm">{skill.name}</span>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      )}
                     </div>
                   );
                 })}
