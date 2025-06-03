@@ -6,7 +6,7 @@ import type { LucideIcon } from 'lucide-react';
 import './animations.css';
 import './apple-section-styles.css';
 import { getAvailableSections, Question } from '@/utils/questionBank';
-import { fetchQuestions, fetchQuestionCounts, fetchDynamicTopicStructure, countFilteredQuestions } from '@/lib/questions';
+import { fetchQuestions, fetchQuestionCounts, fetchDynamicTopicStructure, countFilteredQuestions, clearQuestionCountCache } from '@/lib/questions';
 import { getSectionProgress, getTopicProgress, getSkillProgress } from '@/utils/userProgressStorage';
 import { toast } from 'sonner';
 import { PracticeFilterOptions, MainTopic, DifficultyOption, InteractionStatus } from '@/types/practice';
@@ -18,10 +18,6 @@ const SECTION_DETAILS: Record<string, { name: string, icon: LucideIcon, descript
   'QR': { name: 'Quantitative Reasoning', icon: Calculator, description: 'Test your numerical and analytical skills' },
   'SJ': { name: 'Situational Judgement', icon: Scale, description: 'Respond appropriately to real-world scenarios' }
 };
-
-interface PracticeSectionProps {
-  // No props needed
-}
 
 export function PracticeSection(): JSX.Element {
   const [activeSection, setActiveSection] = useState('QR');
@@ -118,9 +114,11 @@ export function PracticeSection(): JSX.Element {
   useEffect(() => {
     // Only run if we have a section specified
     if (filterOptions.section) {
+      console.log('Filter options changed, current options:', filterOptions);
       // Update filtered count based on current filter options
       countFilteredQuestions(filterOptions)
         .then(count => {
+          console.log('Filtered count after filter change:', count, 'with filters:', JSON.stringify(filterOptions));
           setFilteredCount(count);
         })
         .catch(error => {
@@ -304,8 +302,32 @@ export function PracticeSection(): JSX.Element {
   const handleCompletePractice = () => {
     setIsPracticing(false);
     setQuestions([]);
+    
+    console.log('Practice completed, refreshing progress data');
     // Refresh progress data when practice is completed
-    setTimeout(() => refreshProgressData(), 100); 
+    refreshProgressData();
+    
+    console.log('Current filter options:', JSON.stringify(filterOptions));
+    console.log('Current section progress:', getSectionProgressFromStorage(activeSection));
+    
+    // Clear the question count cache to ensure we get fresh counts
+    clearQuestionCountCache(filterOptions);
+    
+    // Update filtered count to reflect the new progress data
+    // Use setTimeout to ensure progress data is updated first
+    setTimeout(() => {
+      console.log('Re-counting filtered questions with options:', JSON.stringify(filterOptions));
+      countFilteredQuestions(filterOptions)
+        .then(count => {
+          console.log('Updated filtered count after practice:', count);
+          console.log('Section progress after timeout:', getSectionProgressFromStorage(activeSection));
+          setFilteredCount(count);
+        })
+        .catch(error => {
+          console.error('Error updating filtered count:', error);
+          setFilteredCount(0);
+        });
+    }, 100);
   };
   
   // Handle filter changes
@@ -316,27 +338,28 @@ export function PracticeSection(): JSX.Element {
       newFilters.interactionStatus = filterOptions.interactionStatus;
       toast.error('At least one question history option must be selected');
     }
-    
-    // Ensure at least one difficulty is selected
-    if (newFilters.difficulty && newFilters.difficulty.length === 0) {
-      // If no difficulty is selected, keep the current selection
-      newFilters.difficulty = filterOptions.difficulty;
-      toast.error('At least one difficulty level must be selected');
-    }
-    
     const updatedFilters = {
       ...newFilters,
       section: activeSection
     };
+    
+    console.log('Filter change requested:', JSON.stringify(updatedFilters));
+    console.log('Current section progress:', getSectionProgressFromStorage(activeSection));
+    
     setFilterOptions(updatedFilters);
     
-    // Update filtered count
+    // Clear the cache for these filters to ensure fresh counts
+    clearQuestionCountCache(updatedFilters);
+    
+    // Update filtered count based on new filters
+    console.log('Counting filtered questions with options:', JSON.stringify(updatedFilters));
     countFilteredQuestions(updatedFilters)
       .then(count => {
+        console.log('Updated filtered count after filter change:', count);
         setFilteredCount(count);
       })
       .catch(error => {
-        console.error('Error counting filtered questions:', error);
+        console.error('Error updating filtered count:', error);
         setFilteredCount(0);
       });
   };

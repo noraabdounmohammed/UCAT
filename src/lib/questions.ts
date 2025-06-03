@@ -11,6 +11,28 @@ interface QuestionWithTopic extends Question {
 // Cache for storing previously computed question counts to prevent redundant calculations
 const questionCountCache: Record<string, number> = {};
 
+/**
+ * Clear the question count cache for specific filters or entirely
+ * This is useful when user progress changes and we need fresh counts
+ */
+export function clearQuestionCountCache(filters?: PracticeFilterOptions): void {
+  if (!filters) {
+    // Clear entire cache
+    Object.keys(questionCountCache).forEach(key => {
+      delete questionCountCache[key];
+    });
+    console.log('Question count cache cleared');
+    return;
+  }
+  
+  // Clear cache for specific filters
+  const cacheKey = createCacheKey(filters);
+  if (questionCountCache[cacheKey] !== undefined) {
+    delete questionCountCache[cacheKey];
+    console.log('Question count cache cleared for filters:', filters);
+  }
+}
+
 export async function fetchQuestions(filters: PracticeFilterOptions) {
   try {
     // Make sure we have a section specified
@@ -380,6 +402,9 @@ export async function countFilteredQuestions(filters: PracticeFilterOptions): Pr
           questionStatus = userProgress.questions[questionId].status;
         }
         
+        // For debugging
+        console.log(`Question ${questionId} status for filtering:`, questionStatus);
+        
         // Normalize the question status for comparison
         const normalizedQuestionStatus = String(questionStatus).toLowerCase().trim();
         
@@ -394,8 +419,14 @@ export async function countFilteredQuestions(filters: PracticeFilterOptions): Pr
             return !userProgress.questions[questionId];
           }
           
-          return normalizedQuestionStatus === normalizedFilterStatus;
+          // Debug log for each status comparison
+          const matches = normalizedQuestionStatus === normalizedFilterStatus;
+          console.log(`  Comparing question status '${normalizedQuestionStatus}' with filter '${normalizedFilterStatus}': ${matches}`);
+          return matches;
         });
+        
+        // Debug log for overall status match
+        console.log(`  Question ${questionId} matches status filter: ${statusMatches}`);
         
         if (!statusMatches) return false;
       }
