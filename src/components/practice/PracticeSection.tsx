@@ -413,6 +413,17 @@ export function PracticeSection(): JSX.Element {
                 key={section}
                 onClick={() => handleSectionChange(section)}
                 className={`apple-section-card ${isSelected ? 'selected' : ''}`}
+                style={{
+                  background: getSectionProgressFromStorage(section).total > 0 ?
+                    `linear-gradient(to right, 
+                      rgba(16, 185, 129, 0.08) 0%, 
+                      rgba(16, 185, 129, 0.08) ${(getSectionProgressFromStorage(section).correct / sectionQuestionCount) * 100}%, 
+                      rgba(239, 68, 68, 0.08) ${(getSectionProgressFromStorage(section).correct / sectionQuestionCount) * 100}%, 
+                      rgba(239, 68, 68, 0.08) ${((getSectionProgressFromStorage(section).correct + getSectionProgressFromStorage(section).incorrect) / sectionQuestionCount) * 100}%, 
+                      white ${((getSectionProgressFromStorage(section).correct + getSectionProgressFromStorage(section).incorrect) / sectionQuestionCount) * 100}%, 
+                      white 100%)` :
+                    (isSelected ? '#ebf5ff' : 'white')
+                }}
               >
                 <div className={`apple-section-card-content`}>
                   <div className={`apple-section-card-icon ${isSelected ? 'selected' : ''}`}>
@@ -425,11 +436,11 @@ export function PracticeSection(): JSX.Element {
                     <div className="apple-section-card-subtitle">
                       {sectionQuestionCount} questions
                       {getSectionProgressFromStorage(section).total > 0 && (
-                        <span className="ml-2">
-                          • <span className="text-green-600">{getSectionProgressFromStorage(section).correct} correct</span>
-                          • <span className="text-red-600">{getSectionProgressFromStorage(section).incorrect} incorrect</span>
-                          • <span className="text-amber-600">{getSectionProgressFromStorage(section).skipped} skipped</span>
-                        </span>
+                        <div className="mt-1 flex items-center">
+                          <span className="text-xs font-medium text-gray-600">
+                            {Math.round((getSectionProgressFromStorage(section).correct / sectionQuestionCount) * 100)}% correct
+                          </span>
+                        </div>
                       )}
                     </div>
                   </div>
@@ -502,10 +513,10 @@ export function PracticeSection(): JSX.Element {
                   // Calculate background gradient for the entire card
                   const cardBackground = totalAttempted > 0 ? 
                     `linear-gradient(to right, 
-                      rgba(16, 185, 129, 0.15) 0%, 
-                      rgba(16, 185, 129, 0.15) ${(topicProgress.correct / getTopicCount(topic)) * 100}%, 
-                      rgba(239, 68, 68, 0.15) ${(topicProgress.correct / getTopicCount(topic)) * 100}%, 
-                      rgba(239, 68, 68, 0.15) ${((topicProgress.correct + topicProgress.incorrect) / getTopicCount(topic)) * 100}%, 
+                      rgba(16, 185, 129, 0.08) 0%, 
+                      rgba(16, 185, 129, 0.08) ${(topicProgress.correct / getTopicCount(topic)) * 100}%, 
+                      rgba(239, 68, 68, 0.08) ${(topicProgress.correct / getTopicCount(topic)) * 100}%, 
+                      rgba(239, 68, 68, 0.08) ${((topicProgress.correct + topicProgress.incorrect) / getTopicCount(topic)) * 100}%, 
                       white ${((topicProgress.correct + topicProgress.incorrect) / getTopicCount(topic)) * 100}%, 
                       white 100%)` : 
                     (isSelected ? '#ebf5ff' : 'white');
