@@ -114,6 +114,22 @@ export function PracticeSection(): JSX.Element {
   // Track total question count for the active section
   const [sectionQuestionCount, setSectionQuestionCount] = useState(0);
   
+  // Update filtered count whenever filterOptions change
+  useEffect(() => {
+    // Only run if we have a section specified
+    if (filterOptions.section) {
+      // Update filtered count based on current filter options
+      countFilteredQuestions(filterOptions)
+        .then(count => {
+          setFilteredCount(count);
+        })
+        .catch(error => {
+          console.error('Error counting filtered questions on filter change:', error);
+          setFilteredCount(0);
+        });
+    }
+  }, [filterOptions]);
+  
   // Load available sections
   useEffect(() => {
     const loadSections = async () => {

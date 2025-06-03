@@ -373,8 +373,7 @@ export async function countFilteredQuestions(filters: PracticeFilterOptions): Pr
         const questionId = String(question.id);
         
         // Get the question's status from user progress, default to 'unseen' if not found
-        const defaultStatus: InteractionStatus = 'unseen';
-        let questionStatus: InteractionStatus = defaultStatus;
+        let questionStatus: InteractionStatus = 'unseen';
         
         // Check if this question exists in the user's progress
         if (userProgress.questions[questionId]) {
@@ -389,12 +388,16 @@ export async function countFilteredQuestions(filters: PracticeFilterOptions): Pr
           // Normalize the filter status for comparison
           const normalizedFilterStatus = String(status).toLowerCase().trim();
           
+          // Special handling for 'unseen' status
+          if (normalizedFilterStatus === 'unseen') {
+            // A question is 'unseen' if it doesn't exist in user progress
+            return !userProgress.questions[questionId];
+          }
+          
           return normalizedQuestionStatus === normalizedFilterStatus;
         });
         
-        if (!statusMatches) {
-          return false;
-        }
+        if (!statusMatches) return false;
       }
       
       // If it passed all filters, include it
