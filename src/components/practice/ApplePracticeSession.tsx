@@ -261,7 +261,7 @@ export function ApplePracticeSession({ questions, onComplete }: PracticeSessionP
         <div className="fixed inset-0 bg-black/30 flex items-center justify-center z-50" style={{ backdropFilter: 'blur(4px)' }}>
           <div className="bg-white rounded-xl p-5 max-w-xs w-full shadow-lg">
             <h3 className="text-[17px] font-medium text-[#1D1D1F] mb-3">Exit Practice Session?</h3>
-            <p className="text-[15px] text-[#3A3A3C] mb-5">Your progress in this session will not be saved.</p>
+            <p className="text-[15px] text-[#3A3A3C] mb-5" data-component-name="ApplePracticeSession">Your progress will be automatically saved as you practice.</p>
             
             <div className="flex gap-3">
               <button 

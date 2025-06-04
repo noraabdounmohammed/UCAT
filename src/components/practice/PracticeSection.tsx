@@ -433,12 +433,12 @@ export function PracticeSection(): JSX.Element {
                     <h4 className="apple-section-card-title">
                       {SECTION_DETAILS[section]?.name || section}
                     </h4>
-                    <div className="apple-section-card-subtitle">
-                      {sectionQuestionCount} questions
+                    <div className="apple-section-card-subtitle" data-component-name="PracticeSection">
+                      {getSectionProgressFromStorage(section).total}/{sectionQuestionCount} questions attempted
                       {getSectionProgressFromStorage(section).total > 0 && (
-                        <div className="mt-1 flex items-center">
+                        <div className="mt-1 flex items-center" data-component-name="PracticeSection">
                           <span className="text-xs font-medium text-gray-600">
-                            {Math.round((getSectionProgressFromStorage(section).correct / sectionQuestionCount) * 100)}% correct
+                            {Math.round((getSectionProgressFromStorage(section).correct / getSectionProgressFromStorage(section).total) * 100)}% correct
                           </span>
                         </div>
                       )}
@@ -589,8 +589,8 @@ export function PracticeSection(): JSX.Element {
                             
                             <div className="mt-1 flex items-center text-sm text-gray-600">
                               {/* Count of attempted subtopics out of total */}
-                              <span className="mr-2">
-                                {subtopics.filter(skill => filterOptions.microSkills.includes(skill.id)).length}/{subtopics.length} subtopics
+                              <span className="mr-2" data-component-name="PracticeSection">
+                                {subtopics.filter(skill => getSkillProgressFromStorage(skill.id).total > 0).length}/{subtopics.length} subtopics
                               </span>
                               <span>•</span>
                               {/* Count of attempted questions out of total */}
@@ -602,11 +602,7 @@ export function PracticeSection(): JSX.Element {
                             {/* Visual progress indicators */}
                             {/* Progress percentage text removed per user request */}
                             
-                            {totalAttempted === 0 && (
-                              <div className="mt-2 text-xs text-gray-500 italic">
-                                Start practicing to track your progress!
-                              </div>
-                            )}
+                            {/* Progress message removed as requested */}
                           </div>
                         </div>
                       </div>
@@ -660,7 +656,7 @@ export function PracticeSection(): JSX.Element {
             {/* Difficulty */}
             <div className="mb-8">
               <div className="flex items-center mb-4">
-                <h4 className="text-lg font-medium text-gray-800">Difficulty</h4>
+                <h4 className="apple-heading-2" data-component-name="PracticeSection">Difficulty</h4>
               </div>
               
               {/* Apple-style segmented control */}
@@ -686,7 +682,6 @@ export function PracticeSection(): JSX.Element {
                       )}
                     </div>
                     <div className="text-sm font-medium">Easy</div>
-                    <div className="text-xs text-gray-500">Beginner-level</div>
                   </div>
                 </div>
                 
@@ -711,7 +706,6 @@ export function PracticeSection(): JSX.Element {
                       )}
                     </div>
                     <div className="text-sm font-medium">Medium</div>
-                    <div className="text-xs text-gray-500">Intermediate</div>
                   </div>
                 </div>
                 
@@ -736,7 +730,6 @@ export function PracticeSection(): JSX.Element {
                       )}
                     </div>
                     <div className="text-sm font-medium">Hard</div>
-                    <div className="text-xs text-gray-500">Advanced</div>
                   </div>
                 </div>
               </div>
@@ -745,7 +738,7 @@ export function PracticeSection(): JSX.Element {
             {/* Question History */}
             <div className="mb-8">
               <div className="flex items-center mb-4">
-                <h4 className="text-lg font-medium text-gray-800">Question History</h4>
+                <h4 className="apple-heading-2" data-component-name="PracticeSection">Question History</h4>
               </div>
               
               {/* Apple-style list items */}
