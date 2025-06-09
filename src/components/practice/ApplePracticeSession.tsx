@@ -249,7 +249,7 @@ export function ApplePracticeSession({ questions, onComplete }: PracticeSessionP
       {/* Discrete exit button */}
       <button 
         onClick={() => setShowExitConfirmation(true)}
-        className="absolute top-4 left-4 z-10 p-2 rounded-full bg-[rgba(255,255,255,0.8)] hover:bg-white border border-[rgba(0,0,0,0.1)] transition-all"
+        className="absolute top-6 left-6 z-50 p-2 rounded-xl bg-[rgba(255,255,255,0.95)] hover:bg-white border border-[rgba(0,0,0,0.1)] shadow-sm transition-all md:top-4 md:left-4"
         style={{ backdropFilter: 'blur(4px)' }}
         aria-label="Exit to main page"
       >
@@ -266,13 +266,13 @@ export function ApplePracticeSession({ questions, onComplete }: PracticeSessionP
             <div className="flex gap-3">
               <button 
                 onClick={handleExitCancel}
-                className="flex-1 py-2 px-4 rounded-full border border-[#8E8E93] text-[#1D1D1F] font-medium text-[15px]"
+                className="flex-1 py-2 px-4 rounded-xl border border-[#8E8E93] text-[#1D1D1F] font-medium text-[15px]"
               >
                 Cancel
               </button>
               <button 
                 onClick={handleExitConfirm}
-                className="flex-1 py-2 px-4 rounded-full bg-[#FF3B30] text-white font-medium text-[15px]"
+                className="flex-1 py-2 px-4 rounded-xl bg-[#FF3B30] text-white font-medium text-[15px]"
               >
                 Exit
               </button>
@@ -326,28 +326,29 @@ export function ApplePracticeSession({ questions, onComplete }: PracticeSessionP
               }}>
                 <div style={{
                   position: 'absolute',
-                  top: 0,
+                  bottom: 0,
                   left: 0,
-                  width: '4px',
-                  height: '100%',
+                  width: '100%',
+                  height: '4px',
                   backgroundColor: '#007AFF'
                 }}></div>
                 <div style={{
                   display: 'flex',
-                  alignItems: 'flex-start',
-                  gap: '16px'
+                  flexDirection: 'column',
+                  gap: '12px',
+                  width: '100%',
+                  alignItems: 'flex-start'
                 }}>
                   <div style={{
                     backgroundColor: 'rgba(0, 122, 255, 0.1)',
                     borderRadius: '8px',
-                    minWidth: '60px',
+                    width: 'fit-content',
                     height: '28px',
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
-                    flexShrink: 0,
-                    marginTop: '2px',
-                    padding: '0 8px'
+                    padding: '0 12px',
+                    marginBottom: '4px'
                   }}>
                     <span style={{
                       color: '#007AFF',
@@ -355,17 +356,25 @@ export function ApplePracticeSession({ questions, onComplete }: PracticeSessionP
                       fontWeight: 600
                     }}>{`Q${currentIndex + 1}/${questions.length}`}</span>
                   </div>
-                  <h2 style={{
-                    fontSize: '17px',
-                    fontWeight: 500,
-                    color: '#1D1D1F',
-                    margin: 0,
-                    lineHeight: 1.5,
-                    letterSpacing: '-0.022em',
-                    fontFamily: '-apple-system, BlinkMacSystemFont, "SF Pro Display", "Helvetica Neue", Arial, sans-serif'
-                  }}>
-                    {questionContent.question}
-                  </h2>
+                  {/* Split content into passage and question */}
+                  {questionContent.question.split('\n\n').map((part, index, array) => (
+                    <div
+                      key={index}
+                      style={{
+                        fontSize: '16px',
+                        fontWeight: index === array.length - 1 ? '500' : 'normal',
+                        color: '#1D1D1F',
+                        margin: index === array.length - 1 ? '16px 0 0 0' : 0,
+                        lineHeight: 1.5,
+                        width: '100%',
+                        textAlign: 'left',
+                        hyphens: 'auto',
+                        padding: '0 0 8px 0'
+                      }}
+                    >
+                      {part}
+                    </div>
+                  ))}
                 </div>
               </div>
               
@@ -380,7 +389,7 @@ export function ApplePracticeSession({ questions, onComplete }: PracticeSessionP
               )}
               
               {/* Answer options */}
-              <div className="apple-answer-options apple-slide-up">
+              <div className="apple-answer-options apple-slide-up" style={{ width: '100%', alignItems: 'flex-start', marginLeft: '0' }}>
                 {questionContent.options.map((option, index) => {
                   const optionLetter = String.fromCharCode(65 + index);
                   const optionText = typeof option === 'string' 
@@ -403,7 +412,7 @@ export function ApplePracticeSession({ questions, onComplete }: PracticeSessionP
                         !showFeedback && !isSelected && "hover:border-[#8E8E93] hover:bg-[#F5F5F7]"
                       )}
                     >
-                      <div className="flex items-center justify-center w-8 h-8 rounded-full bg-[#F5F5F7] mr-3 font-medium text-[14px] text-[#1D1D1F]">
+                      <div className="flex items-center justify-center w-8 h-8 rounded-xl bg-[#F5F5F7] mr-3 font-medium text-[14px] text-[#1D1D1F]">
                         {optionLetter}
                       </div>
                       <div className="flex-1 text-[16px] text-[#1D1D1F] font-normal">{optionText}</div>
@@ -420,74 +429,76 @@ export function ApplePracticeSession({ questions, onComplete }: PracticeSessionP
                     </button>
                   );
                 })}
+                </div>
               </div>
-              
-              {/* Feedback section */}
-              {showFeedback && (
-                <div className={cn(
-                  "apple-feedback apple-fade-in rounded-xl p-3 my-4",
-                  selectedAnswers[questionId] === questionContent.correctAnswer 
-                    ? "bg-[rgba(52,199,89,0.08)] border border-[#34C759]" 
-                    : "bg-[rgba(255,59,48,0.08)] border border-[#FF3B30]"
-                )}>
-                  <div className="flex items-center gap-2 font-medium text-[16px]">
-                    {selectedAnswers[questionId] === questionContent.correctAnswer ? (
-                      <>
-                        <CheckCircle className="h-4 w-4 text-[#34C759]" />
-                        <span className="text-[#1D1D1F]">Correct Answer</span>
-                      </>
-                    ) : (
-                      <>
-                        <XCircle className="h-4 w-4 text-[#FF3B30]" />
-                        <span className="text-[#1D1D1F]">Incorrect Answer</span>
-                      </>
-                    )}
-                  </div>
-                </div>
-              )}
-
-              {/* Explanation - automatically shown when question is answered */}
-              {showFeedback && questionContent.explanation && (
-                <div className="mt-4 apple-fade-in">
-                  <div className="apple-explanation bg-[#F5F5F7] rounded-xl p-4 border border-[#E5E5EA]">
-                    <div className="apple-explanation-title flex items-center gap-2 mb-2">
-                      <BookOpen className="h-4 w-4 text-[#007AFF]" />
-                      <span className="font-semibold text-[16px] text-[#1D1D1F]">Explanation</span>
-                    </div>
-                    <div className="apple-explanation-content text-[16px] leading-relaxed text-[#1D1D1F]">
-                      {questionContent.explanation}
-                    </div>
-                  </div>
-                </div>
-              )}
-
-              {/* Action buttons - Apple HIG style */}
-              {showFeedback && (
-                <div className="flex justify-center mt-6">
-                  {currentIndex === questions.length - 1 || seenQuestions.size >= questions.length ? (
-                    <button
-                      className="py-2.5 px-5 rounded-full bg-[#007AFF] text-white font-medium text-[14px] flex items-center justify-center w-full max-w-xs transition-all hover:bg-[#0062CC] active:bg-[#0055B3] disabled:opacity-40 shadow-sm"
-                      onClick={() => {
-                        toast.success('Practice session completed!');
-                        onComplete();
-                      }}
-                      disabled={isTransitioning}
-                    >
-                      Complete Session
-                    </button>
+            
+            {/* Action buttons - moved above feedback section */}
+            {showFeedback && (
+              <div className="flex justify-center w-full mt-[-24px] mb-8">
+                {currentIndex === questions.length - 1 || seenQuestions.size >= questions.length ? (
+                  <button
+                    className="py-2.5 px-5 rounded-xl bg-[#007AFF] text-white font-medium text-[14px] flex items-center justify-center w-full  transition-all hover:bg-[#0062CC] active:bg-[#0055B3] disabled:opacity-40 shadow-sm"
+                    onClick={() => {
+                      toast.success('Practice session completed!');
+                      onComplete();
+                    }}
+                    disabled={isTransitioning}
+                  >
+                    Complete Session
+                  </button>
+                ) : (
+                  <button
+                    className="py-2.5 px-5 rounded-xl bg-[#007AFF] text-white font-medium text-[14px] flex items-center justify-center w-full  transition-all hover:bg-[#0062CC] active:bg-[#0055B3] disabled:opacity-40 shadow-sm"
+                    onClick={handleNextQuestion}
+                    disabled={isTransitioning}
+                  >
+                    <span>Next Question</span>
+                    <ChevronRight className="h-4 w-4 ml-1.5" />
+                  </button>
+                )}
+              </div>
+            )}
+            
+            {/* Feedback section */}
+            {showFeedback && (
+              <div className={cn(
+                "apple-feedback apple-fade-in rounded-xl p-3 mt-2 mb-4",
+                selectedAnswers[questionId] === questionContent.correctAnswer 
+                  ? "bg-[rgba(52,199,89,0.08)] border border-[#34C759]" 
+                  : "bg-[rgba(255,59,48,0.08)] border border-[#FF3B30]"
+              )}>
+                <div className="flex items-center gap-2 font-medium text-[16px]">
+                  {selectedAnswers[questionId] === questionContent.correctAnswer ? (
+                    <>
+                      <CheckCircle className="h-4 w-4 text-[#34C759]" />
+                      <span className="text-[#1D1D1F]">Correct Answer</span>
+                    </>
                   ) : (
-                    <button
-                      className="py-2.5 px-5 rounded-full bg-[#007AFF] text-white font-medium text-[14px] flex items-center justify-center w-full max-w-xs transition-all hover:bg-[#0062CC] active:bg-[#0055B3] disabled:opacity-40 shadow-sm"
-                      onClick={handleNextQuestion}
-                      disabled={isTransitioning}
-                    >
-                      <span>Next Question</span>
-                      <ChevronRight className="h-4 w-4 ml-1.5" />
-                    </button>
+                    <>
+                      <XCircle className="h-4 w-4 text-[#FF3B30]" />
+                      <span className="text-[#1D1D1F]">Incorrect Answer</span>
+                    </>
                   )}
                 </div>
-              )}
-            </div>
+              </div>
+            )}
+
+            {/* Explanation - automatically shown when question is answered */}
+            {showFeedback && questionContent.explanation && (
+              <div className="mt-4 apple-fade-in">
+                <div className="apple-explanation bg-[#F5F5F7] rounded-xl p-4 border border-[#E5E5EA]">
+                  <div className="apple-explanation-title flex items-center gap-2 mb-2">
+                    <BookOpen className="h-4 w-4 text-[#007AFF]" />
+                    <span className="font-semibold text-[16px] text-[#1D1D1F]">Explanation</span>
+                  </div>
+                  <div className="apple-explanation-content text-[16px] leading-relaxed text-[#1D1D1F]">
+                    {questionContent.explanation}
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Action buttons moved above the feedback section */}
           </div>
         )}
       </div>

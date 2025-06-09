@@ -6,39 +6,16 @@
       "topic": "Percentages",
       "microSkill": "Percentage Increase",
       "difficulty": "easy",
-      "content": "The table below provides data relevant to a real-world scenario involving percentages. Based on the data provided, what is the correct calculation or conclusion regarding the percentage increase?",
+      "content": "A pharmacy's prescription prices increased from £48 to £60. What was the percentage increase in price?",
       "options": [
-        "A. Option 0",
-        "B. Option 1",
-        "C. Option 2",
-        "D. Option 3",
-        "E. Option 4"
+        "20%",
+        "22.5%",
+        "25%",
+        "27.5%",
+        "30%"
       ],
       "correctAnswer": 2,
-      "explanation": "Step-by-step breakdown of how to solve this percentages question using percentage increase. Includes explanation of relevant values and formula used.",
-      "data_type": "table",
-      "data_block": [
-        {
-          "label": "Item 1",
-          "value": 10
-        },
-        {
-          "label": "Item 2",
-          "value": 20
-        },
-        {
-          "label": "Item 3",
-          "value": 30
-        },
-        {
-          "label": "Item 4",
-          "value": 40
-        },
-        {
-          "label": "Item 5",
-          "value": 50
-        }
-      ],
+      "explanation": "To calculate the percentage increase:\n1. Find the absolute increase: £60 - £48 = £12\n2. Divide by the original value: £12 ÷ £48 = 0.25\n3. Convert to percentage: 0.25 × 100 = 25%\n\nThe correct answer is 25% increase.\n\nKey tip: Percentage increase formula = (Increase ÷ Original Value) × 100",
       "timeLimit": 60
     },
     "bee2591f-c312-45d4-95bc-c34c6dabfba6": {
@@ -47,39 +24,16 @@
       "topic": "Percentages",
       "microSkill": "Percentage of Total",
       "difficulty": "medium",
-      "content": "The table below provides data relevant to a real-world scenario involving percentages. Based on the data provided, what is the correct calculation or conclusion regarding the percentage of total?",
+      "content": "In a hospital ward of 200 patients, 70 patients are receiving antibiotics and 50 are receiving pain medication. What percentage of the ward's patients are receiving either antibiotics or pain medication?",
       "options": [
-        "A. Option 1",
-        "B. Option 2",
-        "C. Option 3",
-        "D. Option 4",
-        "E. Option 5"
+        "45%",
+        "50%",
+        "60%",
+        "65%",
+        "70%"
       ],
       "correctAnswer": 2,
-      "explanation": "Step-by-step breakdown of how to solve this percentages question using percentage of total. Includes explanation of relevant values and formula used.",
-      "data_type": "table",
-      "data_block": [
-        {
-          "label": "Item 1",
-          "value": 11
-        },
-        {
-          "label": "Item 2",
-          "value": 21
-        },
-        {
-          "label": "Item 3",
-          "value": 31
-        },
-        {
-          "label": "Item 4",
-          "value": 41
-        },
-        {
-          "label": "Item 5",
-          "value": 51
-        }
-      ],
+      "explanation": "To find the percentage of patients receiving either medication:\n1. Patients on antibiotics: 70\n2. Patients on pain medication: 50\n3. Combined total: 70 + 50 = 120 patients\n4. Total ward patients: 200\n5. Percentage calculation: (120 ÷ 200) × 100 = 60%\n\nThe correct answer is 60%.\n\nKey tip: Percentage of total = (Combined groups ÷ Total) × 100",
       "timeLimit": 60
     },
     "c0d8ce4b-7f32-4b8c-b43e-6b1d548af6bd": {
@@ -88,39 +42,16 @@
       "topic": "Data Interpretation",
       "microSkill": "Average Calculation",
       "difficulty": "hard",
-      "content": "The bar_chart below provides data relevant to a real-world scenario involving data interpretation. Based on the data provided, what is the correct calculation or conclusion regarding the average calculation?",
+      "content": "A nurse recorded the heart rates (in beats per minute) of five patients: 72, 68, 84, 76, and 80. What is the mean heart rate of these patients?",
       "options": [
-        "A. Option 2",
-        "B. Option 3",
-        "C. Option 4",
-        "D. Option 5",
-        "E. Option 6"
+        "74 bpm",
+        "76 bpm",
+        "78 bpm",
+        "80 bpm",
+        "82 bpm"
       ],
       "correctAnswer": 2,
-      "explanation": "Step-by-step breakdown of how to solve this data interpretation question using average calculation. Includes explanation of relevant values and formula used.",
-      "data_type": "bar_chart",
-      "data_block": [
-        {
-          "label": "Item 1",
-          "value": 12
-        },
-        {
-          "label": "Item 2",
-          "value": 22
-        },
-        {
-          "label": "Item 3",
-          "value": 32
-        },
-        {
-          "label": "Item 4",
-          "value": 42
-        },
-        {
-          "label": "Item 5",
-          "value": 52
-        }
-      ],
+      "explanation": "To calculate the mean heart rate:\n1. Sum all heart rates: 72 + 68 + 84 + 76 + 80 = 380 bpm\n2. Divide by number of patients: 380 ÷ 5 = 76 bpm\n\nThe correct answer is 76 bpm.\n\nKey tip: Mean = Sum of all values ÷ Number of values",
       "timeLimit": 60
     },
     "953424a5-6908-461c-962c-d093afdccce2": {
@@ -129,39 +60,16 @@
       "topic": "Data Interpretation",
       "microSkill": "Ranking from Bar Chart",
       "difficulty": "easy",
-      "content": "The bar_chart below provides data relevant to a real-world scenario involving data interpretation. Based on the data provided, what is the correct calculation or conclusion regarding the ranking from bar chart?",
+      "content": "Five medical students scored the following marks in their final exam: James scored 85%, Emma scored 92%, Sarah scored 88%, Michael scored 90%, and David scored 87%. Which statement correctly describes the relative performance of these students?",
       "options": [
-        "A. Option 3",
-        "B. Option 4",
-        "C. Option 5",
-        "D. Option 6",
-        "E. Option 7"
+        "Michael achieved the highest score, 2% above Emma",
+        "Sarah achieved the median score, 3% below Emma",
+        "Emma achieved the highest score, 2% above Michael",
+        "David achieved the third-highest score, 3% above James",
+        "James achieved the lowest score, 5% below Sarah"
       ],
       "correctAnswer": 2,
-      "explanation": "Step-by-step breakdown of how to solve this data interpretation question using ranking from bar chart. Includes explanation of relevant values and formula used.",
-      "data_type": "bar_chart",
-      "data_block": [
-        {
-          "label": "Item 1",
-          "value": 13
-        },
-        {
-          "label": "Item 2",
-          "value": 23
-        },
-        {
-          "label": "Item 3",
-          "value": 33
-        },
-        {
-          "label": "Item 4",
-          "value": 43
-        },
-        {
-          "label": "Item 5",
-          "value": 53
-        }
-      ],
+      "explanation": "Let's analyze each statement by ordering the scores:\nEmma: 92%\nMichael: 90%\nSarah: 88%\nDavid: 87%\nJames: 85%\n\n1. Michael (90%) was not highest, Emma was (92%)\n2. Sarah (88%) was not median, David was (87%)\n3. Emma (92%) was highest, 2% above Michael (90%) ✓\n4. David (87%) was fourth, not third, and only 2% above James\n5. James (85%) was lowest but only 3% below Sarah\n\nThe correct answer is that Emma achieved the highest score, 2% above Michael.\n\nKey tip: When ranking data, list values in order and verify all parts of each statement.",
       "timeLimit": 60
     },
     "6993185f-30e7-4c09-a315-8953b7872ca6": {
@@ -170,39 +78,16 @@
       "topic": "Rates & Speed",
       "microSkill": "Efficiency (Distance / Fuel)",
       "difficulty": "medium",
-      "content": "The pie_chart below provides data relevant to a real-world scenario involving rates & speed. Based on the data provided, what is the correct calculation or conclusion regarding the efficiency (distance / fuel)?",
+      "content": "Three delivery drivers completed their routes today. Driver A covered 240 km using 20 liters of fuel, Driver B covered 180 km using 15 liters, and Driver C covered 300 km using 24 liters. Which driver was the most fuel-efficient (covered the most distance per liter of fuel)?",
       "options": [
-        "A. Option 4",
-        "B. Option 5",
-        "C. Option 6",
-        "D. Option 7",
-        "E. Option 8"
+        "Driver A",
+        "Driver B",
+        "Driver C",
+        "All drivers were equally efficient",
+        "Cannot be determined from the given information"
       ],
-      "correctAnswer": 2,
-      "explanation": "Step-by-step breakdown of how to solve this rates & speed question using efficiency (distance / fuel). Includes explanation of relevant values and formula used.",
-      "data_type": "pie_chart",
-      "data_block": [
-        {
-          "label": "Item 1",
-          "value": 14
-        },
-        {
-          "label": "Item 2",
-          "value": 24
-        },
-        {
-          "label": "Item 3",
-          "value": 34
-        },
-        {
-          "label": "Item 4",
-          "value": 44
-        },
-        {
-          "label": "Item 5",
-          "value": 54
-        }
-      ],
+      "correctAnswer": 1,
+      "explanation": "Let's calculate the efficiency (km/L) for each driver:\n\n1. Driver A: 240 km ÷ 20 L = 12 km/L\n2. Driver B: 180 km ÷ 15 L = 12 km/L\n3. Driver C: 300 km ÷ 24 L = 12.5 km/L\n\nDriver B achieved 12 km/L\nDriver A achieved 12 km/L\nDriver C achieved 12.5 km/L\n\nDriver C was the most efficient, covering 12.5 kilometers per liter of fuel.\n\nKey tip: When calculating efficiency (distance/fuel), higher values indicate better efficiency.",
       "timeLimit": 60
     },
     "e4823096-45ec-438a-a5aa-352c9e202236": {
@@ -211,39 +96,16 @@
       "topic": "Ratios",
       "microSkill": "Ratio Simplification",
       "difficulty": "hard",
-      "content": "The table below provides data relevant to a real-world scenario involving ratios. Based on the data provided, what is the correct calculation or conclusion regarding the ratio simplification?",
+      "content": "In a hospital pharmacy, there are 48 tablets of Medication A and 72 tablets of Medication B. What is the simplified ratio of Medication A to Medication B?",
       "options": [
-        "A. Option 5",
-        "B. Option 6",
-        "C. Option 7",
-        "D. Option 8",
-        "E. Option 9"
+        "1:2",
+        "2:3",
+        "3:4",
+        "4:6",
+        "6:9"
       ],
-      "correctAnswer": 2,
-      "explanation": "Step-by-step breakdown of how to solve this ratios question using ratio simplification. Includes explanation of relevant values and formula used.",
-      "data_type": "table",
-      "data_block": [
-        {
-          "label": "Item 1",
-          "value": 15
-        },
-        {
-          "label": "Item 2",
-          "value": 25
-        },
-        {
-          "label": "Item 3",
-          "value": 35
-        },
-        {
-          "label": "Item 4",
-          "value": 45
-        },
-        {
-          "label": "Item 5",
-          "value": 55
-        }
-      ],
+      "correctAnswer": 1,
+      "explanation": "To simplify the ratio 48:72\n\n1. Find the greatest common divisor (GCD) of 48 and 72:\n   - Factors of 48: 1, 2, 3, 4, 6, 8, 12, 16, 24, 48\n   - Factors of 72: 1, 2, 3, 4, 6, 8, 9, 12, 18, 24, 36, 72\n   - The greatest common divisor is 24\n\n2. Divide both numbers by the GCD:\n   - 48 ÷ 24 = 2\n   - 72 ÷ 24 = 3\n\nTherefore, 48:72 simplifies to 2:3\n\nKey tip: To simplify ratios, divide both numbers by their greatest common divisor.",
       "timeLimit": 60
     },
     "cc785e01-d2ec-4eb8-9b51-286bfa62294e": {
@@ -252,39 +114,16 @@
       "topic": "Rates & Speed",
       "microSkill": "Speed = Distance / Time",
       "difficulty": "easy",
-      "content": "The line_chart below provides data relevant to a real-world scenario involving rates & speed. Based on the data provided, what is the correct calculation or conclusion regarding the speed = distance / time?",
+      "content": "An ambulance travels 45 kilometers to reach Hospital A in 30 minutes, then travels 30 kilometers to Hospital B in 15 minutes. Which journey had the higher average speed?",
       "options": [
-        "A. Option 6",
-        "B. Option 7",
-        "C. Option 8",
-        "D. Option 9",
-        "E. Option 10"
+        "Journey to Hospital A",
+        "Journey to Hospital B",
+        "Both journeys had the same speed",
+        "Cannot be determined without traffic conditions",
+        "Need more information to calculate"
       ],
-      "correctAnswer": 2,
-      "explanation": "Step-by-step breakdown of how to solve this rates & speed question using speed = distance / time. Includes explanation of relevant values and formula used.",
-      "data_type": "line_chart",
-      "data_block": [
-        {
-          "label": "Item 1",
-          "value": 16
-        },
-        {
-          "label": "Item 2",
-          "value": 26
-        },
-        {
-          "label": "Item 3",
-          "value": 36
-        },
-        {
-          "label": "Item 4",
-          "value": 46
-        },
-        {
-          "label": "Item 5",
-          "value": 56
-        }
-      ],
+      "correctAnswer": 1,
+      "explanation": "Let's calculate the speed for each journey:\n\n1. Journey to Hospital A:\n   - Distance = 45 km\n   - Time = 30 minutes = 0.5 hours\n   - Speed = 45 km ÷ 0.5 h = 90 km/h\n\n2. Journey to Hospital B:\n   - Distance = 30 km\n   - Time = 15 minutes = 0.25 hours\n   - Speed = 30 km ÷ 0.25 h = 120 km/h\n\nJourney to Hospital B had the higher speed at 120 km/h compared to 90 km/h for Journey to Hospital A.\n\nKey tip: Remember to convert time to hours before calculating speed (minutes ÷ 60 = hours).",
       "timeLimit": 60
     },
     "67b6134d-142f-4f71-bcd0-1d819dd4b53b": {
@@ -293,39 +132,16 @@
       "topic": "Conversions",
       "microSkill": "Unit Conversion",
       "difficulty": "medium",
-      "content": "The table below provides data relevant to a real-world scenario involving conversions. Based on the data provided, what is the correct calculation or conclusion regarding the unit conversion?",
+      "content": "A patient needs to take 750 mg of a medication every day for 30 days. The medication comes in 0.25g tablets. How many tablets will the patient need for the complete course?",
       "options": [
-        "A. Option 7",
-        "B. Option 8",
-        "C. Option 9",
-        "D. Option 10",
-        "E. Option 11"
+        "60 tablets",
+        "75 tablets",
+        "90 tablets",
+        "100 tablets",
+        "120 tablets"
       ],
       "correctAnswer": 2,
-      "explanation": "Step-by-step breakdown of how to solve this conversions question using unit conversion. Includes explanation of relevant values and formula used.",
-      "data_type": "table",
-      "data_block": [
-        {
-          "label": "Item 1",
-          "value": 17
-        },
-        {
-          "label": "Item 2",
-          "value": 27
-        },
-        {
-          "label": "Item 3",
-          "value": 37
-        },
-        {
-          "label": "Item 4",
-          "value": 47
-        },
-        {
-          "label": "Item 5",
-          "value": 57
-        }
-      ],
+      "explanation": "Let's solve this step by step:\n\n1. Convert all measurements to the same unit:\n   750 mg = 0.75 g (divide by 1000)\n   Each tablet = 0.25 g\n\n2. Calculate tablets needed per day:\n   0.75 g ÷ 0.25 g = 3 tablets per day\n\n3. Calculate total tablets for 30 days:\n   3 tablets × 30 days = 90 tablets\n\nThe correct answer is 90 tablets.\n\nKey tip: When converting units, first make sure all measurements are in the same unit (e.g., all in grams or all in milligrams).",
       "timeLimit": 60
     },
     "7a20c46a-93a1-42d0-8e10-1fe116fd1df4": {
@@ -334,39 +150,16 @@
       "topic": "Currency",
       "microSkill": "Exchange Rate",
       "difficulty": "hard",
-      "content": "The bar_chart below provides data relevant to a real-world scenario involving currency. Based on the data provided, what is the correct calculation or conclusion regarding the exchange rate?",
+      "content": "A medical conference costs $800 USD to attend. The exchange rate is £1 GBP = $1.25 USD, and €1 EUR = $1.10 USD. What is the cost of the conference in GBP (£) and EUR (€)?",
       "options": [
-        "A. Option 8",
-        "B. Option 9",
-        "C. Option 10",
-        "D. Option 11",
-        "E. Option 12"
+        "£640 and €720",
+        "£640 and €728",
+        "£650 and €720",
+        "£650 and €728",
+        "£660 and €730"
       ],
-      "correctAnswer": 2,
-      "explanation": "Step-by-step breakdown of how to solve this currency question using exchange rate. Includes explanation of relevant values and formula used.",
-      "data_type": "bar_chart",
-      "data_block": [
-        {
-          "label": "Item 1",
-          "value": 18
-        },
-        {
-          "label": "Item 2",
-          "value": 28
-        },
-        {
-          "label": "Item 3",
-          "value": 38
-        },
-        {
-          "label": "Item 4",
-          "value": 48
-        },
-        {
-          "label": "Item 5",
-          "value": 58
-        }
-      ],
+      "correctAnswer": 1,
+      "explanation": "Let's solve this step by step:\n\n1. Calculate cost in GBP (£):\n   - Exchange rate: £1 = $1.25\n   - $800 ÷ $1.25 per £1 = £640\n\n2. Calculate cost in EUR (€):\n   - Exchange rate: €1 = $1.10\n   - $800 ÷ $1.10 per €1 = €727.27\n   - Rounded to nearest whole number = €728\n\nThe correct answer is £640 and €728\n\nKey tip: When converting currencies, divide the amount by the exchange rate if converting from USD to another currency.",
       "timeLimit": 60
     },
     "4ecc929a-00dc-4bd7-928c-bb9bb5224b11": {
@@ -375,40 +168,89 @@
       "topic": "Geometry",
       "microSkill": "Area & Perimeter",
       "difficulty": "easy",
-      "content": "The table below provides data relevant to a real-world scenario involving geometry. Based on the data provided, what is the correct calculation or conclusion regarding the area & perimeter?",
+      "content": "A hospital room is rectangular with a length of 8 meters and a width of 6 meters. The room needs new flooring and skirting boards. If the flooring costs £25 per square meter and the skirting boards cost £8 per meter, what is the total cost for both?",
       "options": [
-        "A. Option 9",
-        "B. Option 10",
-        "C. Option 11",
-        "D. Option 12",
-        "E. Option 13"
+        "£1,152",
+        "£1,192",
+        "£1,232",
+        "£1,272",
+        "£1,312"
       ],
       "correctAnswer": 2,
-      "explanation": "Step-by-step breakdown of how to solve this geometry question using area & perimeter. Includes explanation of relevant values and formula used.",
-      "data_type": "table",
-      "data_block": [
-        {
-          "label": "Item 1",
-          "value": 19
-        },
-        {
-          "label": "Item 2",
-          "value": 29
-        },
-        {
-          "label": "Item 3",
-          "value": 39
-        },
-        {
-          "label": "Item 4",
-          "value": 49
-        },
-        {
-          "label": "Item 5",
-          "value": 59
-        }
-      ],
+      "explanation": "Let's solve this step by step:\n\n1. Calculate the area for flooring:\n   - Area = length × width\n   - Area = 8m × 6m = 48 square meters\n   - Cost of flooring = 48m² × £25 = £1,200\n\n2. Calculate the perimeter for skirting boards:\n   - Perimeter = 2 × (length + width)\n   - Perimeter = 2 × (8m + 6m) = 2 × 14m = 28 meters\n   - Cost of skirting = 28m × £8 = £224\n\n3. Calculate total cost:\n   - Total = £1,200 + £224 = £1,232\n\nThe correct answer is £1,232\n\nKey tip: Remember that area uses square units (m²) while perimeter uses linear units (m).",
       "timeLimit": 60
+    },
+    "f721ca3d-a0fa-4fbf-a5f4-c1a6af84e9d9": {
+      "id": "f721ca3d-a0fa-4fbf-a5f4-c1a6af84e9d9",
+      "section": "VR",
+      "topic": "Reading Comprehension",
+      "microSkill": "Main Idea",
+      "difficulty": "medium",
+      "content": "Recent studies in neuroscience have revealed that meditation can lead to structural changes in the brain. Regular meditation practice has been shown to increase gray matter density in regions associated with learning, memory, and emotional regulation. Additionally, researchers have observed reduced activity in the amygdala, the brain's fear center, suggesting that meditation may help manage anxiety and stress responses. These findings provide scientific support for the ancient practice of meditation as a tool for mental well-being.\n\nWhat is the main idea of this passage?",
+      "options": [
+        "Meditation is an ancient practice that has been used for centuries",
+        "Scientific research validates meditation's positive effects on brain structure and function",
+        "The amygdala is responsible for fear and stress responses in the brain",
+        "Gray matter density is important for learning and memory",
+        "Neuroscience studies are becoming more advanced and sophisticated"
+      ],
+      "correctAnswer": 1,
+      "explanation": "The main idea is that scientific research (specifically neuroscience) has validated meditation's positive effects on the brain. The passage focuses on presenting scientific evidence that supports meditation's benefits, including structural changes in the brain and impacts on emotional regulation.\n\nKey tip: The main idea often encompasses the central theme that other details support. Here, all specific details (gray matter density, amygdala activity) support the central concept of scientific validation of meditation's effects.",
+      "timeLimit": 120
+    },
+    "8d4e7b23-5c16-4a31-b78f-98e19d8c9e04": {
+      "id": "8d4e7b23-5c16-4a31-b78f-98e19d8c9e04",
+      "section": "VR",
+      "topic": "Critical Analysis",
+      "microSkill": "Drawing Conclusions",
+      "difficulty": "hard",
+      "content": "A hospital implemented a new hand hygiene protocol requiring staff to use alcohol-based sanitizer before and after each patient contact. In the first month, compliance was 85%. After installing automated dispensers with electronic monitoring, compliance increased to 95%. However, the rate of hospital-acquired infections remained unchanged.\n\nWhich conclusion is best supported by this information?",
+      "options": [
+        "The electronic monitoring system was ineffective",
+        "Staff were falsifying their hand hygiene practices",
+        "Increased hand hygiene compliance doesn't affect infection rates",
+        "Higher compliance rates don't necessarily guarantee reduced infections",
+        "The automated dispensers were not properly maintained"
+      ],
+      "correctAnswer": 3,
+      "explanation": "The best conclusion is that higher compliance rates don't necessarily guarantee reduced infections. This is supported because:\n1. Compliance clearly improved (from 85% to 95%)\n2. Despite this improvement, infection rates stayed the same\n3. This suggests that while compliance increased, other factors may influence infection rates\n\nOther options make assumptions not supported by the data:\n- No evidence of system ineffectiveness or falsification\n- Can't conclude that hand hygiene doesn't affect infections in general\n- No information about dispenser maintenance\n\nKey tip: Choose conclusions that directly follow from the evidence without making unsupported assumptions.",
+      "timeLimit": 120
+    },
+    "2c9f3b1a-7d84-4eb5-9d5f-8a6c1f4b2e3d": {
+      "id": "2c9f3b1a-7d84-4eb5-9d5f-8a6c1f4b2e3d",
+      "section": "VR",
+      "topic": "Inference",
+      "microSkill": "Implicit Information",
+      "difficulty": "easy",
+      "content": "Dr. Smith has been practicing medicine for over three decades. Recently, she noticed that her younger patients are increasingly requesting telemedicine appointments instead of in-person visits. While she acknowledges the convenience of virtual consultations, she prefers traditional face-to-face interactions for initial assessments.\n\nWhich of the following can be inferred from this passage?",
+      "options": [
+        "Dr. Smith is resistant to new technology",
+        "Younger patients don't value quality healthcare",
+        "There is a generational difference in healthcare preferences",
+        "Telemedicine is more effective than traditional consultations",
+        "Dr. Smith provides lower quality care to telemedicine patients"
+      ],
+      "correctAnswer": 2,
+      "explanation": "The passage implies a generational difference in healthcare preferences because:\n1. 'Younger' patients specifically prefer telemedicine\n2. Dr. Smith, with 30+ years experience (suggesting an older generation), prefers traditional methods\n\nThis inference is reasonable without making unsupported assumptions about:\n- Dr. Smith's attitude toward technology (she 'acknowledges the convenience')\n- Quality of care or effectiveness of either method\n- Patient values\n\nKey tip: Valid inferences must be logically supported by the text without making assumptions beyond the given information.",
+      "timeLimit": 120
+    },
+    "5e7d4c2b-9f63-4a82-bc1e-3d8f6a9e7c5b": {
+      "id": "5e7d4c2b-9f63-4a82-bc1e-3d8f6a9e7c5b",
+      "section": "VR",
+      "topic": "Author's Voice",
+      "microSkill": "Tone Analysis",
+      "difficulty": "medium",
+      "content": "While artificial intelligence shows promise in medical diagnosis, we must approach its implementation with careful consideration. Yes, AI can process vast amounts of data quickly, but it lacks the nuanced understanding that comes from years of clinical experience. Healthcare providers should view AI as a complementary tool rather than a replacement for human judgment. After all, medicine is as much an art as it is a science.\n\nWhat is the author's tone towards AI in healthcare?",
+      "options": [
+        "Dismissive and skeptical",
+        "Cautiously optimistic",
+        "Enthusiastically supportive",
+        "Deeply concerned",
+        "Neutral and objective"
+      ],
+      "correctAnswer": 1,
+      "explanation": "The author's tone is cautiously optimistic because:\n1. Acknowledges AI's 'promise' and capabilities (positive)\n2. Uses qualifying language: 'must approach with careful consideration' (cautious)\n3. Suggests a balanced view: AI as 'complementary' rather than replacement\n4. Neither completely dismissive nor fully embracing\n\nEvidence against other options:\n- Not dismissive (recognizes benefits)\n- Not enthusiastic (emphasizes limitations)\n- Not deeply concerned (sees positive role)\n- Not neutral (expresses clear opinions)\n\nKey tip: Analyze word choice and balance of positive/negative statements to determine tone.",
+      "timeLimit": 120
     }
   }
 }

@@ -29,7 +29,7 @@ export function PracticeSection(): JSX.Element {
   const [filterOptions, setFilterOptions] = useState<PracticeFilterOptions>({
     section: activeSection,
     topics: ['Percentages', 'Ratios', 'Rates & Speed'] as MainTopic[], // Using valid MainTopic values
-    difficulty: ['medium'] as DifficultyOption[], // Changed to array to support multiple selections
+    difficulty: ['easy', 'medium', 'hard'] as DifficultyOption[], // All difficulty levels selected by default
     interactionStatus: ['unseen', 'correct', 'incorrect', 'flagged'] as InteractionStatus[], // Skip option removed as we don't have skip functionality yet
     microSkills: []
   });
