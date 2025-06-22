@@ -27,6 +27,15 @@ export interface QuestionData {
   explanation?: string;
   data_block?: Array<{ label: string; value: number }> | Record<string, unknown> | null;
   data_type?: string;
+  // New properties for table and chart data
+  table?: {
+    columns?: string[];
+    rows?: Array<Array<string | number>>;
+  };
+  chart?: {
+    type?: string;
+    data?: Array<{label?: string; value?: number}> | Record<string, unknown>;
+  };
   [key: string]: unknown; 
 }
 
@@ -370,32 +379,57 @@ export function ApplePracticeSession({ questions, onComplete, section = 'QR' }: 
                       <div
                         key={index}
                         style={{
-                          fontSize: '16px',
-                          fontWeight: index === array.length - 1 ? '500' : 'normal',
-                          color: '#1D1D1F',
-                          margin: index === array.length - 1 ? '16px 0 0 0' : 0,
-                          lineHeight: 1.5,
+                          fontSize: index === array.length - 1 ? '17px' : '16px',
+                          fontWeight: index === array.length - 1 ? '600' : '400',
+                          color: index === array.length - 1 ? '#1D1D1F' : '#3A3A3C',
+                          margin: index === array.length - 1 ? '24px 0 0 0' : '0 0 16px 0',
+                          lineHeight: index === array.length - 1 ? '1.4' : '1.6',
                           width: '100%',
                           textAlign: 'left',
                           hyphens: 'auto',
-                          padding: '0 0 8px 0'
+                          letterSpacing: index === array.length - 1 ? '-0.01em' : '0'
                         }}
                         dangerouslySetInnerHTML={{ __html: parseMarkdown(part) }}
                       />
                     ));
                   })()}
+                  
+                  {/* Data visualization inside question container - only show if data exists */}
+                  {currentQuestion && (currentQuestion.table || currentQuestion.chart || (currentQuestion.data_block && Array.isArray(currentQuestion.data_block) && currentQuestion.data_block.length > 0)) && (
+                    <div className="apple-data-visualization mt-6">
+                      {/* Handle table data */}
+                      {currentQuestion.table && (
+                        <div className="mb-4">
+                          <DataVisualization 
+                            type="table" 
+                            data={currentQuestion.table} 
+                          />
+                        </div>
+                      )}
+                      
+                      {/* Handle chart data */}
+                      {currentQuestion.chart && (
+                        <div className="mb-4">
+                          <DataVisualization 
+                            type={currentQuestion.chart?.type || 'bar_chart'} 
+                            data={currentQuestion.chart?.data} 
+                          />
+                        </div>
+                      )}
+                      
+                      {/* Handle legacy data_block format */}
+                      {currentQuestion.data_block && !currentQuestion.table && !currentQuestion.chart && (
+                        <div className="mb-4">
+                          <DataVisualization 
+                            type={currentQuestion.data_type || 'bar_chart'} 
+                            data={currentQuestion.data_block} 
+                          />
+                        </div>
+                      )}
+                    </div>
+                  )}
                 </div>
               </div>
-              
-              {/* Data visualization - only show for questions with data blocks */}
-              {currentQuestion && currentQuestion.data_block && Array.isArray(currentQuestion.data_block) && currentQuestion.data_block.length > 0 && (
-                <div className="apple-data-visualization">
-                  <DataVisualization 
-                    type={currentQuestion.data_type || 'bar_chart'} 
-                    data={currentQuestion.data_block} 
-                  />
-                </div>
-              )}
               
               {/* Answer options */}
               <div className="apple-answer-options apple-slide-up" style={{ width: '100%', alignItems: 'flex-start', marginLeft: '0' }}>

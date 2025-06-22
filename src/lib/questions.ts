@@ -190,8 +190,25 @@ export async function fetchQuestions(filters: PracticeFilterOptions) {
       return [];
     }
     
+    // Transform questions to include table and chart data before shuffling
+    const transformedQuestions = filteredQuestions.map(question => {
+      // Log the question to debug
+      console.log('Processing question:', question.id, question);
+      
+      return {
+        ...question,
+        // Ensure table data is properly passed through if it exists
+        table: question.table,
+        // Ensure chart data is properly passed through if it exists
+        chart: question.chart,
+        // Keep data_block for backward compatibility
+        data_block: question.data_block || [],
+        data_type: question.data_type || 'none'
+      };
+    });
+    
     // Shuffle questions and limit to 10 (or another appropriate number)
-    const shuffled = [...filteredQuestions].sort(() => Math.random() - 0.5);
+    const shuffled = [...transformedQuestions].sort(() => Math.random() - 0.5);
     return shuffled.slice(0, 10);
   } catch (error) {
     console.error('Error in fetchQuestions:', error);

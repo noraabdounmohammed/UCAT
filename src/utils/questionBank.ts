@@ -29,12 +29,22 @@ export interface Question {
   correct_answer: string;
   worked_solution: string;
   data_type: string;
-  data_block: Array<{ label: string; value: number }>;
+  data_block: Array<{ label: string; value: number }> | Record<string, unknown> | null;
   explanation_audio_url: string | null;
   main_topic: string;
   micro_skill: string;
   difficulty: 'Easy' | 'Medium' | 'Hard';
   created_at: string;
+  // Table data structure
+  table?: {
+    columns?: string[];
+    rows?: Array<Array<string | number>>;
+  };
+  // Chart data structure
+  chart?: {
+    type?: string;
+    data?: Array<{label?: string; value?: number}> | Record<string, unknown>;
+  };
 }
 
 import { loadQuestionDatabase } from '@/lib/questionDatabase';
@@ -401,9 +411,13 @@ export async function loadQuestionsForSection(section: string): Promise<Question
         // Use explanation field for worked solution
         worked_solution: dbQuestion.explanation || '',
         
-        // Initialize empty data fields
-        data_type: '',
-        data_block: [],
+        // Include table and chart data from database
+        table: dbQuestion.table,
+        chart: dbQuestion.chart,
+        
+        // Initialize data fields with database values or defaults
+        data_type: dbQuestion.data_type || '',
+        data_block: dbQuestion.data_block || [],
         explanation_audio_url: null,
         
         // Topic and skill information

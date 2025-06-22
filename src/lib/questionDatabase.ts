@@ -16,6 +16,19 @@ export interface Question {
   videoUrl?: string;
   tags?: string[];
   timeLimit?: number;
+  // Data visualization properties
+  data_type?: string;
+  data_block?: Array<{ label: string; value: number }> | Record<string, unknown> | null;
+  // Table data structure
+  table?: {
+    columns?: string[];
+    rows?: Array<Array<string | number>>;
+  };
+  // Chart data structure
+  chart?: {
+    type?: string;
+    data?: Array<{label?: string; value?: number}> | Record<string, unknown>;
+  };
 }
 
 // Define the database structure

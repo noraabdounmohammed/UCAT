@@ -345,8 +345,13 @@ export function PracticeSection(): JSX.Element {
           topic: q.main_topic,
           difficulty: q.difficulty.toLowerCase() as 'easy' | 'medium' | 'hard',
           tags: [q.micro_skill],
-          data_block: {} as Record<string, unknown>, // Add empty data_block as Record
-          data_type: 'none'
+          // Include table data if present
+          table: q.table,
+          // Include chart data if present
+          chart: q.chart,
+          // Keep data_block for backward compatibility
+          data_block: q.data_block || {} as Record<string, unknown>,
+          data_type: q.data_type || 'none'
         }));
         
         // Cast to QuestionData[] to match ApplePracticeSession props
