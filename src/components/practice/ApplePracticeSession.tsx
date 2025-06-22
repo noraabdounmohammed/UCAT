@@ -33,6 +33,7 @@ export interface QuestionData {
 interface PracticeSessionProps {
   questions: QuestionData[];
   onComplete: () => void;
+  section?: string; // Add section prop to track which section questions belong to
 }
 
 // Stable question content type
@@ -45,7 +46,7 @@ interface StableQuestionContent {
   explanation: string;
 }
 
-export function ApplePracticeSession({ questions, onComplete }: PracticeSessionProps) {
+export function ApplePracticeSession({ questions, onComplete, section = 'QR' }: PracticeSessionProps) {
   // Component state
   const [currentIndex, setCurrentIndex] = useState(0);
   const [selectedAnswers, setSelectedAnswers] = useState<Record<string, string>>({});
@@ -167,8 +168,8 @@ export function ApplePracticeSession({ questions, onComplete }: PracticeSessionP
     const skill = Array.isArray(currentQuestion?.tags) && currentQuestion.tags.length > 0 
       ? currentQuestion.tags[0] 
       : '';
-    // Use a default section name if not available
-    const section = 'QR'; // Default to Quantitative Reasoning
+    // Use the section passed from props
+    // section prop is already defined in function parameters with default 'QR'
     
     // Update user progress in local storage
     // Ensure all parameters are strings
@@ -356,25 +357,33 @@ export function ApplePracticeSession({ questions, onComplete }: PracticeSessionP
                       fontWeight: 600
                     }}>{`Q${currentIndex + 1}/${questions.length}`}</span>
                   </div>
-                  {/* Split content into passage and question */}
-                  {questionContent.question.split('\n\n').map((part, index, array) => (
-                    <div
-                      key={index}
-                      style={{
-                        fontSize: '16px',
-                        fontWeight: index === array.length - 1 ? '500' : 'normal',
-                        color: '#1D1D1F',
-                        margin: index === array.length - 1 ? '16px 0 0 0' : 0,
-                        lineHeight: 1.5,
-                        width: '100%',
-                        textAlign: 'left',
-                        hyphens: 'auto',
-                        padding: '0 0 8px 0'
-                      }}
-                    >
-                      {part}
-                    </div>
-                  ))}
+                  {/* Function to parse markdown formatting */}
+                  {(() => {
+                    // Simple function to parse markdown bold text
+                    const parseMarkdown = (text: string) => {
+                      // Replace **text** with <strong>text</strong>
+                      return text.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+                    };
+                    
+                    // Split content into passage and question
+                    return questionContent.question.split('\n\n').map((part, index, array) => (
+                      <div
+                        key={index}
+                        style={{
+                          fontSize: '16px',
+                          fontWeight: index === array.length - 1 ? '500' : 'normal',
+                          color: '#1D1D1F',
+                          margin: index === array.length - 1 ? '16px 0 0 0' : 0,
+                          lineHeight: 1.5,
+                          width: '100%',
+                          textAlign: 'left',
+                          hyphens: 'auto',
+                          padding: '0 0 8px 0'
+                        }}
+                        dangerouslySetInnerHTML={{ __html: parseMarkdown(part) }}
+                      />
+                    ));
+                  })()}
                 </div>
               </div>
               

@@ -9,6 +9,7 @@ import { getAvailableSections, Question } from '@/utils/questionBank';
 import { fetchQuestions, fetchQuestionCounts, fetchDynamicTopicStructure, countFilteredQuestions, clearQuestionCountCache } from '@/lib/questions';
 import { getSectionProgress, getTopicProgress, getSkillProgress } from '@/utils/userProgressStorage';
 import { toast } from 'sonner';
+import { ResetProgressButton } from '@/components/ui/ResetProgressButton';
 import { PracticeFilterOptions, MainTopic, DifficultyOption, InteractionStatus } from '@/types/practice';
 
 // Section definitions with icons and descriptions
@@ -55,6 +56,9 @@ export function PracticeSection(): JSX.Element {
     skills: {} as Record<string, ReturnType<typeof getSkillProgress>>,
     sections: {} as Record<string, ReturnType<typeof getSectionProgress>>
   });
+  
+  // Track question counts per section
+  const [sectionQuestionCounts, setSectionQuestionCounts] = useState<Record<string, number>>({});
   
   // Force refresh of progress data
   const refreshProgressData = useCallback(() => {
@@ -107,8 +111,8 @@ export function PracticeSection(): JSX.Element {
   // Track filtered question count
   const [filteredCount, setFilteredCount] = useState(0);
   
-  // Track total question count for the active section
-  const [sectionQuestionCount, setSectionQuestionCount] = useState(0);
+  // We no longer need this since we're using sectionQuestionCounts instead
+  // const [sectionQuestionCount, setSectionQuestionCount] = useState(0);
   
   // Update filtered count whenever filterOptions change
   useEffect(() => {
@@ -132,8 +136,39 @@ export function PracticeSection(): JSX.Element {
   useEffect(() => {
     const loadSections = async () => {
       try {
+        console.log('Loading available sections...');
         const sections = await getAvailableSections();
+        console.log('Available sections:', sections);
         setAvailableSections(sections);
+        
+        // Set a default section if available and no section is currently selected
+        if (sections && sections.length > 0) {
+          // Only set default section if none is selected
+          if (!activeSection || !sections.includes(activeSection)) {
+            console.log('Setting default section to:', sections[0]);
+            setActiveSection(sections[0]);
+            
+            // Update filter options with the selected section
+            setFilterOptions(prev => ({
+              ...prev,
+              section: sections[0]
+            }));
+          }
+          
+          // Load question counts for all sections on initial load
+          for (const section of sections) {
+            const countsData = await fetchQuestionCounts(section);
+            if (countsData) {
+              setSectionQuestionCounts(prev => ({
+                ...prev,
+                [section]: countsData.total || 0
+              }));
+              console.log(`Loaded question count for ${section}: ${countsData.total}`);
+            }
+          }
+        }
+        
+        // Only mark loading as complete after we've set the active section
         setLoadingSections(false);
       } catch (error) {
         console.error('Error loading sections:', error);
@@ -144,7 +179,7 @@ export function PracticeSection(): JSX.Element {
     
     loadSections();
     refreshProgressData();
-  }, [activeSection, refreshProgressData]); 
+  }, [refreshProgressData, activeSection]); // Add activeSection dependency to react to changes
   
   // Helper functions for topic and skill selection
   const isTopicSelected = (topic: MainTopic): boolean => {
@@ -181,9 +216,10 @@ export function PracticeSection(): JSX.Element {
     return topicData?.skills.map(skill => skill.id) || [];
   };
 
-  const getMicroSkillCount = (skillId: string): { total: number } => {
-    return { total: questionCounts.skillCounts[skillId] || 0 };
-  };
+  // This function is not being used, so we can comment it out
+  // const getMicroSkillCount = (skillId: string): { total: number } => {
+  //   return { total: questionCounts.skillCounts[skillId] || 0 };
+  // };
 
   // Fetch topic structure and question counts when active section changes
   useEffect(() => {
@@ -227,8 +263,14 @@ export function PracticeSection(): JSX.Element {
             skillCounts: countsData.skillCounts || {}
           });
           
-          // Set the total question count for the section
-          setSectionQuestionCount(countsData.total || 0);
+          // We no longer need to set this since we're using sectionQuestionCounts instead
+          // setSectionQuestionCount(countsData.total || 0);
+          
+          // Update section-specific question counts
+          setSectionQuestionCounts(prev => ({
+            ...prev,
+            [activeSection]: countsData.total || 0
+          }));
           
           // Debug log the question counts
           console.log('Set question counts:', {
@@ -258,6 +300,30 @@ export function PracticeSection(): JSX.Element {
   const handleStartPractice = async () => {
     setIsLoading(true);
     try {
+      // Check if user is specifically trying to practice unseen questions only
+      const isUnseenOnly = filterOptions.interactionStatus.length === 1 && 
+                         filterOptions.interactionStatus.includes('unseen');
+      
+      // Get the total question count for this section
+      const totalSectionQuestions = sectionQuestionCounts[activeSection] || 0;
+      
+      // Get the number of questions the user has already attempted in this section
+      const sectionProgress = getSectionProgressFromStorage(activeSection);
+      const attemptedQuestions = sectionProgress.total || 0;
+      
+      // Calculate how many unseen questions should be available
+      const unseenCount = Math.max(0, totalSectionQuestions - attemptedQuestions);
+      
+      console.log(`Starting practice with filters:`, filterOptions);
+      console.log(`Section: ${activeSection}, Total: ${totalSectionQuestions}, Attempted: ${attemptedQuestions}, Unseen: ${unseenCount}`);
+      
+      // If user is trying to practice unseen questions but there are none left, show a message
+      if (isUnseenOnly && unseenCount === 0) {
+        toast.error('You have already attempted all questions in this section. Try including other question types in your filter.');
+        setIsLoading(false);
+        return;
+      }
+      
       // Fetch questions based on current filters
       const fetchedQuestions = await fetchQuestions({
         section: activeSection,
@@ -366,8 +432,29 @@ export function PracticeSection(): JSX.Element {
   
   // Handle section change
   const handleSectionChange = (section: string) => {
+    console.log('Changing section to:', section);
+    
     if (section !== activeSection) {
+      // Set the active section
       setActiveSection(section);
+      
+      // Reset filter options for the new section
+      // This is important - we need to clear existing topic selections
+      setFilterOptions({
+        section: section,
+        topics: [], // Will be populated when topic structure loads
+        microSkills: [], // Will be populated when topic structure loads
+        difficulty: ['easy', 'medium', 'hard'] as DifficultyOption[],
+        interactionStatus: ['unseen', 'correct', 'incorrect', 'flagged'] as InteractionStatus[]
+      });
+      
+      // Clear topic structure to force reload
+      setTopicStructure([]);
+      
+      // Force refresh progress data for the new section
+      setTimeout(() => refreshProgressData(), 100);
+      
+      console.log('Section changed successfully to:', section);
     }
   };
   
@@ -386,10 +473,12 @@ export function PracticeSection(): JSX.Element {
   // Render practice session if practicing
   if (isPracticing && questions.length > 0) {
     console.log('Starting practice with filtered questions:', questions.length);
+    console.log('Using active section:', activeSection);
     return (
       <ApplePracticeSession
         questions={questions}
         onComplete={handleCompletePractice}
+        section={activeSection} // Pass the active section to track progress correctly
       />
     );
   }
@@ -397,6 +486,10 @@ export function PracticeSection(): JSX.Element {
   // Render practice setup UI
   return (
     <div className="max-w-4xl mx-auto pt-12 px-6">
+      <div className="flex justify-between items-center mb-6">
+        <h2 className="apple-heading-1">UCAT Practice</h2>
+        <ResetProgressButton />
+      </div>
       
 
       
@@ -417,10 +510,10 @@ export function PracticeSection(): JSX.Element {
                   background: getSectionProgressFromStorage(section).total > 0 ?
                     `linear-gradient(to right, 
                       rgba(16, 185, 129, 0.08) 0%, 
-                      rgba(16, 185, 129, 0.08) ${(getSectionProgressFromStorage(section).correct / sectionQuestionCount) * 100}%, 
-                      rgba(239, 68, 68, 0.08) ${(getSectionProgressFromStorage(section).correct / sectionQuestionCount) * 100}%, 
-                      rgba(239, 68, 68, 0.08) ${((getSectionProgressFromStorage(section).correct + getSectionProgressFromStorage(section).incorrect) / sectionQuestionCount) * 100}%, 
-                      white ${((getSectionProgressFromStorage(section).correct + getSectionProgressFromStorage(section).incorrect) / sectionQuestionCount) * 100}%, 
+                      rgba(16, 185, 129, 0.08) ${(getSectionProgressFromStorage(section).correct / (sectionQuestionCounts[section] || 1)) * 100}%, 
+                      rgba(239, 68, 68, 0.08) ${(getSectionProgressFromStorage(section).correct / (sectionQuestionCounts[section] || 1)) * 100}%, 
+                      rgba(239, 68, 68, 0.08) ${((getSectionProgressFromStorage(section).correct + getSectionProgressFromStorage(section).incorrect) / (sectionQuestionCounts[section] || 1)) * 100}%, 
+                      white ${((getSectionProgressFromStorage(section).correct + getSectionProgressFromStorage(section).incorrect) / (sectionQuestionCounts[section] || 1)) * 100}%, 
                       white 100%)` :
                     (isSelected ? '#ebf5ff' : 'white')
                 }}
@@ -434,7 +527,8 @@ export function PracticeSection(): JSX.Element {
                       {SECTION_DETAILS[section]?.name || section}
                     </h4>
                     <div className="apple-section-card-subtitle" data-component-name="PracticeSection">
-                      {getSectionProgressFromStorage(section).total}/{sectionQuestionCount} questions attempted
+                      {/* Show the number of attempted questions from the section's progress data */}
+                      {(getSectionProgressFromStorage(section).correct + getSectionProgressFromStorage(section).incorrect)}/{sectionQuestionCounts[section] || 0} questions attempted
                       {getSectionProgressFromStorage(section).total > 0 && (
                         <div className="mt-1 flex items-center" data-component-name="PracticeSection">
                           <span className="text-xs font-medium text-gray-600">
@@ -874,7 +968,7 @@ export function PracticeSection(): JSX.Element {
                         
                         // Calculate unseen count - if total tracked is 0 or less than section count, show the difference
                         // Otherwise, there are no unseen questions (all have been seen)
-                        const unseenCount = Math.max(0, sectionQuestionCount - totalTracked);
+                        const unseenCount = Math.max(0, sectionQuestionCounts[activeSection] - totalTracked);
                         
                         return unseenCount > 0 ? (
                           <span className="ml-2 text-gray-600 font-medium">({unseenCount})</span>
