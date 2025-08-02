@@ -1,11 +1,8 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
-import { DashboardProps } from '@/types/dashboard';
 import { PracticeSection } from '@/components/practice/PracticeSection';
 
-const Dashboard: React.FC<Omit<DashboardProps, 'userData'>> = ({ 
-  onMockStart
-}) => {
+const Dashboard: React.FC = () => {
   const navigate = useNavigate();
   
   // Navigate to the dedicated practice page with section parameter
@@ -15,7 +12,6 @@ const Dashboard: React.FC<Omit<DashboardProps, 'userData'>> = ({
   
   return (
     <PracticeSection 
-      onMockStart={onMockStart} 
       onPracticeStart={handlePracticeStart}
     />
   );
