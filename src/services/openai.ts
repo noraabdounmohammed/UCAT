@@ -93,8 +93,14 @@ Important instructions:
 - Be specific and directly address the student's question
 - Reference relevant medical terminology and concepts
 - Explain why the correct answer is correct
-- Be concise (aim for 100-200 words)
-- Format your response with clear paragraphs when helpful
+- Use emojis appropriately to highlight key points (1-3 emojis per response)
+- Use markdown formatting for clarity:
+  * **Bold** for important terms and concepts
+  * Bullet points for lists of related items
+  * Numbered lists for sequential steps or processes
+  * Headings (##) for clear section breaks when needed
+- Be concise but thorough (aim for 150-250 words)
+- Structure your response with clear sections when appropriate
 
 You have access to key information about the question and the student's query.`;
 
@@ -149,11 +155,11 @@ Please provide a specific response addressing this medical question.`;
             { role: "system", content: systemPrompt },
             { role: "user", content: compressedUserPrompt }
           ],
-          temperature: 0.3,  // Moderate temperature for balanced responses
-          max_tokens: 300,   // DeepSeek may have different rate limits
-          top_p: 0.8,        // Focused sampling
-          presence_penalty: 0.0,  // Remove penalties to reduce complexity
-          frequency_penalty: 0.0   // Remove penalties to reduce complexity
+          temperature: 0.4,  // Slightly higher temperature for more creative responses with emojis
+          max_tokens: 400,   // Increased token limit for better formatting and explanations
+          top_p: 0.9,        // Slightly higher top_p for more diverse responses
+          presence_penalty: 0.1,  // Small penalty to encourage diverse content
+          frequency_penalty: 0.1   // Small penalty to discourage repetition
         });
         
         console.log('OpenAI response received:', response);
@@ -255,7 +261,11 @@ export function generateFallbackResponse(userQuery: string, context: QuestionCon
     
     if (mostRecentResponse) {
       console.log('Using most recent cached response as fallback');
-      return `I'm currently experiencing connection issues with my knowledge base. Based on previous similar questions, here's what I can tell you: \n\n${mostRecentResponse}`;
+      return `⚠️ **Connection Issue**
+
+I'm currently experiencing connection issues with my knowledge base. Based on previous similar questions, here's what I can tell you: 
+
+${mostRecentResponse}`;
     }
   }
   
@@ -268,18 +278,67 @@ export function generateFallbackResponse(userQuery: string, context: QuestionCon
   
   // Generate a context-aware fallback response based on the query
   if (hasKeyword(['why', 'reason', 'explain', 'how come'])) {
-    return `Based on the medical concepts in this question about "${questionPreview}...", ${context.correctAnswer} is correct because it best aligns with the clinical presentation. The key factors to consider are the specific symptoms and test results mentioned in the question.`;
+    return `## 🔍 **Explanation Analysis**
+
+Based on the medical concepts in this question about "${questionPreview}...", **${context.correctAnswer}** is correct because it best aligns with the clinical presentation.
+
+**Key factors to consider:**
+* Specific symptoms described in the case
+* Test results and their interpretation
+* Underlying pathophysiology`;
   } else if (hasKeyword(['difference', 'versus', 'vs', 'compare'])) {
-    return `For this question about "${questionPreview}...", the key difference between the options relates to their specificity and relevance. ${context.correctAnswer} addresses the exact condition described, while other options may be too broad or address different pathophysiological processes.`;
+    return `## ⚖️ **Comparative Analysis**
+
+For this question about "${questionPreview}...", the key difference between the options relates to their specificity and relevance.
+
+**${context.correctAnswer}** addresses the exact condition described, while other options may be:
+* Too broad in scope
+* Address different pathophysiological processes
+* Focus on less relevant aspects of the case`;
   } else if (hasKeyword(['treatment', 'manage', 'therapy', 'intervention'])) {
-    return `For this condition about "${questionPreview}...", the standard treatment approach typically involves addressing the underlying cause identified in ${context.correctAnswer}. Management would focus on both resolving the acute presentation and preventing complications.`;
+    return `## 💊 **Treatment Approach**
+
+For this condition about "${questionPreview}...", the standard treatment approach typically involves addressing the underlying cause identified in **${context.correctAnswer}**.
+
+**Management focuses on:**
+1. Resolving the acute presentation
+2. Preventing short-term complications
+3. Long-term monitoring and follow-up`;
   } else if (hasKeyword(['pathophysiology', 'mechanism', 'process'])) {
-    return `The pathophysiology for "${questionPreview}..." involves specific mechanisms that explain why ${context.correctAnswer} is correct. Understanding the underlying process is key to differentiating between the answer choices.`;
+    return `## 🧬 **Pathophysiological Mechanism**
+
+The pathophysiology for "${questionPreview}..." involves specific mechanisms that explain why **${context.correctAnswer}** is correct.
+
+**Understanding the process requires knowledge of:**
+* Cellular and molecular changes
+* Progression of the disease
+* How these changes manifest clinically`;
   } else if (hasKeyword(['symptom', 'sign', 'presentation', 'clinical'])) {
-    return `The clinical presentation in this question about "${questionPreview}..." shows specific signs that point to ${context.correctAnswer}. These symptoms are more consistent with this answer than the alternatives.`;
+    return `## 🩺 **Clinical Presentation**
+
+The clinical presentation in this question about "${questionPreview}..." shows specific signs that point to **${context.correctAnswer}**.
+
+**Key clinical features:**
+* Characteristic symptoms described
+* Pattern of presentation
+* Timing and progression of symptoms`;
   } else if (hasKeyword(['test', 'diagnostic', 'lab', 'imaging'])) {
-    return `For diagnosing the condition in "${questionPreview}...", the findings mentioned support ${context.correctAnswer} as the correct approach. The specific test results are key indicators for this diagnosis.`;
+    return `## 🔬 **Diagnostic Approach**
+
+For diagnosing the condition in "${questionPreview}...", the findings mentioned support **${context.correctAnswer}** as the correct approach.
+
+**Important diagnostic considerations:**
+* Specificity and sensitivity of tests
+* Interpretation of results in clinical context
+* Appropriate sequence of diagnostic steps`;
   } else {
-    return `To understand this question about "${questionPreview}...", focus on why ${context.correctAnswer} is correct. The explanation provides the specific medical reasoning, and reviewing the key concepts will help clarify the distinction between answer choices.`;
+    return `## 📚 **Key Concept Review**
+
+To understand this question about "${questionPreview}...", focus on why **${context.correctAnswer}** is correct.
+
+**For better understanding:**
+* Review the specific medical reasoning
+* Consider the distinctions between answer choices
+* Connect the clinical scenario to underlying medical principles`;
   }
 }

@@ -1,6 +1,8 @@
 import { useState, useRef, useEffect } from 'react';
 import { MessageSquare, Send, ChevronDown, ChevronUp, Loader2 } from 'lucide-react';
 import { generateAIResponse, generateFallbackResponse } from '../../services/openai';
+import ReactMarkdown from 'react-markdown';
+import '../../styles/markdown-styles.css';
 
 // Utility function to conditionally join classNames
 const cn = (...classes: (string | boolean | undefined)[]) => {
@@ -212,7 +214,7 @@ export function AIHelper({ question, selectedAnswer, correctAnswer, explanation,
             ) : (
               <div 
                 ref={chatContainerRef}
-                className={integrated ? "max-h-[200px] overflow-y-auto mb-4 pr-2 space-y-3" : "max-h-[300px] overflow-y-auto mb-4 pr-2 space-y-3"}
+                className={integrated ? "mb-4 pr-2 space-y-3" : "mb-4 pr-2 space-y-3"}
               >
                 {messages.map((message, index) => (
                   <div 
@@ -224,7 +226,9 @@ export function AIHelper({ question, selectedAnswer, correctAnswer, explanation,
                         : "bg-[#E5E5EA] text-[#1D1D1F]"
                     )}
                   >
-                    <p className="text-[14px] whitespace-pre-line">{message.content}</p>
+                    <div className="text-[14px] markdown-content">
+                      <ReactMarkdown>{message.content}</ReactMarkdown>
+                    </div>
                   </div>
                 ))}
                 {isLoading && (

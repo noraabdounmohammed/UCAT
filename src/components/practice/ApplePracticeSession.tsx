@@ -10,6 +10,7 @@ import {
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { DataVisualization } from './DataVisualization';
+import { AIHelper } from './AIHelper';
 import './apple-question-styles.css';
 import { updateQuestionProgress } from '../../utils/userProgressStorage';
 
@@ -526,7 +527,7 @@ export function ApplePracticeSession({ questions, onComplete, section = 'QR' }: 
               </div>
             )}
 
-            {/* Explanation - automatically shown when question is answered */}
+            {/* Combined Explanation and AI Helper - automatically shown when question is answered */}
             {showFeedback && questionContent.explanation && (
               <div className="mt-4 apple-fade-in">
                 <div className="apple-explanation bg-[#F5F5F7] rounded-xl p-4 border border-[#E5E5EA]">
@@ -534,9 +535,18 @@ export function ApplePracticeSession({ questions, onComplete, section = 'QR' }: 
                     <BookOpen className="h-4 w-4 text-[#007AFF]" />
                     <span className="font-semibold text-[16px] text-[#1D1D1F]">Explanation</span>
                   </div>
-                  <div className="apple-explanation-content text-[16px] leading-relaxed text-[#1D1D1F]">
+                  <div className="apple-explanation-content text-[16px] leading-relaxed text-[#1D1D1F] mb-4 pb-4 border-b border-[#E5E5EA]">
                     {questionContent.explanation}
                   </div>
+                  
+                  {/* Integrated AI Helper */}
+                  <AIHelper 
+                    question={currentQuestion}
+                    selectedAnswer={selectedAnswers[questionId] || null}
+                    correctAnswer={questionContent.correctAnswer}
+                    explanation={questionContent.explanation || ''}
+                    integrated={true}
+                  />
                 </div>
               </div>
             )}
