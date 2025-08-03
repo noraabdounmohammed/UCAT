@@ -6,9 +6,9 @@ interface CacheEntry {
   timestamp: number;
 }
 
-// Cache with a 30-minute expiration to further reduce API calls
+// Cache with a 60-minute expiration to maximize cache hits
 const responseCache: Record<string, CacheEntry> = {};
-const CACHE_EXPIRY_MS = 30 * 60 * 1000; // 30 minutes
+const CACHE_EXPIRY_MS = 60 * 60 * 1000; // 60 minutes
 
 // Initialize OpenAI client with DeepSeek API key and base URL
 let openai: OpenAI | null = null;
@@ -63,10 +63,12 @@ export async function generateAIResponse(userQuery: string, context: QuestionCon
       return generateFallbackResponse(userQuery, context);
     }
     
-    // Create a more aggressive cache key that will match similar questions
-    // This helps us reuse responses for similar questions to reduce API calls
+    // Create a very aggressive cache key that will match similar questions
+    // This helps us reuse responses for similar questions for near-instant responses
     const normalizedQuery = userQuery.toLowerCase().trim();
-    const cacheKey = `${context.correctAnswer}_${normalizedQuery.substring(0, 30)}`;
+    // Extract key terms from the query to increase cache hit rate
+    const keyTerms = normalizedQuery.split(/\s+/).filter(word => word.length > 3).slice(0, 3).join('_');
+    const cacheKey = `${context.correctAnswer}_${keyTerms}`;
     
     // Check if we have a cached response that hasn't expired
     if (responseCache[cacheKey]) {
@@ -85,33 +87,37 @@ export async function generateAIResponse(userQuery: string, context: QuestionCon
     }
     
     // Create optimized prompts for the AI to reduce token usage
-    const systemPrompt = `You are an expert medical education AI assistant helping a medical student understand a practice question.
+    const systemPrompt = `You are an expert medical education AI assistant helping a medical student understand a UKMLA AKT practice question.
 
 Your goal is to provide concise, accurate explanations that help the student learn medical concepts.
 
 Important instructions:
-- Be specific and directly address the student's question
+- Be concise but thorough (aim for 150-200 words)
+- Focus on UK medical practice standards (NICE, NHS, GMC)
 - Reference relevant medical terminology and concepts
-- Explain why the correct answer is correct
-- Use emojis appropriately to highlight key points (1-3 emojis per response)
+- Use emojis appropriately to highlight key points (1-2 emojis per response)
 - Use markdown formatting for clarity:
   * **Bold** for important terms and concepts
   * Bullet points for lists of related items
-  * Numbered lists for sequential steps or processes
-  * Headings (##) for clear section breaks when needed
-- Be concise but thorough (aim for 150-250 words)
-- Structure your response with clear sections when appropriate
+- ALWAYS include hyperlinks to relevant UK guidelines:
+  * NICE guidelines: https://www.nice.org.uk/guidance/[guideline-number]
+  * NHS resources: https://www.nhs.uk/conditions/[condition-name]
+  * GMC guidance: https://www.gmc-uk.org/ethical-guidance/[guidance-name]
+- NEVER cut off your response - ensure all content is complete
+- Prioritize speed of response while maintaining quality
 
 You have access to key information about the question and the student's query.`;
 
-    // Create a compressed version of the prompt to reduce token usage
+    // Create a compressed version of the prompt to balance speed and context
     const compressedUserPrompt = `
-# QUESTION: "${context.question.substring(0, 150)}${context.question.length > 150 ? '...' : ''}"
-# CORRECT: ${context.correctAnswer}
-# EXPLANATION: "${context.explanation.substring(0, 100)}${context.explanation.length > 100 ? '...' : ''}"
-# QUERY: "${userQuery}"
+QUESTION: ${context.question.substring(0, 150)}${context.question.length > 150 ? '...' : ''}
 
-Please provide a specific response addressing this medical question.`;
+CORRECT ANSWER: ${context.correctAnswer}
+
+EXPLANATION: ${context.explanation.substring(0, 150)}${context.explanation.length > 150 ? '...' : ''}
+
+USER QUERY: ${userQuery}`;
+
 
     console.log('Sending to OpenAI:', { systemPrompt, compressedUserPrompt });
     
@@ -148,18 +154,19 @@ Please provide a specific response addressing this medical question.`;
           await new Promise(resolve => setTimeout(resolve, backoffTime));
         }
         
-        // Call the OpenAI API with improved parameters
+        // Call the DeepSeek API with optimized parameters for speed and quality
         const response = await openai.chat.completions.create({
           model: "deepseek-chat", // Using DeepSeek's chat model
           messages: [
             { role: "system", content: systemPrompt },
             { role: "user", content: compressedUserPrompt }
           ],
-          temperature: 0.4,  // Slightly higher temperature for more creative responses with emojis
-          max_tokens: 400,   // Increased token limit for better formatting and explanations
-          top_p: 0.9,        // Slightly higher top_p for more diverse responses
-          presence_penalty: 0.1,  // Small penalty to encourage diverse content
-          frequency_penalty: 0.1   // Small penalty to discourage repetition
+          temperature: 0.3,  // Balanced temperature for speed and creativity
+          max_tokens: 500,   // Sufficient tokens for quality responses
+          top_p: 0.8,        // Balanced top_p for focused but varied responses
+          presence_penalty: 0.0,  // No penalty for faster processing
+          frequency_penalty: 0.0,  // No penalty for faster processing
+          stream: false      // No streaming for faster complete response
         });
         
         console.log('OpenAI response received:', response);
@@ -276,69 +283,90 @@ ${mostRecentResponse}`;
   // Get the first 50 chars of the question for context
   const questionPreview = context.question.substring(0, 50);
   
-  // Generate a context-aware fallback response based on the query
+  // Generate a context-aware fallback response based on the query with UK references
   if (hasKeyword(['why', 'reason', 'explain', 'how come'])) {
     return `## 🔍 **Explanation Analysis**
 
-Based on the medical concepts in this question about "${questionPreview}...", **${context.correctAnswer}** is correct because it best aligns with the clinical presentation.
+Based on the medical concepts in this question about "${questionPreview}...", **${context.correctAnswer}** is correct because it best aligns with the clinical presentation according to UK standards.
 
 **Key factors to consider:**
 * Specific symptoms described in the case
-* Test results and their interpretation
-* Underlying pathophysiology`;
+* Test results and interpretation per NHS diagnostic pathways
+* Underlying pathophysiology as described in UK medical curricula
+
+**UK Reference:**
+[NICE Clinical Knowledge Summary](https://cks.nice.org.uk/topics/) provides the framework for this approach. See also [NHS Clinical Guidelines](https://www.nhs.uk/conditions/) for UK-specific management.`;
   } else if (hasKeyword(['difference', 'versus', 'vs', 'compare'])) {
     return `## ⚖️ **Comparative Analysis**
 
-For this question about "${questionPreview}...", the key difference between the options relates to their specificity and relevance.
+For this question about "${questionPreview}...", the key difference between the options relates to their specificity and relevance according to UK clinical guidelines.
 
-**${context.correctAnswer}** addresses the exact condition described, while other options may be:
-* Too broad in scope
-* Address different pathophysiological processes
-* Focus on less relevant aspects of the case`;
+**${context.correctAnswer}** addresses the exact condition described in line with GMC standards, while other options may be:
+* Too broad in scope compared to NHS clinical pathways
+* Address different pathophysiological processes than those emphasized in UK practice
+* Focus on aspects less relevant to NICE-guided clinical decision making
+
+**UK Reference:**
+This aligns with [GMC Good Medical Practice](https://www.gmc-uk.org/ethical-guidance/ethical-guidance-for-doctors/good-medical-practice) framework and [NICE Clinical Knowledge Summaries](https://cks.nice.org.uk/topics/).`;
   } else if (hasKeyword(['treatment', 'manage', 'therapy', 'intervention'])) {
     return `## 💊 **Treatment Approach**
 
-For this condition about "${questionPreview}...", the standard treatment approach typically involves addressing the underlying cause identified in **${context.correctAnswer}**.
+For this condition about "${questionPreview}...", the UK standard treatment approach typically follows NICE guidelines and involves addressing the underlying cause identified in **${context.correctAnswer}**.
 
-**Management focuses on:**
-1. Resolving the acute presentation
-2. Preventing short-term complications
-3. Long-term monitoring and follow-up`;
+**NHS management focuses on:**
+1. Resolving the acute presentation according to UK clinical pathways
+2. Preventing short-term complications as outlined in NHS protocols
+3. Long-term monitoring and follow-up per UK best practice guidelines
+
+**UK Reference:**
+Refer to [NICE Clinical Guidelines](https://www.nice.org.uk/guidance/published?type=cg) for specific treatment algorithms and [NHS England care pathways](https://www.england.nhs.uk/publication/nhs-standard-contract-service-specifications/) for this condition.`;
   } else if (hasKeyword(['pathophysiology', 'mechanism', 'process'])) {
     return `## 🧬 **Pathophysiological Mechanism**
 
-The pathophysiology for "${questionPreview}..." involves specific mechanisms that explain why **${context.correctAnswer}** is correct.
+The pathophysiology for "${questionPreview}..." involves specific mechanisms as understood in UK medical education that explain why **${context.correctAnswer}** is correct.
 
-**Understanding the process requires knowledge of:**
-* Cellular and molecular changes
-* Progression of the disease
-* How these changes manifest clinically`;
+**Understanding the process according to UK curricula requires knowledge of:**
+* Cellular and molecular changes as emphasized in UK medical schools
+* Progression of the disease according to UK clinical understanding
+* How these changes manifest clinically in the NHS setting
+
+**UK Reference:**
+This aligns with the [Royal College curriculum frameworks](https://www.rcplondon.ac.uk/education-practice/advice/specialty-curriculum) and [GMC outcomes for graduates](https://www.gmc-uk.org/education/standards-guidance-and-curricula/standards-and-outcomes/outcomes-for-graduates).`;
   } else if (hasKeyword(['symptom', 'sign', 'presentation', 'clinical'])) {
-    return `## 🩺 **Clinical Presentation**
+    return `## 🐺 **Clinical Presentation**
 
-The clinical presentation in this question about "${questionPreview}..." shows specific signs that point to **${context.correctAnswer}**.
+The clinical presentation in this question about "${questionPreview}..." shows specific signs that point to **${context.correctAnswer}** according to UK diagnostic criteria.
 
-**Key clinical features:**
-* Characteristic symptoms described
-* Pattern of presentation
-* Timing and progression of symptoms`;
+**Key clinical features in UK practice:**
+* Characteristic symptoms as described in NHS clinical assessment frameworks
+* Pattern of presentation as recognized in UK primary and secondary care
+* Timing and progression of symptoms according to NICE diagnostic guidelines
+
+**UK Reference:**
+Consult the relevant [NICE Clinical Knowledge Summary](https://cks.nice.org.uk/topics/) and [NHS clinical assessment tools](https://www.nhs.uk/conditions/) for this presentation.`;
   } else if (hasKeyword(['test', 'diagnostic', 'lab', 'imaging'])) {
     return `## 🔬 **Diagnostic Approach**
 
-For diagnosing the condition in "${questionPreview}...", the findings mentioned support **${context.correctAnswer}** as the correct approach.
+For diagnosing the condition in "${questionPreview}...", the findings mentioned support **${context.correctAnswer}** as the correct approach according to UK diagnostic pathways.
 
-**Important diagnostic considerations:**
-* Specificity and sensitivity of tests
-* Interpretation of results in clinical context
-* Appropriate sequence of diagnostic steps`;
+**Important diagnostic considerations in UK practice:**
+* Specificity and sensitivity of tests as evaluated by NICE
+* Interpretation of results in clinical context following NHS guidelines
+* Appropriate sequence of diagnostic steps per UK testing protocols
+
+**UK Reference:**
+This follows [NICE diagnostic guidance](https://www.nice.org.uk/guidance/published?type=dg) and [NHS England test ordering recommendations](https://www.england.nhs.uk/publication/diagnostic-imaging-dataset-guidance/).`;
   } else {
     return `## 📚 **Key Concept Review**
 
-To understand this question about "${questionPreview}...", focus on why **${context.correctAnswer}** is correct.
+To understand this question about "${questionPreview}...", focus on why **${context.correctAnswer}** is correct according to UK medical practice.
 
-**For better understanding:**
-* Review the specific medical reasoning
-* Consider the distinctions between answer choices
-* Connect the clinical scenario to underlying medical principles`;
+**For better understanding in the UKMLA context:**
+* Review the specific medical reasoning aligned with GMC outcomes
+* Consider the distinctions between answer choices in UK clinical practice
+* Connect the clinical scenario to underlying principles emphasized in UK medical education
+
+**UK Reference:**
+Refer to the [GMC's Good Medical Practice framework](https://www.gmc-uk.org/ethical-guidance/ethical-guidance-for-doctors/good-medical-practice) and [UK medical school curricula](https://www.gmc-uk.org/education/standards-guidance-and-curricula/standards-and-outcomes/outcomes-for-graduates) for these concepts.`;
   }
 }

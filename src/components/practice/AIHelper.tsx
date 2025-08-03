@@ -118,8 +118,8 @@ export function AIHelper({ question, selectedAnswer, correctAnswer, explanation,
       let isUsingRealAPI = false;
 
       if (apiKey && apiKey !== 'your-openai-api-key-goes-here') {
-        // Use the real OpenAI API if we have a valid key
-        console.log('Using real OpenAI API');
+        // Use the real DeepSeek API if we have a valid key
+        console.log('Using DeepSeek API');
         isUsingRealAPI = true;
         response = await generateAIResponse(userMessage, questionContext);
       } else {
@@ -193,15 +193,15 @@ export function AIHelper({ question, selectedAnswer, correctAnswer, explanation,
                   Examples: <br />
                   {integrated ? (
                     <>
-                      "Can you elaborate on this concept?" <br />
-                      "What are the clinical implications?" <br />
-                      "How does this relate to other topics?"
+                      "Explain the NICE guidelines for this condition" <br />
+                      "What are the key UKMLA assessment points here?" <br />
+                      "How would I apply this in UK clinical practice?"
                     </>
                   ) : (
                     <>
-                      "Why is this answer correct?" <br />
-                      "Explain the pathophysiology involved" <br />
-                      "How would this present clinically?"
+                      "How does this align with GMC guidance?" <br />
+                      "What investigations would be ordered in the NHS?" <br />
+                      "Explain the UK management approach for this condition"
                     </>
                   )}
                 </p>
@@ -227,7 +227,20 @@ export function AIHelper({ question, selectedAnswer, correctAnswer, explanation,
                     )}
                   >
                     <div className="text-[14px] markdown-content">
-                      <ReactMarkdown>{message.content}</ReactMarkdown>
+                      <ReactMarkdown
+                        components={{
+                          a: ({ ...props }) => (
+                            <a 
+                              {...props} 
+                              target="_blank" 
+                              rel="noopener noreferrer" 
+                              className="text-[#007AFF] hover:underline"
+                            />
+                          ),
+                        }}
+                      >
+                        {message.content}
+                      </ReactMarkdown>
                     </div>
                   </div>
                 ))}
