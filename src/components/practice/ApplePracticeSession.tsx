@@ -13,6 +13,7 @@ import { DataVisualization } from './DataVisualization';
 import { AIHelper } from './AIHelper';
 import './apple-question-styles.css';
 import { updateQuestionProgress } from '../../utils/userProgressStorage';
+import ReactMarkdown from 'react-markdown';
 
 // Define properly typed interfaces for the questions
 export interface QuestionData {
@@ -536,7 +537,9 @@ export function ApplePracticeSession({ questions, onComplete, section = 'QR' }: 
                     <span className="font-semibold text-[16px] text-[#1D1D1F]">Explanation</span>
                   </div>
                   <div className="apple-explanation-content text-[16px] leading-relaxed text-[#1D1D1F] mb-4 pb-4 border-b border-[#E5E5EA]">
-                    {questionContent.explanation}
+                    <ReactMarkdown>
+                      {questionContent.explanation}
+                    </ReactMarkdown>
                   </div>
                   
                   {/* Integrated AI Helper */}

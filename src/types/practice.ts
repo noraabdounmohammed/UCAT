@@ -2,6 +2,7 @@ export type DifficultyOption = 'easy' | 'medium' | 'hard' | 'adaptive';
 export type Difficulty = DifficultyOption | DifficultyOption[];
 
 export type MainTopic = 
+  // Original UCAT topics
   | 'Percentages'
   | 'Ratios'
   | 'Rates & Speed'
@@ -9,7 +10,18 @@ export type MainTopic =
   | 'Data Interpretation'
   | 'Averages & Statistics'
   | 'Measurement & Geometry'
-  | 'Trend Extrapolation';
+  | 'Trend Extrapolation'
+  // UKMLA AKT topics
+  | 'Cardiovascular System'
+  | 'Respiratory System'
+  | 'Gastrointestinal System'
+  | 'Neurology'
+  | 'Endocrinology'
+  | 'Hematology'
+  | 'Nephrology'
+  | 'Infectious Diseases'
+  | 'Psychiatry'
+  | 'Pharmacology';
 
 export interface MicroSkill {
   id: string;
@@ -24,6 +36,7 @@ export interface TopicStructure {
 }
 
 export const TOPICS_STRUCTURE: TopicStructure[] = [
+  // Original UCAT topics
   {
     topic: 'Percentages',
     skills: [
@@ -92,6 +105,53 @@ export const TOPICS_STRUCTURE: TopicStructure[] = [
       { id: 'pattern-recog', name: 'Recognize Growth or Decline Patterns', topic: 'Trend Extrapolation' },
       { id: 'future-values', name: 'Estimate Future Values from Trends', topic: 'Trend Extrapolation' },
       { id: 'compare-estimates', name: 'Compare Past and Future Estimates', topic: 'Trend Extrapolation' }
+    ]
+  },
+  
+  // UKMLA AKT topics
+  {
+    topic: 'Cardiovascular System',
+    skills: [
+      { id: 'cv-diagnosis', name: 'Diagnosis of Cardiovascular Conditions', topic: 'Cardiovascular System' },
+      { id: 'cv-management', name: 'Management of Cardiovascular Conditions', topic: 'Cardiovascular System' },
+      { id: 'cv-investigation', name: 'Investigation of Cardiovascular Conditions', topic: 'Cardiovascular System' },
+      { id: 'cv-pharmacology', name: 'Cardiovascular Pharmacology', topic: 'Cardiovascular System' }
+    ]
+  },
+  {
+    topic: 'Respiratory System',
+    skills: [
+      { id: 'resp-diagnosis', name: 'Diagnosis of Respiratory Conditions', topic: 'Respiratory System' },
+      { id: 'resp-management', name: 'Management of Respiratory Conditions', topic: 'Respiratory System' },
+      { id: 'resp-investigation', name: 'Investigation of Respiratory Conditions', topic: 'Respiratory System' },
+      { id: 'resp-pharmacology', name: 'Respiratory Pharmacology', topic: 'Respiratory System' }
+    ]
+  },
+  {
+    topic: 'Gastrointestinal System',
+    skills: [
+      { id: 'gi-diagnosis', name: 'Diagnosis of GI Conditions', topic: 'Gastrointestinal System' },
+      { id: 'gi-management', name: 'Management of GI Conditions', topic: 'Gastrointestinal System' },
+      { id: 'gi-investigation', name: 'Investigation of GI Conditions', topic: 'Gastrointestinal System' },
+      { id: 'gi-pharmacology', name: 'GI Pharmacology', topic: 'Gastrointestinal System' }
+    ]
+  },
+  {
+    topic: 'Neurology',
+    skills: [
+      { id: 'neuro-diagnosis', name: 'Diagnosis of Neurological Conditions', topic: 'Neurology' },
+      { id: 'neuro-management', name: 'Management of Neurological Conditions', topic: 'Neurology' },
+      { id: 'neuro-investigation', name: 'Investigation of Neurological Conditions', topic: 'Neurology' },
+      { id: 'neuro-pharmacology', name: 'Neurological Pharmacology', topic: 'Neurology' }
+    ]
+  },
+  {
+    topic: 'Endocrinology',
+    skills: [
+      { id: 'endo-diagnosis', name: 'Diagnosis of Endocrine Conditions', topic: 'Endocrinology' },
+      { id: 'endo-management', name: 'Management of Endocrine Conditions', topic: 'Endocrinology' },
+      { id: 'endo-investigation', name: 'Investigation of Endocrine Conditions', topic: 'Endocrinology' },
+      { id: 'endo-pharmacology', name: 'Endocrine Pharmacology', topic: 'Endocrinology' }
     ]
   }
 ];

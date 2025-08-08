@@ -6,6 +6,97 @@ interface CacheEntry {
   timestamp: number;
 }
 
+/**
+ * Stream an AI response token-by-token for lower perceived latency
+ * @param userQuery The user's question
+ * @param context The question context
+ * @param onToken Callback invoked for each streamed token chunk
+ * @returns The full concatenated response once the stream completes
+ */
+export async function generateAIResponseStream(
+  userQuery: string,
+  context: QuestionContext,
+  onToken: (token: string) => void
+): Promise<string> {
+  console.log('Generating AI response (streaming) for:', { userQuery, context });
+
+  try {
+    if (!openai) {
+      console.error('OpenAI client not initialized (stream). Using fallback.');
+      const fallback = generateFallbackResponse(userQuery, context);
+      // Emit as a single chunk
+      onToken(fallback);
+      return fallback;
+    }
+
+    // Build cache key similar to non-streaming path
+    const normalizedQuery = userQuery.toLowerCase().trim();
+    const keyTerms = normalizedQuery.split(/\s+/).filter(word => word.length > 3).slice(0, 3).join('_');
+    const cacheKey = `${context.correctAnswer}_${keyTerms}`;
+
+    // If cached, emit quickly and return
+    const cached = responseCache[cacheKey];
+    if (cached && Date.now() - cached.timestamp < CACHE_EXPIRY_MS) {
+      console.log('Using cached (stream) response for:', cacheKey);
+      onToken(cached.response);
+      return cached.response;
+    }
+
+    const systemPrompt = `You are an expert medical education AI assistant helping a UKMLA AKT student.
+- Keep responses concise (150–200 words), UK-guideline focused, light markdown, ≤2 emojis.
+- Do NOT invent links. Only include hyperlinks if they are explicitly provided in the input context; otherwise cite the source name without a URL.
+- If unsure, state that briefly.`;
+
+    const compressedUserPrompt = `
+QUESTION: ${context.question.substring(0, 150)}${context.question.length > 150 ? '...' : ''}
+
+CORRECT ANSWER: ${context.correctAnswer}
+
+EXPLANATION: ${context.explanation.substring(0, 150)}${context.explanation.length > 150 ? '...' : ''}
+
+USER QUERY: ${userQuery}`;
+
+    // Small jitters can improve perceived responsiveness with many concurrent requests
+    await new Promise(r => setTimeout(r, 100));
+
+    // Request a streaming completion
+    const stream = await openai.chat.completions.create({
+      model: 'deepseek-chat',
+      messages: [
+        { role: 'system', content: systemPrompt },
+        { role: 'user', content: compressedUserPrompt }
+      ],
+      temperature: 0.3,
+      max_tokens: 500,
+      top_p: 0.8,
+      stream: true
+    });
+
+    let full = '';
+    try {
+      // Iterate streamed chunks
+      for await (const chunk of stream as AsyncIterable<{ choices: Array<{ delta?: { content?: string } }> }>) {
+        const delta = chunk?.choices?.[0]?.delta?.content ?? '';
+        if (delta) {
+          full += delta;
+          onToken(delta);
+        }
+      }
+    } catch (streamErr) {
+      console.warn('Stream iteration error:', streamErr);
+    }
+
+    // Cache the final response
+    responseCache[cacheKey] = { response: full, timestamp: Date.now() };
+    return full || "I'm sorry, I couldn't generate a response. Please try again.";
+  } catch (error) {
+    console.error('Error in generateAIResponseStream:', error);
+    const fallback = generateFallbackResponse(userQuery, context);
+    onToken(fallback);
+    return fallback;
+  }
+}
+
 // Cache with a 60-minute expiration to maximize cache hits
 const responseCache: Record<string, CacheEntry> = {};
 const CACHE_EXPIRY_MS = 60 * 60 * 1000; // 60 minutes
@@ -87,26 +178,15 @@ export async function generateAIResponse(userQuery: string, context: QuestionCon
     }
     
     // Create optimized prompts for the AI to reduce token usage
-    const systemPrompt = `You are an expert medical education AI assistant helping a medical student understand a UKMLA AKT practice question.
-
-Your goal is to provide concise, accurate explanations that help the student learn medical concepts.
+    const systemPrompt = `You are an expert medical education AI assistant helping a UKMLA AKT student.
 
 Important instructions:
-- Be concise but thorough (aim for 150-200 words)
-- Focus on UK medical practice standards (NICE, NHS, GMC)
-- Reference relevant medical terminology and concepts
-- Use emojis appropriately to highlight key points (1-2 emojis per response)
-- Use markdown formatting for clarity:
-  * **Bold** for important terms and concepts
-  * Bullet points for lists of related items
-- ALWAYS include hyperlinks to relevant UK guidelines:
-  * NICE guidelines: https://www.nice.org.uk/guidance/[guideline-number]
-  * NHS resources: https://www.nhs.uk/conditions/[condition-name]
-  * GMC guidance: https://www.gmc-uk.org/ethical-guidance/[guidance-name]
-- NEVER cut off your response - ensure all content is complete
-- Prioritize speed of response while maintaining quality
-
-You have access to key information about the question and the student's query.`;
+- Be concise but thorough (aim for 150–200 words)
+- Focus on UK standards (NICE, NHS, GMC)
+- Use light markdown (bold for key terms, short bullet lists, up to 2 emojis)
+- Do NOT fabricate references or links. Only include a hyperlink if it is explicitly provided in the input context. Otherwise, name the source (e.g., "NICE CKS: Hypothyroidism") without a URL.
+- If unsure or information is not provided, say so briefly.
+- Never cut off your response.`;
 
     // Create a compressed version of the prompt to balance speed and context
     const compressedUserPrompt = `

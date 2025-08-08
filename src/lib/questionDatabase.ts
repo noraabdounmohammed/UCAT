@@ -37,7 +37,7 @@ export interface QuestionDatabase {
   sectionIndex: Record<string, string[]>; // Index for filtering by section
   topicIndex: Record<MainTopic, string[]>;
   skillIndex: Record<string, string[]>;
-  difficultyIndex: Record<Difficulty, string[]>;
+  difficultyIndex: Record<string, string[]>;
   lastUpdated: string;
 }
 
@@ -50,7 +50,7 @@ export const rebuildDatabaseIndices = (database: QuestionDatabase): QuestionData
   const sectionIndex: Record<string, string[]> = {};
   const topicIndex: Record<string, string[]> = {};
   const skillIndex: Record<string, string[]> = {};
-  const difficultyIndex: Record<Difficulty, string[]> = {
+  const difficultyIndex: Record<string, string[]> = {
     easy: [],
     medium: [],
     hard: [],
@@ -85,10 +85,11 @@ export const rebuildDatabaseIndices = (database: QuestionDatabase): QuestionData
     
     // Add to difficulty index
     if (question.difficulty) {
-      if (!difficultyIndex[question.difficulty]) {
-        difficultyIndex[question.difficulty] = [];
+      const difficultyKey = Array.isArray(question.difficulty) ? question.difficulty[0] : question.difficulty;
+      if (!difficultyIndex[difficultyKey]) {
+        difficultyIndex[difficultyKey] = [];
       }
-      difficultyIndex[question.difficulty].push(id);
+      difficultyIndex[difficultyKey].push(id);
     }
   });
   
@@ -114,11 +115,11 @@ export const loadQuestionDatabase = async (): Promise<QuestionDatabase> => {
     
     if (import.meta.env.DEV) {
       // In development, import directly from the source
-      const module = await import('../data/questionDatabase.json');
+      const module = await import('../data/ukmlaDatabase.json');
       data = module.default;
     } else {
       // In production, fetch from the root path
-      const response = await fetch('/questionDatabase.json');
+      const response = await fetch('/ukmlaDatabase.json');
       if (!response.ok) {
         throw new Error(`Failed to load question database: ${response.statusText}`);
       }
@@ -230,7 +231,8 @@ export const getQuestionsByDifficulty = async (difficulty: Difficulty): Promise<
     const database = await loadQuestionDatabase();
     
     // Get the question IDs for the difficulty
-    const questionIds = database.difficultyIndex[difficulty] || [];
+    const difficultyKey = Array.isArray(difficulty) ? difficulty[0] : difficulty;
+    const questionIds = database.difficultyIndex[difficultyKey] || [];
     
     // Return the questions
     return questionIds.map(id => database.questions[id]);

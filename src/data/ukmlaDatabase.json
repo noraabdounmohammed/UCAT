@@ -1,0 +1,92 @@
+{
+  "ukmla-akt-gen-001": {
+    "id": "ukmla-akt-gen-001",
+    "section": "AKT",
+    "topic": "Cardiovascular System",
+    "microSkill": "Diagnosis",
+    "difficulty": "medium",
+    "content": "A 65-year-old man presents to the emergency department with acute chest pain radiating to his left arm. The pain started 2 hours ago while he was gardening. He has a history of hypertension and type 2 diabetes. His blood pressure is 160/95 mmHg, heart rate 92 bpm, and oxygen saturation 96% on room air. His ECG shows ST-segment elevation in leads V1-V4.\n\nWhat is the most likely diagnosis?",
+    "options": [
+      "Acute anterior ST-elevation myocardial infarction",
+      "Stable angina",
+      "Pericarditis",
+      "Aortic dissection",
+      "Pulmonary embolism"
+    ],
+    "correctAnswer": 0,
+    "explanation": "## Acute Anterior ST-Elevation Myocardial Infarction ❗️\n\n### Key Clinical Features:\n* **Classic symptoms**: Acute chest pain radiating to left arm\n* **Risk factors**: Hypertension, diabetes\n* **Critical ECG finding**: ST-segment elevation in leads V1-V4 → indicates anterior wall involvement\n\n### Why This Diagnosis?\nThe combination of typical anginal pain with ST elevation in the anterior leads (V1-V4) is pathognomonic for anterior wall STEMI. The patient's cardiovascular risk factors further support this diagnosis.\n\n### Management Priority:\n**URGENT** reperfusion therapy required (primary PCI preferred if available within 90 minutes, otherwise thrombolysis).",
+    "timeLimit": 60
+  },
+  "ukmla-akt-gen-002": {
+    "id": "ukmla-akt-gen-002",
+    "section": "AKT",
+    "topic": "Respiratory System",
+    "microSkill": "Management",
+    "difficulty": "hard",
+    "content": "A 45-year-old woman presents with progressive shortness of breath over the past 3 months. She reports a dry cough and fatigue. She works as a bird breeder and has kept pigeons for 10 years. On examination, she has bilateral fine inspiratory crackles at the lung bases. Her oxygen saturation is 92% on room air. High-resolution CT scan shows bilateral ground-glass opacities with a mosaic pattern predominantly in the lower lobes.\n\nWhat is the most appropriate next step in management?",
+    "options": [
+      "Oral corticosteroids",
+      "Removal from exposure to birds",
+      "Bronchodilator therapy",
+      "Antibiotic therapy",
+      "Lung transplant evaluation"
+    ],
+    "correctAnswer": 1,
+    "explanation": "## Hypersensitivity Pneumonitis (Bird Fancier's Lung) 🫁\n\n### Clinical Presentation:\n* **Symptoms**: Progressive dyspnea, dry cough, fatigue\n* **Examination**: Bilateral fine inspiratory crackles\n* **Imaging**: Ground-glass opacities with mosaic pattern\n* **Key history**: Bird exposure (10 years as breeder)\n\n### Management Priorities:\n1. **⭐ Antigen avoidance** - Remove from bird exposure\n2. Corticosteroids (for persistent/severe cases)\n3. Monitor for progression\n\n### Pathophysiology:\nType III and IV hypersensitivity reaction to avian proteins. Continued exposure leads to chronic inflammation → irreversible fibrosis → respiratory failure.\n\n### Remember:\nAntigen avoidance is ALWAYS the cornerstone of treatment, even before pharmacological interventions.",
+    "timeLimit": 60
+  },
+  "ukmla-akt-gen-003": {
+    "id": "ukmla-akt-gen-003",
+    "section": "AKT",
+    "topic": "Gastrointestinal System",
+    "microSkill": "Investigation",
+    "difficulty": "medium",
+    "content": "A 35-year-old woman presents with a 6-month history of intermittent diarrhea, abdominal pain, and weight loss of 5 kg. She reports occasional blood in her stool. She has no travel history and no family history of bowel disease. On examination, she has mild tenderness in the right lower quadrant. Her blood tests show: Hemoglobin 110 g/L, White cell count 11.2 × 10^9/L, Platelets 450 × 10^9/L, CRP 35 mg/L.\n\nWhich investigation would be most appropriate to establish the diagnosis?",
+    "options": [
+      "Colonoscopy with biopsy",
+      "Abdominal ultrasound",
+      "Stool culture",
+      "CT abdomen",
+      "Hydrogen breath test"
+    ],
+    "correctAnswer": 0,
+    "explanation": "## Inflammatory Bowel Disease Workup 🧳\n\n### Clinical Picture Suggests IBD:\n* **Key symptoms**: Chronic diarrhea, abdominal pain, weight loss (5kg), blood in stool\n* **Examination**: Right lower quadrant tenderness → suggests Crohn's disease\n* **Laboratory**: ⬆️ inflammatory markers (WCC, platelets, CRP)\n\n### Diagnostic Approach:\n1. **Colonoscopy with biopsy** - Gold standard\n   * Allows direct visualization of mucosa\n   * Provides histological confirmation\n   * Can assess disease extent and severity\n\n### Differential Diagnosis:\n* **Crohn's disease** - Most likely given RLQ pain\n* Ulcerative colitis - Less likely (typically LLQ pain)\n* Infectious colitis - Usually acute onset\n* Microscopic colitis - No blood in stool\n\n### Remember:\nEndoscopic visualization + histology = cornerstone of IBD diagnosis",
+    "timeLimit": 60
+  },
+  "ukmla-akt-gen-004": {
+    "id": "ukmla-akt-gen-004",
+    "section": "AKT",
+    "topic": "Neurology",
+    "microSkill": "Pharmacology",
+    "difficulty": "hard",
+    "content": "A 72-year-old man with Parkinson's disease has been taking levodopa/carbidopa 100/25 mg three times daily for the past 3 years. He now reports that his symptoms are well-controlled for about 2 hours after each dose, but then he experiences tremor and rigidity before the next dose is due. He also notices involuntary writhing movements about 1 hour after taking his medication.\n\nWhich of the following medication adjustments would be most appropriate?",
+    "options": [
+      "Increase the dose of levodopa/carbidopa",
+      "Add a dopamine agonist",
+      "Switch to a controlled-release formulation of levodopa/carbidopa",
+      "Add a COMT inhibitor",
+      "Add an anticholinergic agent"
+    ],
+    "correctAnswer": 3,
+    "explanation": "## Parkinson's Disease: Managing Motor Fluctuations 🕒\n\n### Clinical Presentation:\n* **Motor fluctuations** ('wearing-off' phenomenon) - Symptoms return before next dose\n* **Peak-dose dyskinesias** - Involuntary writhing movements 1 hour post-dose\n* Long-term levodopa therapy (3 years)\n\n### Pharmacological Solution:\n**COMT inhibitor** (e.g., entacapone) is optimal because it:\n* Prolongs levodopa effect by blocking peripheral metabolism\n* Provides more consistent dopaminergic stimulation\n* Reduces 'off' periods without worsening dyskinesias\n* Smooths out the peaks and troughs of levodopa levels\n\n### Why Other Options Are Suboptimal:\n* ❌ Increasing levodopa dose - Would worsen dyskinesias\n* ❌ Dopamine agonist - May worsen dyskinesias\n* ❌ Controlled-release formulation - Less predictable absorption\n* ❌ Anticholinergics - No effect on motor fluctuations\n\n### Remember:\nCOMT inhibitors extend levodopa's duration of action without increasing peak concentration.",
+    "timeLimit": 60
+  },
+  "ukmla-akt-gen-005": {
+    "id": "ukmla-akt-gen-005",
+    "section": "AKT",
+    "topic": "Endocrinology",
+    "microSkill": "Diagnosis",
+    "difficulty": "medium",
+    "content": "A 28-year-old woman presents with amenorrhea for 8 months, galactorrhea, and headaches. She is not pregnant and takes no medications. Laboratory results show: Prolactin 2500 mIU/L (normal range 102-496 mIU/L), FSH 3.2 IU/L (follicular phase 3.5-12.5 IU/L), LH 2.1 IU/L (follicular phase 2.4-12.6 IU/L), TSH 1.8 mIU/L (0.4-4.0 mIU/L).\n\nWhat is the most likely diagnosis?",
+    "options": [
+      "Prolactinoma",
+      "Primary hypothyroidism",
+      "Polycystic ovary syndrome",
+      "Sheehan's syndrome",
+      "Drug-induced hyperprolactinemia"
+    ],
+    "correctAnswer": 0,
+    "explanation": "## Prolactinoma Diagnosis 🔍\n\n### Classic Clinical Triad:\n* **Amenorrhea** (8 months)\n* **Galactorrhea**\n* **Headaches**\n\n### Key Laboratory Findings:\n* **Prolactin** ⬆️⬆️ 2500 mIU/L (normal: 102-496 mIU/L)\n* **FSH/LH** ⬇️ Low-normal (hypogonadotropic hypogonadism)\n* **TSH** Normal (excludes primary hypothyroidism)\n\n### Pathophysiology:\n1. Prolactin-secreting pituitary adenoma\n2. ⬆️ Prolactin inhibits GnRH pulsatility\n3. ⬇️ FSH/LH leads to hypogonadism\n4. Headaches from mass effect\n\n### Differential Diagnosis:\n* ❌ **Primary hypothyroidism** - Normal TSH rules this out\n* ❌ **PCOS** - Would have elevated LH:FSH ratio\n* ❌ **Sheehan's syndrome** - History of postpartum hemorrhage\n* ❌ **Drug-induced** - No medications reported\n\n### Next Step:\n**MRI pituitary** with contrast to confirm diagnosis and assess tumor size",
+    "timeLimit": 60
+  }
+}

@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
 import { MessageSquare, Send, ChevronDown, ChevronUp, Loader2 } from 'lucide-react';
-import { generateAIResponse, generateFallbackResponse } from '../../services/openai';
+import { generateAIResponseStream, generateFallbackResponse } from '../../services/openai';
 import ReactMarkdown from 'react-markdown';
 import '../../styles/markdown-styles.css';
 
@@ -114,27 +114,50 @@ export function AIHelper({ question, selectedAnswer, correctAnswer, explanation,
         keyLength: apiKey ? apiKey.length : 0 
       });
       
-      let response: string;
-      let isUsingRealAPI = false;
 
       if (apiKey && apiKey !== 'your-openai-api-key-goes-here') {
-        // Use the real DeepSeek API if we have a valid key
-        console.log('Using DeepSeek API');
-        isUsingRealAPI = true;
-        response = await generateAIResponse(userMessage, questionContext);
-      } else {
-        // Fall back to the mock implementation if no valid API key
-        console.log('Using fallback response generator');
-        response = generateFallbackResponse(userMessage, questionContext);
-      }
-      
-      // Add a prefix to the response if using fallback
-      if (!isUsingRealAPI) {
-        response = "[USING FALLBACK] " + response;
-      }
+        // Real DeepSeek API with streaming
+        console.log('Using DeepSeek API (streaming)');
 
-      // Add AI response to chat
-      setMessages(prev => [...prev, { role: 'assistant', content: response }]);
+        // Insert placeholder assistant message
+        setMessages(prev => [...prev, { role: 'assistant', content: '' }]);
+
+        // Stream tokens and append to the last message
+        const full = await generateAIResponseStream(userMessage, questionContext, (token) => {
+          setMessages(prev => {
+            if (prev.length === 0) return prev;
+            const updated = [...prev];
+            const lastIdx = updated.length - 1;
+            const last = updated[lastIdx];
+            // Ensure we're appending to an assistant message
+            if (last.role !== 'assistant') {
+              // If somehow the last isn't assistant, push a new one
+              return [...updated, { role: 'assistant', content: token }];
+            }
+            updated[lastIdx] = { ...last, content: last.content + token };
+            return updated;
+          });
+        });
+
+        // Ensure final text is present (in case stream yielded nothing)
+        if (full && full.trim().length > 0) {
+          setMessages(prev => {
+            if (prev.length === 0) return prev;
+            const updated = [...prev];
+            const lastIdx = updated.length - 1;
+            if (updated[lastIdx].role === 'assistant') {
+              updated[lastIdx] = { ...updated[lastIdx], content: full };
+            }
+            return updated;
+          });
+        }
+      } else {
+        // Fallback implementation (non-streaming)
+        console.log('Using fallback response generator');
+        let response = generateFallbackResponse(userMessage, questionContext);
+        response = "[USING FALLBACK] " + response;
+        setMessages(prev => [...prev, { role: 'assistant', content: response }]);
+      }
     } catch (error) {
       console.error('Error generating AI response:', error);
       setMessages(prev => [...prev, { 

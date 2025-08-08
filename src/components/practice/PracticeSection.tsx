@@ -17,7 +17,8 @@ const SECTION_DETAILS: Record<string, { name: string, icon: LucideIcon, descript
   'VR': { name: 'Verbal Reasoning', icon: BookOpen, description: 'Evaluate information presented in written form' },
   'DM': { name: 'Decision Making', icon: Brain, description: 'Make informed decisions based on complex information' },
   'QR': { name: 'Quantitative Reasoning', icon: Calculator, description: 'Test your numerical and analytical skills' },
-  'SJ': { name: 'Situational Judgement', icon: Scale, description: 'Respond appropriately to real-world scenarios' }
+  'SJ': { name: 'Situational Judgement', icon: Scale, description: 'Respond appropriately to real-world scenarios' },
+  'AKT': { name: 'UKMLA AKT Exam', icon: Target, description: 'UK Medical Licensing Assessment Applied Knowledge Test' }
 };
 
 export function PracticeSection(): JSX.Element {
@@ -492,7 +493,7 @@ export function PracticeSection(): JSX.Element {
   return (
     <div className="max-w-4xl mx-auto pt-12 px-6">
       <div className="flex justify-between items-center mb-6">
-        <h2 className="apple-heading-1">UCAT Practice</h2>
+        <h2 className="apple-heading-1" data-component-name="PracticeSection">UKMLA Practice</h2>
         <ResetProgressButton />
       </div>
       
