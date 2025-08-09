@@ -1,8 +1,9 @@
-import { useState, useRef, useEffect } from 'react';
-import { MessageSquare, Send, ChevronDown, ChevronUp, Loader2 } from 'lucide-react';
+import { useState, useRef, useEffect, useCallback } from 'react';
+import { MessageSquare, Send, ChevronDown, ChevronUp } from 'lucide-react';
 import { generateAIResponseStream, generateFallbackResponse } from '../../services/openai';
 import ReactMarkdown from 'react-markdown';
 import '../../styles/markdown-styles.css';
+import { debounce } from 'lodash';
 
 // Utility function to conditionally join classNames
 const cn = (...classes: (string | boolean | undefined)[]) => {
@@ -44,8 +45,10 @@ export function AIHelper({ question, selectedAnswer, correctAnswer, explanation,
   const [messages, setMessages] = useState<Array<{ role: 'user' | 'assistant', content: string }>>([]);
   const [inputValue, setInputValue] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [isTyping, setIsTyping] = useState(false); // New state for typing indicator
   const [hasInitialized, setHasInitialized] = useState(false);
   const chatContainerRef = useRef<HTMLDivElement>(null);
+  const abortControllerRef = useRef<AbortController | null>(null);
 
   // Add welcome message when chat is first expanded (only for non-integrated mode)
   useEffect(() => {
@@ -74,15 +77,33 @@ export function AIHelper({ question, selectedAnswer, correctAnswer, explanation,
     }
   }, [messages]);
 
+  // Debounced input handler to prevent excessive state updates
+  const debouncedInputChange = useCallback((value: string) => {
+    debounce((val: string) => {
+      setInputValue(val);
+    }, 100)(value);
+  }, []);
+
   // Function to handle sending a message
   const handleSendMessage = async () => {
     if (!inputValue.trim()) return;
+
+    // Cancel any previous request
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
+    }
+    
+    // Create new abort controller for this request
+    abortControllerRef.current = new AbortController();
 
     // Add user message to chat
     const userMessage = inputValue.trim();
     setMessages(prev => [...prev, { role: 'user', content: userMessage }]);
     setInputValue('');
     setIsLoading(true);
+    
+    // Add an empty assistant message that will be filled as tokens arrive
+    setMessages(prev => [...prev, { role: 'assistant', content: '' }]);
 
     try {
       // Extract options from the question
@@ -119,37 +140,41 @@ export function AIHelper({ question, selectedAnswer, correctAnswer, explanation,
         // Real DeepSeek API with streaming
         console.log('Using DeepSeek API (streaming)');
 
-        // Insert placeholder assistant message
-        setMessages(prev => [...prev, { role: 'assistant', content: '' }]);
-
-        // Stream tokens and append to the last message
-        const full = await generateAIResponseStream(userMessage, questionContext, (token) => {
-          setMessages(prev => {
-            if (prev.length === 0) return prev;
-            const updated = [...prev];
-            const lastIdx = updated.length - 1;
-            const last = updated[lastIdx];
-            // Ensure we're appending to an assistant message
-            if (last.role !== 'assistant') {
-              // If somehow the last isn't assistant, push a new one
-              return [...updated, { role: 'assistant', content: token }];
+        // Generate AI response with streaming
+        try {
+          await generateAIResponseStream(
+            userMessage, 
+            questionContext, 
+            (token) => {
+              // Update the last message with the new token
+              setMessages(prev => {
+                const newMessages = [...prev];
+                const lastMessage = newMessages[newMessages.length - 1];
+                if (lastMessage.role === 'assistant') {
+                  lastMessage.content = lastMessage.content + token;
+                }
+                return newMessages;
+              });
+            },
+            // onStart callback to show typing indicator
+            () => {
+              setIsTyping(true);
             }
-            updated[lastIdx] = { ...last, content: last.content + token };
-            return updated;
-          });
-        });
-
-        // Ensure final text is present (in case stream yielded nothing)
-        if (full && full.trim().length > 0) {
-          setMessages(prev => {
-            if (prev.length === 0) return prev;
-            const updated = [...prev];
-            const lastIdx = updated.length - 1;
-            if (updated[lastIdx].role === 'assistant') {
-              updated[lastIdx] = { ...updated[lastIdx], content: full };
-            }
-            return updated;
-          });
+          );
+        } catch (error) {
+          if ((error as Error).name !== 'AbortError') {
+            console.error('Error generating AI response:', error);
+            
+            // Update the last message with an error
+            setMessages(prev => {
+              const newMessages = [...prev];
+              const lastMessage = newMessages[newMessages.length - 1];
+              if (lastMessage.role === 'assistant') {
+                lastMessage.content = 'Sorry, I encountered an error. Please try again.';
+              }
+              return newMessages;
+            });
+          }
         }
       } else {
         // Fallback implementation (non-streaming)
@@ -158,14 +183,10 @@ export function AIHelper({ question, selectedAnswer, correctAnswer, explanation,
         response = "[USING FALLBACK] " + response;
         setMessages(prev => [...prev, { role: 'assistant', content: response }]);
       }
-    } catch (error) {
-      console.error('Error generating AI response:', error);
-      setMessages(prev => [...prev, { 
-        role: 'assistant', 
-        content: 'Sorry, I encountered an error while processing your question. Please try again.' 
-      }]);
     } finally {
       setIsLoading(false);
+      setIsTyping(false);
+      abortControllerRef.current = null;
     }
   };
 
@@ -267,10 +288,13 @@ export function AIHelper({ question, selectedAnswer, correctAnswer, explanation,
                     </div>
                   </div>
                 ))}
-                {isLoading && (
+                {isTyping && (
                   <div className="bg-[#E5E5EA] p-3 rounded-xl max-w-[85%] flex items-center">
-                    <Loader2 className="h-4 w-4 text-[#86868B] animate-spin mr-2" />
-                    <span className="text-[14px] text-[#86868B]">Thinking...</span>
+                    <div className="flex space-x-1">
+                      <div className="h-2 w-2 bg-[#86868B] rounded-full animate-bounce" style={{ animationDelay: '0ms' }}></div>
+                      <div className="h-2 w-2 bg-[#86868B] rounded-full animate-bounce" style={{ animationDelay: '150ms' }}></div>
+                      <div className="h-2 w-2 bg-[#86868B] rounded-full animate-bounce" style={{ animationDelay: '300ms' }}></div>
+                    </div>
                   </div>
                 )}
               </div>
@@ -281,7 +305,7 @@ export function AIHelper({ question, selectedAnswer, correctAnswer, explanation,
               <input
                 type="text"
                 value={inputValue}
-                onChange={(e) => setInputValue(e.target.value)}
+                onChange={(e) => debouncedInputChange(e.target.value)}
                 onKeyDown={(e) => {
                   if (e.key === 'Enter' && !e.shiftKey) {
                     e.preventDefault();

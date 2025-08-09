@@ -11,89 +11,110 @@ interface CacheEntry {
  * @param userQuery The user's question
  * @param context The question context
  * @param onToken Callback invoked for each streamed token chunk
+ * @param onStart Optional callback invoked when streaming begins
  * @returns The full concatenated response once the stream completes
  */
 export async function generateAIResponseStream(
   userQuery: string,
   context: QuestionContext,
-  onToken: (token: string) => void
+  onToken: (token: string) => void,
+  onStart?: () => void
 ): Promise<string> {
   console.log('Generating AI response (streaming) for:', { userQuery, context });
 
   try {
     if (!openai) {
       console.error('OpenAI client not initialized (stream). Using fallback.');
-      const fallback = generateFallbackResponse(userQuery, context);
-      // Emit as a single chunk
-      onToken(fallback);
-      return fallback;
+      const fallbackResponse = generateFallbackResponse(userQuery, context);
+      onToken(fallbackResponse);
+      return fallbackResponse;
     }
 
-    // Build cache key similar to non-streaming path
+    // Build cache key from query and context
     const normalizedQuery = userQuery.toLowerCase().trim();
     const keyTerms = normalizedQuery.split(/\s+/).filter(word => word.length > 3).slice(0, 3).join('_');
     const cacheKey = `${context.correctAnswer}_${keyTerms}`;
-
-    // If cached, emit quickly and return
-    const cached = responseCache[cacheKey];
-    if (cached && Date.now() - cached.timestamp < CACHE_EXPIRY_MS) {
-      console.log('Using cached (stream) response for:', cacheKey);
-      onToken(cached.response);
-      return cached.response;
+    
+    // Check if we have a cached response
+    if (responseCache[cacheKey] && Date.now() - responseCache[cacheKey].timestamp < CACHE_EXPIRY_MS) {
+      console.log('Using cached response for:', cacheKey);
+      const cachedResponse = responseCache[cacheKey].response;
+      
+      // If onStart callback provided, call it
+      if (onStart) onStart();
+      
+      // Simulate streaming by breaking the cached response into chunks
+      const words = cachedResponse.split(' ');
+      for (const word of words) {
+        onToken(word + ' ');
+        // Small delay to simulate streaming
+        await new Promise(resolve => setTimeout(resolve, 10));
+      }
+      
+      return cachedResponse;
     }
 
-    const systemPrompt = `You are an expert medical education AI assistant helping a UKMLA AKT student.
-- Keep responses concise (150–200 words), UK-guideline focused, light markdown, ≤2 emojis.
-- Do NOT invent links. Only include hyperlinks if they are explicitly provided in the input context; otherwise cite the source name without a URL.
-- If unsure, state that briefly.`;
+    // Optimize the prompt for faster responses
+    const systemPrompt = `You are an AI assistant for medical students preparing for the UK Medical Licensing Assessment (UKMLA) Applied Knowledge Test (AKT). 
+    Provide concise, accurate explanations for medical questions. Focus on UK medical guidelines and practices.
+    
+    DO NOT fabricate references or URLs. If you mention a source, simply state its name without a URL unless the URL was explicitly provided in the input context.
+    For example, say "According to NICE guidelines..." instead of providing a link to NICE.
+    
+    Keep responses concise and focused on the question. Use light formatting with markdown for clarity. 
+    You may use emojis sparingly to emphasize key points. 🩺
+    
+    Current question context: ${JSON.stringify(context)}`;
 
-    const compressedUserPrompt = `
-QUESTION: ${context.question.substring(0, 150)}${context.question.length > 150 ? '...' : ''}
+    // Compress the user prompt to reduce token count
+    const compressedUserPrompt = `Question: ${userQuery}\n\nPlease explain this concept or answer this question concisely.`;
 
-CORRECT ANSWER: ${context.correctAnswer}
-
-EXPLANATION: ${context.explanation.substring(0, 150)}${context.explanation.length > 150 ? '...' : ''}
-
-USER QUERY: ${userQuery}`;
-
-    // Small jitters can improve perceived responsiveness with many concurrent requests
-    await new Promise(r => setTimeout(r, 100));
-
-    // Request a streaming completion
-    const stream = await openai.chat.completions.create({
-      model: 'deepseek-chat',
-      messages: [
-        { role: 'system', content: systemPrompt },
-        { role: 'user', content: compressedUserPrompt }
-      ],
-      temperature: 0.3,
-      max_tokens: 500,
-      top_p: 0.8,
-      stream: true
-    });
-
-    let full = '';
+    let fullResponse = '';
     try {
-      // Iterate streamed chunks
+      // Signal that we're about to start receiving tokens
+      if (onStart) onStart();
+      
+      const stream = await openai!.chat.completions.create({
+        model: 'deepseek-chat',
+        messages: [
+          { role: 'system', content: systemPrompt },
+          { role: 'user', content: compressedUserPrompt }
+        ],
+        temperature: 0.3,
+        max_tokens: 500,
+        top_p: 0.8,
+        presence_penalty: -0.1,  // Slightly favor common responses
+        frequency_penalty: 0.1,   // Slightly discourage repetition
+        response_format: { type: "text" }, // Explicitly request text format
+        stream: true
+      });
+
       for await (const chunk of stream as AsyncIterable<{ choices: Array<{ delta?: { content?: string } }> }>) {
         const delta = chunk?.choices?.[0]?.delta?.content ?? '';
         if (delta) {
-          full += delta;
           onToken(delta);
+          fullResponse += delta;
         }
       }
-    } catch (streamErr) {
-      console.warn('Stream iteration error:', streamErr);
-    }
 
-    // Cache the final response
-    responseCache[cacheKey] = { response: full, timestamp: Date.now() };
-    return full || "I'm sorry, I couldn't generate a response. Please try again.";
+      // Cache the full response with timestamp
+      responseCache[cacheKey] = { 
+        response: fullResponse, 
+        timestamp: Date.now() 
+      };
+      
+      return fullResponse;
+    } catch (error) {
+      console.error('Error generating AI response stream:', error);
+      const fallbackResponse = '[USING FALLBACK DUE TO API ERROR] ' + generateFallbackResponse(userQuery, context);
+      onToken(fallbackResponse);
+      return fallbackResponse;
+    }
   } catch (error) {
     console.error('Error in generateAIResponseStream:', error);
-    const fallback = generateFallbackResponse(userQuery, context);
-    onToken(fallback);
-    return fallback;
+    const fallbackResponse = generateFallbackResponse(userQuery, context);
+    onToken(fallbackResponse);
+    return fallbackResponse;
   }
 }
 
