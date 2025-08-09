@@ -43,31 +43,25 @@ export async function generateAIResponseStream(
       // If onStart callback provided, call it
       if (onStart) onStart();
       
-      // Simulate streaming by breaking the cached response into chunks
-      const words = cachedResponse.split(' ');
-      for (const word of words) {
-        onToken(word + ' ');
-        // Small delay to simulate streaming
-        await new Promise(resolve => setTimeout(resolve, 10));
-      }
+      // Simulate streaming with proper chunking to avoid duplication
+      onToken(cachedResponse);
       
       return cachedResponse;
     }
 
-    // Optimize the prompt for faster responses
-    const systemPrompt = `You are an AI assistant for medical students preparing for the UK Medical Licensing Assessment (UKMLA) Applied Knowledge Test (AKT). 
-    Provide concise, accurate explanations for medical questions. Focus on UK medical guidelines and practices.
-    
-    DO NOT fabricate references or URLs. If you mention a source, simply state its name without a URL unless the URL was explicitly provided in the input context.
-    For example, say "According to NICE guidelines..." instead of providing a link to NICE.
-    
-    Keep responses concise and focused on the question. Use light formatting with markdown for clarity. 
-    You may use emojis sparingly to emphasize key points. 🩺
-    
-    Current question context: ${JSON.stringify(context)}`;
+    const systemPrompt = `You are an expert medical education AI assistant helping a UKMLA AKT student.
+- Keep responses concise (150–200 words), UK-guideline focused, light markdown, ≤2 emojis.
+- Do NOT invent links. Only include hyperlinks if they are explicitly provided in the input context; otherwise cite the source name without a URL.
+- If unsure, state that briefly.`;
 
-    // Compress the user prompt to reduce token count
-    const compressedUserPrompt = `Question: ${userQuery}\n\nPlease explain this concept or answer this question concisely.`;
+    const compressedUserPrompt = `
+QUESTION: ${context.question.substring(0, 150)}${context.question.length > 150 ? '...' : ''}
+
+CORRECT ANSWER: ${context.correctAnswer}
+
+EXPLANATION: ${context.explanation.substring(0, 150)}${context.explanation.length > 150 ? '...' : ''}
+
+USER QUERY: ${userQuery}`;
 
     let fullResponse = '';
     try {

@@ -224,7 +224,7 @@
 /* Question card - SF Pro style */
 .apple-question-card {
   background-color: transparent;
-  margin: var(--sf-spacing-lg) auto;
+  margin: 0 auto;
   max-width: 680px;
   overflow: visible;
   transition: opacity var(--sf-transition-fast) var(--sf-easing);

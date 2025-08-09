@@ -206,6 +206,12 @@ export function ApplePracticeSession({ questions, onComplete, section = 'QR' }: 
     setIsTransitioning(true);
     setShowFeedback(false);
     
+    // Scroll to top of page smoothly
+    window.scrollTo({
+      top: 0,
+      behavior: 'smooth'
+    });
+    
     // Use setTimeout to create a smooth transition
     setTimeout(() => {
       // If we've seen all questions, complete the session
@@ -257,16 +263,51 @@ export function ApplePracticeSession({ questions, onComplete, section = 'QR' }: 
 
   // Render the component
   return (
-    <div className="apple-question-container relative">
-      {/* Discrete exit button */}
-      <button 
-        onClick={() => setShowExitConfirmation(true)}
-        className="absolute top-6 left-6 z-50 p-2 rounded-xl bg-[rgba(255,255,255,0.95)] hover:bg-white border border-[rgba(0,0,0,0.1)] shadow-sm transition-all md:top-4 md:left-4"
-        style={{ backdropFilter: 'blur(4px)' }}
-        aria-label="Exit to main page"
-      >
-        <ArrowLeft className="h-4 w-4 text-[#1D1D1F]" />
-      </button>
+    <>
+      {/* Modern ChatGPT-style Navbar - Outside container for proper sticky */}
+      <div className="sticky top-0 left-0 right-0 z-50 w-full" style={{
+        background: '#F5F5F7',
+        borderBottom: '0.5px solid rgba(0, 0, 0, 0.06)',
+        margin: '0',
+        padding: '0'
+      }}>
+        <div className="flex items-center justify-between h-16 px-5">
+          {/* Left - Modern Back button */}
+          <button 
+            onClick={() => setShowExitConfirmation(true)}
+            className="w-9 h-9 flex items-center justify-center rounded-full transition-all duration-300 ease-out active:scale-90"
+            style={{
+              background: 'transparent',
+              border: 'none'
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.background = 'rgba(0, 0, 0, 0.06)';
+              e.currentTarget.style.transform = 'scale(1.05)';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.background = 'transparent';
+              e.currentTarget.style.transform = 'scale(1)';
+            }}
+            aria-label="Exit to main page"
+          >
+            <ArrowLeft className="h-5 w-5 text-[#1D1D1F]" strokeWidth={2.5} />
+          </button>
+          
+          {/* Center - Question Counter */}
+          <div className="flex-1 text-center px-6">
+            <div className="text-[14px] text-[#1D1D1F] font-semibold tracking-wide">
+              Q{currentIndex + 1} of {questions.length}
+            </div>
+          </div>
+          
+          {/* Right - Modern Action space */}
+          <div className="w-9 h-9 flex items-center justify-center">
+            {/* Future: Settings or menu button */}
+          </div>
+        </div>
+      </div>
+
+      <div className="apple-question-container">
 
       {/* Exit confirmation dialog */}
       {showExitConfirmation && (
@@ -294,7 +335,7 @@ export function ApplePracticeSession({ questions, onComplete, section = 'QR' }: 
       )}
 
       {/* Main content */}
-      <div className="flex-1 overflow-y-auto">
+      <div className="flex-1 overflow-y-auto px-1 pb-12">
         {showStats ? (
           /* Stats panel */
           <div className="apple-stats-panel">
@@ -327,73 +368,75 @@ export function ApplePracticeSession({ questions, onComplete, section = 'QR' }: 
             <div className="apple-question-content">
               {/* Question title in a professional Apple-style card */}
               <div style={{
-                backgroundColor: '#F5F5F7',
-                borderRadius: '16px',
-                padding: '24px',
-                marginBottom: '24px',
-                boxShadow: '0 2px 8px rgba(0, 0, 0, 0.04)',
-                border: '1px solid rgba(0, 0, 0, 0.06)',
+                backgroundColor: '#FFFFFF',
+                borderRadius: '20px',
+                padding: '32px',
+                marginBottom: '28px',
+                boxShadow: '0 4px 16px rgba(0, 0, 0, 0.06)',
+                border: '1px solid rgba(0, 0, 0, 0.08)',
                 position: 'relative',
                 overflow: 'hidden'
               }}>
-                <div style={{
-                  position: 'absolute',
-                  bottom: 0,
-                  left: 0,
-                  width: '100%',
-                  height: '4px',
-                  backgroundColor: '#007AFF'
-                }}></div>
+
                 <div style={{
                   display: 'flex',
                   flexDirection: 'column',
-                  gap: '12px',
+                  gap: '20px',
                   width: '100%',
                   alignItems: 'flex-start'
                 }}>
-                  <div style={{
-                    backgroundColor: 'rgba(0, 122, 255, 0.1)',
-                    borderRadius: '8px',
-                    width: 'fit-content',
-                    height: '28px',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    padding: '0 12px',
-                    marginBottom: '4px'
-                  }}>
-                    <span style={{
-                      color: '#007AFF',
-                      fontSize: '14px',
-                      fontWeight: 600
-                    }}>{`Q${currentIndex + 1}/${questions.length}`}</span>
-                  </div>
-                  {/* Function to parse markdown formatting */}
+
+                  {/* Combined question stem and question in same paragraph */}
                   {(() => {
-                    // Simple function to parse markdown bold text
+                    // Simple function to parse markdown bold text and format combined content
                     const parseMarkdown = (text: string) => {
                       // Replace **text** with <strong>text</strong>
                       return text.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
                     };
                     
-                    // Split content into passage and question
-                    return questionContent.question.split('\n\n').map((part, index, array) => (
-                      <div
-                        key={index}
-                        style={{
-                          fontSize: index === array.length - 1 ? '17px' : '16px',
-                          fontWeight: index === array.length - 1 ? '600' : '400',
-                          color: index === array.length - 1 ? '#1D1D1F' : '#3A3A3C',
-                          margin: index === array.length - 1 ? '24px 0 0 0' : '0 0 16px 0',
-                          lineHeight: index === array.length - 1 ? '1.4' : '1.6',
-                          width: '100%',
-                          textAlign: 'left',
-                          hyphens: 'auto',
-                          letterSpacing: index === array.length - 1 ? '-0.01em' : '0'
-                        }}
-                        dangerouslySetInnerHTML={{ __html: parseMarkdown(part) }}
-                      />
-                    ));
+                    // Split content into passage and question, then combine them
+                    const parts = questionContent.question.split('\n\n');
+                    if (parts.length > 1) {
+                      // Combine stem and question with the question part being bold
+                      const stem = parts.slice(0, -1).join(' ');
+                      const question = parts[parts.length - 1];
+                      const combinedContent = `${stem} <strong>${question}</strong>`;
+                      
+                      return (
+                        <div
+                          style={{
+                            fontSize: '18px',
+                            fontWeight: '400',
+                            color: '#2C2C2E',
+                            margin: '0 0 20px 0',
+                            lineHeight: '1.7',
+                            width: '100%',
+                            textAlign: 'left',
+                            hyphens: 'auto',
+                            letterSpacing: '-0.01em'
+                          }}
+                          dangerouslySetInnerHTML={{ __html: parseMarkdown(combinedContent) }}
+                        />
+                      );
+                    } else {
+                      // Single part - just display as is
+                      return (
+                        <div
+                          style={{
+                            fontSize: '18px',
+                            fontWeight: '400',
+                            color: '#2C2C2E',
+                            margin: '0 0 20px 0',
+                            lineHeight: '1.7',
+                            width: '100%',
+                            textAlign: 'left',
+                            hyphens: 'auto',
+                            letterSpacing: '-0.01em'
+                          }}
+                          dangerouslySetInnerHTML={{ __html: parseMarkdown(questionContent.question) }}
+                        />
+                      );
+                    }
                   })()}
                   
                   {/* Data visualization inside question container - only show if data exists */}
@@ -460,7 +503,7 @@ export function ApplePracticeSession({ questions, onComplete, section = 'QR' }: 
                       <div className="flex items-center justify-center w-8 h-8 rounded-xl bg-[#F5F5F7] mr-3 font-medium text-[14px] text-[#1D1D1F]">
                         {optionLetter}
                       </div>
-                      <div className="flex-1 text-[16px] text-[#1D1D1F] font-normal">{optionText}</div>
+                      <div className="flex-1 text-[18px] text-[#1D1D1F] font-normal leading-relaxed">{optionText}</div>
                       {showFeedback && (
                         <div className="ml-2">
                           {isCorrect && (
@@ -482,7 +525,7 @@ export function ApplePracticeSession({ questions, onComplete, section = 'QR' }: 
               <div className="flex justify-center w-full mt-[-24px] mb-8">
                 {currentIndex === questions.length - 1 || seenQuestions.size >= questions.length ? (
                   <button
-                    className="py-2.5 px-5 rounded-xl bg-[#007AFF] text-white font-medium text-[14px] flex items-center justify-center w-full  transition-all hover:bg-[#0062CC] active:bg-[#0055B3] disabled:opacity-40 shadow-sm"
+                    className="py-2.5 px-5 rounded-xl bg-[#007AFF] text-white font-medium text-[17px] flex items-center justify-center w-full transition-all hover:bg-[#0062CC] active:bg-[#0055B3] disabled:opacity-40 shadow-sm"
                     onClick={() => {
                       toast.success('Practice session completed!');
                       onComplete();
@@ -493,7 +536,7 @@ export function ApplePracticeSession({ questions, onComplete, section = 'QR' }: 
                   </button>
                 ) : (
                   <button
-                    className="py-2.5 px-5 rounded-xl bg-[#007AFF] text-white font-medium text-[14px] flex items-center justify-center w-full  transition-all hover:bg-[#0062CC] active:bg-[#0055B3] disabled:opacity-40 shadow-sm"
+                    className="py-2.5 px-5 rounded-xl bg-[#007AFF] text-white font-medium text-[17px] flex items-center justify-center w-full transition-all hover:bg-[#0062CC] active:bg-[#0055B3] disabled:opacity-40 shadow-sm"
                     onClick={handleNextQuestion}
                     disabled={isTransitioning}
                   >
@@ -507,20 +550,20 @@ export function ApplePracticeSession({ questions, onComplete, section = 'QR' }: 
             {/* Feedback section */}
             {showFeedback && (
               <div className={cn(
-                "apple-feedback apple-fade-in rounded-xl p-3 mt-2 mb-4",
+                "apple-feedback rounded-2xl p-6 mb-6",
                 selectedAnswers[questionId] === questionContent.correctAnswer 
                   ? "bg-[rgba(52,199,89,0.08)] border border-[#34C759]" 
                   : "bg-[rgba(255,59,48,0.08)] border border-[#FF3B30]"
               )}>
-                <div className="flex items-center gap-2 font-medium text-[16px]">
+                <div className="flex items-center gap-3 font-semibold text-[18px]">
                   {selectedAnswers[questionId] === questionContent.correctAnswer ? (
                     <>
-                      <CheckCircle className="h-4 w-4 text-[#34C759]" />
+                      <CheckCircle className="h-6 w-6 text-[#34C759]" />
                       <span className="text-[#1D1D1F]">Correct Answer</span>
                     </>
                   ) : (
                     <>
-                      <XCircle className="h-4 w-4 text-[#FF3B30]" />
+                      <XCircle className="h-6 w-6 text-[#FF3B30]" />
                       <span className="text-[#1D1D1F]">Incorrect Answer</span>
                     </>
                   )}
@@ -528,29 +571,48 @@ export function ApplePracticeSession({ questions, onComplete, section = 'QR' }: 
               </div>
             )}
 
-            {/* Combined Explanation and AI Helper - automatically shown when question is answered */}
+            {/* Explanation section - automatically shown when question is answered */}
             {showFeedback && questionContent.explanation && (
-              <div className="mt-4 apple-fade-in">
-                <div className="apple-explanation bg-[#F5F5F7] rounded-xl p-4 border border-[#E5E5EA]">
-                  <div className="apple-explanation-title flex items-center gap-2 mb-2">
-                    <BookOpen className="h-4 w-4 text-[#007AFF]" />
-                    <span className="font-semibold text-[16px] text-[#1D1D1F]">Explanation</span>
-                  </div>
-                  <div className="apple-explanation-content text-[16px] leading-relaxed text-[#1D1D1F] mb-4 pb-4 border-b border-[#E5E5EA]">
-                    <ReactMarkdown>
-                      {questionContent.explanation}
-                    </ReactMarkdown>
-                  </div>
-                  
-                  {/* Integrated AI Helper */}
-                  <AIHelper 
-                    question={currentQuestion}
-                    selectedAnswer={selectedAnswers[questionId] || null}
-                    correctAnswer={questionContent.correctAnswer}
-                    explanation={questionContent.explanation || ''}
-                    integrated={true}
-                  />
+              <div className="apple-explanation bg-white rounded-2xl p-6 border border-[#E5E5EA] shadow-sm mt-6 apple-fade-in">
+                <BookOpen className="h-6 w-6 text-[#007AFF] mb-4" />
+                <span className="font-semibold text-[18px] text-[#1D1D1F] mb-4 block">Explanation</span>
+                
+                <div className="explanation-content prose prose-lg max-w-none" style={{
+                  fontSize: '17px',
+                  lineHeight: '1.7',
+                  color: '#1D1D1F'
+                }}>
+                  <ReactMarkdown
+                    components={{
+                      h1: ({children}) => <h1 className="text-xl font-bold text-gray-900 mb-4 mt-6">{children}</h1>,
+                      h2: ({children}) => <h2 className="text-lg font-semibold text-gray-900 mb-3 mt-5">{children}</h2>,
+                      h3: ({children}) => <h3 className="text-base font-semibold text-gray-900 mb-2 mt-4">{children}</h3>,
+                      p: ({children}) => <p className="mb-4 leading-relaxed">{children}</p>,
+                      ul: ({children}) => <ul className="mb-4 space-y-2">{children}</ul>,
+                      ol: ({children}) => <ol className="mb-4 space-y-2 list-decimal list-inside">{children}</ol>,
+                      li: ({children}) => <li className="flex items-start space-x-2"><span className="text-blue-500 font-bold mt-0.5">•</span><span className="flex-1">{children}</span></li>,
+                      strong: ({children}) => <strong className="font-semibold text-gray-900">{children}</strong>,
+                      em: ({children}) => <em className="italic text-gray-700">{children}</em>,
+                      code: ({children}) => <code className="bg-gray-100 px-2 py-1 rounded text-sm font-mono">{children}</code>,
+                      blockquote: ({children}) => <blockquote className="border-l-4 border-blue-500 pl-4 my-4 italic text-gray-700">{children}</blockquote>
+                    }}
+                  >
+                    {questionContent.explanation}
+                  </ReactMarkdown>
                 </div>
+              </div>
+            )}
+
+            {/* AI Helper section - separate from explanation */}
+            {showFeedback && (
+              <div className="mt-6">
+                <AIHelper 
+                  question={currentQuestion}
+                  selectedAnswer={selectedAnswers[questionId] || null}
+                  correctAnswer={questionContent.correctAnswer}
+                  explanation={questionContent.explanation || ''}
+                  integrated={false}
+                />
               </div>
             )}
 
@@ -558,6 +620,7 @@ export function ApplePracticeSession({ questions, onComplete, section = 'QR' }: 
           </div>
         )}
       </div>
-    </div>
+      </div>
+    </>
   );
 }

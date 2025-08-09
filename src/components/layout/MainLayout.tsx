@@ -15,12 +15,10 @@ export function MainLayout({ children }: MainLayoutProps) {
       <div className="flex flex-col w-full">
         {/* Main content with Apple HIG spacing and design */}
         <main 
-          className="flex-1 overflow-auto bg-[#F5F5F7] pt-6 pb-12" 
-          data-component-name="MainLayout-content"
+          className="flex-1 bg-[#F5F5F7] pb-8" 
+          data-component-name="MainLayout"
         >
-          <div className="max-w-4xl mx-auto px-5 sm:px-6 md:px-8 lg:px-10">
-            {children}
-          </div>
+          {children}
         </main>
       </div>
     </div>
