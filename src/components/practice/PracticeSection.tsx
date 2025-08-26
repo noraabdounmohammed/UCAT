@@ -616,24 +616,23 @@ export function PracticeSection(): JSX.Element {
                   // Get progress data for visual indicators
                   const topicProgress = getTopicProgressFromStorage(topic);
                   const totalAttempted = topicProgress.total;
-                  
-                  // We no longer need the mastery level calculation since we're using a simpler progress bar
+                  const hasProgress = totalAttempted > 0;
                   
                   // Calculate background gradient for the entire card
-                  const cardBackground = totalAttempted > 0 ? 
+                  const cardBackground = hasProgress ? 
                     `linear-gradient(to right, 
                       rgba(16, 185, 129, 0.08) 0%, 
                       rgba(16, 185, 129, 0.08) ${(topicProgress.correct / getTopicCount(topic)) * 100}%, 
                       rgba(239, 68, 68, 0.08) ${(topicProgress.correct / getTopicCount(topic)) * 100}%, 
                       rgba(239, 68, 68, 0.08) ${((topicProgress.correct + topicProgress.incorrect) / getTopicCount(topic)) * 100}%, 
-                      white ${((topicProgress.correct + topicProgress.incorrect) / getTopicCount(topic)) * 100}%, 
-                      white 100%)` : 
-                    (isSelected ? '#ebf5ff' : 'white');
+                      var(--card-bg) ${((topicProgress.correct + topicProgress.incorrect) / getTopicCount(topic)) * 100}%, 
+                      var(--card-bg) 100%)` : 
+                    (isSelected ? 'var(--selected-bg)' : 'var(--card-bg)');
                     
                   return (
                     <div 
                       key={topic} 
-                      className={`rounded-xl border overflow-hidden shadow-sm transition-all duration-300 hover:shadow-md ${isSelected ? 'border-blue-300 ring-2 ring-blue-100' : 'border-gray-200'}`}
+                      className={`rounded-xl border overflow-hidden shadow-sm transition-all duration-300 hover:shadow-md ${isSelected ? 'border-blue-300 ring-2 ring-blue-100 dark:border-blue-500 dark:ring-blue-900' : 'border-gray-200 dark:border-gray-700'}`}
                       style={{ background: cardBackground }}
                     >
                       {/* Topic header */}
@@ -656,7 +655,7 @@ export function PracticeSection(): JSX.Element {
                                 ? 'bg-blue-500 text-white' 
                                 : isTopicPartiallySelected(topic as MainTopic)
                                   ? 'bg-blue-200 border border-blue-300' 
-                                  : 'border-2 border-gray-300 bg-white'
+                                  : 'border-2 border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800'
                             }`}
                             onClick={(e) => {
                               e.stopPropagation();
@@ -692,11 +691,11 @@ export function PracticeSection(): JSX.Element {
                           {/* Topic content */}
                           <div className="flex-grow">
                             <div className="flex items-center justify-between">
-                              <h3 className="font-medium text-gray-900">{topic}</h3>
-                              <ChevronRight className={`h-4 w-4 text-gray-500 transition-transform duration-200 ${isExpanded ? 'transform rotate-90' : ''}`} />
+                              <h3 className="font-medium text-gray-900 dark:text-gray-100">{topic}</h3>
+                              <ChevronRight className={`h-4 w-4 text-gray-500 dark:text-gray-400 transition-transform duration-200 ${isExpanded ? 'transform rotate-90' : ''}`} />
                             </div>
                             
-                            <div className="mt-1 flex items-center text-sm text-gray-600">
+                            <div className="mt-1 flex items-center text-sm text-gray-600 dark:text-gray-400">
                               {/* Count of attempted subtopics out of total */}
                               <span className="mr-2" data-component-name="PracticeSection">
                                 {subtopics.filter(skill => getSkillProgressFromStorage(skill.id).total > 0).length}/{subtopics.length} subtopics
@@ -718,14 +717,14 @@ export function PracticeSection(): JSX.Element {
                       
                       {/* Subtopics with animated expansion */}
                       {isExpanded && subtopics.length > 0 && (
-                        <div className="bg-gray-50 animate-slideDown divide-y divide-gray-100">
+                        <div className="bg-gray-50 dark:bg-gray-800 animate-slideDown divide-y divide-gray-100 dark:divide-gray-700">
                           {subtopics.map((skill: {id: string; name: string}) => {
                             const isSkillSelected = isMicroSkillSelected(skill.id);
                             
                             return (
                               <div 
                                 key={skill.id}
-                                className="flex items-center p-3 pl-8 hover:bg-gray-100 transition-colors duration-200 cursor-pointer"
+                                className="flex items-center p-3 pl-8 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors duration-200 cursor-pointer"
                                 onClick={() => {
                                   // Toggle selection of this skill
                                   const updatedSkills = isSkillSelected
@@ -743,14 +742,14 @@ export function PracticeSection(): JSX.Element {
                                   className={`w-5 h-5 rounded-md flex items-center justify-center mr-3 transition-all duration-200 ${
                                     isSkillSelected 
                                       ? 'bg-blue-500 text-white' 
-                                      : 'border-2 border-gray-300 bg-white'
+                                      : 'border-2 border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800'
                                   }`}
                                 >
                                   {isSkillSelected && (
                                     <Check className="h-3 w-3 animate-checkmark" />
                                   )}
                                 </div>
-                                <span className="text-sm">{skill.name}</span>
+                                <span className="text-sm text-gray-900 dark:text-gray-100">{skill.name}</span>
                               </div>
                             );
                           })}
@@ -771,7 +770,7 @@ export function PracticeSection(): JSX.Element {
               {/* Apple-style segmented control */}
               <div className="flex space-x-2">
                 <div 
-                  className={`flex-1 p-3 rounded-xl cursor-pointer ${filterOptions.difficulty.includes('easy') ? 'border border-blue-500 bg-blue-50' : 'border border-gray-200 bg-gray-50'}`}
+                  className={`flex-1 p-3 rounded-xl cursor-pointer ${filterOptions.difficulty.includes('easy') ? 'border border-blue-500 bg-blue-50 dark:bg-blue-900/20' : 'border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800'}`}
                   onClick={() => {
                     const isSelected = filterOptions.difficulty.includes('easy');
                     // Only allow deselection if there are other options selected
@@ -790,12 +789,12 @@ export function PracticeSection(): JSX.Element {
                         <Check className="h-4 w-4 text-blue-500" />
                       )}
                     </div>
-                    <div className="text-sm font-medium">Easy</div>
+                    <div className="text-sm font-medium text-gray-900 dark:text-gray-100">Easy</div>
                   </div>
                 </div>
                 
                 <div 
-                  className={`flex-1 p-3 rounded-xl cursor-pointer ${filterOptions.difficulty.includes('medium') ? 'border border-blue-500 bg-blue-50' : 'border border-gray-200 bg-gray-50'} ${filterOptions.difficulty.length === 1 && filterOptions.difficulty.includes('medium') ? 'opacity-90' : ''}`}
+                  className={`flex-1 p-3 rounded-xl cursor-pointer ${filterOptions.difficulty.includes('medium') ? 'border border-blue-500 bg-blue-50 dark:bg-blue-900/20' : 'border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800'} ${filterOptions.difficulty.length === 1 && filterOptions.difficulty.includes('medium') ? 'opacity-90' : ''}`}
                   onClick={() => {
                     const isSelected = filterOptions.difficulty.includes('medium');
                     // Only allow deselection if there are other options selected
@@ -814,12 +813,12 @@ export function PracticeSection(): JSX.Element {
                         <Check className="h-4 w-4 text-blue-500" />
                       )}
                     </div>
-                    <div className="text-sm font-medium">Medium</div>
+                    <div className="text-sm font-medium text-gray-900 dark:text-gray-100">Medium</div>
                   </div>
                 </div>
                 
                 <div 
-                  className={`flex-1 p-3 rounded-xl cursor-pointer ${filterOptions.difficulty.includes('hard') ? 'border border-blue-500 bg-blue-50' : 'border border-gray-200 bg-gray-50'} ${filterOptions.difficulty.length === 1 && filterOptions.difficulty.includes('hard') ? 'opacity-90' : ''}`}
+                  className={`flex-1 p-3 rounded-xl cursor-pointer ${filterOptions.difficulty.includes('hard') ? 'border border-blue-500 bg-blue-50 dark:bg-blue-900/20' : 'border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800'} ${filterOptions.difficulty.length === 1 && filterOptions.difficulty.includes('hard') ? 'opacity-90' : ''}`}
                   onClick={() => {
                     const isSelected = filterOptions.difficulty.includes('hard');
                     // Only allow deselection if there are other options selected
@@ -838,7 +837,7 @@ export function PracticeSection(): JSX.Element {
                         <Check className="h-4 w-4 text-blue-500" />
                       )}
                     </div>
-                    <div className="text-sm font-medium">Hard</div>
+                    <div className="text-sm font-medium text-gray-900 dark:text-gray-100">Hard</div>
                   </div>
                 </div>
               </div>
@@ -851,9 +850,9 @@ export function PracticeSection(): JSX.Element {
               </div>
               
               {/* Apple-style list items */}
-              <div className="rounded-xl overflow-hidden shadow-sm border border-gray-100">
+              <div className="rounded-xl overflow-hidden shadow-sm border border-gray-100 dark:border-gray-700">
                 <div 
-                  className="flex items-center p-4 bg-white border-b border-gray-100 cursor-pointer hover:bg-gray-50 transition-colors duration-200"
+                  className="flex items-center p-4 bg-white dark:bg-gray-800 border-b border-gray-100 dark:border-gray-700 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors duration-200"
                   onClick={() => {
                     const isSelected = filterOptions.interactionStatus.includes('incorrect');
                     // Only allow deselection if there are other options selected
@@ -866,11 +865,11 @@ export function PracticeSection(): JSX.Element {
                     }
                   }}
                 >
-                  <div className="w-8 h-8 rounded-full bg-red-100 flex items-center justify-center mr-3">
+                  <div className="w-8 h-8 rounded-full bg-red-100 dark:bg-red-900/30 flex items-center justify-center mr-3">
                     <XCircle className="h-4 w-4 text-red-500" />
                   </div>
                   <div className="flex-1">
-                    <div className="text-base font-medium text-gray-900">Incorrect</div>
+                    <div className="text-base font-medium text-gray-900 dark:text-gray-100">Incorrect</div>
                     <div className="text-sm text-gray-500">
                       Questions you got wrong
                       {getSectionProgressFromStorage(activeSection).incorrect > 0 && (
@@ -888,7 +887,7 @@ export function PracticeSection(): JSX.Element {
                 </div>
                 
                 <div 
-                  className="flex items-center p-4 bg-white border-b border-gray-100 cursor-pointer hover:bg-gray-50 transition-colors duration-200"
+                  className="flex items-center p-4 bg-white dark:bg-gray-800 border-b border-gray-100 dark:border-gray-700 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors duration-200"
                   onClick={() => {
                     const isSelected = filterOptions.interactionStatus.includes('correct');
                     // Only allow deselection if there are other options selected
@@ -901,11 +900,11 @@ export function PracticeSection(): JSX.Element {
                     }
                   }}
                 >
-                  <div className="w-8 h-8 rounded-full bg-green-100 flex items-center justify-center mr-3">
+                  <div className="w-8 h-8 rounded-full bg-green-100 dark:bg-green-900/30 flex items-center justify-center mr-3">
                     <CheckCircle className="h-4 w-4 text-green-500" />
                   </div>
                   <div className="flex-1">
-                    <div className="text-base font-medium text-gray-900">Correct</div>
+                    <div className="text-base font-medium text-gray-900 dark:text-gray-100">Correct</div>
                     <div className="text-sm text-gray-500">
                       Questions you got right
                       {getSectionProgressFromStorage(activeSection).correct > 0 && (
@@ -923,7 +922,7 @@ export function PracticeSection(): JSX.Element {
                 </div>
                 
                 <div 
-                  className="flex items-center p-4 bg-white border-b border-gray-100 cursor-pointer hover:bg-gray-50 transition-colors duration-200"
+                  className="flex items-center p-4 bg-white dark:bg-gray-800 border-b border-gray-100 dark:border-gray-700 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors duration-200"
                   onClick={() => {
                     const isSelected = filterOptions.interactionStatus.includes('flagged');
                     // Only allow deselection if there are other options selected
@@ -936,11 +935,11 @@ export function PracticeSection(): JSX.Element {
                     }
                   }}
                 >
-                  <div className="w-8 h-8 rounded-full bg-yellow-100 flex items-center justify-center mr-3">
+                  <div className="w-8 h-8 rounded-full bg-yellow-100 dark:bg-yellow-900/30 flex items-center justify-center mr-3">
                     <Flag className="h-4 w-4 text-yellow-500" />
                   </div>
                   <div className="flex-1">
-                    <div className="text-base font-medium text-gray-900">Flagged</div>
+                    <div className="text-base font-medium text-gray-900 dark:text-gray-100">Flagged</div>
                     <div className="text-sm text-gray-500">
                       Questions you flagged for review
                       {getSectionProgressFromStorage(activeSection).flagged > 0 && (
@@ -960,7 +959,7 @@ export function PracticeSection(): JSX.Element {
                 {/* Skipped filter removed as we don't have skip functionality yet */}
                 
                 <div 
-                  className="flex items-center p-4 bg-white cursor-pointer hover:bg-gray-50 transition-colors duration-200"
+                  className="flex items-center p-4 bg-white dark:bg-gray-800 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors duration-200"
                   onClick={() => {
                     const isSelected = filterOptions.interactionStatus.includes('unseen');
                     const updatedStatus = isSelected
@@ -969,11 +968,11 @@ export function PracticeSection(): JSX.Element {
                     handleFilterChange({...filterOptions, interactionStatus: updatedStatus as InteractionStatus[]});
                   }}
                 >
-                  <div className="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center mr-3">
+                  <div className="w-8 h-8 rounded-full bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center mr-3">
                     <Eye className="h-4 w-4 text-blue-500" />
                   </div>
                   <div className="flex-1">
-                    <div className="text-base font-medium text-gray-900">Unseen</div>
+                    <div className="text-base font-medium text-gray-900 dark:text-gray-100">Unseen</div>
                     <div className="text-sm text-gray-500">
                       Questions you haven't seen yet
                       {(() => {

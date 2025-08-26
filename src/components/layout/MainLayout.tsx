@@ -10,12 +10,12 @@ interface MainLayoutProps {
 export function MainLayout({ children }: MainLayoutProps) {
 
   return (
-    <div className="min-h-screen bg-[#F5F5F7]" data-component-name="MainLayout">
+    <div className="min-h-screen bg-white dark:bg-gray-900" data-component-name="MainLayout">
       {/* Main content area */}
       <div className="flex flex-col w-full">
         {/* Main content with Apple HIG spacing and design */}
         <main 
-          className="flex-1 bg-[#F5F5F7] pb-8" 
+          className="flex-1 bg-white dark:bg-gray-900 pb-8" 
           data-component-name="MainLayout"
         >
           {children}

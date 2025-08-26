@@ -12,12 +12,17 @@ interface ISpeechRecognitionEvent {
 }
 
 
+interface ISpeechRecognitionErrorEvent {
+  error: string;
+  message?: string;
+}
+
 interface ISpeechRecognition {
   continuous: boolean;
   interimResults: boolean;
   lang: string;
   onresult: ((e: ISpeechRecognitionEvent) => void) | null;
-  onerror: ((e: unknown) => void) | null;
+  onerror: ((e: ISpeechRecognitionErrorEvent) => void) | null;
   onend: (() => void) | null;
   start: () => void;
   stop: () => void;
@@ -106,10 +111,14 @@ export function AIHelper({ question, correctAnswer, selectedAnswer, explanation 
   // We're using fixed input by default for all devices
   // Mobile detection has been removed as we're using the same UI for all devices
 
-  // Initialize without welcome message
+  // Initialize without welcome message - force re-render to fix first message alignment
   useEffect(() => {
     if (!hasInitialized) {
       setHasInitialized(true);
+      // Force a re-render after initialization to ensure proper message alignment
+      setTimeout(() => {
+        setMessages(prev => [...prev]);
+      }, 0);
     }
   }, [hasInitialized]);
 
@@ -175,16 +184,33 @@ export function AIHelper({ question, correctAnswer, selectedAnswer, explanation 
     if (chatContainerRef.current && !isNextQuestion) {
       chatContainerRef.current.scrollTop = chatContainerRef.current.scrollHeight;
     }
+    
+    // Force re-render for alignment fix on every message change
+    if (messages.length > 0) {
+      const timeoutId = setTimeout(() => {
+        // Trigger a minimal state update to force re-render
+        setMessages(prev => [...prev]);
+      }, 5);
+      return () => clearTimeout(timeoutId);
+    }
   }, [messages, isTyping]);
 
   // No automatic scrolling effect for messages - we'll only scroll when explicitly sending a message
 
-  // Feature detection for Web Speech API with mobile support
+  // Enhanced mobile detection and speech API support
+  const isMobile = typeof window !== 'undefined' && (
+    /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) ||
+    ('ontouchstart' in window) ||
+    (navigator.maxTouchPoints > 0)
+  );
+
   const speechSupported = typeof window !== 'undefined' && (
     ('SpeechRecognition' in window) || 
-    ('webkitSpeechRecognition' in window) ||
-    // Additional check for mobile browsers
-    (navigator.userAgent.includes('Mobile') && 'webkitSpeechRecognition' in window)
+    ('webkitSpeechRecognition' in window)
+  ) && (
+    // iOS Safari has limited support - only allow on iOS 14.5+
+    !(/iPad|iPhone|iPod/.test(navigator.userAgent)) ||
+    (parseInt(navigator.userAgent.match(/OS (\d+)_/)?.[1] || '0') >= 14)
   );
 
   // Keep a stable ref to send handler to avoid useCallback dependency churn
@@ -207,20 +233,22 @@ export function AIHelper({ question, correctAnswer, selectedAnswer, explanation 
     if (silenceTimerRef.current) { clearTimeout(silenceTimerRef.current); silenceTimerRef.current = null; }
   }, []);
 
-  // Start voice recognition
-  const startVoice = useCallback(() => {
-    if (!speechSupported || isRecording) return;
-    
+  // Separate function to initialize speech recognition
+  const initializeSpeechRecognition = useCallback(() => {
     // Enhanced constructor detection for mobile
     const SpeechRecognition = (window as unknown as { SpeechRecognition?: unknown; webkitSpeechRecognition?: unknown }).SpeechRecognition || 
                              (window as unknown as { SpeechRecognition?: unknown; webkitSpeechRecognition?: unknown }).webkitSpeechRecognition;
     if (!SpeechRecognition) {
       console.error('Speech recognition not supported on this device');
+      alert('Voice input is not supported on this device or browser.');
       return;
     }
+    
     const rec = new (SpeechRecognition as unknown as new () => ISpeechRecognition)();
     recognitionRef.current = rec;
-    rec.continuous = true; // keep listening while holding
+    
+    // Mobile-optimized settings
+    rec.continuous = !isMobile; // On mobile, use single recognition sessions
     rec.interimResults = true;
     rec.lang = language || 'en-US';
     setInterimTranscript('');
@@ -271,9 +299,23 @@ export function AIHelper({ question, correctAnswer, selectedAnswer, explanation 
       }
     };
 
-    rec.onerror = () => {
+    rec.onerror = (event: ISpeechRecognitionErrorEvent) => {
+      console.error('Speech recognition error:', event.error);
       setIsRecording(false);
       recognitionRef.current = null;
+      clearSilenceTimer();
+      
+      // Mobile-specific error handling
+      if (isMobile) {
+        const errorMessage = event.error === 'not-allowed' 
+          ? 'Microphone access denied. Please enable microphone permissions in your browser settings.'
+          : event.error === 'no-speech'
+          ? 'No speech detected. Please try speaking again.'
+          : 'Voice input error. Please try again.';
+        
+        // Show user-friendly error message
+        setTimeout(() => alert(errorMessage), 100);
+      }
     };
     rec.onend = () => {
       setIsRecording(false);
@@ -288,7 +330,28 @@ export function AIHelper({ question, correctAnswer, selectedAnswer, explanation 
       recognitionRef.current = null;
       console.error('Failed to start recognition:', err);
     }
-  }, [speechSupported, isRecording, language, autoSendOnPause, silenceMs, interimTranscript, inputValue, stopVoice]);
+  }, [isMobile, language, autoSendOnPause, silenceMs, interimTranscript, inputValue, stopVoice]);
+
+  // Start voice recognition with mobile-specific handling
+  const startVoice = useCallback(() => {
+    if (!speechSupported || isRecording) return;
+    
+    // Request microphone permissions first (especially important on mobile)
+    if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+      navigator.mediaDevices.getUserMedia({ audio: true })
+        .then(() => {
+          // Permission granted, proceed with speech recognition
+          initializeSpeechRecognition();
+        })
+        .catch((error) => {
+          console.error('Microphone permission denied:', error);
+          alert('Microphone access is required for voice input. Please enable microphone permissions and try again.');
+        });
+    } else {
+      // Fallback for older browsers
+      initializeSpeechRecognition();
+    }
+  }, [speechSupported, isRecording, initializeSpeechRecognition]);
 
 
 
@@ -317,11 +380,17 @@ export function AIHelper({ question, correctAnswer, selectedAnswer, explanation 
     // Create new abort controller for this request
     abortControllerRef.current = new AbortController();
 
-    // Add user message to chat
+    // Add user message to chat with immediate alignment fix
     const userMessage = inputValue.trim();
-    setMessages(prev => [...prev, { role: 'user', content: userMessage }]);
+    const newUserMessage = { role: 'user' as const, content: userMessage };
+    setMessages(prev => [...prev, newUserMessage]);
     setInputValue('');
     setIsLoading(true);
+    
+    // Force immediate re-render to ensure proper alignment
+    setTimeout(() => {
+      setMessages(prev => [...prev]);
+    }, 10);
     
     // Check if user is asking for next question
     if (userMessage.toLowerCase().includes('next question') || userMessage.toLowerCase().includes('show me the next question')) {
@@ -335,7 +404,7 @@ export function AIHelper({ question, correctAnswer, selectedAnswer, explanation 
     }
     
     // Add an empty assistant message that will be filled as tokens arrive
-    setMessages(prev => [...prev, { role: 'assistant', content: '' }]);
+    setMessages(prev => [...prev, { role: 'assistant' as const, content: '' }]);
     
     // Scroll the entire page to the bottom when sending a message
     setTimeout(() => {
@@ -518,25 +587,25 @@ Be direct and educational. No "Of course!" or "That's an excellent question" - j
           <div className="flex flex-wrap gap-2 mb-4">
             <button 
               onClick={() => setInputValue("Explain this question in detail")}
-              className="inline-flex items-center gap-2 px-3 py-2 text-sm bg-blue-50 hover:bg-blue-100 text-blue-700 rounded-lg border border-blue-200 transition-colors"
+              className="inline-flex items-center gap-2 px-3 py-2 text-sm bg-blue-50 hover:bg-blue-100 text-blue-700 dark:bg-blue-900/20 dark:hover:bg-blue-900/30 dark:text-blue-300 dark:border-blue-700/50 rounded-lg border border-blue-200 transition-colors"
             >
               📖 Explain question
             </button>
             <button 
               onClick={() => setInputValue("Why is my answer wrong?")}
-              className="inline-flex items-center gap-2 px-3 py-2 text-sm bg-red-50 hover:bg-red-100 text-red-700 rounded-lg border border-red-200 transition-colors"
+              className="inline-flex items-center gap-2 px-3 py-2 text-sm bg-red-50 hover:bg-red-100 text-red-700 dark:bg-red-900/20 dark:hover:bg-red-900/30 dark:text-red-300 dark:border-red-700/50 rounded-lg border border-red-200 transition-colors"
             >
               ❓ Why wrong?
             </button>
             <button 
               onClick={() => setInputValue("Give me a similar practice question")}
-              className="inline-flex items-center gap-2 px-3 py-2 text-sm bg-green-50 hover:bg-green-100 text-green-700 rounded-lg border border-green-200 transition-colors"
+              className="inline-flex items-center gap-2 px-3 py-2 text-sm bg-green-50 hover:bg-green-100 text-green-700 dark:bg-green-900/20 dark:hover:bg-green-900/30 dark:text-green-300 dark:border-green-700/50 rounded-lg border border-green-200 transition-colors"
             >
               🔄 Similar question
             </button>
             <button 
               onClick={() => setInputValue("Show me the next question from the database")}
-              className="inline-flex items-center gap-2 px-3 py-2 text-sm bg-purple-50 hover:bg-purple-100 text-purple-700 rounded-lg border border-purple-200 transition-colors"
+              className="inline-flex items-center gap-2 px-3 py-2 text-sm bg-purple-50 hover:bg-purple-100 text-purple-700 dark:bg-purple-900/20 dark:hover:bg-purple-900/30 dark:text-purple-300 dark:border-purple-700/50 rounded-lg border border-purple-200 transition-colors"
             >
               ➡️ Next question
             </button>
@@ -735,25 +804,25 @@ Be direct and educational. No "Of course!" or "That's an excellent question" - j
                   </div>
                 </div>
               ) : (
-                <div className={`flex gap-3 ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}>
-                  <div className={`rounded-2xl ${
+                <div className={`w-full mb-4`} style={{ display: 'flex', width: '100%', justifyContent: message.role === 'user' ? 'flex-end' : 'flex-start' }}>
+                  <div className={`${
                     message.role === 'user' 
-                      ? 'bg-blue-500 text-white ml-auto px-4 py-3 max-w-[85%]' 
-                      : 'w-full p-6 rounded-2xl bg-white text-gray-900 shadow-sm border border-gray-100'
+                      ? 'bg-blue-500 text-white px-4 py-3 max-w-[85%] rounded-2xl' 
+                      : 'w-full p-6 bg-gray-50 dark:bg-gray-800 border border-[#E5E5EA] dark:border-gray-700 rounded-xl text-gray-900 dark:text-gray-100'
                   }`}>
                     <ReactMarkdown 
                       components={{
-                        p: ({ children }) => <p className={`mb-4 last:mb-0 leading-relaxed ${message.role === 'user' ? 'text-white' : 'text-gray-700'}`}>{children}</p>,
-                        h1: ({ children }) => <h1 className={`text-2xl font-bold mb-4 border-b pb-2 ${message.role === 'user' ? 'text-white border-white/30' : 'text-gray-900 border-gray-200'}`}>{children}</h1>,
-                        h2: ({ children }) => <h2 className={`text-xl font-semibold mb-3 mt-6 first:mt-0 ${message.role === 'user' ? 'text-white' : 'text-gray-800'}`}>{children}</h2>,
-                        h3: ({ children }) => <h3 className={`text-lg font-medium mb-3 mt-5 first:mt-0 ${message.role === 'user' ? 'text-white' : 'text-gray-700'}`}>{children}</h3>,
+                        p: ({ children }) => <p className={`mb-4 last:mb-0 leading-relaxed text-base ${message.role === 'user' ? 'text-white' : 'text-gray-900 dark:text-gray-100'}`} style={{ fontSize: '16px' }}>{children}</p>,
+                        h1: ({ children }) => <h1 className={`text-2xl font-bold mb-4 border-b pb-2 ${message.role === 'user' ? 'text-white border-white/30' : 'text-gray-900 dark:text-gray-100 border-gray-200 dark:border-gray-600'}`}>{children}</h1>,
+                        h2: ({ children }) => <h2 className={`text-xl font-semibold mb-3 mt-6 first:mt-0 ${message.role === 'user' ? 'text-white' : 'text-gray-900 dark:text-gray-100'}`}>{children}</h2>,
+                        h3: ({ children }) => <h3 className={`text-lg font-medium mb-3 mt-5 first:mt-0 ${message.role === 'user' ? 'text-white' : 'text-gray-900 dark:text-gray-100'}`}>{children}</h3>,
                         ul: ({ children }) => <ul className="list-none pl-0 mb-4 space-y-2">{children}</ul>,
                         ol: ({ children }) => <ol className="list-decimal pl-6 mb-4 space-y-2">{children}</ol>,
-                        li: ({ children }) => <li className={`leading-relaxed flex items-start ${message.role === 'user' ? 'text-white' : 'text-gray-700'}`}><span className={`inline-block w-2 h-2 rounded-full mt-2 mr-3 flex-shrink-0 ${message.role === 'user' ? 'bg-white' : 'bg-blue-500'}`}></span><span className="flex-1">{children}</span></li>,
-                        strong: ({ children }) => <strong className={`font-semibold px-1 rounded ${message.role === 'user' ? 'text-white bg-white/20' : 'text-gray-900 bg-yellow-50'}`}>{children}</strong>,
-                        em: ({ children }) => <em className={`italic font-medium ${message.role === 'user' ? 'text-white' : 'text-blue-600'}`}>{children}</em>,
-                        code: ({ children }) => <code className={`px-2 py-1 rounded text-sm font-mono border ${message.role === 'user' ? 'bg-white/20 text-white border-white/30' : 'bg-gray-100 text-gray-800 border-gray-200'}`}>{children}</code>,
-                        blockquote: ({ children }) => <blockquote className={`border-l-4 pl-4 py-2 rounded-r italic my-4 ${message.role === 'user' ? 'border-white/50 bg-white/10 text-white' : 'border-blue-400 bg-blue-50 text-gray-700'}`}>{children}</blockquote>
+                        li: ({ children }) => <li className={`leading-relaxed flex items-start ${message.role === 'user' ? 'text-white' : 'text-gray-900 dark:text-gray-100'}`} style={{ fontSize: '16px' }}><span className={`inline-block w-2 h-2 rounded-full mt-2 mr-3 flex-shrink-0 ${message.role === 'user' ? 'bg-white' : 'bg-blue-500'}`}></span><span className="flex-1">{children}</span></li>,
+                        strong: ({ children }) => <strong className={`font-semibold px-2 py-1 rounded ${message.role === 'user' ? 'text-white bg-white/20' : 'text-gray-900 dark:text-white bg-blue-100 dark:bg-blue-800/40 border border-blue-200 dark:border-blue-700/50'}`}>{children}</strong>,
+                        em: ({ children }) => <em className={`italic font-medium ${message.role === 'user' ? 'text-white' : 'text-blue-600 dark:text-blue-400'}`}>{children}</em>,
+                        code: ({ children }) => <code className={`px-2 py-1 rounded text-sm font-mono border ${message.role === 'user' ? 'bg-white/20 text-white border-white/30' : 'bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-200 border-gray-200 dark:border-gray-600'}`}>{children}</code>,
+                        blockquote: ({ children }) => <blockquote className={`border-l-4 pl-4 py-2 rounded-r italic my-4 ${message.role === 'user' ? 'border-white/50 bg-white/10 text-white' : 'border-blue-400 dark:border-blue-500 bg-blue-50 dark:bg-blue-900/20 text-gray-900 dark:text-gray-100'}`} style={{ fontSize: '16px' }}>{children}</blockquote>
                       }}
                     >
                       {message.content}
@@ -767,14 +836,14 @@ Be direct and educational. No "Of course!" or "That's an excellent question" - j
           {/* Typing indicator */}
           {isTyping && (
             <div className="flex gap-3 justify-start">
-              <div className="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center flex-shrink-0 mt-1">
+              <div className="w-8 h-8 rounded-full bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center flex-shrink-0 mt-1">
                 🤖
               </div>
-              <div className="w-full p-8 rounded-2xl bg-white text-gray-900 shadow-sm border border-gray-100">
+              <div className="w-full p-8 bg-gray-50 dark:bg-gray-800 text-gray-900 dark:text-gray-100 border border-[#E5E5EA] dark:border-gray-700 rounded-xl">
                 <div className="flex space-x-1">
-                  <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0ms' }}></div>
-                  <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '150ms' }}></div>
-                  <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '300ms' }}></div>
+                  <div className="w-2 h-2 bg-gray-400 dark:bg-gray-500 rounded-full animate-bounce" style={{ animationDelay: '0ms' }}></div>
+                  <div className="w-2 h-2 bg-gray-400 dark:bg-gray-500 rounded-full animate-bounce" style={{ animationDelay: '150ms' }}></div>
+                  <div className="w-2 h-2 bg-gray-400 dark:bg-gray-500 rounded-full animate-bounce" style={{ animationDelay: '300ms' }}></div>
                 </div>
               </div>
             </div>
@@ -786,12 +855,9 @@ Be direct and educational. No "Of course!" or "That's an excellent question" - j
       
       {/* Sticky Input Area - Always show when feedback is active */}
       {(
-        <div className="fixed bottom-0 left-0 right-0 z-50" style={{ 
-          background: '#F5F5F7',
-          borderTop: '0.5px solid rgba(0, 0, 0, 0.06)'
-        }}>
+        <div className="fixed bottom-0 left-0 right-0 z-50 bg-white dark:bg-gray-900 border-t border-gray-200 dark:border-gray-700 safe-area-inset-bottom">
           <div className="max-w-4xl mx-auto p-2">
-            <div className="border border-gray-200 rounded-xl p-2" style={{ background: '#F5F5F7' }}>
+            <div className="border border-gray-200 dark:border-gray-700 rounded-xl p-2 bg-white dark:bg-gray-900">
               <div className="flex items-end gap-2">
                 <textarea
                   ref={inputRef}
@@ -799,7 +865,7 @@ Be direct and educational. No "Of course!" or "That's an excellent question" - j
                   onChange={handleInputChange}
                   onKeyDown={handleKeyDown}
                   placeholder="Ask a follow-up question..."
-                  className="w-full px-3 py-2 bg-transparent text-gray-900 placeholder-gray-500 resize-none overflow-hidden focus:outline-none"
+                  className="w-full px-3 py-2 bg-transparent text-gray-900 dark:text-gray-100 placeholder-gray-500 dark:placeholder-gray-400 resize-none overflow-hidden focus:outline-none"
                   rows={1}
                   disabled={isLoading}
                   style={{
@@ -810,7 +876,7 @@ Be direct and educational. No "Of course!" or "That's an excellent question" - j
                 />
                 
                 <div className="flex gap-1">
-                  {speechSupported && (
+                  {speechSupported && !isMobile && (
                     <button
                       type="button"
                       onClick={isRecording ? stopVoice : startVoice}

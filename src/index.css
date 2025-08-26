@@ -7,9 +7,9 @@
   line-height: 1.5;
   font-weight: 400;
 
-  color-scheme: light dark;
-  color: rgba(255, 255, 255, 0.87);
-  background-color: #242424;
+  color-scheme: light;
+  color: #1f2937;
+  background-color: #ffffff;
 
   font-synthesis: none;
   text-rendering: optimizeLegibility;
@@ -17,10 +17,26 @@
   -moz-osx-font-smoothing: grayscale;
 }
 
+/* Mobile keyboard support */
+@supports (padding: max(0px)) {
+  .safe-area-inset-bottom {
+    padding-bottom: max(env(safe-area-inset-bottom), 0px);
+  }
+}
+
+/* iOS keyboard height support */
+@supports (height: 100dvh) {
+  .keyboard-aware {
+    height: 100dvh;
+  }
+}
+
 @layer base {
   :root {
     --background: 0 0% 100%;
     --foreground: 0 0% 3.9%;
+    --card-bg: white;
+    --selected-bg: #ebf5ff;
     
     --card: 0 0% 100%;
     --card-foreground: 0 0% 3.9%;
@@ -59,6 +75,8 @@
   .dark {
     --background: 0 0% 3.9%;
     --foreground: 0 0% 98%;
+    --card-bg: rgb(31, 41, 55);
+    --selected-bg: rgba(59, 130, 246, 0.1);
     
     --card: 0 0% 3.9%;
     --card-foreground: 0 0% 98%;
@@ -90,6 +108,12 @@
     --chart-3: 0 0% 60%;
     --chart-4: 0 0% 40%;
     --chart-5: 0 0% 20%;
+  }
+
+  .dark {
+    color-scheme: dark;
+    color: #f9fafb;
+    background-color: #111827;
   }
 }
 

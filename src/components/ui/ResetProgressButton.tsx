@@ -37,7 +37,7 @@ export function ResetProgressButton() {
       size="sm"
       onClick={handleResetProgress}
       disabled={isResetting}
-      className="flex items-center gap-1 bg-white hover:bg-gray-100"
+      className="flex items-center gap-1 bg-white dark:bg-gray-800 hover:bg-gray-100 dark:hover:bg-gray-700 border-gray-200 dark:border-gray-600 text-gray-900 dark:text-gray-100"
     >
       <RefreshCcw className="h-4 w-4" />
       {isResetting ? 'Resetting...' : 'Reset Progress'}

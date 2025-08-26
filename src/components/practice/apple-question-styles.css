@@ -123,7 +123,7 @@
   display: flex;
   flex-direction: column;
   height: 100%;
-  background-color: var(--sf-background);
+  background-color: #ffffff;
   font-family: var(--sf-font-family);
   color: var(--sf-label);
   -webkit-font-smoothing: antialiased;
@@ -131,6 +131,11 @@
   padding: 0;
   margin: 0;
   max-width: 100%;
+}
+
+.dark .apple-question-container {
+  background-color: #111827;
+  color: #f9fafb;
 }
 
 /* Header with SF Navigation Bar style */
@@ -377,14 +382,18 @@
 
 /* Feedback section - SF Pro style */
 .apple-feedback {
-  padding: var(--sf-spacing-lg);
+  padding: var(--sf-spacing-md);
   border-radius: var(--sf-radius-lg);
   margin-top: var(--sf-spacing-xl);
   font-size: 17px;
   line-height: 1.47059;
   display: flex;
   align-items: center;
+  justify-content: flex-start;
   gap: var(--sf-spacing-sm);
+  width: 100%;
+  min-height: 48px;
+  box-sizing: border-box;
 }
 
 .apple-feedback.correct {
