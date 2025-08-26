@@ -121,8 +121,7 @@ export function ApplePracticeSession({ questions, onComplete, section = 'QR' }: 
     
     return {
       id: questionId,
-      question: currentQuestion.question_stem || 
-               currentQuestion.content || 
+      question: currentQuestion.content || 
                currentQuestion.individual_question || '',
       stem: currentQuestion.question_stem || '',
       options: Array.isArray(currentQuestion.options) ? 
@@ -132,6 +131,121 @@ export function ApplePracticeSession({ questions, onComplete, section = 'QR' }: 
                   currentQuestion.explanation || ''
     };
   }, [currentIndex, questionId, currentQuestion]);
+
+  // Navigation functions for navbar
+  const handlePreviousQuestionNav = () => {
+    if (currentIndex > 0) {
+      setIsTransitioning(true);
+      
+      // Scroll to top immediately
+      window.scrollTo({
+        top: 0,
+        behavior: 'smooth'
+      });
+      
+      setTimeout(() => {
+        setCurrentIndex(currentIndex - 1);
+        setShowFeedback(false);
+        setIsTransitioning(false);
+        
+        // Additional scroll after state update
+        setTimeout(() => {
+          window.scrollTo({
+            top: 0,
+            behavior: 'smooth'
+          });
+        }, 50);
+      }, 150);
+    }
+  };
+
+  const handleNextQuestionNav = () => {
+    if (currentIndex < questions.length - 1) {
+      setIsTransitioning(true);
+      
+      // Scroll to top immediately
+      window.scrollTo({
+        top: 0,
+        behavior: 'smooth'
+      });
+      
+      setTimeout(() => {
+        setCurrentIndex(prev => prev + 1);
+        setIsTransitioning(false);
+        
+        // Additional scroll after state update
+        setTimeout(() => {
+          window.scrollTo({
+            top: 0,
+            behavior: 'smooth'
+          });
+        }, 50);
+      }, 150);
+    }
+  };
+
+  // Listen for navigation events from AI Helper
+  useEffect(() => {
+    const handlePrevious = () => handlePreviousQuestionNav();
+    const handleNext = () => handleNextQuestionNav();
+    
+    window.addEventListener('previousQuestion', handlePrevious);
+    window.addEventListener('nextQuestion', handleNext);
+    
+    return () => {
+      window.removeEventListener('previousQuestion', handlePrevious);
+      window.removeEventListener('nextQuestion', handleNext);
+    };
+  }, [currentIndex, questions.length]);
+
+  // Track questions shown in chat to avoid duplicates
+  const [chatShownQuestions, setChatShownQuestions] = useState<Set<string>>(new Set());
+
+  // Effect to listen for navigation events from AIHelper
+  useEffect(() => {
+    const handleRequestNextQuestionData = () => {
+      console.log('Received request for next question data');
+      console.log('Current questions:', questions.length);
+      console.log('Seen questions:', seenQuestions.size);
+      console.log('Chat shown questions:', chatShownQuestions.size);
+      
+      // Find next question that hasn't been shown in chat yet and isn't the current question
+      const currentQuestionId = questions[currentIndex]?.id;
+      let nextQuestion = null;
+      for (let i = 0; i < questions.length; i++) {
+        const question = questions[i];
+        if (!chatShownQuestions.has(question.id) && question.id !== currentQuestionId) {
+          nextQuestion = question;
+          console.log('Found next question for chat:', question.id, question);
+          break;
+        }
+      }
+
+      if (nextQuestion) {
+        console.log('Dispatching next question data:', nextQuestion);
+        // Mark this question as shown in chat
+        setChatShownQuestions(prev => new Set([...prev, nextQuestion.id]));
+        
+        // Send the next question data to AIHelper
+        window.dispatchEvent(new CustomEvent('nextQuestionDataReceived', { 
+          detail: nextQuestion 
+        }));
+      } else {
+        console.log('No more questions available for chat');
+        // No more questions available
+        window.dispatchEvent(new CustomEvent('nextQuestionDataReceived', { 
+          detail: null 
+        }));
+      }
+    };
+
+    // Listen for next question data requests
+    window.addEventListener('requestNextQuestionData', handleRequestNextQuestionData);
+
+    return () => {
+      window.removeEventListener('requestNextQuestionData', handleRequestNextQuestionData);
+    };
+  }, [questions, seenQuestions, chatShownQuestions, currentIndex]);
 
   // Get stats for the current session
   const getSessionStats = () => {
@@ -206,14 +320,13 @@ export function ApplePracticeSession({ questions, onComplete, section = 'QR' }: 
     setIsTransitioning(true);
     setShowFeedback(false);
     
-    // Scroll to top of page smoothly
-    window.scrollTo({
-      top: 0,
-      behavior: 'smooth'
-    });
-    
     // Use setTimeout to create a smooth transition
     setTimeout(() => {
+      // Scroll to top of page after transition starts
+      window.scrollTo({
+        top: 0,
+        behavior: 'smooth'
+      });
       // If we've seen all questions, complete the session
       if (seenQuestions.size >= questions.length) {
         onComplete();
@@ -244,6 +357,14 @@ export function ApplePracticeSession({ questions, onComplete, section = 'QR' }: 
       // Update current index
       setCurrentIndex(nextIndex);
       setIsTransitioning(false);
+      
+      // Additional scroll after state update to ensure we're at top
+      setTimeout(() => {
+        window.scrollTo({
+          top: 0,
+          behavior: 'smooth'
+        });
+      }, 50);
     }, 150); // Match the transition duration in the CSS
   };
 
@@ -300,9 +421,32 @@ export function ApplePracticeSession({ questions, onComplete, section = 'QR' }: 
             </div>
           </div>
           
-          {/* Right - Modern Action space */}
-          <div className="w-9 h-9 flex items-center justify-center">
-            {/* Future: Settings or menu button */}
+          {/* Right - Navigation Controls */}
+          <div className="flex items-center gap-2">
+            <button 
+              onClick={handlePreviousQuestionNav}
+              disabled={currentIndex === 0}
+              className={`w-9 h-9 flex items-center justify-center rounded-full transition-all duration-300 ease-out active:scale-90 ${
+                currentIndex === 0 
+                  ? 'opacity-30 cursor-not-allowed' 
+                  : 'hover:bg-black hover:bg-opacity-5'
+              }`}
+              aria-label="Previous question"
+            >
+              <ChevronRight className="h-5 w-5 text-[#1D1D1F] rotate-180" strokeWidth={2.5} />
+            </button>
+            <button 
+              onClick={handleNextQuestionNav}
+              disabled={currentIndex === questions.length - 1}
+              className={`w-9 h-9 flex items-center justify-center rounded-full transition-all duration-300 ease-out active:scale-90 ${
+                currentIndex === questions.length - 1 
+                  ? 'opacity-30 cursor-not-allowed' 
+                  : 'hover:bg-black hover:bg-opacity-5'
+              }`}
+              aria-label="Next question"
+            >
+              <ChevronRight className="h-5 w-5 text-[#1D1D1F]" strokeWidth={2.5} />
+            </button>
           </div>
         </div>
       </div>
@@ -603,20 +747,19 @@ export function ApplePracticeSession({ questions, onComplete, section = 'QR' }: 
               </div>
             )}
 
-            {/* AI Helper section - separate from explanation */}
+
+            {/* AI Helper integrated beneath explanation as continuous conversation */}
             {showFeedback && (
-              <div className="mt-6">
+              <div className="mt-8">
                 <AIHelper 
                   question={currentQuestion}
                   selectedAnswer={selectedAnswers[questionId] || null}
                   correctAnswer={questionContent.correctAnswer}
                   explanation={questionContent.explanation || ''}
-                  integrated={false}
+                  integrated={true}
                 />
               </div>
             )}
-
-            {/* Action buttons moved above the feedback section */}
           </div>
         )}
       </div>

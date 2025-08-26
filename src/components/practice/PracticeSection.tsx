@@ -358,6 +358,15 @@ export function PracticeSection(): JSX.Element {
         // Cast to QuestionData[] to match ApplePracticeSession props
         setQuestions(questionData as unknown as QuestionData[]);
         setIsPracticing(true);
+        
+        // Scroll to top of page when starting practice
+        setTimeout(() => {
+          window.scrollTo({
+            top: 0,
+            behavior: 'instant'
+          });
+        }, 100);
+        
         console.log('Filtered questions count:', questionData.length);
       } else {
         toast.error('No questions match your filters. Please adjust and try again.');
