@@ -1,6 +1,5 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
-import { MessageSquare, Send, Mic } from 'lucide-react';
-import { cn as cnUtil } from '../../lib/utils';
+import { Send } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import { generateFallbackResponse } from '../../services/openai';
 import '../../styles/markdown-styles.css';
@@ -63,14 +62,12 @@ interface QuestionContext {
   explanation: string;
 }
 
-export function AIHelper({ question, selectedAnswer, correctAnswer, explanation, integrated = false }: AIHelperProps) {
-  const [isExpanded] = useState(true); // Always expanded in simplified version
+export function AIHelper({ question, selectedAnswer, correctAnswer, explanation }: AIHelperProps) {
   const [messages, setMessages] = useState<Array<{ role: 'user' | 'assistant', content: string }>>([]);
   const [inputValue, setInputValue] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [isTyping, setIsTyping] = useState(false); // New state for typing indicator
   const [hasInitialized, setHasInitialized] = useState(false);
-  const useFixedInput = true; // Enable fixed input by default (changed from state to constant)
   const chatContainerRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const abortControllerRef = useRef<AbortController | null>(null);
@@ -94,8 +91,8 @@ export function AIHelper({ question, selectedAnswer, correctAnswer, explanation,
   // Track hold state in a ref to avoid stale closures in recognition callbacks
   const isHoldRecordingRef = useRef(false);
   useEffect(() => { isHoldRecordingRef.current = isHoldRecording; }, [isHoldRecording]);
-  // Aria-live status
-  const [ariaStatus, setAriaStatus] = useState('');
+  // Mobile keyboard handling
+  const [keyboardVisible, setKeyboardVisible] = useState(false);
 
   // We're using fixed input by default for all devices
   // Mobile detection has been removed as we're using the same UI for all devices
@@ -106,6 +103,32 @@ export function AIHelper({ question, selectedAnswer, correctAnswer, explanation,
       setHasInitialized(true);
     }
   }, [hasInitialized]);
+
+  // Handle mobile keyboard visibility
+  useEffect(() => {
+    const handleResize = () => {
+      if (typeof window !== 'undefined' && window.visualViewport) {
+        const viewport = window.visualViewport;
+        setKeyboardVisible(viewport.height < window.innerHeight * 0.75);
+      }
+    };
+
+    if (typeof window !== 'undefined' && window.visualViewport) {
+      window.visualViewport.addEventListener('resize', handleResize);
+      return () => {
+        if (window.visualViewport) {
+          window.visualViewport.removeEventListener('resize', handleResize);
+        }
+      };
+    }
+  }, []);
+
+  // Auto-scroll to bottom when new messages arrive
+  useEffect(() => {
+    if (chatContainerRef.current) {
+      chatContainerRef.current.scrollTop = chatContainerRef.current.scrollHeight;
+    }
+  }, [messages, isTyping]);
 
   // No automatic scrolling effect for messages - we'll only scroll when explicitly sending a message
 
@@ -171,7 +194,7 @@ export function AIHelper({ question, selectedAnswer, correctAnswer, explanation,
     const ctor = ((window as unknown as { SpeechRecognition?: unknown; webkitSpeechRecognition?: unknown }).SpeechRecognition
       || (window as unknown as { SpeechRecognition?: unknown; webkitSpeechRecognition?: unknown }).webkitSpeechRecognition) as unknown as SpeechRecognitionConstructor | undefined;
     if (!ctor) {
-      setAriaStatus('Speech recognition not supported in this browser');
+      setAriaStatus('Voice recognition not supported in this browser');
       return;
     }
     const rec = new ctor();
@@ -401,30 +424,81 @@ export function AIHelper({ question, selectedAnswer, correctAnswer, explanation,
       
 
       if (apiKey && apiKey !== 'your-openai-api-key-goes-here') {
-        // Real DeepSeek API with typing simulation (to avoid streaming corruption)
-        console.log('Using DeepSeek API (typing simulation)');
+        // Real DeepSeek API with streaming
+        console.log('Using DeepSeek API with streaming');
 
         try {
-          setIsTyping(true); // Show typing indicator
+          setIsTyping(true); // Show typing indicator briefly
           
-          // Get complete response first, then show it immediately
-          const { generateAIResponse } = await import('../../services/openai');
-          const fullResponse = await generateAIResponse(userMessage, questionContext);
-          
-          setIsTyping(false); // Hide typing indicator
-          
-          // Add the complete response immediately (no typing simulation to avoid issues)
-          setMessages(prev => [...prev, { role: 'assistant', content: fullResponse }]);
+          // Import OpenAI client
+          const OpenAI = (await import('openai')).default;
+          const client = new OpenAI({
+            apiKey: apiKey,
+            baseURL: 'https://api.deepseek.com',
+            dangerouslyAllowBrowser: true
+          });
+
+          const systemPrompt = `You are a helpful medical education assistant. The student is asking about a medical question. Here's the context:
+
+Question: ${questionContext.question}
+Options: ${questionContext.options.join(', ')}
+Correct Answer: ${questionContext.correctAnswer}
+Student's Answer: ${questionContext.selectedAnswer || 'Not answered'}
+Explanation: ${questionContext.explanation}
+
+Please provide a helpful, educational response that addresses their question while being encouraging and informative.`;
+
+          // Create streaming completion
+          const stream = await client.chat.completions.create({
+            model: 'deepseek-chat',
+            messages: [
+              { role: 'system', content: systemPrompt },
+              { role: 'user', content: userMessage }
+            ],
+            stream: true,
+            max_tokens: 1000,
+            temperature: 0.7
+          });
+
+          setIsTyping(false); // Hide typing indicator once streaming starts
+          let accumulatedResponse = '';
+
+          // Process streaming response
+          for await (const chunk of stream) {
+            if (abortControllerRef.current?.signal.aborted) {
+              break;
+            }
+
+            const content = chunk.choices[0]?.delta?.content || '';
+            if (content) {
+              accumulatedResponse += content;
+              
+              // Update the last assistant message with accumulated content
+              setMessages(prev => {
+                const newMessages = [...prev];
+                const lastMessage = newMessages[newMessages.length - 1];
+                if (lastMessage && lastMessage.role === 'assistant') {
+                  lastMessage.content = accumulatedResponse;
+                } else {
+                  newMessages.push({ role: 'assistant', content: accumulatedResponse });
+                }
+                return newMessages;
+              });
+            }
+          }
         } catch (error) {
           if ((error as Error).name !== 'AbortError') {
             console.error('Error generating AI response:', error);
             
+            setIsTyping(false);
             // Update the last message with an error
             setMessages(prev => {
               const newMessages = [...prev];
               const lastMessage = newMessages[newMessages.length - 1];
-              if (lastMessage.role === 'assistant') {
+              if (lastMessage && lastMessage.role === 'assistant') {
                 lastMessage.content = 'Sorry, I encountered an error. Please try again.';
+              } else {
+                newMessages.push({ role: 'assistant', content: 'Sorry, I encountered an error. Please try again.' });
               }
               return newMessages;
             });
@@ -456,46 +530,100 @@ export function AIHelper({ question, selectedAnswer, correctAnswer, explanation,
 
   return (
     <div className="space-y-3">
-      {/* Show messages directly without container */}
+      {/* Chat messages */}
       {messages.length > 0 && (
-        <div ref={chatContainerRef} className="space-y-3">
+        <div className="chat-messages-container space-y-4 mb-4">
           {messages
             .filter(message => message.content.trim()) // Filter out empty messages
             .map((message, index) => (
-            <div 
-              key={index} 
-              className={cn(
-                "p-4 rounded-xl max-w-[85%]",
-                message.role === "user" 
-                  ? "bg-[#007AFF] text-white ml-auto" 
-                  : "bg-[#F2F2F7] text-[#1D1D1F]"
-              )}
+            <div
+              key={index}
+              className={`chat-message max-w-[85%] ${
+                message.role === 'user'
+                  ? 'ml-auto'
+                  : ''
+              }`}
               style={{
-                fontSize: '17px',
-                lineHeight: '1.7',
+                fontSize: '16px',
+                lineHeight: '1.5',
                 letterSpacing: '-0.01em',
-                fontWeight: '400'
+                fontWeight: '400',
+                padding: message.role === 'user' ? '12px 16px' : '16px 20px',
+                borderRadius: message.role === 'user' ? '20px 20px 6px 20px' : '20px 20px 20px 6px',
+                background: message.role === 'user' 
+                  ? '#007AFF' 
+                  : 'rgba(242, 242, 247, 0.8)',
+                color: message.role === 'user' ? 'white' : '#1D1D1F',
+                backdropFilter: message.role === 'assistant' ? 'blur(10px)' : 'none',
+                border: message.role === 'assistant' ? '1px solid rgba(0,0,0,0.05)' : 'none',
+                marginBottom: '8px'
               }}
             >
               <div className="markdown-content">
                 <ReactMarkdown
                   components={{
-                    p: ({children}) => <p style={{ margin: '0 0 12px 0', fontSize: '17px', lineHeight: '1.7', letterSpacing: '-0.01em' }}>{children}</p>,
-                    strong: ({children}) => <strong style={{ fontWeight: '600', color: message.role === 'user' ? 'white' : '#1D1D1F' }}>{children}</strong>,
-                    em: ({children}) => <em style={{ fontStyle: 'italic', color: message.role === 'user' ? 'rgba(255,255,255,0.9)' : '#3A3A3C' }}>{children}</em>,
-                    ul: ({children}) => <ul style={{ margin: '8px 0', paddingLeft: '20px', fontSize: '17px', lineHeight: '1.7' }}>{children}</ul>,
-                    ol: ({children}) => <ol style={{ margin: '8px 0', paddingLeft: '20px', fontSize: '17px', lineHeight: '1.7' }}>{children}</ol>,
-                    li: ({children}) => <li style={{ margin: '4px 0', fontSize: '17px', lineHeight: '1.7' }}>{children}</li>,
+                    p: ({children}) => <p style={{ 
+                      margin: '0 0 8px 0', 
+                      fontSize: '16px', 
+                      lineHeight: '1.5', 
+                      letterSpacing: '-0.01em',
+                      color: message.role === 'user' ? 'rgba(255,255,255,0.95)' : '#1D1D1F'
+                    }}>{children}</p>,
+                    strong: ({children}) => <strong style={{ 
+                      fontWeight: '600', 
+                      color: message.role === 'user' ? 'white' : '#1D1D1F' 
+                    }}>{children}</strong>,
+                    em: ({children}) => <em style={{ 
+                      fontStyle: 'italic', 
+                      color: message.role === 'user' ? 'rgba(255,255,255,0.85)' : '#3A3A3C' 
+                    }}>{children}</em>,
+                    ul: ({children}) => <ul style={{ 
+                      margin: '6px 0', 
+                      paddingLeft: '18px', 
+                      fontSize: '16px', 
+                      lineHeight: '1.5' 
+                    }}>{children}</ul>,
+                    ol: ({children}) => <ol style={{ 
+                      margin: '6px 0', 
+                      paddingLeft: '18px', 
+                      fontSize: '16px', 
+                      lineHeight: '1.5' 
+                    }}>{children}</ol>,
+                    li: ({children}) => <li style={{ 
+                      margin: '2px 0', 
+                      fontSize: '16px', 
+                      lineHeight: '1.5',
+                      color: message.role === 'user' ? 'rgba(255,255,255,0.95)' : '#1D1D1F'
+                    }}>{children}</li>,
                     code: ({children}) => <code style={{ 
-                      backgroundColor: message.role === 'user' ? 'rgba(255,255,255,0.2)' : 'rgba(0,0,0,0.08)', 
+                      backgroundColor: message.role === 'user' ? 'rgba(255,255,255,0.15)' : 'rgba(0,0,0,0.06)', 
                       padding: '2px 6px', 
-                      borderRadius: '4px', 
-                      fontSize: '16px',
-                      fontFamily: 'SF Mono, Monaco, monospace'
+                      borderRadius: '6px', 
+                      fontSize: '15px',
+                      fontFamily: 'SF Mono, Monaco, monospace',
+                      color: message.role === 'user' ? 'rgba(255,255,255,0.9)' : '#1D1D1F'
                     }}>{children}</code>,
-                    h1: ({children}) => <h1 style={{ fontSize: '20px', fontWeight: '600', margin: '16px 0 8px 0', lineHeight: '1.4' }}>{children}</h1>,
-                    h2: ({children}) => <h2 style={{ fontSize: '18px', fontWeight: '600', margin: '14px 0 6px 0', lineHeight: '1.4' }}>{children}</h2>,
-                    h3: ({children}) => <h3 style={{ fontSize: '17px', fontWeight: '600', margin: '12px 0 4px 0', lineHeight: '1.4' }}>{children}</h3>
+                    h1: ({children}) => <h1 style={{ 
+                      fontSize: '18px', 
+                      fontWeight: '600', 
+                      margin: '12px 0 6px 0', 
+                      lineHeight: '1.3',
+                      color: message.role === 'user' ? 'white' : '#1D1D1F'
+                    }}>{children}</h1>,
+                    h2: ({children}) => <h2 style={{ 
+                      fontSize: '17px', 
+                      fontWeight: '600', 
+                      margin: '10px 0 5px 0', 
+                      lineHeight: '1.3',
+                      color: message.role === 'user' ? 'white' : '#1D1D1F'
+                    }}>{children}</h2>,
+                    h3: ({children}) => <h3 style={{ 
+                      fontSize: '16px', 
+                      fontWeight: '600', 
+                      margin: '8px 0 4px 0', 
+                      lineHeight: '1.3',
+                      color: message.role === 'user' ? 'white' : '#1D1D1F'
+                    }}>{children}</h3>
                   }}
                 >
                   {message.content}
@@ -520,11 +648,8 @@ export function AIHelper({ question, selectedAnswer, correctAnswer, explanation,
 
       
       {/* Input area for interaction */}
-      <div className="mt-4">
+      <div className="mt-4" style={{ marginBottom: keyboardVisible ? '20px' : '0px' }}>
         <div className="chat-input-pill">
-          <div className="pill-icon-left" aria-hidden>
-            <MessageSquare className="h-4 w-4" />
-          </div>
           <input
             type="text"
             value={inputValue}
@@ -539,29 +664,7 @@ export function AIHelper({ question, selectedAnswer, correctAnswer, explanation,
             className="pill-input"
             disabled={isLoading}
           />
-          <button
-            type="button"
-            className={cn(
-              'pill-icon',
-              isRecording && 'recording',
-              isHoldRecording && 'holding',
-              (isRecording || isHoldRecording) && 'animate-pulse'
-            )}
-            aria-label={isHoldRecording ? 'Recording - Release to send' : 'Voice'}
-            aria-pressed={isRecording}
-            title={speechSupported ? (isRecording ? 'Recording… Release to send' : 'Hold to talk') : 'Voice not supported'}
-            onPointerDown={handleMicPointerDown}
-            onPointerUp={handleMicPointerUp}
-            onPointerLeave={handleMicPointerCancel}
-            onPointerCancel={handleMicPointerCancel}
-            disabled={!speechSupported}
-            style={{
-              backgroundColor: isHoldRecording ? '#ff4444' : undefined,
-              color: isHoldRecording ? 'white' : undefined
-            }}
-          >
-            <Mic className="h-5 w-5" />
-          </button>
+
           <button
             type="button"
             onClick={handleSendMessage}
