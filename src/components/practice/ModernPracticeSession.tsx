@@ -504,6 +504,8 @@ export function ModernPracticeSession({ questions, onComplete }: PracticeSession
       onComplete();
     } else {
       // Move to next question
+      // Jump to top of page instantly
+      window.scrollTo({ top: 0, behavior: 'auto' });
       setCurrentIndex(currentIndex + 1);
       setShowExplanation(false);
     }
@@ -511,6 +513,8 @@ export function ModernPracticeSession({ questions, onComplete }: PracticeSession
   
   // Handle moving to previous question
   const handlePreviousQuestion = () => {
+    // Jump to top of page instantly
+    window.scrollTo({ top: 0, behavior: 'auto' });
     setCurrentIndex(prev => Math.max(prev - 1, 0));
     setShowExplanation(false);
   };

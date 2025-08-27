@@ -1,8 +1,20 @@
 /* Apple HIG-compliant styles for the PracticeSection component */
 
+:root {
+  --card-background: white;
+}
+
+.dark {
+  --card-background: #1F2937;
+}
+
 .apple-section-container {
   margin-bottom: 32px;
   padding: 0;
+}
+
+.dark .apple-section-container {
+  background-color: transparent;
 }
 
 .apple-heading-2 {
@@ -171,9 +183,19 @@
   transition: all 0.15s ease;
 }
 
+.dark .apple-topic-item {
+  background-color: #1F2937;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
 .apple-topic-item.selected {
   border-color: #007AFF;
   background-color: #F2F9FF;
+}
+
+.dark .apple-topic-item.selected {
+  border-color: #3B82F6;
+  background-color: #1E3A8A;
 }
 
 .apple-topic-header {
@@ -188,8 +210,16 @@
   background-color: #F5F5F7;
 }
 
+.dark .apple-topic-header:hover {
+  background-color: #374151;
+}
+
 .apple-topic-item.selected .apple-topic-header:hover {
   background-color: #E5F2FF;
+}
+
+.dark .apple-topic-item.selected .apple-topic-header:hover {
+  background-color: #1E40AF;
 }
 
 .apple-checkbox {
@@ -205,6 +235,11 @@
   background-color: white;
   cursor: pointer;
   transition: all 0.15s ease;
+}
+
+.dark .apple-checkbox {
+  background-color: #374151;
+  border-color: #6B7280;
 }
 
 .apple-checkbox.selected {
@@ -254,9 +289,17 @@
   margin-bottom: 2px;
 }
 
+.dark .apple-topic-title {
+  color: #F5F5F7;
+}
+
 .apple-topic-subtitle {
   font-size: 13px;
   color: #86868B;
+}
+
+.dark .apple-topic-subtitle {
+  color: #9CA3AF;
 }
 
 .apple-chevron {
@@ -284,6 +327,11 @@
   overflow: hidden;
 }
 
+.dark .apple-segmented-control {
+  background-color: #374151;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+}
+
 .apple-segment {
   flex: 1 1 0;
   min-width: 0;
@@ -305,6 +353,11 @@
 .apple-segment.selected {
   background-color: white;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.dark .apple-segment.selected {
+  background-color: #1F2937;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
 }
 
 .apple-segment.disabled {
@@ -345,6 +398,10 @@
   max-width: 100%;
 }
 
+.dark .apple-segment-title {
+  color: #F5F5F7;
+}
+
 .apple-segment-subtitle {
   font-size: 12px;
   color: #86868B;
@@ -352,6 +409,10 @@
   overflow: hidden;
   text-overflow: ellipsis;
   max-width: 100%;
+}
+
+.dark .apple-segment-subtitle {
+  color: #9CA3AF;
 }
 
 .apple-section-item.selected {

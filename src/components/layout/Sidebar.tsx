@@ -3,6 +3,7 @@ import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
 import { Sheet, SheetContent, SheetTrigger, SheetTitle } from '@/components/ui/sheet';
+import { FontSizeToggle } from '@/components/ui/FontSizeToggle';
 import {
   Target,
   Clock,
@@ -70,6 +71,14 @@ const SidebarContent = ({ currentPage, onNavigate }: Pick<SidebarProps, 'current
             <span className="apple-sidebar-label">Mock Exams</span>
             <ChevronRight className="apple-sidebar-chevron" />
           </Button>
+        </div>
+      </div>
+      
+      {/* Accessibility Section */}
+      <div className="apple-sidebar-section">
+        <h3 className="apple-sidebar-heading">Accessibility</h3>
+        <div className="apple-sidebar-nav">
+          <FontSizeToggle />
         </div>
       </div>
       

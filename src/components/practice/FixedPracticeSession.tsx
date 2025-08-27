@@ -269,6 +269,8 @@ export function PracticeSession({ questions, onComplete }: PracticeSessionProps)
     }
 
     // Otherwise, move to the next question
+    // Jump to top of page instantly
+    window.scrollTo({ top: 0, behavior: 'auto' });
     setCurrentIndex(currentIndex + 1);
     setShowFeedback(false);
     setTimeRemaining(120); // Reset timer for the next question

@@ -11,6 +11,7 @@ import {
 import { cn } from '@/lib/utils';
 import { AIHelper } from './AIHelper';
 import { ThemeToggle } from '../ui/ThemeToggle';
+import { FontSizeToggle } from '../ui/FontSizeToggle';
 import './apple-question-styles.css';
 import ReactMarkdown from 'react-markdown';
 
@@ -166,6 +167,13 @@ export function ApplePracticeSession({ questions, onComplete }: PracticeSessionP
         setCurrentIndex(currentIndex - 1);
         setShowFeedback(false);
         setIsTransitioning(false);
+        // Clear any selected answer for the previous question
+        const prevQuestionId = questions[currentIndex - 1]?.id || `question-${currentIndex - 1}`;
+        setSelectedAnswers(prev => {
+          const newAnswers = { ...prev };
+          delete newAnswers[prevQuestionId];
+          return newAnswers;
+        });
       }, 150);
     }
   };
@@ -173,10 +181,19 @@ export function ApplePracticeSession({ questions, onComplete }: PracticeSessionP
   const handleNextQuestionNav = () => {
     if (currentIndex < questions.length - 1) {
       setIsTransitioning(true);
+      // Jump to top of page instantly
+      window.scrollTo({ top: 0, behavior: 'auto' });
       setTimeout(() => {
         setCurrentIndex(currentIndex + 1);
         setShowFeedback(false);
         setIsTransitioning(false);
+        // Clear any selected answer for the new question
+        const nextQuestionId = questions[currentIndex + 1]?.id || `question-${currentIndex + 1}`;
+        setSelectedAnswers(prev => {
+          const newAnswers = { ...prev };
+          delete newAnswers[nextQuestionId];
+          return newAnswers;
+        });
       }, 150);
     }
   };
@@ -247,10 +264,14 @@ export function ApplePracticeSession({ questions, onComplete }: PracticeSessionP
           </div>
 
           {/* Sidebar Footer */}
-          <div className="p-4 border-t border-gray-200 dark:border-gray-700">
+          <div className="p-4 border-t border-gray-200 dark:border-gray-700 space-y-4">
             <div className="flex items-center justify-between">
               <span className="text-sm text-gray-600 dark:text-gray-400">Theme</span>
               <ThemeToggle />
+            </div>
+            <div className="space-y-2">
+              <span className="text-sm text-gray-600 dark:text-gray-400">Font Size</span>
+              <FontSizeToggle />
             </div>
           </div>
         </div>
@@ -355,9 +376,7 @@ export function ApplePracticeSession({ questions, onComplete }: PracticeSessionP
                 width: '100%',
                 alignItems: 'flex-start'
               }}>
-                <div className="text-gray-900 dark:text-gray-100" style={{
-                  fontSize: '16px',
-                  fontWeight: 400,
+                <div className="text-gray-900 dark:text-gray-100 apple-question-text" style={{
                   margin: '0 0 20px 0',
                   lineHeight: '1.7',
                   width: '100%',
@@ -396,7 +415,7 @@ export function ApplePracticeSession({ questions, onComplete }: PracticeSessionP
                     <div className="flex items-center justify-center w-8 h-8 rounded-xl bg-[#F5F5F7] dark:bg-gray-700 mr-3 font-medium text-[14px] text-[#1D1D1F] dark:text-gray-100">
                       {optionLetter}
                     </div>
-                    <div className="flex-1 text-[16px] text-gray-900 dark:text-gray-100 font-normal leading-relaxed">{optionText}</div>
+                    <div className="flex-1 apple-answer-text text-gray-900 dark:text-gray-100 leading-relaxed">{optionText}</div>
                     {showFeedback && (
                       <div className="ml-2">
                         {isCorrect && (
@@ -414,11 +433,15 @@ export function ApplePracticeSession({ questions, onComplete }: PracticeSessionP
 
             {showFeedback && (
               <div className={cn(
-                "rounded-2xl p-4 mb-6 flex items-center gap-3",
+                "rounded-2xl p-4 mb-6 flex items-center gap-3 apple-slide-up",
                 selectedAnswers[questionId] === questionContent.correctAnswer 
                   ? "bg-[rgba(52,199,89,0.08)] border border-[#34C759]" 
                   : "bg-[rgba(255,59,48,0.08)] border border-[#FF3B30]"
-              )}>
+              )} style={{
+                width: '100%',
+                alignItems: 'flex-start',
+                marginLeft: '0'
+              }}>
                 {selectedAnswers[questionId] === questionContent.correctAnswer ? (
                   <CheckCircle className="h-5 w-5 text-[#34C759] flex-shrink-0" />
                 ) : (
@@ -433,22 +456,21 @@ export function ApplePracticeSession({ questions, onComplete }: PracticeSessionP
             {showFeedback && questionContent.explanation && (
               <div className="apple-explanation bg-white dark:bg-gray-800 border border-[#E5E5EA] dark:border-gray-700 rounded-xl p-6 mt-6 apple-fade-in">
                 <BookOpen className="h-6 w-6 text-[#007AFF] mb-4" />
-                <span className="font-semibold text-[16px] text-gray-900 dark:text-gray-100 mb-4 block">Explanation</span>
+                <span className="explanation-title font-semibold text-gray-900 dark:text-gray-100 mb-4 block">Explanation</span>
                 
                 <div className="explanation-content prose prose-lg max-w-none text-gray-900 dark:text-gray-100" style={{
-                  fontSize: '16px',
                   lineHeight: '1.7'
                 }}>
                   <ReactMarkdown
                     components={{
-                      h1: ({children}) => <h1 className="text-xl font-bold text-gray-900 dark:text-gray-100 mb-4 mt-6">{children}</h1>,
-                      h2: ({children}) => <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-3 mt-5">{children}</h2>,
-                      h3: ({children}) => <h3 className="text-base font-semibold text-gray-900 dark:text-gray-100 mb-2 mt-4">{children}</h3>,
+                      h1: ({children}) => <h1 className="mb-4 mt-6">{children}</h1>,
+                      h2: ({children}) => <h2 className="mb-3 mt-5">{children}</h2>,
+                      h3: ({children}) => <h3 className="mb-2 mt-4">{children}</h3>,
                       p: ({children}) => <p className="mb-4 leading-relaxed">{children}</p>,
                       ul: ({children}) => <ul className="mb-4 space-y-2">{children}</ul>,
                       ol: ({children}) => <ol className="mb-4 space-y-2 list-decimal list-inside">{children}</ol>,
                       li: ({children}) => <li className="flex items-start space-x-2"><span className="text-blue-500 font-bold mt-0.5">•</span><span className="flex-1">{children}</span></li>,
-                      strong: ({children}) => <strong className="font-semibold px-1 rounded text-gray-900 dark:text-gray-100 bg-yellow-50 dark:bg-yellow-900/30">{children}</strong>,
+                      strong: ({children}) => <strong className="px-1 rounded text-gray-900 dark:text-gray-100 bg-yellow-50 dark:bg-yellow-900/30">{children}</strong>,
                       em: ({children}) => <em className="italic text-gray-700 dark:text-gray-300">{children}</em>,
                       code: ({children}) => <code className="bg-gray-100 dark:bg-gray-700 px-2 py-1 rounded text-sm font-mono">{children}</code>,
                       blockquote: ({children}) => <blockquote className="border-l-4 border-blue-500 pl-4 my-4 italic text-gray-700 dark:text-gray-300">{children}</blockquote>

@@ -528,9 +528,9 @@ export function PracticeSection(): JSX.Element {
                       rgba(16, 185, 129, 0.08) ${(getSectionProgressFromStorage(section).correct / (sectionQuestionCounts[section] || 1)) * 100}%, 
                       rgba(239, 68, 68, 0.08) ${(getSectionProgressFromStorage(section).correct / (sectionQuestionCounts[section] || 1)) * 100}%, 
                       rgba(239, 68, 68, 0.08) ${((getSectionProgressFromStorage(section).correct + getSectionProgressFromStorage(section).incorrect) / (sectionQuestionCounts[section] || 1)) * 100}%, 
-                      white ${((getSectionProgressFromStorage(section).correct + getSectionProgressFromStorage(section).incorrect) / (sectionQuestionCounts[section] || 1)) * 100}%, 
-                      white 100%)` :
-                    (isSelected ? '#ebf5ff' : 'white')
+                      var(--card-background) ${((getSectionProgressFromStorage(section).correct + getSectionProgressFromStorage(section).incorrect) / (sectionQuestionCounts[section] || 1)) * 100}%, 
+                      var(--card-background) 100%)` :
+                    undefined
                 }}
               >
                 <div className={`apple-section-card-content`}>

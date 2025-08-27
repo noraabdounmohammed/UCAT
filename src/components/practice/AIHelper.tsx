@@ -1,34 +1,9 @@
-import React, { useState, useRef, useEffect, useCallback } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import ReactMarkdown from 'react-markdown';
 import { generateFallbackResponse } from '../../services/openai';
-import { Send, Mic, Square } from 'lucide-react';
+import { ChatInput } from '../ui/ChatInput';
 import '../../styles/markdown-styles.css';
 import './apple-fixed-input.css';
-
-// Minimal typings for Web Speech API to avoid 'any'
-interface ISpeechRecognitionEvent {
-  resultIndex: number;
-  results: ArrayLike<{ isFinal: boolean; 0: { transcript: string } }>;
-}
-
-
-interface ISpeechRecognitionErrorEvent {
-  error: string;
-  message?: string;
-}
-
-interface ISpeechRecognition {
-  continuous: boolean;
-  interimResults: boolean;
-  lang: string;
-  onresult: ((e: ISpeechRecognitionEvent) => void) | null;
-  onerror: ((e: ISpeechRecognitionErrorEvent) => void) | null;
-  onend: (() => void) | null;
-  start: () => void;
-  stop: () => void;
-}
-
-// Removed tidyAssistantMarkdown function as it was causing text duplication issues with streaming
 
 // Interface matching the question structure from ApplePracticeSession
 interface QuestionData {
@@ -65,23 +40,13 @@ interface AIHelperProps {
   integrated?: boolean; // New prop to indicate if the helper is integrated in the explanation box
 }
 
-interface QuestionContext {
-  question: string;
-  options: string[];
-  correctAnswer: string;
-  selectedAnswer: string | null;
-  explanation: string;
-}
-
 export function AIHelper({ question, correctAnswer, selectedAnswer, explanation }: AIHelperProps) {
   const [messages, setMessages] = useState<Array<ChatMessage>>([]);
-  const [inputValue, setInputValue] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [isTyping, setIsTyping] = useState(false); // New state for typing indicator
   const [isStreaming, setIsStreaming] = useState(false); // Track if currently streaming
   const [hasInitialized, setHasInitialized] = useState(false);
   const chatContainerRef = useRef<HTMLDivElement>(null);
-  const inputRef = useRef<HTMLTextAreaElement>(null);
   const abortControllerRef = useRef<AbortController | null>(null);
   
   // State for next question interactions
@@ -95,30 +60,11 @@ export function AIHelper({ question, correctAnswer, selectedAnswer, explanation 
     explanation: string;
     isCorrect: boolean;
   } | null>(null);
-  // Voice mode state
-  const [isRecording, setIsRecording] = useState(false);
-  const [interimTranscript, setInterimTranscript] = useState('');
-  const [autoSendOnPause] = useState(true);
-  const [language] = useState<string>(() =>
-    typeof navigator !== 'undefined' && navigator.language ? navigator.language : 'en-US'
-  );
-  const [silenceMs] = useState(1000);
-  const recognitionRef = useRef<ISpeechRecognition | null>(null);
-  const silenceTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const suppressAutoSendRef = useRef(false);
-  // Mobile keyboard handling
 
-  // We're using fixed input by default for all devices
-  // Mobile detection has been removed as we're using the same UI for all devices
-
-  // Initialize without welcome message - force re-render to fix first message alignment
+  // Initialize without welcome message
   useEffect(() => {
     if (!hasInitialized) {
       setHasInitialized(true);
-      // Force a re-render after initialization to ensure proper message alignment
-      setTimeout(() => {
-        setMessages(prev => [...prev]);
-      }, 0);
     }
   }, [hasInitialized]);
 
@@ -185,399 +131,17 @@ export function AIHelper({ question, correctAnswer, selectedAnswer, explanation 
       chatContainerRef.current.scrollTop = chatContainerRef.current.scrollHeight;
     }
     
-    // Force re-render for alignment fix on every message change
-    if (messages.length > 0) {
-      const timeoutId = setTimeout(() => {
-        // Trigger a minimal state update to force re-render
-        setMessages(prev => [...prev]);
-      }, 5);
-      return () => clearTimeout(timeoutId);
-    }
   }, [messages, isTyping]);
 
-  // No automatic scrolling effect for messages - we'll only scroll when explicitly sending a message
-
-  // Enhanced mobile detection and speech API support
-  const isMobile = typeof window !== 'undefined' && (
-    /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) ||
-    ('ontouchstart' in window) ||
-    (navigator.maxTouchPoints > 0)
-  );
-
-  const speechSupported = typeof window !== 'undefined' && (
-    ('SpeechRecognition' in window) || 
-    ('webkitSpeechRecognition' in window)
-  ) && (
-    // iOS Safari has limited support - only allow on iOS 14.5+
-    !(/iPad|iPhone|iPod/.test(navigator.userAgent)) ||
-    (parseInt(navigator.userAgent.match(/OS (\d+)_/)?.[1] || '0') >= 14)
-  );
-
-  // Keep a stable ref to send handler to avoid useCallback dependency churn
-  const sendMessageRef = useRef<(() => void) | null>(null);
-  useEffect(() => {
-    // assign on mount; updated handler will be captured on next renders if needed
-    sendMessageRef.current = () => handleSendMessage();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
 
 
 
-  // Stop voice recognition (defined before startVoice to avoid use-before-declare)
-  const stopVoice = useCallback(() => {
-    try { recognitionRef.current?.stop(); } catch {
-      // ignore stop errors
-    }
-    recognitionRef.current = null;
-    setIsRecording(false);
-    if (silenceTimerRef.current) { clearTimeout(silenceTimerRef.current); silenceTimerRef.current = null; }
-  }, []);
-
-  // Separate function to initialize speech recognition
-  const initializeSpeechRecognition = useCallback(() => {
-    // Enhanced constructor detection for mobile
-    const SpeechRecognition = (window as unknown as { SpeechRecognition?: unknown; webkitSpeechRecognition?: unknown }).SpeechRecognition || 
-                             (window as unknown as { SpeechRecognition?: unknown; webkitSpeechRecognition?: unknown }).webkitSpeechRecognition;
-    if (!SpeechRecognition) {
-      console.error('Speech recognition not supported on this device');
-      alert('Voice input is not supported on this device or browser.');
-      return;
-    }
-    
-    const rec = new (SpeechRecognition as unknown as new () => ISpeechRecognition)();
-    recognitionRef.current = rec;
-    
-    // Mobile-optimized settings
-    rec.continuous = !isMobile; // On mobile, use single recognition sessions
-    rec.interimResults = true;
-    rec.lang = language || 'en-US';
-    setInterimTranscript('');
-    setIsRecording(true);
-
-    const clearSilenceTimer = () => { if (silenceTimerRef.current) { clearTimeout(silenceTimerRef.current); silenceTimerRef.current = null; } };
-    const armSilenceTimer = () => {
-      clearSilenceTimer();
-      if (!autoSendOnPause) return;
-      silenceTimerRef.current = setTimeout(() => {
-        // On silence, stop and auto-send current text if any
-        if (!suppressAutoSendRef.current) {
-          stopVoice();
-          const text = (interimTranscript || inputValue).trim();
-          if (text) {
-            setInputValue(text);
-            if (sendMessageRef.current) {
-              sendMessageRef.current();
-            }
-          }
-        }
-      }, silenceMs);
-    };
-
-    rec.onresult = (e: ISpeechRecognitionEvent) => {
-      let interim = '';
-      let finalText = '';
-      for (let i = e.resultIndex; i < e.results.length; i++) {
-        const t = e.results[i][0]?.transcript || '';
-        if (e.results[i].isFinal) finalText += t;
-        else interim += t;
-      }
-      if (interim) {
-        setInterimTranscript(interim);
-        setInputValue(interim);
-        armSilenceTimer();
-      }
-      if (finalText) {
-        setInterimTranscript('');
-        setInputValue(finalText.trim());
-        if (autoSendOnPause && !suppressAutoSendRef.current) {
-          clearSilenceTimer();
-          stopVoice();
-          if (sendMessageRef.current) {
-            sendMessageRef.current();
-          }
-        }
-      }
-    };
-
-    rec.onerror = (event: ISpeechRecognitionErrorEvent) => {
-      console.error('Speech recognition error:', event.error);
-      setIsRecording(false);
-      recognitionRef.current = null;
-      clearSilenceTimer();
-      
-      // Mobile-specific error handling
-      if (isMobile) {
-        const errorMessage = event.error === 'not-allowed' 
-          ? 'Microphone access denied. Please enable microphone permissions in your browser settings.'
-          : event.error === 'no-speech'
-          ? 'No speech detected. Please try speaking again.'
-          : 'Voice input error. Please try again.';
-        
-        // Show user-friendly error message
-        setTimeout(() => alert(errorMessage), 100);
-      }
-    };
-    rec.onend = () => {
-      setIsRecording(false);
-      recognitionRef.current = null;
-      clearSilenceTimer();
-    };
-
-    try {
-      rec.start();
-    } catch (err) {
-      setIsRecording(false);
-      recognitionRef.current = null;
-      console.error('Failed to start recognition:', err);
-    }
-  }, [isMobile, language, autoSendOnPause, silenceMs, interimTranscript, inputValue, stopVoice]);
-
-  // Start voice recognition with mobile-specific handling
-  const startVoice = useCallback(() => {
-    if (!speechSupported || isRecording) return;
-    
-    // Request microphone permissions first (especially important on mobile)
-    if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
-      navigator.mediaDevices.getUserMedia({ audio: true })
-        .then(() => {
-          // Permission granted, proceed with speech recognition
-          initializeSpeechRecognition();
-        })
-        .catch((error) => {
-          console.error('Microphone permission denied:', error);
-          alert('Microphone access is required for voice input. Please enable microphone permissions and try again.');
-        });
-    } else {
-      // Fallback for older browsers
-      initializeSpeechRecognition();
-    }
-  }, [speechSupported, isRecording, initializeSpeechRecognition]);
 
 
 
-  // Auto-scroll input to end when text changes (for long voice transcriptions)
-  useEffect(() => {
-    if (inputRef.current) {
-      inputRef.current.scrollLeft = inputRef.current.scrollWidth;
-    }
-  }, [inputValue]);
-
-  // Input handler - removed debounce as it was causing text to change unexpectedly
-  const handleInputChange = useCallback((e: React.ChangeEvent<HTMLTextAreaElement>) => {
-    setInputValue(e.target.value);
-  }, []);
 
 
-  // Function to handle sending a message
-  const handleSendMessage = useCallback(async () => {
-    if (!inputValue.trim()) return;
 
-    // Cancel any previous request
-    if (abortControllerRef.current) {
-      abortControllerRef.current.abort();
-    }
-    
-    // Create new abort controller for this request
-    abortControllerRef.current = new AbortController();
-
-    // Add user message to chat with immediate alignment fix
-    const userMessage = inputValue.trim();
-    const newUserMessage = { role: 'user' as const, content: userMessage };
-    setMessages(prev => [...prev, newUserMessage]);
-    setInputValue('');
-    setIsLoading(true);
-    
-    // Force immediate re-render to ensure proper alignment
-    setTimeout(() => {
-      setMessages(prev => [...prev]);
-    }, 10);
-    
-    // Check if user is asking for next question
-    if (userMessage.toLowerCase().includes('next question') || userMessage.toLowerCase().includes('show me the next question')) {
-      // Dispatch event to get next question data directly without intermediate message
-      setTimeout(() => {
-        window.dispatchEvent(new CustomEvent('requestNextQuestionData'));
-      }, 500);
-      
-      setIsLoading(false);
-      return;
-    }
-    
-    // Add an empty assistant message that will be filled as tokens arrive
-    setMessages(prev => [...prev, { role: 'assistant' as const, content: '' }]);
-    
-    // Scroll the entire page to the bottom when sending a message
-    setTimeout(() => {
-      window.scrollTo({
-        top: document.body.scrollHeight,
-        behavior: 'smooth'
-      });
-    }, 100);
-
-    try {
-      // Extract options from the question
-      const options = question.options.map((option) => {
-        if (typeof option === 'string') {
-          return option;
-        } else {
-          return option.text;
-        }
-      });
-      
-      // Get the question text from the appropriate field
-      const questionText = question.question || question.question_stem || question.individual_question || '';
-      
-      // Create context for the AI
-      const questionContext: QuestionContext = {
-        question: questionText,
-        options: options,
-        correctAnswer: correctAnswer,
-        selectedAnswer: selectedAnswer,
-        explanation: explanation
-      };
-
-      // Check if we have an API key
-      const apiKey = import.meta.env.VITE_OPENAI_API_KEY;
-      console.log('API Key check:', { 
-        hasKey: !!apiKey, 
-        isDefault: apiKey === 'your-openai-api-key-goes-here',
-        keyLength: apiKey ? apiKey.length : 0 
-      });
-      
-
-      if (apiKey && apiKey !== 'your-openai-api-key-goes-here') {
-        // Real DeepSeek API with streaming
-        console.log('Using DeepSeek API with streaming');
-
-        try {
-          setIsLoading(true);
-          setIsTyping(true); // Show typing indicator immediately
-          setIsStreaming(true); // Mark as streaming
-          
-          // Import OpenAI client
-          const OpenAI = (await import('openai')).default;
-          const client = new OpenAI({
-            apiKey: import.meta.env.VITE_OPENAI_API_KEY,
-            baseURL: 'https://api.deepseek.com',
-            dangerouslyAllowBrowser: true
-          });
-
-          // Use the most recently answered question if available, otherwise fall back to initial question
-          const contextToUse = lastAnsweredQuestion || questionContext;
-          
-          const systemPrompt = `You are a direct medical education assistant. Provide concise, educational responses without fluff or pleasantries. Get straight to the medical content.
-
-Question: ${contextToUse.question}
-Options: ${contextToUse.options.join(', ')}
-${contextToUse.selectedAnswer ? `Selected Answer: ${contextToUse.selectedAnswer}` : ''}
-${contextToUse.correctAnswer ? `Correct Answer: ${contextToUse.correctAnswer}` : ''}
-${contextToUse.explanation ? `Explanation: ${contextToUse.explanation}` : ''}
-
-Be direct and educational. No "Of course!" or "That's an excellent question" - just provide the medical information.`;
-
-          // Create streaming completion
-          const stream = await client.chat.completions.create({
-            model: 'deepseek-chat',
-            messages: [
-              { role: 'system', content: systemPrompt },
-              { role: 'user', content: userMessage }
-            ],
-            stream: true,
-            max_tokens: 4000,
-            temperature: 0.7
-          });
-
-          setIsTyping(false); // Hide typing indicator once streaming starts
-          let accumulatedResponse = '';
-
-          // Process streaming response
-          for await (const chunk of stream) {
-            if (abortControllerRef.current?.signal.aborted) {
-              break;
-            }
-
-            const content = chunk.choices[0]?.delta?.content || '';
-            if (content) {
-              accumulatedResponse += content;
-              
-              // Update the last assistant message with accumulated content
-              setMessages(prev => {
-                const newMessages = [...prev];
-                const lastMessage = newMessages[newMessages.length - 1];
-                if (lastMessage && lastMessage.role === 'assistant') {
-                  lastMessage.content = accumulatedResponse;
-                } else {
-                  newMessages.push({ role: 'assistant', content: accumulatedResponse });
-                }
-                return newMessages;
-              });
-            }
-          }
-          
-          setIsStreaming(false); // Mark streaming as complete
-        } catch (error) {
-          if ((error as Error).name !== 'AbortError') {
-            console.error('Error sending message:', error);
-            
-            setIsTyping(false);
-            setIsStreaming(false);
-            // Update the last message with an error
-            setMessages(prev => {
-              const newMessages = [...prev];
-              const lastMessage = newMessages[newMessages.length - 1];
-              if (lastMessage && lastMessage.role === 'assistant') {
-                lastMessage.content = 'Sorry, I encountered an error. Please try again.';
-              } else {
-                newMessages.push({ role: 'assistant', content: 'Sorry, I encountered an error. Please try again.' });
-              }
-              return newMessages;
-            });
-          }
-        }
-      } else {
-        // Fallback implementation (non-streaming)
-        console.log('Using fallback response generator');
-        let response = generateFallbackResponse(userMessage, questionContext);
-        response = "[USING FALLBACK] " + response;
-        // Update the last assistant message instead of adding a new one
-        setMessages(prev => {
-          const newMessages = [...prev];
-          const lastMessage = newMessages[newMessages.length - 1];
-          if (lastMessage && lastMessage.role === 'assistant') {
-            lastMessage.content = response;
-          } else {
-            newMessages.push({ role: 'assistant', content: response });
-          }
-          return newMessages;
-        });
-      }
-    } finally {
-      setIsLoading(false);
-      setIsStreaming(false);
-      abortControllerRef.current = null;
-    }
-  }, [inputValue, question, correctAnswer, selectedAnswer, explanation, lastAnsweredQuestion]);
-
-  // Function to stop the current streaming response
-  const handleStopResponse = () => {
-    if (abortControllerRef.current) {
-      abortControllerRef.current.abort();
-      setIsLoading(false);
-      setIsTyping(false);
-      setIsStreaming(false);
-    }
-  };
-
-  // Handle key down events
-  const handleKeyDown = useCallback((e: React.KeyboardEvent<HTMLTextAreaElement>) => {
-    if (e.key === 'Enter' && !e.shiftKey) {
-      e.preventDefault();
-      handleSendMessage();
-    }
-  }, [handleSendMessage]);
-
-  // Display value combines input and interim transcript
-  const displayValue = inputValue + (interimTranscript && inputValue !== interimTranscript ? interimTranscript : '');
 
   return (
     <>
@@ -586,26 +150,44 @@ Be direct and educational. No "Of course!" or "That's an excellent question" - j
         {messages.length === 0 && (
           <div className="flex flex-wrap gap-2 mb-4">
             <button 
-              onClick={() => setInputValue("Explain this question in detail")}
-              className="inline-flex items-center gap-2 px-3 py-2 text-sm bg-blue-50 hover:bg-blue-100 text-blue-700 dark:bg-blue-900/20 dark:hover:bg-blue-900/30 dark:text-blue-300 dark:border-blue-700/50 rounded-lg border border-blue-200 transition-colors"
-            >
-              📖 Explain question
-            </button>
-            <button 
-              onClick={() => setInputValue("Why is my answer wrong?")}
-              className="inline-flex items-center gap-2 px-3 py-2 text-sm bg-red-50 hover:bg-red-100 text-red-700 dark:bg-red-900/20 dark:hover:bg-red-900/30 dark:text-red-300 dark:border-red-700/50 rounded-lg border border-red-200 transition-colors"
+              onClick={() => {
+                const input = document.querySelector('textarea[aria-label="Chat message"]') as HTMLTextAreaElement;
+                const sendButton = document.querySelector('button[aria-label="Send message"]') as HTMLButtonElement;
+                if (input && sendButton) {
+                  input.value = "Why is my answer wrong?";
+                  input.dispatchEvent(new Event('input', { bubbles: true }));
+                  setTimeout(() => sendButton.click(), 100);
+                }
+              }}
+              className="inline-flex items-center gap-2 px-3 py-2 text-sm bg-red-50 hover:bg-red-100 text-red-700 dark:bg-red-900/30 dark:hover:bg-red-800/40 dark:text-red-200 dark:border-red-600/50 rounded-lg border border-red-200 dark:border-red-600/30 transition-colors"
             >
               ❓ Why wrong?
             </button>
             <button 
-              onClick={() => setInputValue("Give me a similar practice question")}
-              className="inline-flex items-center gap-2 px-3 py-2 text-sm bg-green-50 hover:bg-green-100 text-green-700 dark:bg-green-900/20 dark:hover:bg-green-900/30 dark:text-green-300 dark:border-green-700/50 rounded-lg border border-green-200 transition-colors"
+              onClick={() => {
+                const input = document.querySelector('textarea[aria-label="Chat message"]') as HTMLTextAreaElement;
+                const sendButton = document.querySelector('button[aria-label="Send message"]') as HTMLButtonElement;
+                if (input && sendButton) {
+                  input.value = "Give me a similar practice question";
+                  input.dispatchEvent(new Event('input', { bubbles: true }));
+                  setTimeout(() => sendButton.click(), 100);
+                }
+              }}
+              className="inline-flex items-center gap-2 px-3 py-2 text-sm bg-green-50 hover:bg-green-100 text-green-700 dark:bg-green-900/30 dark:hover:bg-green-800/40 dark:text-green-200 dark:border-green-600/50 rounded-lg border border-green-200 dark:border-green-600/30 transition-colors"
             >
               🔄 Similar question
             </button>
             <button 
-              onClick={() => setInputValue("Show me the next question from the database")}
-              className="inline-flex items-center gap-2 px-3 py-2 text-sm bg-purple-50 hover:bg-purple-100 text-purple-700 dark:bg-purple-900/20 dark:hover:bg-purple-900/30 dark:text-purple-300 dark:border-purple-700/50 rounded-lg border border-purple-200 transition-colors"
+              onClick={() => {
+                const input = document.querySelector('textarea[aria-label="Chat message"]') as HTMLTextAreaElement;
+                const sendButton = document.querySelector('button[aria-label="Send message"]') as HTMLButtonElement;
+                if (input && sendButton) {
+                  input.value = "Show me the next question from the database";
+                  input.dispatchEvent(new Event('input', { bubbles: true }));
+                  setTimeout(() => sendButton.click(), 100);
+                }
+              }}
+              className="inline-flex items-center gap-2 px-3 py-2 text-sm bg-purple-50 hover:bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:hover:bg-purple-800/40 dark:text-purple-200 dark:border-purple-600/50 rounded-lg border border-purple-200 dark:border-purple-600/30 transition-colors"
             >
               ➡️ Next question
             </button>
@@ -853,73 +435,204 @@ Be direct and educational. No "Of course!" or "That's an excellent question" - j
       
       </div>
       
-      {/* Sticky Input Area - Always show when feedback is active */}
-      {(
-        <div className="fixed bottom-0 left-0 right-0 z-50 bg-white dark:bg-gray-900 border-t border-gray-200 dark:border-gray-700 safe-area-inset-bottom">
-          <div className="max-w-4xl mx-auto p-2">
-            <div className="border border-gray-200 dark:border-gray-700 rounded-xl p-2 bg-white dark:bg-gray-900">
-              <div className="flex items-end gap-2">
-                <textarea
-                  ref={inputRef}
-                  value={displayValue}
-                  onChange={handleInputChange}
-                  onKeyDown={handleKeyDown}
-                  placeholder="Ask a follow-up question..."
-                  className="w-full px-3 py-2 bg-transparent text-gray-900 dark:text-gray-100 placeholder-gray-500 dark:placeholder-gray-400 resize-none overflow-hidden focus:outline-none"
-                  rows={1}
-                  disabled={isLoading}
-                  style={{
-                    minHeight: '16px',
-                    maxHeight: '80px',
-                    lineHeight: '16px'
-                  }}
-                />
-                
-                <div className="flex gap-1">
-                  {speechSupported && !isMobile && (
-                    <button
-                      type="button"
-                      onClick={isRecording ? stopVoice : startVoice}
-                      className={`p-2 rounded-lg transition-colors ${
-                        isRecording 
-                          ? 'bg-red-500 text-white' 
-                          : 'text-gray-400 hover:text-gray-600 hover:bg-gray-100'
-                      }`}
-                      disabled={isLoading}
-                    >
-                      {isRecording ? <Square size={18} /> : <Mic size={18} />}
-                    </button>
-                  )}
+      {/* ChatGPT-style Input */}
+      <ChatInput
+        onSend={async (text: string) => {
+          // Add user message to chat
+          const newUserMessage = { role: 'user' as const, content: text };
+          setMessages(prev => [...prev, newUserMessage]);
+          setIsLoading(true);
+          
+          // Force immediate re-render to ensure proper alignment
+          setTimeout(() => {
+            setMessages(prev => [...prev]);
+          }, 10);
+          
+          // Check if user is asking for next question
+          if (text.toLowerCase().includes('next question') || text.toLowerCase().includes('show me the next question')) {
+            // Dispatch event to get next question data directly without intermediate message
+            setTimeout(() => {
+              window.dispatchEvent(new CustomEvent('requestNextQuestionData'));
+            }, 500);
+            
+            setIsLoading(false);
+            return;
+          }
+          
+          // Add an empty assistant message that will be filled as tokens arrive
+          setMessages(prev => [...prev, { role: 'assistant' as const, content: '' }]);
+          
+          // Scroll the entire page to the bottom when sending a message
+          setTimeout(() => {
+            window.scrollTo({
+              top: document.body.scrollHeight,
+              behavior: 'smooth'
+            });
+          }, 100);
+
+          try {
+            // Extract options from the question
+            const options = question.options.map((option) => {
+              if (typeof option === 'string') {
+                return option;
+              } else {
+                return option.text;
+              }
+            });
+            
+            // Get the question text from the appropriate field
+            const questionText = question.question || question.question_stem || question.individual_question || '';
+            
+            // Create context for the AI
+            const questionContext = {
+              question: questionText,
+              options: options,
+              correctAnswer: correctAnswer,
+              selectedAnswer: selectedAnswer,
+              explanation: explanation
+            };
+
+            // Check if we have an API key
+            const apiKey = import.meta.env.VITE_OPENAI_API_KEY;
+            
+            if (apiKey && apiKey !== 'your-openai-api-key-goes-here') {
+              // Real DeepSeek API with streaming
+              setIsLoading(true);
+              setIsTyping(true);
+              setIsStreaming(true);
+              
+              // Create new AbortController for this request
+              abortControllerRef.current = new AbortController();
+              
+              // Import OpenAI client
+              const OpenAI = (await import('openai')).default;
+              const client = new OpenAI({
+                apiKey: import.meta.env.VITE_OPENAI_API_KEY,
+                baseURL: 'https://api.deepseek.com',
+                dangerouslyAllowBrowser: true
+              });
+
+              // Use the most recently answered question if available, otherwise fall back to initial question
+              const contextToUse = lastAnsweredQuestion || questionContext;
+              
+              const systemPrompt = `You are a direct medical education assistant. Provide concise, educational responses without fluff or pleasantries. Get straight to the medical content.
+
+Question: ${contextToUse.question}
+Options: ${contextToUse.options.join(', ')}
+${contextToUse.selectedAnswer ? `Selected Answer: ${contextToUse.selectedAnswer}` : ''}
+${contextToUse.correctAnswer ? `Correct Answer: ${contextToUse.correctAnswer}` : ''}
+${contextToUse.explanation ? `Explanation: ${contextToUse.explanation}` : ''}
+
+Be direct and educational. No "Of course!" or "That's an excellent question" - just provide the medical information.`;
+
+              // Create streaming completion with abort signal
+              const stream = await client.chat.completions.create({
+                model: 'deepseek-chat',
+                messages: [
+                  { role: 'system', content: systemPrompt },
+                  { role: 'user', content: text }
+                ],
+                stream: true,
+                max_tokens: 4000,
+                temperature: 0.7
+              }, {
+                signal: abortControllerRef.current.signal
+              });
+
+              setIsTyping(false);
+              let accumulatedResponse = '';
+
+              // Process streaming response
+              try {
+                for await (const chunk of stream) {
+                  // Check if aborted
+                  if (abortControllerRef.current?.signal.aborted) {
+                    break;
+                  }
                   
-                  {isStreaming ? (
-                    <button
-                      type="button"
-                      onClick={handleStopResponse}
-                      className="p-2 rounded-lg bg-red-500 text-white hover:bg-red-600 transition-colors"
-                      title="Stop response"
-                    >
-                      <Square size={18} />
-                    </button>
-                  ) : (
-                    <button
-                      type="button"
-                      onClick={handleSendMessage}
-                      className={`p-2 rounded-lg transition-colors ${
-                        isLoading || (!inputValue.trim() && !interimTranscript.trim())
-                          ? 'text-gray-300 cursor-not-allowed'
-                          : 'bg-blue-500 text-white hover:bg-blue-600'
-                      }`}
-                      disabled={isLoading || (!inputValue.trim() && !interimTranscript.trim())}
-                    >
-                      <Send size={18} />
-                    </button>
-                  )}
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
+                  const content = chunk.choices[0]?.delta?.content || '';
+                  if (content) {
+                    accumulatedResponse += content;
+                    
+                    // Update the last assistant message with accumulated content
+                    setMessages(prev => {
+                      const newMessages = [...prev];
+                      const lastMessage = newMessages[newMessages.length - 1];
+                      if (lastMessage && lastMessage.role === 'assistant') {
+                        lastMessage.content = accumulatedResponse;
+                      } else {
+                        newMessages.push({ role: 'assistant', content: accumulatedResponse });
+                      }
+                      return newMessages;
+                    });
+                  }
+                }
+              } catch (error: unknown) {
+                if ((error as Error).name === 'AbortError' || abortControllerRef.current?.signal.aborted) {
+                  // Request was aborted, add a message indicating it was stopped
+                  setMessages(prev => {
+                    const newMessages = [...prev];
+                    const lastMessage = newMessages[newMessages.length - 1];
+                    if (lastMessage && lastMessage.role === 'assistant') {
+                      lastMessage.content = accumulatedResponse + '\n\n*Response stopped by user*';
+                    }
+                    return newMessages;
+                  });
+                } else {
+                  throw error; // Re-throw other errors
+                }
+              }
+              
+              setIsStreaming(false);
+            } else {
+              // Fallback implementation
+              let response = generateFallbackResponse(text, questionContext);
+              response = "[USING FALLBACK] " + response;
+              // Update the last assistant message instead of adding a new one
+              setMessages(prev => {
+                const newMessages = [...prev];
+                const lastMessage = newMessages[newMessages.length - 1];
+                if (lastMessage && lastMessage.role === 'assistant') {
+                  lastMessage.content = response;
+                } else {
+                  newMessages.push({ role: 'assistant', content: response });
+                }
+                return newMessages;
+              });
+            }
+          } catch (error) {
+            console.error('Error sending message:', error);
+            setIsTyping(false);
+            setIsStreaming(false);
+            // Update the last message with an error
+            setMessages(prev => {
+              const newMessages = [...prev];
+              const lastMessage = newMessages[newMessages.length - 1];
+              if (lastMessage && lastMessage.role === 'assistant') {
+                lastMessage.content = 'Sorry, I encountered an error. Please try again.';
+              } else {
+                newMessages.push({ role: 'assistant', content: 'Sorry, I encountered an error. Please try again.' });
+              }
+              return newMessages;
+            });
+          } finally {
+            setIsLoading(false);
+            setIsStreaming(false);
+          }
+        }}
+        onStop={() => {
+          if (abortControllerRef.current) {
+            abortControllerRef.current.abort();
+            setIsLoading(false);
+            setIsTyping(false);
+            setIsStreaming(false);
+          }
+        }}
+        disabled={isLoading}
+        placeholder="Ask a follow-up question..."
+        maxRows={6}
+        isStreaming={isStreaming}
+      />
     </>
   );  
 }

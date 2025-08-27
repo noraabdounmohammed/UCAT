@@ -8,7 +8,8 @@ import { Question } from '@/utils/questionBank';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
-import { ArrowLeft, BarChart, ChevronDown, ChevronUp, Filter, X } from 'lucide-react';
+import { FontSizeToggle } from '@/components/ui/FontSizeToggle';
+import { ArrowLeft, BarChart, ChevronDown, ChevronUp, Filter, X, Settings } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { AnimatePresence, motion } from 'framer-motion';
 import { useUser } from '@supabase/auth-helpers-react';
@@ -223,6 +224,7 @@ export function QuestionPracticePage() {
 
   const [showFilters, setShowFilters] = useState(false);
   const [showStats, setShowStats] = useState(false);
+  const [showAccessibility, setShowAccessibility] = useState(false);
   
   const toggleFilters = () => {
     setShowFilters(prev => !prev);
@@ -232,6 +234,13 @@ export function QuestionPracticePage() {
   const toggleStats = () => {
     setShowStats(prev => !prev);
     if (showFilters) setShowFilters(false);
+    if (showAccessibility) setShowAccessibility(false);
+  };
+  
+  const toggleAccessibility = () => {
+    setShowAccessibility(prev => !prev);
+    if (showFilters) setShowFilters(false);
+    if (showStats) setShowStats(false);
   };
   
   return (
@@ -274,6 +283,17 @@ export function QuestionPracticePage() {
               aria-label="Filters"
             >
               <Filter className="h-4 w-4" />
+            </button>
+            
+            <button
+              className={cn(
+                "apple-button apple-button-icon",
+                showAccessibility ? "apple-button-primary" : "apple-button-secondary"
+              )}
+              onClick={toggleAccessibility}
+              aria-label="Accessibility"
+            >
+              <Settings className="h-4 w-4" />
             </button>
           </div>
         </header>
@@ -318,6 +338,7 @@ export function QuestionPracticePage() {
               <h1 className="apple-heading-1">Practice Questions</h1>
               <p className="apple-caption">Select topics and skills to practice</p>
             </div>
+            
             {/* Stats Panel */}
             <AnimatePresence>
               {showStats && (
@@ -342,12 +363,12 @@ export function QuestionPracticePage() {
                           <div key={topic} className="space-y-1">
                             <div className="apple-flex apple-justify-between">
                               <span className="apple-body">{topic}</span>
-                              <span className="apple-caption">{data.correct}/{data.total} completed</span>
+                              <span className="apple-caption">{(data as any).correct}/{(data as any).total} completed</span>
                             </div>
                             <div className="apple-progress-container">
                               <div 
                                 className="apple-progress-bar" 
-                                style={{ width: `${(data.correct / Math.max(data.total, 1)) * 100}%` }}
+                                style={{ width: `${((data as any).correct / Math.max((data as any).total, 1)) * 100}%` }}
                               ></div>
                             </div>
                           </div>
@@ -358,6 +379,35 @@ export function QuestionPracticePage() {
                         No progress data available yet. Start practicing to see your stats!
                       </p>
                     )}
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
+            
+            {/* Accessibility Panel */}
+            <AnimatePresence>
+              {showAccessibility && (
+                <motion.div
+                  initial={{ opacity: 0, y: -20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -20 }}
+                  transition={{ duration: 0.2 }}
+                  className="w-full max-w-3xl mb-6 apple-card"
+                >
+                  <div className="apple-card-header">
+                    <h2 className="apple-card-title">Accessibility Options</h2>
+                    <button className="apple-button apple-button-icon apple-button-secondary" onClick={() => setShowAccessibility(false)}>
+                      <X className="h-4 w-4" />
+                    </button>
+                  </div>
+                  
+                  <div className="apple-card-content">
+                    <div className="space-y-4">
+                      <div>
+                        <label className="apple-body font-medium mb-2 block">Font Size</label>
+                        <FontSizeToggle />
+                      </div>
+                    </div>
                   </div>
                 </motion.div>
               )}
@@ -410,7 +460,7 @@ export function QuestionPracticePage() {
                   
                   <div className="flex flex-wrap gap-2 justify-center mb-6">
                     {filters.topics.length > 0 ? (
-                      filters.topics.map(topic => (
+                      filters.topics.map((topic: string) => (
                         <div key={topic} className="bg-indigo-50 text-indigo-700 px-3 py-1 rounded-full text-sm font-medium">
                           {topic}
                         </div>

@@ -4,6 +4,9 @@ import { MockExam } from '@/pages/MockExam';
 import { QuestionPracticePage } from '@/pages/QuestionPracticePage';
 import { MainLayout } from '@/components/layout/MainLayout';
 import { ThemeProvider } from '@/contexts/ThemeContext';
+import { FontSizeProvider } from '@/contexts/FontSizeContext';
+import { ChatInputExample } from '@/components/examples/ChatInputExample';
+import '@/styles/font-sizes.css';
 
 // Mock user data removed
 
@@ -11,7 +14,8 @@ function App() {
   
   return (
     <ThemeProvider>
-      <Routes>
+      <FontSizeProvider>
+        <Routes>
         {/* Dashboard route */}
         <Route path="/" element={
           <MainLayout currentPage="dashboard">
@@ -29,9 +33,13 @@ function App() {
         {/* Dedicated route for Question Practice without sidebar */}
         <Route path="/practice" element={<QuestionPracticePage />} />
         
+        {/* Chat Input Demo route */}
+        <Route path="/chat-demo" element={<ChatInputExample />} />
+        
         {/* Redirect any routes to home */}
         <Route path="*" element={<Navigate to="/" replace />} />
-      </Routes>
+        </Routes>
+      </FontSizeProvider>
     </ThemeProvider>
   );
 }
