@@ -225,9 +225,6 @@ export const ChatInput: React.FC<ChatInputProps> = ({
           )}
         </div>
         
-        <div className="mt-2 text-xs text-[#a1a1aa] dark:text-[#71717a] text-center" style={{ fontFamily: 'system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif' }}>
-          Enter to send • Shift+Enter for newline
-        </div>
       </div>
     </div>
   );

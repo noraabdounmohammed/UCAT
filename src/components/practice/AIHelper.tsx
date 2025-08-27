@@ -387,24 +387,24 @@ export function AIHelper({ question, correctAnswer, selectedAnswer, explanation 
                 </div>
               ) : (
                 <div className={`w-full mb-4`} style={{ display: 'flex', width: '100%', justifyContent: message.role === 'user' ? 'flex-end' : 'flex-start' }}>
-                  <div className={`${
+                  <div className={`ai-chat-message ${
                     message.role === 'user' 
                       ? 'bg-blue-500 text-white px-4 py-3 max-w-[85%] rounded-2xl' 
                       : 'w-full p-6 bg-gray-50 dark:bg-gray-800 border border-[#E5E5EA] dark:border-gray-700 rounded-xl text-gray-900 dark:text-gray-100'
                   }`}>
                     <ReactMarkdown 
                       components={{
-                        p: ({ children }) => <p className={`mb-4 last:mb-0 leading-relaxed text-base ${message.role === 'user' ? 'text-white' : 'text-gray-900 dark:text-gray-100'}`} style={{ fontSize: '16px' }}>{children}</p>,
-                        h1: ({ children }) => <h1 className={`text-2xl font-bold mb-4 border-b pb-2 ${message.role === 'user' ? 'text-white border-white/30' : 'text-gray-900 dark:text-gray-100 border-gray-200 dark:border-gray-600'}`}>{children}</h1>,
-                        h2: ({ children }) => <h2 className={`text-xl font-semibold mb-3 mt-6 first:mt-0 ${message.role === 'user' ? 'text-white' : 'text-gray-900 dark:text-gray-100'}`}>{children}</h2>,
-                        h3: ({ children }) => <h3 className={`text-lg font-medium mb-3 mt-5 first:mt-0 ${message.role === 'user' ? 'text-white' : 'text-gray-900 dark:text-gray-100'}`}>{children}</h3>,
+                        p: ({ children }) => <p className={`mb-4 last:mb-0 leading-relaxed text-base ${message.role === 'user' ? 'text-white' : 'text-gray-900 dark:text-gray-100'}`}>{children}</p>,
+                        h1: ({ children }) => <h1 className={`font-bold mb-4 border-b pb-2 ${message.role === 'user' ? 'text-white border-white/30' : 'text-gray-900 dark:text-gray-100 border-gray-200 dark:border-gray-600'}`}>{children}</h1>,
+                        h2: ({ children }) => <h2 className={`font-semibold mb-3 mt-6 first:mt-0 ${message.role === 'user' ? 'text-white' : 'text-gray-900 dark:text-gray-100'}`}>{children}</h2>,
+                        h3: ({ children }) => <h3 className={`font-medium mb-3 mt-5 first:mt-0 ${message.role === 'user' ? 'text-white' : 'text-gray-900 dark:text-gray-100'}`}>{children}</h3>,
                         ul: ({ children }) => <ul className="list-none pl-0 mb-4 space-y-2">{children}</ul>,
                         ol: ({ children }) => <ol className="list-decimal pl-6 mb-4 space-y-2">{children}</ol>,
-                        li: ({ children }) => <li className={`leading-relaxed flex items-start ${message.role === 'user' ? 'text-white' : 'text-gray-900 dark:text-gray-100'}`} style={{ fontSize: '16px' }}><span className={`inline-block w-2 h-2 rounded-full mt-2 mr-3 flex-shrink-0 ${message.role === 'user' ? 'bg-white' : 'bg-blue-500'}`}></span><span className="flex-1">{children}</span></li>,
+                        li: ({ children }) => <li className={`leading-relaxed flex items-start ${message.role === 'user' ? 'text-white' : 'text-gray-900 dark:text-gray-100'}`}><span className={`inline-block w-2 h-2 rounded-full mt-2 mr-3 flex-shrink-0 ${message.role === 'user' ? 'bg-white' : 'bg-blue-500'}`}></span><span className="flex-1">{children}</span></li>,
                         strong: ({ children }) => <strong className={`font-semibold px-2 py-1 rounded ${message.role === 'user' ? 'text-white bg-white/20' : 'text-gray-900 dark:text-white bg-blue-100 dark:bg-blue-800/40 border border-blue-200 dark:border-blue-700/50'}`}>{children}</strong>,
                         em: ({ children }) => <em className={`italic font-medium ${message.role === 'user' ? 'text-white' : 'text-blue-600 dark:text-blue-400'}`}>{children}</em>,
                         code: ({ children }) => <code className={`px-2 py-1 rounded text-sm font-mono border ${message.role === 'user' ? 'bg-white/20 text-white border-white/30' : 'bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-200 border-gray-200 dark:border-gray-600'}`}>{children}</code>,
-                        blockquote: ({ children }) => <blockquote className={`border-l-4 pl-4 py-2 rounded-r italic my-4 ${message.role === 'user' ? 'border-white/50 bg-white/10 text-white' : 'border-blue-400 dark:border-blue-500 bg-blue-50 dark:bg-blue-900/20 text-gray-900 dark:text-gray-100'}`} style={{ fontSize: '16px' }}>{children}</blockquote>
+                        blockquote: ({ children }) => <blockquote className={`border-l-4 pl-4 py-2 rounded-r italic my-4 ${message.role === 'user' ? 'border-white/50 bg-white/10 text-white' : 'border-blue-400 dark:border-blue-500 bg-blue-50 dark:bg-blue-900/20 text-gray-900 dark:text-gray-100'}`}>{children}</blockquote>
                       }}
                     >
                       {message.content}

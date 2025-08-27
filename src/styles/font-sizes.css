@@ -123,7 +123,50 @@
 .font-medium textarea,
 .font-large textarea,
 .font-extra-large textarea {
-  font-size: var(--font-size-base);
+  font-size: var(--font-size-base) !important;
+}
+
+/* AI Chat conversation text */
+.font-small .ai-chat-message,
+.font-medium .ai-chat-message,
+.font-large .ai-chat-message,
+.font-extra-large .ai-chat-message {
+  font-size: var(--font-size-base) !important;
+}
+
+.font-small .ai-chat-message p,
+.font-medium .ai-chat-message p,
+.font-large .ai-chat-message p,
+.font-extra-large .ai-chat-message p {
+  font-size: var(--font-size-base) !important;
+}
+
+.font-small .ai-chat-message li,
+.font-medium .ai-chat-message li,
+.font-large .ai-chat-message li,
+.font-extra-large .ai-chat-message li {
+  font-size: var(--font-size-base) !important;
+}
+
+.font-small .ai-chat-message h1,
+.font-medium .ai-chat-message h1,
+.font-large .ai-chat-message h1,
+.font-extra-large .ai-chat-message h1 {
+  font-size: calc(var(--font-size-base) * 1.5) !important;
+}
+
+.font-small .ai-chat-message h2,
+.font-medium .ai-chat-message h2,
+.font-large .ai-chat-message h2,
+.font-extra-large .ai-chat-message h2 {
+  font-size: calc(var(--font-size-base) * 1.25) !important;
+}
+
+.font-small .ai-chat-message h3,
+.font-medium .ai-chat-message h3,
+.font-large .ai-chat-message h3,
+.font-extra-large .ai-chat-message h3 {
+  font-size: calc(var(--font-size-base) * 1.125) !important;
 }
 
 /* Explanation text */
