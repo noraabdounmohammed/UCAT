@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useMemo } from 'react';
+import { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import { 
   CheckCircle, 
   XCircle, 
@@ -58,17 +58,91 @@ interface StableQuestionContent {
 }
 
 export function ApplePracticeSession({ questions, onComplete }: PracticeSessionProps) {
-  // Component state
+  // Generate a unique session ID for this practice session
+  const [sessionId] = useState(() => `session-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`);
+
+  // Load session-specific state from localStorage
+  const loadSessionData = useCallback(() => {
+    try {
+      const savedAnswers = localStorage.getItem(`practice-answers-${sessionId}`);
+      const savedFeedback = localStorage.getItem(`practice-feedback-${sessionId}`);
+      return {
+        answers: savedAnswers ? JSON.parse(savedAnswers) : {},
+        feedback: savedFeedback ? JSON.parse(savedFeedback) : {}
+      };
+    } catch {
+      return { answers: {}, feedback: {} };
+    }
+  }, [sessionId]);
+
+  // Clear previous sessions but keep current session data
+  useEffect(() => {
+    const clearOldSessions = () => {
+      try {
+        // Get all localStorage keys
+        const keys = Object.keys(localStorage);
+        
+        // Remove old practice session data (but not current session)
+        keys.forEach(key => {
+          if (key.startsWith('practice-answers-') && !key.includes(sessionId)) {
+            localStorage.removeItem(key);
+          }
+          if (key.startsWith('practice-feedback-') && !key.includes(sessionId)) {
+            localStorage.removeItem(key);
+          }
+          if (key.startsWith('chat-history-') && !key.includes(sessionId)) {
+            localStorage.removeItem(key);
+          }
+          if (key.startsWith('answers-') && !key.includes(sessionId)) {
+            localStorage.removeItem(key);
+          }
+          if (key.startsWith('feedback-') && !key.includes(sessionId)) {
+            localStorage.removeItem(key);
+          }
+          // Also clean up legacy keys without session IDs
+          if (key === 'practice-selected-answers' || key === 'practice-show-feedback') {
+            localStorage.removeItem(key);
+          }
+        });
+      } catch (error) {
+        console.warn('Failed to clear old session data:', error);
+      }
+    };
+    clearOldSessions();
+  }, [sessionId]);
+
+  // Component state - initialize with session data
   const [currentIndex, setCurrentIndex] = useState(0);
-  const [selectedAnswers, setSelectedAnswers] = useState<Record<string, string>>({});
-  const [showFeedback, setShowFeedback] = useState(false);
+  const [selectedAnswers, setSelectedAnswers] = useState<Record<string, string>>(() => loadSessionData().answers);
+  const [showFeedbackState, setShowFeedbackState] = useState<Record<string, boolean>>(() => loadSessionData().feedback);
+
+  // Save state to session-specific localStorage whenever it changes
+  useEffect(() => {
+    try {
+      localStorage.setItem(`practice-answers-${sessionId}`, JSON.stringify(selectedAnswers));
+    } catch (error) {
+      console.warn('Failed to save selected answers:', error);
+    }
+  }, [selectedAnswers, sessionId]);
+
+  useEffect(() => {
+    try {
+      localStorage.setItem(`practice-feedback-${sessionId}`, JSON.stringify(showFeedbackState));
+    } catch (error) {
+      console.warn('Failed to save feedback state:', error);
+    }
+  }, [showFeedbackState, sessionId]);
   const [isTransitioning, setIsTransitioning] = useState(false);
   const [showExitConfirmation, setShowExitConfirmation] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
+  // Touch/swipe state for mobile navigation
+  const [touchStart, setTouchStart] = useState<number | null>(null);
+  const [touchEnd, setTouchEnd] = useState<number | null>(null);
 
   // Refs to prevent unnecessary re-renders
   const questionsRef = useRef<QuestionData[]>(questions);
+  const containerRef = useRef<HTMLDivElement>(null);
   
   // Update questions ref when prop changes
   useEffect(() => {
@@ -124,6 +198,9 @@ export function ApplePracticeSession({ questions, onComplete }: PracticeSessionP
     };
   }, [currentQuestion, currentIndex]);
 
+  // Computed showFeedback for current question
+  const showFeedback = showFeedbackState[questionId] || false;
+
   // Track questions shown in chat to avoid duplicates
   const [chatShownQuestions, setChatShownQuestions] = useState<Set<string>>(new Set());
 
@@ -160,43 +237,64 @@ export function ApplePracticeSession({ questions, onComplete }: PracticeSessionP
 
 
   // Navigation functions
-  const handlePreviousQuestionNav = () => {
-    if (currentIndex > 0) {
-      setIsTransitioning(true);
-      setTimeout(() => {
-        setCurrentIndex(currentIndex - 1);
-        setShowFeedback(false);
-        setIsTransitioning(false);
-        // Clear any selected answer for the previous question
-        const prevQuestionId = questions[currentIndex - 1]?.id || `question-${currentIndex - 1}`;
-        setSelectedAnswers(prev => {
-          const newAnswers = { ...prev };
-          delete newAnswers[prevQuestionId];
-          return newAnswers;
-        });
-      }, 150);
-    }
-  };
-
-  const handleNextQuestionNav = () => {
+  const handleNextQuestionNav = useCallback(() => {
     if (currentIndex < questions.length - 1) {
       setIsTransitioning(true);
       // Jump to top of page instantly
-      window.scrollTo({ top: 0, behavior: 'auto' });
+      window.scrollTo({ top: 0, behavior: 'instant' });
+      
       setTimeout(() => {
-        setCurrentIndex(currentIndex + 1);
-        setShowFeedback(false);
+        setCurrentIndex(prev => Math.min(questions.length - 1, prev + 1)); // Ensure we never exceed max
         setIsTransitioning(false);
-        // Clear any selected answer for the new question
-        const nextQuestionId = questions[currentIndex + 1]?.id || `question-${currentIndex + 1}`;
-        setSelectedAnswers(prev => {
-          const newAnswers = { ...prev };
-          delete newAnswers[nextQuestionId];
-          return newAnswers;
-        });
+      }, 150);
+    } else {
+      // At the last question, prompt to complete session
+      setShowExitConfirmation(true);
+    }
+  }, [currentIndex, questions.length]);
+
+  const handlePreviousQuestionNav = useCallback(() => {
+    if (currentIndex > 0) {
+      setIsTransitioning(true);
+      // Jump to top of page instantly
+      window.scrollTo({ top: 0, behavior: 'instant' });
+      
+      setTimeout(() => {
+        setCurrentIndex(prev => Math.max(0, prev - 1)); // Ensure we never go below 0
+        setIsTransitioning(false);
       }, 150);
     }
-  };
+  }, [currentIndex]);
+
+  // Swipe detection constants
+  const minSwipeDistance = 50;
+
+  // Handle touch start
+  const handleTouchStart = useCallback((e: React.TouchEvent) => {
+    setTouchEnd(null);
+    setTouchStart(e.targetTouches[0].clientX);
+  }, []);
+
+  // Handle touch move
+  const handleTouchMove = useCallback((e: React.TouchEvent) => {
+    setTouchEnd(e.targetTouches[0].clientX);
+  }, []);
+
+  // Handle touch end and detect swipe
+  const handleTouchEnd = useCallback(() => {
+    if (!touchStart || !touchEnd) return;
+    
+    const distance = touchStart - touchEnd;
+    const isLeftSwipe = distance > minSwipeDistance;
+    const isRightSwipe = distance < -minSwipeDistance;
+
+    if (isLeftSwipe) {
+      handleNextQuestionNav();
+    }
+    if (isRightSwipe && currentIndex > 0) {
+      handlePreviousQuestionNav();
+    }
+  }, [touchStart, touchEnd, currentIndex, handleNextQuestionNav, handlePreviousQuestionNav]);
 
   // Handle selecting an answer
   const handleAnswerSelect = (answer: string) => {
@@ -207,7 +305,7 @@ export function ApplePracticeSession({ questions, onComplete }: PracticeSessionP
       [questionId]: answer
     }));
     
-    setShowFeedback(true);
+    setShowFeedbackState(prev => ({ ...prev, [questionId]: true }));
     
     // Track progress if needed - simplified for now
     console.log(`Question ${questionId} answered: ${answer === questionContent.correctAnswer ? 'correct' : 'incorrect'}`);
@@ -254,7 +352,7 @@ export function ApplePracticeSession({ questions, onComplete }: PracticeSessionP
             <button
               onClick={() => {
                 setSidebarOpen(false);
-                setShowExitConfirmation(true);
+                onComplete();
               }}
               className="w-full flex items-center gap-3 p-3 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors text-left"
             >
@@ -277,50 +375,51 @@ export function ApplePracticeSession({ questions, onComplete }: PracticeSessionP
         </div>
       </div>
 
-      {/* Modern ChatGPT-style Navbar */}
+      {/* Minimal Navbar */}
       <div className="sticky top-0 left-0 right-0 z-30 w-full bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-700">
-        <div className="flex items-center justify-between h-16 px-5">
+        <div className="practice-navbar flex items-center justify-between px-4 py-3">
+          {/* Left: Menu Button */}
           <button 
             onClick={() => setSidebarOpen(true)}
-            className="w-9 h-9 flex items-center justify-center rounded-full transition-all duration-300 ease-out active:scale-90 hover:bg-gray-100 dark:hover:bg-gray-800"
+            className="navbar-button flex items-center justify-center w-8 h-8 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
             aria-label="Open sidebar"
           >
-            <Menu className="h-5 w-5 text-gray-900 dark:text-gray-100" strokeWidth={2.5} />
+            <Menu className="navbar-icon w-4 h-4 text-gray-500 dark:text-gray-400" strokeWidth={2} />
           </button>
-
-          <div className="flex-1 text-center px-6">
-            <div className="text-[14px] text-gray-900 dark:text-gray-100 font-semibold tracking-wide">
-              Q{currentIndex + 1} of {questions.length}
-            </div>
+          
+          {/* Center: Simple Progress */}
+          <div className="flex-1 flex items-center justify-center">
+            <span className="navbar-text text-sm text-gray-600 dark:text-gray-300">
+              {Math.min(currentIndex + 1, questionsRef.current.length)} / {questionsRef.current.length}
+            </span>
           </div>
-
-          <div className="flex items-center gap-2">
+          
+          {/* Right: Navigation Controls */}
+          <div className="flex items-center gap-1">
             <button 
               onClick={handlePreviousQuestionNav}
               disabled={currentIndex === 0}
-              className={cn(
-                "w-9 h-9 flex items-center justify-center rounded-full transition-all duration-300 ease-out active:scale-90",
+              className={`navbar-button flex items-center justify-center w-8 h-8 rounded-lg transition-colors ${
                 currentIndex === 0 
-                  ? "opacity-30 cursor-not-allowed" 
-                  : "hover:bg-gray-100 dark:hover:bg-gray-800"
-              )}
+                  ? 'text-gray-300 dark:text-gray-600 cursor-not-allowed' 
+                  : 'text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800'
+              }`}
               aria-label="Previous question"
             >
-              <ChevronRight className="h-5 w-5 text-gray-900 dark:text-gray-100 rotate-180" strokeWidth={2.5} />
+              <ChevronRight className="navbar-icon w-4 h-4 rotate-180" strokeWidth={2} />
             </button>
-
+            
             <button 
               onClick={handleNextQuestionNav}
-              disabled={currentIndex === questions.length - 1}
-              className={cn(
-                "w-9 h-9 flex items-center justify-center rounded-full transition-all duration-300 ease-out active:scale-90",
-                currentIndex === questions.length - 1 
-                  ? "opacity-30 cursor-not-allowed" 
-                  : "hover:bg-gray-100 dark:hover:bg-gray-800"
-              )}
+              disabled={currentIndex === questionsRef.current.length - 1}
+              className={`navbar-button flex items-center justify-center w-8 h-8 rounded-lg transition-colors ${
+                currentIndex === questionsRef.current.length - 1 
+                  ? 'text-gray-300 dark:text-gray-600 cursor-not-allowed' 
+                  : 'text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800'
+              }`}
               aria-label="Next question"
             >
-              <ChevronRight className="h-5 w-5 text-gray-900 dark:text-gray-100" strokeWidth={2.5} />
+              <ChevronRight className="navbar-icon w-4 h-4" strokeWidth={2} />
             </button>
           </div>
         </div>
@@ -352,14 +451,20 @@ export function ApplePracticeSession({ questions, onComplete }: PracticeSessionP
       )}
 
       {/* Main content */}
-      <div className="flex-1 overflow-y-auto px-1 pb-12">
+      <div 
+        ref={containerRef}
+        className="flex-1 overflow-y-auto px-1 pb-12"
+        onTouchStart={handleTouchStart}
+        onTouchMove={handleTouchMove}
+        onTouchEnd={handleTouchEnd}
+      >
         <div 
           className={cn(
             "apple-question-card",
-            isTransitioning ? "opacity-0" : "opacity-100 apple-fade-in"
+            isTransitioning && "apple-fade-out"
           )}
-          style={{ 
-            transition: 'opacity 0.15s ease-in-out',
+          style={{
+            transition: 'opacity 0.15s ease-out',
             willChange: 'opacity'
           }}
         >
@@ -456,7 +561,6 @@ export function ApplePracticeSession({ questions, onComplete }: PracticeSessionP
             {showFeedback && questionContent.explanation && (
               <div className="apple-explanation bg-white dark:bg-gray-800 border border-[#E5E5EA] dark:border-gray-700 rounded-xl p-6 mt-6 apple-fade-in">
                 <BookOpen className="h-6 w-6 text-[#007AFF] mb-4" />
-                <span className="explanation-title font-semibold text-gray-900 dark:text-gray-100 mb-4 block">Explanation</span>
                 
                 <div className="explanation-content prose prose-lg max-w-none text-gray-900 dark:text-gray-100" style={{
                   lineHeight: '1.7'

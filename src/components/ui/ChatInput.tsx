@@ -161,7 +161,7 @@ export const ChatInput: React.FC<ChatInputProps> = ({
   return (
     <div className="fixed bottom-0 left-0 right-0 z-50 bg-white dark:bg-gray-900 border-t border-gray-200 dark:border-gray-700 pb-[env(safe-area-inset-bottom)]">
       <div className="w-full px-4 py-4">
-        <div className="relative flex items-end gap-2 bg-white dark:bg-gray-800 border border-[#d4d4d8] dark:border-[#3f3f46] rounded-xl shadow-[0_1px_2px_rgba(0,0,0,0.03)] focus-within:border-[#a1a1aa] dark:focus-within:border-[#52525b] transition-colors max-w-4xl mx-auto min-h-[44px]">
+        <div className="relative flex items-end gap-2 bg-white dark:bg-gray-800 border border-[#e5e7eb] dark:border-[#374151] rounded-3xl shadow-[0_2px_8px_rgba(0,0,0,0.04)] focus-within:border-[#3b82f6] dark:focus-within:border-[#60a5fa] focus-within:shadow-[0_4px_12px_rgba(59,130,246,0.15)] transition-all duration-200 max-w-4xl mx-auto min-h-[44px]">
           <textarea
             ref={textareaRef}
             value={value}
@@ -192,9 +192,9 @@ export const ChatInput: React.FC<ChatInputProps> = ({
               type="button"
               onClick={onStop}
               aria-label="Stop response"
-              className="flex-shrink-0 rounded-lg flex items-center justify-center mr-2 mb-2 transition-all duration-200 bg-red-500 hover:bg-red-600 text-white shadow-sm hover:shadow-md active:scale-95"
+              className="flex-shrink-0 rounded-full flex items-center justify-center mr-2 mb-2 transition-all duration-200 bg-red-500 hover:bg-red-600 text-white shadow-lg hover:shadow-xl active:scale-95"
               style={{
-                padding: '0.5rem 0.75rem',
+                padding: '0.75rem',
                 fontSize: '16px'
               }}
             >
@@ -206,13 +206,13 @@ export const ChatInput: React.FC<ChatInputProps> = ({
               onClick={handleSend}
               disabled={!canSend}
               aria-label={isSending ? "Sending…" : "Send message"}
-              className={`flex-shrink-0 rounded-lg flex items-center justify-center mr-2 mb-2 transition-all duration-200 ${
+              className={`flex-shrink-0 rounded-full flex items-center justify-center mr-2 mb-2 transition-all duration-200 ${
                 canSend
-                  ? 'bg-[#0a0a0a] hover:bg-[#1a1a1a] text-white dark:bg-[#fafafa] dark:hover:bg-[#e4e4e7] dark:text-[#0a0a0a] shadow-sm hover:shadow-md active:scale-95'
-                  : 'bg-[#9ca3af] dark:bg-[#71717a] text-white dark:text-[#a1a1aa] cursor-not-allowed'
+                  ? 'bg-[#3b82f6] hover:bg-[#2563eb] text-white dark:bg-[#3b82f6] dark:hover:bg-[#2563eb] shadow-lg hover:shadow-xl active:scale-95'
+                  : 'bg-[#d1d5db] dark:bg-[#6b7280] text-[#9ca3af] dark:text-[#9ca3af] cursor-not-allowed'
               }`}
               style={{
-                padding: '0.5rem 0.75rem',
+                padding: '0.75rem',
                 fontSize: '16px'
               }}
             >

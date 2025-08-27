@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import ReactMarkdown from 'react-markdown';
 import { generateFallbackResponse } from '../../services/openai';
 import { ChatInput } from '../ui/ChatInput';
@@ -41,7 +41,44 @@ interface AIHelperProps {
 }
 
 export function AIHelper({ question, correctAnswer, selectedAnswer, explanation }: AIHelperProps) {
-  const [messages, setMessages] = useState<Array<ChatMessage>>([]);
+  // Get unique question ID for localStorage key
+  const questionId = question.id || `q-${Date.now()}`;
+  
+  // Get current session ID from parent component's localStorage pattern
+  const getCurrentSessionId = (): string | null => {
+    try {
+      const keys = Object.keys(localStorage);
+      const sessionKey = keys.find(key => key.startsWith('practice-answers-session-'));
+      return sessionKey ? sessionKey.replace('practice-answers-', '') : null;
+    } catch {
+      return null;
+    }
+  };
+
+  const sessionId = getCurrentSessionId();
+  
+  // Load chat history from session-specific localStorage
+  const loadChatHistory = (): Array<ChatMessage> => {
+    try {
+      const storageKey = sessionId ? `chat-history-${questionId}-${sessionId}` : `chat-history-${questionId}`;
+      const saved = localStorage.getItem(storageKey);
+      return saved ? JSON.parse(saved) : [];
+    } catch {
+      return [];
+    }
+  };
+
+  // Save chat history to session-specific localStorage
+  const saveChatHistory = useCallback((messages: Array<ChatMessage>) => {
+    try {
+      const storageKey = sessionId ? `chat-history-${questionId}-${sessionId}` : `chat-history-${questionId}`;
+      localStorage.setItem(storageKey, JSON.stringify(messages));
+    } catch (error) {
+      console.warn('Failed to save chat history:', error);
+    }
+  }, [questionId, sessionId]);
+
+  const [messages, setMessages] = useState<Array<ChatMessage>>(loadChatHistory);
   const [isLoading, setIsLoading] = useState(false);
   const [isTyping, setIsTyping] = useState(false); // New state for typing indicator
   const [isStreaming, setIsStreaming] = useState(false); // Track if currently streaming
@@ -49,9 +86,29 @@ export function AIHelper({ question, correctAnswer, selectedAnswer, explanation 
   const chatContainerRef = useRef<HTMLDivElement>(null);
   const abortControllerRef = useRef<AbortController | null>(null);
   
-  // State for next question interactions
-  const [nextQuestionAnswers, setNextQuestionAnswers] = useState<Record<string, string>>({});
-  const [nextQuestionFeedback, setNextQuestionFeedback] = useState<Record<string, { correct: string; isAnswered: boolean }>>({});
+  // State for next question interactions - also persist these with session ID
+  const loadAnswersState = () => {
+    try {
+      const storageKey = sessionId ? `answers-${questionId}-${sessionId}` : `answers-${questionId}`;
+      const saved = localStorage.getItem(storageKey);
+      return saved ? JSON.parse(saved) : {};
+    } catch {
+      return {};
+    }
+  };
+
+  const loadFeedbackState = () => {
+    try {
+      const storageKey = sessionId ? `feedback-${questionId}-${sessionId}` : `feedback-${questionId}`;
+      const saved = localStorage.getItem(storageKey);
+      return saved ? JSON.parse(saved) : {};
+    } catch {
+      return {};
+    }
+  };
+
+  const [nextQuestionAnswers, setNextQuestionAnswers] = useState<Record<string, string>>(loadAnswersState);
+  const [nextQuestionFeedback, setNextQuestionFeedback] = useState<Record<string, { correct: string; isAnswered: boolean }>>(loadFeedbackState);
   const [lastAnsweredQuestion, setLastAnsweredQuestion] = useState<{
     question: string;
     options: string[];
@@ -60,6 +117,30 @@ export function AIHelper({ question, correctAnswer, selectedAnswer, explanation 
     explanation: string;
     isCorrect: boolean;
   } | null>(null);
+
+  // Save chat history whenever messages change
+  useEffect(() => {
+    saveChatHistory(messages);
+  }, [messages, saveChatHistory]);
+
+  // Save answers and feedback when they change (session-specific)
+  useEffect(() => {
+    try {
+      const storageKey = sessionId ? `answers-${questionId}-${sessionId}` : `answers-${questionId}`;
+      localStorage.setItem(storageKey, JSON.stringify(nextQuestionAnswers));
+    } catch (error) {
+      console.warn('Failed to save answers:', error);
+    }
+  }, [nextQuestionAnswers, questionId, sessionId]);
+
+  useEffect(() => {
+    try {
+      const storageKey = sessionId ? `feedback-${questionId}-${sessionId}` : `feedback-${questionId}`;
+      localStorage.setItem(storageKey, JSON.stringify(nextQuestionFeedback));
+    } catch (error) {
+      console.warn('Failed to save feedback:', error);
+    }
+  }, [nextQuestionFeedback, questionId, sessionId]);
 
   // Initialize without welcome message
   useEffect(() => {

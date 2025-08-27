@@ -134,6 +134,38 @@
   font-size: var(--font-size-base) !important;
 }
 
+/* Practice session navbar */
+.font-small .practice-navbar,
+.font-medium .practice-navbar,
+.font-large .practice-navbar,
+.font-extra-large .practice-navbar {
+  padding-top: calc(1rem + var(--font-size-base) * 0.125) !important;
+  padding-bottom: calc(1rem + var(--font-size-base) * 0.125) !important;
+}
+
+.font-small .practice-navbar .navbar-text,
+.font-medium .practice-navbar .navbar-text,
+.font-large .practice-navbar .navbar-text,
+.font-extra-large .practice-navbar .navbar-text {
+  font-size: var(--font-size-sm) !important;
+}
+
+.font-small .practice-navbar .navbar-button,
+.font-medium .practice-navbar .navbar-button,
+.font-large .practice-navbar .navbar-button,
+.font-extra-large .practice-navbar .navbar-button {
+  width: calc(2.5rem + var(--font-size-base) * 0.25) !important;
+  height: calc(2.5rem + var(--font-size-base) * 0.25) !important;
+}
+
+.font-small .practice-navbar .navbar-icon,
+.font-medium .practice-navbar .navbar-icon,
+.font-large .practice-navbar .navbar-icon,
+.font-extra-large .practice-navbar .navbar-icon {
+  width: calc(1.25rem + var(--font-size-base) * 0.125) !important;
+  height: calc(1.25rem + var(--font-size-base) * 0.125) !important;
+}
+
 .font-small .ai-chat-message p,
 .font-medium .ai-chat-message p,
 .font-large .ai-chat-message p,
