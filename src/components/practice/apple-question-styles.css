@@ -236,9 +236,16 @@
   padding: 0 var(--sf-spacing-lg);
 }
 
+@media (max-width: 768px) {
+  .apple-question-card {
+    max-width: 100%;
+    padding: 0 var(--sf-spacing-md);
+  }
+}
+
 /* Question content - SF Pro style */
 .apple-question-content {
-  max-width: 680px; /* Apple's standard readable content width */
+  max-width: 680px;
   margin: 0 auto;
   font-size: 14px;
   line-height: 1.4;
@@ -247,9 +254,12 @@
   padding: var(--sf-spacing-lg) 0;
   letter-spacing: -0.01em;
   text-align: left;
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
+}
+
+@media (max-width: 768px) {
+  .apple-question-content {
+    max-width: 100%;
+  }
 }
 
 .apple-question-box {

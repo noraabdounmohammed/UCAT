@@ -170,24 +170,33 @@
   animation: gradient-shift 15s ease infinite;
 }
 
-/* Custom scrollbar */
+/* Hide scrollbars while maintaining scroll functionality */
 ::-webkit-scrollbar {
-  width: 8px;
-  height: 8px;
+  width: 0px;
+  height: 0px;
+  background: transparent;
 }
 
 ::-webkit-scrollbar-track {
-  background: hsl(var(--secondary));
-  border-radius: var(--radius);
+  background: transparent;
 }
 
 ::-webkit-scrollbar-thumb {
-  background: hsl(var(--muted-foreground) / 0.3);
-  border-radius: var(--radius);
+  background: transparent;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: hsl(var(--muted-foreground) / 0.5);
+  background: transparent;
+}
+
+/* Firefox scrollbar hiding */
+html {
+  scrollbar-width: none;
+}
+
+/* IE and Edge scrollbar hiding */
+body {
+  -ms-overflow-style: none;
 }
 
 /* Card hover effects */
@@ -198,4 +207,37 @@
 .card-hover-effect:hover {
   transform: translateY(-2px);
   box-shadow: 0 8px 30px -6px hsl(var(--primary) / 0.2);
+}
+
+/* Mobile scrolling fixes - simplified approach */
+html, body {
+  height: 100%;
+  overflow: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+#root {
+  height: 100%;
+  overflow: auto;
+}
+
+/* Prevent scroll jump on DOM changes */
+.scroll-stable {
+  scroll-behavior: auto !important;
+}
+
+.scroll-stable * {
+  scroll-behavior: auto !important;
+}
+
+/* Force hardware acceleration for smooth scrolling - more targeted approach */
+.scrollable-container {
+  -webkit-transform: translateZ(0);
+  transform: translateZ(0);
+  will-change: scroll-position;
+}
+
+/* Prevent momentum scrolling conflicts */
+.no-momentum {
+  -webkit-overflow-scrolling: auto;
 }

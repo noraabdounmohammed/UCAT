@@ -7,7 +7,5 @@ export function MockExam() {
     // TODO: Implement mock exam session
   };
 
-  return (
-    <MockSetup onStart={handleStartMock} />
-  );
+  return <MockSetup onStart={handleStartMock} />;
 }

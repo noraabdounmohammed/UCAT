@@ -4,8 +4,8 @@ import { Badge } from '@/components/ui/badge';
 import { Checkbox } from '@/components/ui/checkbox';
 import { cn } from '@/lib/utils';
 import './NoScrollReset.css';
-// Import the scroll prevention utility
-import loadPreventScrollReset from './preventScrollReset';
+// Import the scroll prevention utility - DISABLED to allow scroll-to-top in practice sessions
+// import loadPreventScrollReset from './preventScrollReset';
 import {
   Difficulty,
   MainTopic,
@@ -51,15 +51,15 @@ const PracticeFilters: React.FC<PracticeFiltersProps> = ({
   // Ref to store scroll position
   const scrollPositionRef = useRef<number>(0);
   
-  // Function to preserve scroll position
+  // Function to preserve scroll position - DISABLED to allow scroll-to-top in practice sessions
   const preserveScrollPosition = () => {
     // Store current scroll position
     scrollPositionRef.current = window.scrollY;
     
-    // Use setTimeout to restore scroll position after state updates
-    setTimeout(() => {
-      window.scrollTo(0, scrollPositionRef.current);
-    }, 0);
+    // Use setTimeout to restore scroll position after state updates - DISABLED
+    // setTimeout(() => {
+    //   window.scrollTo(0, scrollPositionRef.current);
+    // }, 0);
   };
 
   // Update parent component with filtered count when it changes
@@ -69,10 +69,10 @@ const PracticeFilters: React.FC<PracticeFiltersProps> = ({
     }
   }, [filteredQuestionCount, onFilteredCountChange]);
   
-  // Initialize scroll reset prevention
+  // Initialize scroll reset prevention - DISABLED to allow scroll-to-top in practice sessions
   useEffect(() => {
-    // Load the scroll reset prevention script
-    loadPreventScrollReset();
+    // Load the scroll reset prevention script - DISABLED
+    // loadPreventScrollReset();
   }, []);
   
   // Initialize all filters when component mounts

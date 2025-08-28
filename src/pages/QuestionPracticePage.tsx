@@ -88,6 +88,18 @@ export function QuestionPracticePage() {
   // Authentication is handled at the router level
   useUser();
 
+  // Scroll to top when component mounts or when entering practice mode
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, []);
+
+  // Scroll to top when entering practice mode
+  useEffect(() => {
+    if (mode === 'practice') {
+      window.scrollTo(0, 0);
+    }
+  }, [mode]);
+
   // Load topic structure and user progress
   useEffect(() => {
     const loadInitialData = async () => {
@@ -244,10 +256,13 @@ export function QuestionPracticePage() {
   };
   
   return (
-    <div className={cn(
-      "apple-page",
-      mode === 'practice' ? "immersive-mode" : ""
-    )} data-component-name="QuestionPracticePage">
+    <div 
+      className={cn(
+        "apple-page",
+        mode === 'practice' ? "immersive-mode" : ""
+      )} 
+      data-component-name="QuestionPracticePage"
+    >
       {/* Apple-style Header - only shown when not in practice mode */}
       {mode !== 'practice' && (
         <header className="apple-header">

@@ -123,21 +123,21 @@ export function FilteredQuestionsPage() {
   
   // Show practice session with filtered questions
   return (
-    <MainLayout currentPage="dashboard">
+    <MainLayout currentPage="dashboard" isPracticeSession={questions.length > 0}>
       {questions.length > 0 ? (
         <ModernPracticeSession
           questions={questions as QuestionData[]}
-          onComplete={handleCompletePractice}
+          onComplete={handleComplete}
         />
       ) : (
         <div className="flex flex-col items-center justify-center min-h-[60vh]">
           <div className="text-center max-w-md">
-            <h2 className="text-2xl font-bold mb-4">No Questions Available</h2>
+            <h2 className="text-2xl font-bold mb-4">No Questions Found</h2>
             <p className="text-gray-600 mb-6">
-              No questions match your selected filters. Please return to the practice section and adjust your filters.
+              No questions match your current filter criteria. Try adjusting your filters or check back later.
             </p>
-            <Button onClick={() => navigate('/')}>
-              Return to Practice Section
+            <Button onClick={handleComplete} variant="outline">
+              Back to Dashboard
             </Button>
           </div>
         </div>

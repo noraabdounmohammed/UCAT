@@ -1,28 +1,28 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
-import { SendIcon } from './SendIcon';
-import { Spinner } from './Spinner';
-import { StopIcon } from './StopIcon';
+import { Square } from 'lucide-react';
+import '../../styles/mobile-keyboard-fix.css';
 
 interface ChatInputProps {
   onSend: (text: string) => Promise<void> | void;
-  onStop?: () => void;
   disabled?: boolean;
   placeholder?: string;
   maxRows?: number;
+  onStop?: () => void;
   isStreaming?: boolean;
 }
 
 export const ChatInput: React.FC<ChatInputProps> = ({
   onSend,
-  onStop,
   disabled = false,
   placeholder = "Message…",
   maxRows = 8,
+  onStop,
   isStreaming = false
 }) => {
   const [value, setValue] = useState('');
   const [isSending, setIsSending] = useState(false);
   const [isComposing, setIsComposing] = useState(false);
+  const [isFocused, setIsFocused] = useState(false);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   // Auto-resize textarea
@@ -102,21 +102,27 @@ export const ChatInput: React.FC<ChatInputProps> = ({
 
   // Handle key down
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
-    if (e.key === 'Enter') {
-      if (e.shiftKey) {
-        // Shift+Enter: allow newline (default behavior)
-        return;
-      } else if (e.metaKey || e.ctrlKey) {
-        // Cmd/Ctrl+Enter: send message
-        e.preventDefault();
-        handleSend();
-      } else {
-        // Enter: send message
-        e.preventDefault();
+    if (e.key === 'Enter' && !e.shiftKey && !isComposing) {
+      e.preventDefault();
+      if (canSend) {
         handleSend();
       }
     }
   };
+
+  const handleFocus = useCallback(() => {
+    setIsFocused(true);
+    // Add class to body to prevent scrolling on mobile
+    if (window.innerWidth <= 768) {
+      document.body.classList.add('input-focused');
+    }
+  }, []);
+
+  const handleBlur = useCallback(() => {
+    setIsFocused(false);
+    // Remove class from body
+    document.body.classList.remove('input-focused');
+  }, []);
 
   // Handle composition events (for IME)
   const handleCompositionStart = () => {
@@ -159,9 +165,22 @@ export const ChatInput: React.FC<ChatInputProps> = ({
   const canSend = value.trim().length > 0 && !isSending && !disabled && !isComposing;
 
   return (
-    <div className="fixed bottom-0 left-0 right-0 z-50 bg-white dark:bg-gray-900 border-t border-gray-200 dark:border-gray-700 pb-[env(safe-area-inset-bottom)]">
+    <div 
+      className={`fixed bottom-0 left-0 right-0 z-50 bg-white dark:bg-gray-900 border-t border-gray-200 dark:border-gray-700 pb-[env(safe-area-inset-bottom)] mobile-fixed-input ${isFocused ? 'input-focused' : ''}`}
+      style={{
+        position: 'fixed',
+        bottom: 0,
+        left: 0,
+        right: 0,
+        zIndex: 9999,
+        transform: 'translateZ(0)', // Force hardware acceleration
+        backfaceVisibility: 'hidden', // Prevent flickering
+        willChange: 'transform', // Optimize for changes
+        minHeight: 'env(keyboard-inset-height, 0px)' // iOS keyboard support
+      }}
+    >
       <div className="w-full px-4 py-4">
-        <div className="relative flex items-end gap-2 bg-white dark:bg-gray-800 border border-[#e5e7eb] dark:border-[#374151] rounded-3xl shadow-[0_2px_8px_rgba(0,0,0,0.04)] focus-within:border-[#3b82f6] dark:focus-within:border-[#60a5fa] focus-within:shadow-[0_4px_12px_rgba(59,130,246,0.15)] transition-all duration-200 max-w-4xl mx-auto min-h-[44px]">
+        <div className="relative flex items-center gap-2 bg-white dark:bg-gray-800 border border-[#e5e7eb] dark:border-[#374151] rounded-3xl shadow-[0_2px_8px_rgba(0,0,0,0.04)] focus-within:border-[#3b82f6] dark:focus-within:border-[#60a5fa] focus-within:shadow-[0_4px_12px_rgba(59,130,246,0.15)] transition-all duration-200 max-w-4xl mx-auto min-h-[44px]">
           <textarea
             ref={textareaRef}
             value={value}
@@ -169,6 +188,8 @@ export const ChatInput: React.FC<ChatInputProps> = ({
             onKeyDown={handleKeyDown}
             onCompositionStart={handleCompositionStart}
             onCompositionEnd={handleCompositionEnd}
+            onFocus={handleFocus}
+            onBlur={handleBlur}
             onDragOver={handleDragOver}
             onDrop={handleDrop}
             onPaste={handlePaste}
@@ -187,40 +208,13 @@ export const ChatInput: React.FC<ChatInputProps> = ({
             rows={1}
           />
           
-          {isStreaming && onStop ? (
+          {isStreaming && onStop && (
             <button
-              type="button"
               onClick={onStop}
-              aria-label="Stop response"
-              className="flex-shrink-0 rounded-full flex items-center justify-center mr-2 mb-2 transition-all duration-200 bg-red-500 hover:bg-red-600 text-white shadow-lg hover:shadow-xl active:scale-95"
-              style={{
-                padding: '0.75rem',
-                fontSize: '16px'
-              }}
+              className="flex items-center justify-center w-8 h-8 mr-2 bg-red-500 hover:bg-red-600 text-white rounded-full transition-colors flex-shrink-0"
+              aria-label="Stop generation"
             >
-              <StopIcon className="w-4 h-4" />
-            </button>
-          ) : (
-            <button
-              type="button"
-              onClick={handleSend}
-              disabled={!canSend}
-              aria-label={isSending ? "Sending…" : "Send message"}
-              className={`flex-shrink-0 rounded-full flex items-center justify-center mr-2 mb-2 transition-all duration-200 ${
-                canSend
-                  ? 'bg-[#3b82f6] hover:bg-[#2563eb] text-white dark:bg-[#3b82f6] dark:hover:bg-[#2563eb] shadow-lg hover:shadow-xl active:scale-95'
-                  : 'bg-[#d1d5db] dark:bg-[#6b7280] text-[#9ca3af] dark:text-[#9ca3af] cursor-not-allowed'
-              }`}
-              style={{
-                padding: '0.75rem',
-                fontSize: '16px'
-              }}
-            >
-              {isSending ? (
-                <Spinner className="w-4 h-4" />
-              ) : (
-                <SendIcon className="w-4 h-4" />
-              )}
+              <Square className="w-3 h-3" />
             </button>
           )}
         </div>

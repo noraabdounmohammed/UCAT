@@ -9,7 +9,7 @@ import {
   X
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { AIHelper } from './AIHelper';
+import { AIHelper } from './AIHelperClean';
 import { ThemeToggle } from '../ui/ThemeToggle';
 import { FontSizeToggle } from '../ui/FontSizeToggle';
 import './apple-question-styles.css';
@@ -93,6 +93,13 @@ export function ApplePracticeSession({ questions, onComplete }: PracticeSessionP
           if (key.startsWith('chat-history-') && !key.includes(sessionId)) {
             localStorage.removeItem(key);
           }
+          if (key.startsWith('ai_chat_') && !key.includes(sessionId)) {
+            localStorage.removeItem(key);
+          }
+          // Clean up any orphaned AI chat data without proper session IDs
+          if (key.startsWith('ai_chat_') && !key.includes('session-')) {
+            localStorage.removeItem(key);
+          }
           if (key.startsWith('answers-') && !key.includes(sessionId)) {
             localStorage.removeItem(key);
           }
@@ -139,6 +146,8 @@ export function ApplePracticeSession({ questions, onComplete }: PracticeSessionP
   // Touch/swipe state for mobile navigation
   const [touchStart, setTouchStart] = useState<number | null>(null);
   const [touchEnd, setTouchEnd] = useState<number | null>(null);
+  const [touchStartY, setTouchStartY] = useState<number | null>(null);
+  const [touchEndY, setTouchEndY] = useState<number | null>(null);
 
   // Refs to prevent unnecessary re-renders
   const questionsRef = useRef<QuestionData[]>(questions);
@@ -150,6 +159,24 @@ export function ApplePracticeSession({ questions, onComplete }: PracticeSessionP
       questionsRef.current = questions;
     }
   }, [questions]);
+
+  // Scroll to top when component mounts
+  useEffect(() => {
+    // Disable browser scroll restoration
+    if ('scrollRestoration' in history) {
+      history.scrollRestoration = 'manual';
+    }
+    window.scrollTo(0, 0);
+  }, []);
+
+  // Scroll to top whenever the current question index changes
+  useEffect(() => {
+    // Multiple scroll methods to ensure it works
+    window.scrollTo({ top: 0, behavior: 'instant' });
+    window.scrollTo(0, 0);
+    document.documentElement.scrollTop = 0;
+    document.body.scrollTop = 0;
+  }, [currentIndex]);
 
   // Get the current question
   const currentQuestion = useMemo(() => {
@@ -240,15 +267,21 @@ export function ApplePracticeSession({ questions, onComplete }: PracticeSessionP
   const handleNextQuestionNav = useCallback(() => {
     if (currentIndex < questions.length - 1) {
       setIsTransitioning(true);
-      // Jump to top of page instantly
-      window.scrollTo({ top: 0, behavior: 'instant' });
+      setCurrentIndex(prev => Math.min(questions.length - 1, prev + 1));
       
+      // Reset scroll position of the content container with delay
       setTimeout(() => {
-        setCurrentIndex(prev => Math.min(questions.length - 1, prev + 1)); // Ensure we never exceed max
+        const contentContainer = containerRef.current;
+        console.log('Content container:', contentContainer);
+        console.log('Current scrollTop:', contentContainer?.scrollTop);
+        if (contentContainer) {
+          contentContainer.scrollTop = 0;
+          contentContainer.scrollTo({ top: 0, behavior: 'instant' });
+          console.log('After scroll, scrollTop:', contentContainer.scrollTop);
+        }
         setIsTransitioning(false);
-      }, 150);
+      }, 50);
     } else {
-      // At the last question, prompt to complete session
       setShowExitConfirmation(true);
     }
   }, [currentIndex, questions.length]);
@@ -256,37 +289,52 @@ export function ApplePracticeSession({ questions, onComplete }: PracticeSessionP
   const handlePreviousQuestionNav = useCallback(() => {
     if (currentIndex > 0) {
       setIsTransitioning(true);
-      // Jump to top of page instantly
-      window.scrollTo({ top: 0, behavior: 'instant' });
+      setCurrentIndex(prev => Math.max(0, prev - 1));
       
+      // Reset scroll position of the content container with delay
       setTimeout(() => {
-        setCurrentIndex(prev => Math.max(0, prev - 1)); // Ensure we never go below 0
+        const contentContainer = containerRef.current;
+        console.log('Content container:', contentContainer);
+        console.log('Current scrollTop:', contentContainer?.scrollTop);
+        if (contentContainer) {
+          contentContainer.scrollTop = 0;
+          contentContainer.scrollTo({ top: 0, behavior: 'instant' });
+          console.log('After scroll, scrollTop:', contentContainer.scrollTop);
+        }
         setIsTransitioning(false);
-      }, 150);
+      }, 50);
     }
   }, [currentIndex]);
 
   // Swipe detection constants
-  const minSwipeDistance = 50;
+  const minSwipeDistance = 80;
+  const maxVerticalDistance = 100;
 
   // Handle touch start
   const handleTouchStart = useCallback((e: React.TouchEvent) => {
     setTouchEnd(null);
     setTouchStart(e.targetTouches[0].clientX);
+    setTouchStartY(e.targetTouches[0].clientY);
   }, []);
 
   // Handle touch move
   const handleTouchMove = useCallback((e: React.TouchEvent) => {
     setTouchEnd(e.targetTouches[0].clientX);
+    setTouchEndY(e.targetTouches[0].clientY);
   }, []);
 
   // Handle touch end and detect swipe
   const handleTouchEnd = useCallback(() => {
-    if (!touchStart || !touchEnd) return;
+    if (!touchStart || !touchEnd || touchStartY === null || touchEndY === null) return;
     
-    const distance = touchStart - touchEnd;
-    const isLeftSwipe = distance > minSwipeDistance;
-    const isRightSwipe = distance < -minSwipeDistance;
+    const horizontalDistance = touchStart - touchEnd;
+    const verticalDistance = Math.abs(touchStartY - touchEndY);
+    
+    // Only trigger swipe if horizontal movement is dominant
+    if (verticalDistance > maxVerticalDistance) return;
+    
+    const isLeftSwipe = horizontalDistance > minSwipeDistance;
+    const isRightSwipe = horizontalDistance < -minSwipeDistance;
 
     if (isLeftSwipe) {
       handleNextQuestionNav();
@@ -294,7 +342,7 @@ export function ApplePracticeSession({ questions, onComplete }: PracticeSessionP
     if (isRightSwipe && currentIndex > 0) {
       handlePreviousQuestionNav();
     }
-  }, [touchStart, touchEnd, currentIndex, handleNextQuestionNav, handlePreviousQuestionNav]);
+  }, [touchStart, touchEnd, touchStartY, touchEndY, currentIndex, handleNextQuestionNav, handlePreviousQuestionNav]);
 
   // Handle selecting an answer
   const handleAnswerSelect = (answer: string) => {
@@ -377,7 +425,7 @@ export function ApplePracticeSession({ questions, onComplete }: PracticeSessionP
 
       {/* Minimal Navbar */}
       <div className="sticky top-0 left-0 right-0 z-30 w-full bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-700">
-        <div className="practice-navbar flex items-center justify-between px-4 py-3">
+        <div className="practice-navbar flex items-center justify-between px-3 py-2">
           {/* Left: Menu Button */}
           <button 
             onClick={() => setSidebarOpen(true)}
@@ -453,7 +501,8 @@ export function ApplePracticeSession({ questions, onComplete }: PracticeSessionP
       {/* Main content */}
       <div 
         ref={containerRef}
-        className="flex-1 overflow-y-auto px-1 pb-12"
+        className="flex-1 overflow-y-auto pb-12"
+        style={{ height: 'calc(100vh - 60px)' }}
         onTouchStart={handleTouchStart}
         onTouchMove={handleTouchMove}
         onTouchEnd={handleTouchEnd}
@@ -536,6 +585,28 @@ export function ApplePracticeSession({ questions, onComplete }: PracticeSessionP
               })}
             </div>
 
+            {/* Next Question Button */}
+            {showFeedback && (
+              <div className="mt-6 mb-6">
+                <button
+                  onClick={handleNextQuestionNav}
+                  className="w-full py-3 bg-[#007AFF] hover:bg-[#0056CC] text-white font-medium rounded-xl transition-colors flex items-center justify-center gap-2"
+                >
+                  {currentIndex === questions.length - 1 ? (
+                    <>
+                      <span>Complete Session</span>
+                      <CheckCircle className="h-5 w-5" />
+                    </>
+                  ) : (
+                    <>
+                      <span>Next Question</span>
+                      <ChevronRight className="h-5 w-5" />
+                    </>
+                  )}
+                </button>
+              </div>
+            )}
+
             {showFeedback && (
               <div className={cn(
                 "rounded-2xl p-4 mb-6 flex items-center gap-3 apple-slide-up",
@@ -587,7 +658,7 @@ export function ApplePracticeSession({ questions, onComplete }: PracticeSessionP
             )}
 
             {showFeedback && (
-              <div className="mt-8">
+              <div className="mt-8 -mx-8 px-8" style={{ maxWidth: 'none', width: 'calc(100% + 4rem)' }}>
                 <AIHelper 
                   question={currentQuestion}
                   selectedAnswer={selectedAnswers[questionId] || null}
