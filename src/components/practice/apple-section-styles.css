@@ -66,8 +66,8 @@
 }
 
 .dark .apple-section-card.selected {
-  background-color: #1E3A8A;
-  border-color: #3B82F6;
+  background-color: #374151;
+  border-color: #6B7280;
 }
 
 .apple-section-card-content {
@@ -101,8 +101,8 @@
 }
 
 .dark .apple-section-card-icon.selected {
-  background-color: #1E40AF;
-  color: #60A5FA;
+  background-color: #4B5563;
+  color: #D1D5DB;
 }
 
 .apple-section-card-text {
@@ -156,12 +156,24 @@
   transition: all 0.2s ease;
 }
 
+.dark .apple-button-small {
+  color: #9CA3AF;
+}
+
 .apple-button-small:hover {
   background-color: rgba(0, 122, 255, 0.1);
 }
 
+.dark .apple-button-small:hover {
+  background-color: rgba(156, 163, 175, 0.1);
+}
+
 .apple-button-small:active {
   background-color: rgba(0, 122, 255, 0.2);
+}
+
+.dark .apple-button-small:active {
+  background-color: rgba(156, 163, 175, 0.2);
 }
 
 /* Apple-style topic list */

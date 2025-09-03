@@ -15,6 +15,10 @@
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  
+  /* iOS Safari specific fixes */
+  -webkit-text-size-adjust: 100%;
+  -webkit-tap-highlight-color: transparent;
 }
 
 /* Mobile keyboard support */
@@ -114,6 +118,24 @@
     color-scheme: dark;
     color: #f9fafb;
     background-color: #111827;
+  }
+  
+  /* iOS Safari dark mode fixes */
+  @supports (-webkit-appearance: none) {
+    .dark {
+      -webkit-color-scheme: dark;
+    }
+    
+    :root {
+      -webkit-color-scheme: light;
+    }
+  }
+  
+  /* Force dark mode styles on iOS */
+  .dark body,
+  .dark html {
+    background-color: #111827 !important;
+    color: #f9fafb !important;
   }
 }
 

@@ -21,11 +21,24 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     localStorage.setItem('theme', theme);
     
-    // Apply theme to document
+    // Apply theme to document with iOS-specific fixes
+    const root = document.documentElement;
+    const body = document.body;
+    
     if (theme === 'dark') {
-      document.documentElement.classList.add('dark');
+      root.classList.add('dark');
+      body.classList.add('dark');
+      // Force iOS to recognize dark mode
+      root.style.colorScheme = 'dark';
+      body.style.backgroundColor = '#111827';
+      body.style.color = '#f9fafb';
     } else {
-      document.documentElement.classList.remove('dark');
+      root.classList.remove('dark');
+      body.classList.remove('dark');
+      // Force iOS to recognize light mode
+      root.style.colorScheme = 'light';
+      body.style.backgroundColor = '#ffffff';
+      body.style.color = '#1f2937';
     }
   }, [theme]);
 

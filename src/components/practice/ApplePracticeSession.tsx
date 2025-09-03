@@ -12,6 +12,8 @@ import { cn } from '@/lib/utils';
 import { AIHelper } from './AIHelperClean';
 import { ThemeToggle } from '../ui/ThemeToggle';
 import { FontSizeToggle } from '../ui/FontSizeToggle';
+import { useFontSize } from '@/contexts/FontSizeContext';
+import { updateQuestionProgress } from '@/utils/userProgressStorage';
 import './apple-question-styles.css';
 import ReactMarkdown from 'react-markdown';
 
@@ -57,9 +59,12 @@ interface StableQuestionContent {
   explanation: string;
 }
 
-export function ApplePracticeSession({ questions, onComplete }: PracticeSessionProps) {
+export function ApplePracticeSession({ questions, onComplete, section }: PracticeSessionProps) {
   // Generate a unique session ID for this practice session
   const [sessionId] = useState(() => `session-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`);
+  
+  // Get font size from context
+  const { fontSize } = useFontSize();
 
   // Load session-specific state from localStorage
   const loadSessionData = useCallback(() => {
@@ -282,6 +287,7 @@ export function ApplePracticeSession({ questions, onComplete }: PracticeSessionP
         setIsTransitioning(false);
       }, 50);
     } else {
+      // Show completion dialog when trying to navigate past the last question
       setShowExitConfirmation(true);
     }
   }, [currentIndex, questions.length]);
@@ -355,8 +361,19 @@ export function ApplePracticeSession({ questions, onComplete }: PracticeSessionP
     
     setShowFeedbackState(prev => ({ ...prev, [questionId]: true }));
     
-    // Track progress if needed - simplified for now
-    console.log(`Question ${questionId} answered: ${answer === questionContent.correctAnswer ? 'correct' : 'incorrect'}`);
+    // Track progress immediately when answer is submitted
+    const isCorrect = answer === questionContent.correctAnswer;
+    const status = isCorrect ? 'correct' : 'incorrect';
+    
+    // Get question metadata for progress tracking
+    const topic = currentQuestion.topic || 'Unknown Topic';
+    const skill = Array.isArray(currentQuestion.tags) ? currentQuestion.tags[0] : 'Unknown Skill';
+    const currentSection = section || 'Unknown Section';
+    
+    // Update progress in localStorage immediately
+    updateQuestionProgress(questionId, status, String(topic), String(skill), String(currentSection));
+    
+    console.log(`Question ${questionId} answered: ${status} - Progress saved to dashboard`);
   };
 
   const handleExitConfirm = () => {
@@ -410,22 +427,19 @@ export function ApplePracticeSession({ questions, onComplete }: PracticeSessionP
           </div>
 
           {/* Sidebar Footer */}
-          <div className="p-4 border-t border-gray-200 dark:border-gray-700 space-y-4">
+          <div className="p-4 border-t border-gray-200 dark:border-gray-700 space-y-3">
             <div className="flex items-center justify-between">
               <span className="text-sm text-gray-600 dark:text-gray-400">Theme</span>
               <ThemeToggle />
             </div>
-            <div className="space-y-2">
-              <span className="text-sm text-gray-600 dark:text-gray-400">Font Size</span>
-              <FontSizeToggle />
-            </div>
+            <FontSizeToggle />
           </div>
         </div>
       </div>
 
       {/* Minimal Navbar */}
       <div className="sticky top-0 left-0 right-0 z-30 w-full bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-700">
-        <div className="practice-navbar flex items-center justify-between px-3 py-2">
+        <div className="practice-navbar flex items-center justify-between px-3" style={{ height: '32px', paddingTop: '4px', paddingBottom: '4px' }}>
           {/* Left: Menu Button */}
           <button 
             onClick={() => setSidebarOpen(true)}
@@ -477,21 +491,31 @@ export function ApplePracticeSession({ questions, onComplete }: PracticeSessionP
       {showExitConfirmation && (
         <div className="fixed inset-0 bg-black/30 flex items-center justify-center z-50" style={{ backdropFilter: 'blur(4px)' }}>
           <div className="bg-white dark:bg-gray-800 rounded-xl p-5 max-w-xs w-full shadow-lg">
-            <h3 className="text-[17px] font-medium text-[#1D1D1F] dark:text-gray-100 mb-3">Exit Practice Session?</h3>
-            <p className="text-[15px] text-[#3A3A3C] dark:text-gray-300 mb-5">Your progress will be automatically saved as you practice.</p>
+            <h3 className="text-[17px] font-medium text-[#1D1D1F] dark:text-gray-100 mb-3">
+              {currentIndex === questions.length - 1 ? 'Session Complete!' : 'Exit Practice Session?'}
+            </h3>
+            <p className="text-[15px] text-[#3A3A3C] dark:text-gray-300 mb-5">
+              {currentIndex === questions.length - 1 
+                ? 'You have completed all questions in this practice session. Your progress has been saved.' 
+                : 'Your progress will be automatically saved as you practice.'}
+            </p>
             
             <div className="flex gap-3">
               <button 
                 onClick={handleExitCancel}
                 className="flex-1 py-2 px-4 rounded-xl border border-[#8E8E93] dark:border-gray-600 text-[#1D1D1F] dark:text-gray-100 font-medium text-[15px]"
               >
-                Cancel
+                {currentIndex === questions.length - 1 ? 'Continue' : 'Cancel'}
               </button>
               <button 
                 onClick={handleExitConfirm}
-                className="flex-1 py-2 px-4 rounded-xl bg-[#FF3B30] text-white font-medium text-[15px]"
+                className={`flex-1 py-2 px-4 rounded-xl font-medium text-[15px] ${
+                  currentIndex === questions.length - 1 
+                    ? 'bg-[#007AFF] text-white' 
+                    : 'bg-[#FF3B30] text-white'
+                }`}
               >
-                Exit
+                {currentIndex === questions.length - 1 ? 'Finish' : 'Exit'}
               </button>
             </div>
           </div>
@@ -502,7 +526,15 @@ export function ApplePracticeSession({ questions, onComplete }: PracticeSessionP
       <div 
         ref={containerRef}
         className="flex-1 overflow-y-auto pb-12"
-        style={{ height: 'calc(100vh - 60px)' }}
+        style={{ 
+          height: 'calc(100vh - 60px)',
+          width: '100vw',
+          maxWidth: '100vw',
+          overflowX: 'hidden',
+          display: 'flex',
+          justifyContent: 'center',
+          alignItems: 'flex-start'
+        }}
         onTouchStart={handleTouchStart}
         onTouchMove={handleTouchMove}
         onTouchEnd={handleTouchEnd}
@@ -514,14 +546,18 @@ export function ApplePracticeSession({ questions, onComplete }: PracticeSessionP
           )}
           style={{
             transition: 'opacity 0.15s ease-out',
-            willChange: 'opacity'
+            willChange: 'opacity',
+            width: '100%',
+            maxWidth: '680px'
           }}
         >
-          <div className="apple-question-content">
+          <div className="apple-question-content" style={{ width: '100%', maxWidth: '680px', margin: '0 auto' }}>
             <div className="bg-white dark:bg-gray-800 rounded-xl border border-[#E5E5EA] dark:border-gray-700 p-8 mb-7" style={{
               position: 'relative',
               overflow: 'hidden',
-              boxShadow: 'rgba(0, 0, 0, 0.06) 0px 4px 16px'
+              boxShadow: 'rgba(0, 0, 0, 0.06) 0px 4px 16px',
+              width: '100%',
+              margin: '0 auto'
             }}>
               <div style={{
                 display: 'flex',
@@ -544,7 +580,8 @@ export function ApplePracticeSession({ questions, onComplete }: PracticeSessionP
             <div className="apple-answer-options apple-slide-up" style={{
               width: '100%',
               alignItems: 'flex-start',
-              marginLeft: '0'
+              marginLeft: '0',
+              marginTop: '24px'
             }}>
               {questionContent.options.map((option, index) => {
                 const optionLetter = String.fromCharCode(65 + index);
@@ -590,7 +627,10 @@ export function ApplePracticeSession({ questions, onComplete }: PracticeSessionP
               <div className="mt-6 mb-6">
                 <button
                   onClick={handleNextQuestionNav}
-                  className="w-full py-3 bg-[#007AFF] hover:bg-[#0056CC] text-white font-medium rounded-xl transition-colors flex items-center justify-center gap-2"
+                  className={cn(
+                    "w-full py-3 bg-[#007AFF] hover:bg-[#0056CC] text-white font-medium rounded-xl transition-colors flex items-center justify-center gap-2",
+                    `font-${fontSize}`
+                  )}
                 >
                   {currentIndex === questions.length - 1 ? (
                     <>
@@ -654,6 +694,29 @@ export function ApplePracticeSession({ questions, onComplete }: PracticeSessionP
                     {questionContent.explanation}
                   </ReactMarkdown>
                 </div>
+
+                {/* Next Question Button beneath explanation */}
+                <div className="mt-6 pt-4 border-t border-[#E5E5EA] dark:border-gray-700">
+                  <button
+                    onClick={handleNextQuestionNav}
+                    className={cn(
+                      "w-full py-3 bg-[#007AFF] hover:bg-[#0056CC] text-white font-medium rounded-xl transition-colors flex items-center justify-center gap-2",
+                      `font-${fontSize}`
+                    )}
+                  >
+                    {currentIndex === questions.length - 1 ? (
+                      <>
+                        <span>Complete Session</span>
+                        <CheckCircle className="h-5 w-5" />
+                      </>
+                    ) : (
+                      <>
+                        <span>Next Question</span>
+                        <ChevronRight className="h-5 w-5" />
+                      </>
+                    )}
+                  </button>
+                </div>
               </div>
             )}
 
@@ -665,6 +728,18 @@ export function ApplePracticeSession({ questions, onComplete }: PracticeSessionP
                   correctAnswer={questionContent.correctAnswer}
                   explanation={questionContent.explanation || ''}
                   integrated={true}
+                  onMessageSent={() => {
+                    // Scroll to bottom of page when user sends a message
+                    setTimeout(() => {
+                      const container = containerRef.current;
+                      if (container) {
+                        container.scrollTo({
+                          top: container.scrollHeight,
+                          behavior: 'smooth'
+                        });
+                      }
+                    }, 100);
+                  }}
                 />
               </div>
             )}

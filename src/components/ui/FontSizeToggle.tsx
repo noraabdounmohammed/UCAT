@@ -22,7 +22,6 @@ export function FontSizeToggle() {
 
   return (
     <div className="space-y-2">
-      <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Text Size</span>
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
           <Button

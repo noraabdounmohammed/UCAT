@@ -9,6 +9,7 @@ interface ChatInputProps {
   maxRows?: number;
   onStop?: () => void;
   isStreaming?: boolean;
+  replyPreview?: React.ReactNode;
 }
 
 export const ChatInput: React.FC<ChatInputProps> = ({
@@ -17,10 +18,10 @@ export const ChatInput: React.FC<ChatInputProps> = ({
   placeholder = "Message…",
   maxRows = 8,
   onStop,
-  isStreaming = false
+  isStreaming = false,
+  replyPreview
 }) => {
   const [value, setValue] = useState('');
-  const [isSending, setIsSending] = useState(false);
   const [isComposing, setIsComposing] = useState(false);
   const [isFocused, setIsFocused] = useState(false);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -33,9 +34,9 @@ export const ChatInput: React.FC<ChatInputProps> = ({
     // Reset height to calculate scrollHeight properly
     textarea.style.height = 'auto';
     
-    // Calculate line height based on ChatGPT specs (16px font * 1.5 line-height)
-    const lineHeight = 24; // 16px * 1.5
-    const minHeight = 44; // Minimum 44px for mobile tap target
+    // Calculate line height based on ChatGPT specs (16px font * 1.4 line-height)
+    const lineHeight = 22; // 16px * 1.4
+    const minHeight = 36; // Reduced minimum height for more compact design
     const maxHeight = lineHeight * maxRows;
     
     // Set height based on content, but within min/max bounds
@@ -81,11 +82,10 @@ export const ChatInput: React.FC<ChatInputProps> = ({
 
   // Handle send
   const handleSend = useCallback(async () => {
-    if (!value.trim() || isSending || disabled || isComposing) return;
+    if (!value.trim() || disabled || isComposing) return;
 
     const textToSend = value.trim();
     setValue('');
-    setIsSending(true);
 
     try {
       await onSend(textToSend);
@@ -94,11 +94,10 @@ export const ChatInput: React.FC<ChatInputProps> = ({
       // Restore the message if sending failed
       setValue(textToSend);
     } finally {
-      setIsSending(false);
       // Keep focus on textarea after sending
       textareaRef.current?.focus();
     }
-  }, [value, isSending, disabled, isComposing, onSend]);
+  }, [value, disabled, isComposing, onSend]);
 
   // Handle key down
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
@@ -162,7 +161,7 @@ export const ChatInput: React.FC<ChatInputProps> = ({
     // Allow text paste (default behavior)
   };
 
-  const canSend = value.trim().length > 0 && !isSending && !disabled && !isComposing;
+  const canSend = value.trim().length > 0 && !disabled && !isComposing;
 
   return (
     <div 
@@ -179,44 +178,72 @@ export const ChatInput: React.FC<ChatInputProps> = ({
         minHeight: 'env(keyboard-inset-height, 0px)' // iOS keyboard support
       }}
     >
-      <div className="w-full px-4 py-4">
-        <div className="relative flex items-center gap-2 bg-white dark:bg-gray-800 border border-[#e5e7eb] dark:border-[#374151] rounded-3xl shadow-[0_2px_8px_rgba(0,0,0,0.04)] focus-within:border-[#3b82f6] dark:focus-within:border-[#60a5fa] focus-within:shadow-[0_4px_12px_rgba(59,130,246,0.15)] transition-all duration-200 max-w-4xl mx-auto min-h-[44px]">
-          <textarea
-            ref={textareaRef}
-            value={value}
-            onChange={handleChange}
-            onKeyDown={handleKeyDown}
-            onCompositionStart={handleCompositionStart}
-            onCompositionEnd={handleCompositionEnd}
-            onFocus={handleFocus}
-            onBlur={handleBlur}
-            onDragOver={handleDragOver}
-            onDrop={handleDrop}
-            onPaste={handlePaste}
-            placeholder={placeholder}
-            disabled={disabled || isSending}
-            aria-label="Chat message"
-            className="flex-1 resize-none bg-transparent border-none outline-none text-[#0a0a0a] dark:text-[#fafafa] placeholder-[#a1a1aa] dark:placeholder-[#71717a] overflow-y-auto"
-            style={{
-              fontSize: '16px',
-              fontFamily: 'system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif',
-              fontWeight: '400',
-              lineHeight: '1.5',
-              padding: '0.5rem 0.75rem',
-              minHeight: '44px'
-            }}
-            rows={1}
-          />
-          
-          {isStreaming && onStop && (
-            <button
-              onClick={onStop}
-              className="flex items-center justify-center w-8 h-8 mr-2 bg-red-500 hover:bg-red-600 text-white rounded-full transition-colors flex-shrink-0"
-              aria-label="Stop generation"
-            >
-              <Square className="w-3 h-3" />
-            </button>
+      <div className="w-full px-3 py-2">
+        <div className={`relative bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 shadow-sm hover:shadow-md focus-within:border-blue-500 dark:focus-within:border-blue-400 focus-within:shadow-lg transition-all duration-200 max-w-4xl mx-auto ${
+          replyPreview ? 'rounded-b-xl' : 'rounded-xl'
+        }`}>
+          {replyPreview && (
+            <div className="">
+              {replyPreview}
+            </div>
           )}
+          <div className="flex items-center gap-2 px-3 py-1.5">
+            <textarea
+              ref={textareaRef}
+              value={value}
+              onChange={handleChange}
+              onKeyDown={handleKeyDown}
+              onCompositionStart={handleCompositionStart}
+              onCompositionEnd={handleCompositionEnd}
+              onFocus={handleFocus}
+              onBlur={handleBlur}
+              onDragOver={handleDragOver}
+              onDrop={handleDrop}
+              onPaste={handlePaste}
+              placeholder={placeholder}
+              disabled={disabled}
+              aria-label="Chat message"
+              className="flex-1 resize-none bg-transparent border-none outline-none text-gray-900 dark:text-gray-100 placeholder-gray-500 dark:placeholder-gray-400 leading-relaxed"
+              style={{
+                fontSize: '16px',
+                fontFamily: 'system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif',
+                fontWeight: '400',
+                lineHeight: '1.4',
+                minHeight: '36px',
+                maxHeight: '64px',
+                paddingTop: '8px',
+                paddingBottom: '8px',
+                verticalAlign: 'middle'
+              }}
+              rows={1}
+            />
+            
+            {/* Send/Stop Button */}
+            {isStreaming && onStop ? (
+              <button
+                onClick={onStop}
+                className="flex items-center justify-center w-8 h-8 bg-red-500 hover:bg-red-600 text-white rounded-full transition-all duration-200 hover:scale-105 shadow-sm flex-shrink-0"
+                aria-label="Stop generation"
+              >
+                <Square className="w-3 h-3" />
+              </button>
+            ) : (
+              <button
+                onClick={handleSend}
+                disabled={!canSend}
+                className={`flex items-center justify-center w-8 h-8 rounded-full transition-all duration-200 hover:scale-105 shadow-sm flex-shrink-0 ${
+                  canSend 
+                    ? 'bg-blue-500 hover:bg-blue-600 text-white' 
+                    : 'bg-gray-200 dark:bg-gray-700 text-gray-400 dark:text-gray-500 cursor-not-allowed'
+                }`}
+                aria-label="Send message"
+              >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
+                </svg>
+              </button>
+            )}
+          </div>
         </div>
         
       </div>

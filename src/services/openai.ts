@@ -12,13 +12,15 @@ interface CacheEntry {
  * @param context The question context
  * @param onToken Callback invoked for each streamed token chunk
  * @param onStart Optional callback invoked when streaming begins
+ * @param abortSignal Optional abort signal to cancel the request
  * @returns The full concatenated response once the stream completes
  */
 export async function generateAIResponseStream(
   userQuery: string,
   context: QuestionContext,
   onToken: (token: string) => void,
-  onStart?: () => void
+  onStart?: () => void,
+  abortSignal?: AbortSignal
 ): Promise<string> {
   console.log('Generating AI response (streaming) for:', { userQuery, context });
 
@@ -52,6 +54,7 @@ export async function generateAIResponseStream(
     const systemPrompt = `You are an expert medical education AI assistant helping a UKMLA AKT student.
 - Keep responses concise (150–200 words), UK-guideline focused, light markdown, ≤2 emojis.
 - Do NOT invent links. Only include hyperlinks if they are explicitly provided in the input context; otherwise cite the source name without a URL.
+- If the user asks for a video or visual explanation, search for relevant videos from the Osmosis YouTube channel (https://www.youtube.com/@osmosis) and embed them using this format: [VIDEO:search_term] where search_term relates to the medical topic.
 - If unsure, state that briefly.`;
 
     const compressedUserPrompt = `
@@ -81,9 +84,14 @@ USER QUERY: ${userQuery}`;
         frequency_penalty: 0.1,   // Slightly discourage repetition
         response_format: { type: "text" }, // Explicitly request text format
         stream: true
-      });
+      }, abortSignal ? { signal: abortSignal } : {});
 
       for await (const chunk of stream as AsyncIterable<{ choices: Array<{ delta?: { content?: string } }> }>) {
+        // Check if the request was aborted
+        if (abortSignal?.aborted) {
+          throw new Error('Request aborted');
+        }
+        
         const delta = chunk?.choices?.[0]?.delta?.content ?? '';
         if (delta) {
           onToken(delta);
@@ -200,6 +208,7 @@ Important instructions:
 - Focus on UK standards (NICE, NHS, GMC)
 - Use light markdown (bold for key terms, short bullet lists, up to 2 emojis)
 - Do NOT fabricate references or links. Only include a hyperlink if it is explicitly provided in the input context. Otherwise, name the source (e.g., "NICE CKS: Hypothyroidism") without a URL.
+- If the user asks for a video or visual explanation, search for relevant videos from the Osmosis YouTube channel (https://www.youtube.com/@osmosis) and embed them using this format: [VIDEO:search_term] where search_term relates to the medical topic.
 - If unsure or information is not provided, say so briefly.
 - Never cut off your response.`;
 
