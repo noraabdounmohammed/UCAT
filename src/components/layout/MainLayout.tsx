@@ -4,11 +4,11 @@ import './apple-layout-styles.css';
 
 interface MainLayoutProps {
   children: React.ReactNode;
-  currentPage: 'dashboard' | 'mock';
+  currentPage: 'dashboard' | 'mock' | 'dynamic-demo' | 'explanation-test' | 'concise-demo' | 'concept-practice' | 'concept-practice-old' | 'concept-bulk-upload';
   isPracticeSession?: boolean;
 }
 
-export function MainLayout({ children, isPracticeSession = false }: MainLayoutProps) {
+export function MainLayout({ children, currentPage, isPracticeSession = false }: MainLayoutProps) {
 
   return (
     <div 

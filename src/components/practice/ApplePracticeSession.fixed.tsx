@@ -1,7 +1,8 @@
 import { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import { X, ChevronLeft, ChevronRight } from 'lucide-react';
 import { QuestionRenderer } from './QuestionRenderer';
-import { Dialog } from '@/components/ui/dialog';
+import { ExitConfirmationDialog } from '@/components/ui/dialog';
+import { updateQuestionProgress } from '@/utils/userProgressStorage';
 import './apple-question-styles.css';
 import { QuestionData } from './questionTypes';
 
@@ -10,7 +11,7 @@ interface PracticeSessionProps {
   onComplete: () => void;
   onAnswerSubmit?: (questionId: string, isCorrect: boolean) => void;
   section?: string; // Add section prop to track which section questions belong to
-  defaultFormat?: 'flashcard' | 'ukmla_sba'; // Default question format if not specified in the question
+  defaultFormat?: 'sba' | 'flashcard'; // Default question format if not specified in the question
 }
 
 export function ApplePracticeSession({ 
@@ -18,7 +19,7 @@ export function ApplePracticeSession({
   onComplete, 
   onAnswerSubmit, 
   section, 
-  defaultFormat = 'ukmla_sba' 
+  defaultFormat = 'sba' 
 }: PracticeSessionProps) {
   // State for tracking current question and navigation
   const [currentIndex, setCurrentIndex] = useState(0);
@@ -179,20 +180,7 @@ export function ApplePracticeSession({
               const currentSection = section || 'Unknown Section';
               
               // Update progress in localStorage
-              // Save progress to localStorage directly instead of using updateQuestionProgress
-              try {
-                const progressKey = `question_progress_${questionId}`;
-                const progressData = {
-                  status,
-                  topic: String(topic),
-                  skill: String(skill),
-                  section: String(currentSection),
-                  timestamp: new Date().toISOString()
-                };
-                localStorage.setItem(progressKey, JSON.stringify(progressData));
-              } catch (error) {
-                console.error('Failed to save progress:', error);
-              }
+              updateQuestionProgress(questionId, status, String(topic), String(skill), String(currentSection));
               
               // Call the onAnswerSubmit callback if provided
               if (onAnswerSubmit) {
@@ -208,28 +196,11 @@ export function ApplePracticeSession({
 
       {/* Exit confirmation modal */}
       {showExitConfirmation && (
-        <Dialog open={showExitConfirmation}>
-          <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center">
-            <div className="bg-white dark:bg-gray-800 p-6 rounded-lg max-w-md w-full">
-              <h2 className="text-xl font-semibold mb-4">Exit Practice Session?</h2>
-              <p className="text-gray-600 dark:text-gray-400 mb-6">Are you sure you want to exit? Your progress will be saved.</p>
-              <div className="flex justify-end gap-4">
-                <button 
-                  onClick={handleExitCancel}
-                  className="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-md"
-                >
-                  Cancel
-                </button>
-                <button 
-                  onClick={handleExitConfirm}
-                  className="px-4 py-2 bg-blue-600 text-white rounded-md"
-                >
-                  Exit
-                </button>
-              </div>
-            </div>
-          </div>
-        </Dialog>
+        <ExitConfirmationDialog
+          isOpen={showExitConfirmation}
+          onConfirm={handleExitConfirm}
+          onClose={handleExitCancel}
+        />
       )}
     </div>
   );

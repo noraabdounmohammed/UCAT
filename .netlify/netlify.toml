@@ -11,7 +11,7 @@ port = 5173.0
 [functions."*"]
 
 [build]
-publish = "C:\\Users\\Joe Exotic\\Downloads\\project-bolt-sb1-5xmyjhnt (1)\\project\\dist"
+publish = "C:\\Users\\Nora\\Desktop\\Educate\\UCAT-ukmla\\dist"
 publishOrigin = "config"
 commandOrigin = "config"
 command = "vite build"

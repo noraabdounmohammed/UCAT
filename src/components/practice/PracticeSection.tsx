@@ -335,7 +335,7 @@ export function PracticeSection(): JSX.Element {
       
       // If user is trying to practice unseen questions but there are none left, show a message
       if (isUnseenOnly && unseenCount === 0) {
-        toast.error('You have already attempted all questions in this section. Try including other question types in your filter.');
+        toast.error('You have already attempted all questions in this system. Try including other question types in your filter.');
         setIsLoading(false);
         return;
       }
@@ -524,7 +524,7 @@ export function PracticeSection(): JSX.Element {
 
       
       <div className="apple-section-container">
-        <h3 className="apple-heading-2 mb-4">Select Section</h3>
+        <h3 className="apple-heading-2 mb-4">Select System</h3>
         
         <div className="apple-section-grid">
           {availableSections.map((section) => {
@@ -583,10 +583,10 @@ export function PracticeSection(): JSX.Element {
           {/* Practice Section Content */}
           <div className="mb-10">
 
-            {/* Topics */}
+            {/* Conditions */}
             <div className="mb-8">
               <div className="flex items-center mb-4">
-                <h4 className="apple-heading-2">Topics</h4>
+                <h4 className="apple-heading-2">Conditions</h4>
                 <button 
                   className="ml-auto apple-button-small"
                   onClick={() => {
@@ -711,9 +711,9 @@ export function PracticeSection(): JSX.Element {
                             </div>
                             
                             <div className="mt-1 flex items-center text-sm text-gray-600 dark:text-gray-400">
-                              {/* Count of attempted subtopics out of total */}
+                              {/* Count of attempted sub-conditions out of total */}
                               <span className="mr-2" data-component-name="PracticeSection">
-                                {subtopics.filter(skill => getSkillProgressFromStorage(skill.id).total > 0).length}/{subtopics.length} subtopics
+                                {subtopics.filter(skill => getSkillProgressFromStorage(skill.id).total > 0).length}/{subtopics.length} sub-conditions
                               </span>
                               <span>•</span>
                               {/* Count of attempted questions out of total */}

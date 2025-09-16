@@ -166,6 +166,15 @@ export interface PracticeFilterOptions {
   interactionStatus: InteractionStatus[];
 }
 
+export interface ConceptNodeFilterOptions {
+  system?: string;
+  conditions: string[];
+  presentations: string[];
+  competencies: string[];
+  difficulty: DifficultyOption[];
+  interactionStatus: InteractionStatus[];
+}
+
 export interface ProgressData {
   correct: number;
   incorrect: number;
