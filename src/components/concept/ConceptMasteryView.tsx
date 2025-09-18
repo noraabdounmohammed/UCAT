@@ -1,226 +1,164 @@
 import React from 'react';
 import { useConceptStore } from '@/store/conceptStore';
-import { Award, BookOpen, Brain, Activity } from 'lucide-react';
+import { Award, BookOpen, Tag } from 'lucide-react';
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
+
+const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884D8'];
 
 export const ConceptMasteryView: React.FC = () => {
-  const { filteredConcepts, stats } = useConceptStore();
+  const { filteredConcepts, stats, filterOptions } = useConceptStore();
   
-  // Calculate mastery statistics
-  const masteryLevels = [
-    { level: 0, name: 'Unseen', color: 'bg-gray-200 dark:bg-gray-700' },
-    { level: 1, name: 'Introduced', color: 'bg-red-200 dark:bg-red-900/50' },
-    { level: 2, name: 'Developing', color: 'bg-yellow-200 dark:bg-yellow-900/50' },
-    { level: 3, name: 'Competent', color: 'bg-green-200 dark:bg-green-900/50' },
-    { level: 4, name: 'Mastered', color: 'bg-blue-200 dark:bg-blue-900/50' }
-  ];
-  
+  const masteryLevels = filterOptions.mastery_levels || [];
+
+  if (filteredConcepts.length === 0) {
+    return (
+      <div className="text-center py-8 text-gray-500 dark:text-gray-400">
+        No concepts available for mastery analysis
+      </div>
+    );
+  }
+
   // Count concepts by mastery level
   const masteryStats = masteryLevels.map(level => {
-    const count = filteredConcepts.filter(c => c.mastery_data.mastery_level === level.level).length;
+    const count = filteredConcepts.filter(c => c.mastery_data?.mastery_level === level.level).length;
     return {
-      ...level,
+      name: level.name,
+      level: level.level,
       count,
       percentage: filteredConcepts.length > 0 ? (count / filteredConcepts.length) * 100 : 0
     };
   });
   
-  // Calculate system coverage
-  const systemCoverage = Object.entries(stats.by_system).map(([system, count]) => ({
-    name: system,
-    count,
-    percentage: filteredConcepts.length > 0 ? (count / filteredConcepts.length) * 100 : 0,
-    masteryBreakdown: masteryLevels.map(level => {
-      const levelCount = filteredConcepts.filter(
-        c => c.dimensions.exam_specific?.ukmla?.systems?.includes(system) && c.mastery_data.mastery_level === level.level
-      ).length;
-      return {
-        ...level,
-        count: levelCount,
-        percentage: count > 0 ? (levelCount / count) * 100 : 0
-      };
-    })
-  }));
-  
-  // Get top conditions by count
-  const topConditions = Object.entries(stats.by_condition)
-    .sort((a, b) => b[1] - a[1])
-    .slice(0, 5)
-    .map(([condition, count]) => ({
-      name: condition,
-      count,
-      percentage: filteredConcepts.length > 0 ? (count / filteredConcepts.length) * 100 : 0,
-      masteryBreakdown: masteryLevels.map(level => {
-        const levelCount = filteredConcepts.filter(
-          c => c.dimensions.exam_specific?.ukmla?.conditions?.includes(condition) && c.mastery_data.mastery_level === level.level
-        ).length;
-        return {
-          ...level,
-          count: levelCount,
-          percentage: count > 0 ? (levelCount / count) * 100 : 0
-        };
-      })
-    }));
-  
-  // Get top presentations by count
-  const topPresentations = Object.entries(stats.by_presentation)
-    .sort((a, b) => b[1] - a[1])
-    .slice(0, 5)
-    .map(([presentation, count]) => ({
-      name: presentation,
-      count,
-      percentage: filteredConcepts.length > 0 ? (count / filteredConcepts.length) * 100 : 0,
-      masteryBreakdown: masteryLevels.map(level => {
-        const levelCount = filteredConcepts.filter(
-          c => c.dimensions.exam_specific?.ukmla?.presentations?.includes(presentation) && c.mastery_data.mastery_level === level.level
-        ).length;
-        return {
-          ...level,
-          count: levelCount,
-          percentage: count > 0 ? (levelCount / count) * 100 : 0
-        };
-      })
-    }));
-  
-  if (filteredConcepts.length === 0) {
-    return (
-      <div className="text-center py-12">
-        <p className="text-gray-500 dark:text-gray-400">
-          No concepts available for mastery analysis. Try adjusting your filters.
-        </p>
-      </div>
-    );
-  }
-  
+  // Calculate custom filter coverage
+  const filterCoverage = Object.entries(stats.by_custom_filter || {}).map(([filter, count]) => ({
+    name: filter,
+    count: count as number,
+    percentage: filteredConcepts.length > 0 ? ((count as number) / filteredConcepts.length) * 100 : 0
+  })).sort((a, b) => b.count - a.count).slice(0, 8);
+
   return (
     <div className="space-y-8">
       {/* Overall Mastery Progress */}
-      <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-4">
+      <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-6">
         <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100 mb-4 flex items-center">
           <Award className="h-5 w-5 mr-2 text-blue-600 dark:text-blue-400" />
           Overall Mastery Progress
         </h3>
         
-        <div className="flex mb-4">
-          {masteryStats.map(level => (
-            <div 
-              key={level.level} 
-              className="flex-1 h-8"
-              style={{ 
-                width: `${level.percentage}%`, 
-                minWidth: level.count > 0 ? '20px' : '0'
-              }}
-            >
-              <div className={`h-full ${level.color} ${level.level > 0 ? 'border-l border-white dark:border-gray-900' : ''}`}></div>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          {/* Mastery Level Distribution - Bar Chart */}
+          <div>
+            <h4 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">Mastery Distribution</h4>
+            <ResponsiveContainer width="100%" height={200}>
+              <BarChart data={masteryStats}>
+                <CartesianGrid strokeDasharray="3 3" />
+                <XAxis dataKey="name" tick={{ fontSize: 12 }} />
+                <YAxis tick={{ fontSize: 12 }} />
+                <Tooltip />
+                <Bar dataKey="count" fill="#3B82F6" />
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+
+          {/* Mastery Level Distribution - Clean Legend */}
+          <div>
+            <h4 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">Mastery Breakdown</h4>
+            <div className="space-y-3">
+              {masteryStats.filter(stat => stat.count > 0).map((stat, index) => (
+                <div key={stat.name} className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
+                  <div className="flex items-center space-x-3">
+                    <div 
+                      className="w-4 h-4 rounded-full" 
+                      style={{ backgroundColor: COLORS[index % COLORS.length] }}
+                    />
+                    <span className="font-medium text-gray-900 dark:text-gray-100">{stat.name}</span>
+                  </div>
+                  <div className="text-right">
+                    <div className="text-sm font-medium text-gray-900 dark:text-gray-100">
+                      {stat.count} concepts
+                    </div>
+                    <div className="text-xs text-gray-500 dark:text-gray-400">
+                      {stat.percentage.toFixed(1)}%
+                    </div>
+                  </div>
+                </div>
+              ))}
             </div>
-          ))}
-        </div>
-        
-        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-2">
-          {masteryStats.map(level => (
-            <div key={level.level} className="flex flex-col items-center">
-              <div className={`w-4 h-4 rounded-full ${level.color} mb-1`}></div>
-              <div className="text-sm font-medium text-gray-900 dark:text-gray-100">{level.name}</div>
-              <div className="text-xs text-gray-500 dark:text-gray-400">
-                {level.count} ({Math.round(level.percentage)}%)
-              </div>
-            </div>
-          ))}
+          </div>
         </div>
       </div>
-      
-      {/* System Coverage */}
-      <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-4">
+
+      {/* Custom Filter Coverage */}
+      <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-6">
         <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100 mb-4 flex items-center">
-          <BookOpen className="h-5 w-5 mr-2 text-blue-600 dark:text-blue-400" />
-          System Coverage
+          <Tag className="h-5 w-5 mr-2 text-green-600 dark:text-green-400" />
+          Custom Filter Coverage
         </h3>
         
-        <div className="space-y-4">
-          {systemCoverage.map(system => (
-            <div key={system.name} className="space-y-1">
-              <div className="flex justify-between items-center">
-                <span className="text-sm font-medium text-gray-900 dark:text-gray-100">{system.name}</span>
-                <span className="text-xs text-gray-500 dark:text-gray-400">
-                  {system.count} concepts ({Math.round(system.percentage)}%)
-                </span>
-              </div>
-              
-              <div className="flex h-6 rounded-md overflow-hidden">
-                {system.masteryBreakdown.map(level => (
+        {filterCoverage.length > 0 ? (
+          <div className="space-y-3">
+            {filterCoverage.map((filter, index) => (
+              <div key={filter.name} className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
+                <div className="flex items-center space-x-3">
                   <div 
-                    key={level.level} 
-                    className={`${level.color}`}
-                    style={{ 
-                      width: `${level.percentage}%`, 
-                      minWidth: level.count > 0 ? '8px' : '0'
-                    }}
-                    title={`${level.name}: ${level.count} (${Math.round(level.percentage)}%)`}
-                  ></div>
-                ))}
+                    className="w-4 h-4 rounded-full" 
+                    style={{ backgroundColor: COLORS[index % COLORS.length] }}
+                  />
+                  <span className="font-medium text-gray-900 dark:text-gray-100">{filter.name}</span>
+                </div>
+                <div className="text-right">
+                  <div className="text-sm font-medium text-gray-900 dark:text-gray-100">
+                    {filter.count} concepts
+                  </div>
+                  <div className="text-xs text-gray-500 dark:text-gray-400">
+                    {filter.percentage.toFixed(1)}%
+                  </div>
+                </div>
               </div>
-            </div>
-          ))}
-        </div>
+            ))}
+          </div>
+        ) : (
+          <p className="text-gray-500 dark:text-gray-400 text-center py-4">
+            No custom filters applied to concepts yet
+          </p>
+        )}
       </div>
-      
-      {/* Top Conditions */}
-      <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-4">
+
+      {/* Summary Statistics */}
+      <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-6">
         <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100 mb-4 flex items-center">
-          <Brain className="h-5 w-5 mr-2 text-blue-600 dark:text-blue-400" />
-          Top Conditions
+          <BookOpen className="h-5 w-5 mr-2 text-purple-600 dark:text-purple-400" />
+          Summary Statistics
         </h3>
         
-        <div className="space-y-4">
-          {topConditions.map(condition => (
-            <div key={condition.name} className="space-y-1">
-              <div className="flex justify-between items-center">
-                <span className="text-sm font-medium text-gray-900 dark:text-gray-100 truncate max-w-[300px]" title={condition.name}>
-                  {condition.name}
-                </span>
-                <span className="text-xs text-gray-500 dark:text-gray-400">
-                  {condition.count} concepts
-                </span>
-              </div>
-              
-              <div className="flex h-6 rounded-md overflow-hidden">
-                {condition.masteryBreakdown.map(level => (
-                  <div 
-                    key={level.level} 
-                    className={`${level.color}`}
-                    style={{ 
-                      width: `${level.percentage}%`, 
-                      minWidth: level.count > 0 ? '8px' : '0'
-                    }}
-                    title={`${level.name}: ${level.count} (${Math.round(level.percentage)}%)`}
-                  ></div>
-                ))}
-              </div>
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          <div className="text-center p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
+            <div className="text-2xl font-bold text-blue-600 dark:text-blue-400">
+              {filteredConcepts.length}
             </div>
-          ))}
-        </div>
-      </div>
-      
-      {/* Top Presentations */}
-      <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-4">
-        <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100 mb-4 flex items-center">
-          <Activity className="h-5 w-5 mr-2 text-blue-600 dark:text-blue-400" />
-          Top Presentations
-        </h3>
-        
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          {topPresentations.map(presentation => (
-            <div 
-              key={presentation.name} 
-              className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-700/50 rounded-md"
-            >
-              <span className="text-sm font-medium text-gray-900 dark:text-gray-100 truncate max-w-[200px]" title={presentation.name}>
-                {presentation.name}
-              </span>
-              <span className="text-xs bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 px-2 py-0.5 rounded-full">
-                {presentation.count}
-              </span>
+            <div className="text-sm text-gray-600 dark:text-gray-400">Total Concepts</div>
+          </div>
+          
+          <div className="text-center p-4 bg-green-50 dark:bg-green-900/20 rounded-lg">
+            <div className="text-2xl font-bold text-green-600 dark:text-green-400">
+              {masteryStats.find(m => m.level === 4)?.count || 0}
             </div>
-          ))}
+            <div className="text-sm text-gray-600 dark:text-gray-400">Mastered</div>
+          </div>
+          
+          <div className="text-center p-4 bg-yellow-50 dark:bg-yellow-900/20 rounded-lg">
+            <div className="text-2xl font-bold text-yellow-600 dark:text-yellow-400">
+              {masteryStats.filter(m => m.level >= 1 && m.level <= 3).reduce((sum, m) => sum + m.count, 0)}
+            </div>
+            <div className="text-sm text-gray-600 dark:text-gray-400">In Progress</div>
+          </div>
+          
+          <div className="text-center p-4 bg-gray-50 dark:bg-gray-700 rounded-lg">
+            <div className="text-2xl font-bold text-gray-600 dark:text-gray-400">
+              {Object.keys(stats.by_custom_filter || {}).length}
+            </div>
+            <div className="text-sm text-gray-600 dark:text-gray-400">Custom Filters</div>
+          </div>
         </div>
       </div>
     </div>

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { ChevronRight, ThumbsUp, ThumbsDown, BookOpen } from 'lucide-react';
+import { ThumbsUp, ThumbsDown, BookOpen } from 'lucide-react';
 import type { QuestionData } from './questionTypes';
 import ReactMarkdown from 'react-markdown';
 import { cn } from '@/lib/utils';
@@ -23,7 +23,7 @@ export const ModernFlashcard: React.FC<ModernFlashcardProps> = ({
   // Extract front and back content 
   const backContent = question.explanation || 'No explanation available';
   const title = question.title || 'Flashcard';
-  const tags: string[] = Array.isArray(question.tags) ? question.tags : [];
+  const custom_filters: string[] = Array.isArray(question.custom_filters) ? question.custom_filters : [];
 
   const handleFlip = () => {
     setIsFlipped(!isFlipped);
@@ -33,6 +33,10 @@ export const ModernFlashcard: React.FC<ModernFlashcardProps> = ({
     setSelfRating(rating);
     setHasAnswered(true);
     onAnswer(rating >= 3);
+    // Auto-advance to next question after a short delay
+    setTimeout(() => {
+      onNext();
+    }, 250);
   };
 
   // Reset state when question ID changes (indicating a new question)
@@ -63,14 +67,14 @@ export const ModernFlashcard: React.FC<ModernFlashcardProps> = ({
           </p>
         </div>
         
-        {tags.length > 0 && (
+        {custom_filters.length > 0 && (
           <div className="flex flex-wrap gap-2 justify-end">
-            {tags.slice(0, 3).map((tag: string, index: number) => (
+            {custom_filters.slice(0, 3).map((filter: string, index: number) => (
               <span 
                 key={index} 
                 className="px-2 py-1 text-xs rounded-full bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-200"
               >
-                {tag}
+                {filter}
               </span>
             ))}
           </div>
@@ -170,19 +174,6 @@ export const ModernFlashcard: React.FC<ModernFlashcardProps> = ({
         </div>
       )}
 
-      <div className="mt-6 flex justify-end">
-        <button
-          onClick={onNext}
-          disabled={!hasAnswered}
-          className={cn(
-            "flex items-center px-6 py-2 bg-blue-600 text-white rounded-md",
-            !hasAnswered ? "opacity-50 cursor-not-allowed" : "hover:bg-blue-700"
-          )}
-        >
-          Next
-          <ChevronRight className="h-4 w-4 ml-2" />
-        </button>
-      </div>
 
       <style dangerouslySetInnerHTML={{ __html: `
         .backface-hidden {

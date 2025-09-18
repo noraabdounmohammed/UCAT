@@ -3,352 +3,303 @@
     {
       "concept_id": "cv_acs_stemi_dx",
       "title": "STEMI Diagnosis",
-      "description": "Diagnosis of ST-elevation Myocardial Infarction",
-      "tags": [
-        "acute",
+      "content": "ST-elevation Myocardial Infarction (STEMI) is diagnosed when there is ST elevation ≥1mm in two contiguous leads, or new LBBB. Key diagnostic criteria include: chest pain >20 minutes, ST elevation in leads II, III, aVF (inferior STEMI) or V1-V6 (anterior STEMI), elevated troponins. Emergency PCI within 90 minutes is the gold standard treatment. Risk factors include smoking, diabetes, hypertension, family history.",
+      "custom_filters": [
+        "cardiology",
         "emergency",
-        "ECG"
+        "acute-care",
+        "ecg-interpretation"
       ],
-      "dimensions": {
-        "domain": "Medicine",
-        "subject": "Cardiovascular",
-        "topic": "Acute Coronary Syndrome",
-        "subtopic": "ST-elevation Myocardial Infarction",
-        "exam_specific": {
-          "ukmla": {
-            "systems": [
-              "Cardiovascular"
-            ],
-            "conditions": [
-              "ST-elevation Myocardial Infarction",
-              "Acute Coronary Syndrome"
-            ],
-            "presentations": [
-              "Chest pain",
-              "Left arm radiation",
-              "Acute onset",
-              "Cardiovascular risk factors"
-            ],
-            "competencies": [
-              "Diagnosis"
-            ]
-          }
-        }
-      },
-      "knowledge": {
-        "decision_rule": "ST-segment elevation in contiguous anterior leads (V1-V4) with typical anginal pain and cardiovascular risk factors is diagnostic of anterior wall STEMI requiring urgent reperfusion.",
-        "guideline_ref": {
-          "name": "NICE NG185",
-          "year": 2020,
-          "key_line": "Offer coronary angiography with primary PCI within 120 minutes of first medical contact for people with STEMI presenting within 12 hours of symptom onset."
-        },
-        "misconceptions": [
-          "Stable angina causes ST elevation on ECG",
-          "Pericarditis typically presents with unilateral arm pain",
-          "Aortic dissection commonly causes anterior ST elevation",
-          "Pulmonary embolism presents with ST elevation rather than right heart strain"
-        ]
-      },
-      "difficulty": "medium",
-      "linked_questions": [
-        "ukmla-akt-gen-001"
-      ],
+      "prerequisites": [],
       "mastery_data": {
         "attempts": 0,
         "correct": 0,
         "incorrect": 0,
         "mastery_level": 0,
         "last_practiced": null
-      },
-      "bloom_levels": [
-        "remember",
-        "understand",
-        "apply",
-        "analyze"
-      ],
-      "question_formats": [
-        "sba",
-        "mcq",
-        "data_interpretation",
-        "ukmla_sba"
-      ],
-      "scope_note": "Covers ECG criteria for STEMI diagnosis, distinguishing features from other causes of ST elevation, and initial management decisions.",
-      "relations": [
-        {
-          "type": "part_of",
-          "target_id": "cv_acs_overview"
-        },
-        {
-          "type": "contrasts_with",
-          "target_id": "cv_acs_nstemi_dx"
-        }
-      ]
+      }
     },
     {
-      "concept_id": "cv_acs_nstemi_dx",
+      "concept_id": "cv_acs_nstemi_dx", 
       "title": "NSTEMI Diagnosis",
-      "description": "Diagnosis of Non-ST-elevation Myocardial Infarction",
-      "tags": [
-        "acute",
+      "content": "Non-ST-elevation Myocardial Infarction (NSTEMI) presents with chest pain and elevated troponins but without ST elevation on ECG. May show ST depression or T-wave inversion. GRACE score helps risk stratification. High-risk patients need urgent angiography within 24 hours. Treatment includes dual antiplatelet therapy, anticoagulation, and early invasive strategy for high-risk cases.",
+      "custom_filters": [
+        "cardiology", 
         "emergency",
-        "ECG",
-        "troponin"
+        "risk-stratification"
       ],
-      "dimensions": {
-        "domain": "Medicine",
-        "subject": "Cardiovascular",
-        "topic": "Acute Coronary Syndrome",
-        "subtopic": "Non-ST-elevation Myocardial Infarction",
-        "exam_specific": {
-          "ukmla": {
-            "systems": [
-              "Cardiovascular"
-            ],
-            "conditions": [
-              "Non-ST-elevation Myocardial Infarction",
-              "Acute Coronary Syndrome"
-            ],
-            "presentations": [
-              "Chest pain",
-              "Dyspnea",
-              "Diaphoresis",
-              "Nausea"
-            ],
-            "competencies": [
-              "Diagnosis"
-            ]
-          }
-        }
-      },
-      "knowledge": {
-        "decision_rule": "Elevated cardiac troponins with ischemic symptoms but without ST-segment elevation is diagnostic of NSTEMI.",
-        "guideline_ref": {
-          "name": "NICE NG185",
-          "year": 2020,
-          "key_line": "Offer coronary angiography within 72 hours of first admission for people with NSTEMI or unstable angina."
-        },
-        "misconceptions": [
-          "NSTEMI always presents with less severe symptoms than STEMI",
-          "NSTEMI has better long-term outcomes than STEMI",
-          "Troponin elevation is always due to ACS",
-          "NSTEMI doesn't require urgent intervention"
-        ]
-      },
-      "difficulty": "medium",
-      "linked_questions": [
-        "ukmla-akt-gen-002"
-      ],
+      "prerequisites": ["cv_acs_stemi_dx"],
       "mastery_data": {
         "attempts": 0,
         "correct": 0,
         "incorrect": 0,
         "mastery_level": 0,
         "last_practiced": null
-      },
-      "bloom_levels": [
-        "remember",
-        "understand",
-        "apply",
-        "analyze"
-      ],
-      "question_formats": [
-        "sba",
-        "mcq",
-        "data_interpretation",
-        "ukmla_sba"
-      ],
-      "scope_note": "Covers diagnostic criteria for NSTEMI, troponin interpretation, and risk stratification.",
-      "relations": [
-        {
-          "type": "part_of",
-          "target_id": "cv_acs_overview"
-        },
-        {
-          "type": "contrasts_with",
-          "target_id": "cv_acs_stemi_dx"
-        }
-      ]
+      }
     },
     {
       "concept_id": "resp_asthma_mgmt",
-      "title": "Asthma Management",
-      "description": "Acute and chronic management of asthma",
-      "tags": [
-        "chronic",
-        "acute",
-        "inhaler",
-        "steroids"
+      "title": "Asthma Management", 
+      "content": "Asthma is managed using a stepwise approach. Step 1: SABA PRN. Step 2: Add low-dose ICS. Step 3: Add LABA or increase ICS dose. Step 4: High-dose ICS/LABA combination. Step 5: Add LAMA or oral corticosteroids. Peak flow monitoring and action plans are essential. Triggers include allergens, exercise, cold air, infections. Emergency treatment: high-flow oxygen, nebulized salbutamol, prednisolone.",
+      "custom_filters": [
+        "respiratory",
+        "chronic-disease",
+        "pharmacology"
       ],
-      "dimensions": {
-        "domain": "Medicine",
-        "subject": "Respiratory",
-        "topic": "Asthma",
-        "exam_specific": {
-          "ukmla": {
-            "systems": [
-              "Respiratory"
-            ],
-            "conditions": [
-              "Asthma"
-            ],
-            "presentations": [
-              "Wheezing",
-              "Dyspnea",
-              "Cough",
-              "Chest tightness"
-            ],
-            "competencies": [
-              "Management"
-            ]
-          }
-        }
-      },
-      "knowledge": {
-        "decision_rule": "Step-wise approach to asthma management with SABA as needed for mild intermittent asthma, adding ICS for persistent asthma, and LABA/ICS combinations for moderate to severe asthma.",
-        "guideline_ref": {
-          "name": "BTS/SIGN",
-          "year": 2019,
-          "key_line": "For adults with asthma, offer a SABA as reliever therapy and a low dose ICS as first-line maintenance therapy."
-        },
-        "misconceptions": [
-          "All asthma patients need daily inhaled corticosteroids",
-          "Salbutamol can be used indefinitely without controller therapy",
-          "Oral steroids are first-line for mild asthma exacerbations",
-          "Antibiotics are routinely indicated for asthma exacerbations"
-        ]
-      },
-      "difficulty": "medium",
-      "linked_questions": [
-        "ukmla-akt-gen-003"
+      "prerequisites": [],
+      "mastery_data": {
+        "attempts": 0,
+        "correct": 0, 
+        "incorrect": 0,
+        "mastery_level": 0,
+        "last_practiced": null
+      }
+    },
+    {
+      "concept_id": "resp_copd_mgmt",
+      "title": "COPD Management",
+      "content": "COPD management focuses on bronchodilators and lifestyle modifications. First-line: SABA or SAMA PRN. Add LABA or LAMA for persistent symptoms. Triple therapy (ICS/LABA/LAMA) for frequent exacerbations. Smoking cessation is crucial. Pulmonary rehabilitation improves quality of life. Exacerbations treated with prednisolone, antibiotics if purulent sputum, and oxygen therapy maintaining SpO2 88-92%.",
+      "custom_filters": [
+        "respiratory",
+        "chronic-disease", 
+        "smoking-related"
       ],
+      "prerequisites": ["resp_asthma_mgmt"],
       "mastery_data": {
         "attempts": 0,
         "correct": 0,
         "incorrect": 0,
         "mastery_level": 0,
         "last_practiced": null
-      },
-      "bloom_levels": [
-        "remember",
-        "understand",
-        "apply",
-        "analyze",
-        "evaluate"
+      }
+    },
+    {
+      "concept_id": "endo_dm_t2_mgmt",
+      "title": "Type 2 Diabetes Management",
+      "content": "Type 2 diabetes management starts with lifestyle modifications (diet, exercise, weight loss). First-line medication is metformin. Second-line options include sulfonylureas, DPP-4 inhibitors, SGLT-2 inhibitors, or GLP-1 agonists based on patient factors. Target HbA1c <7% (53 mmol/mol) for most patients. Annual screening for complications: retinopathy, nephropathy, neuropathy, cardiovascular disease.",
+      "custom_filters": [
+        "endocrinology",
+        "chronic-disease",
+        "metabolic"
       ],
-      "question_formats": [
-        "sba",
-        "mcq",
-        "osce",
-        "short_answer",
-        "ukmla_sba"
+      "prerequisites": [],
+      "mastery_data": {
+        "attempts": 0,
+        "correct": 0,
+        "incorrect": 0,
+        "mastery_level": 0,
+        "last_practiced": null
+      }
+    },
+    {
+      "concept_id": "cv_hf_definition",
+      "title": "Heart Failure Definition",
+      "content": "Heart failure is a condition where the heart cannot pump blood effectively, leading to inadequate tissue perfusion. It can be classified as heart failure with reduced ejection fraction (HFrEF, EF <40%) or preserved ejection fraction (HFpEF, EF ≥50%). Common causes include ischemic heart disease, hypertension, cardiomyopathy, and valvular disease. Symptoms include breathlessness, fatigue, ankle swelling, and reduced exercise tolerance.",
+      "custom_filters": [
+        "cardiology",
+        "chronic-disease",
+        "pathophysiology"
       ],
-      "scope_note": "Covers acute and chronic management of asthma, including step-wise approach, inhaler techniques, and exacerbation management.",
-      "relations": [
-        {
-          "type": "part_of",
-          "target_id": "resp_asthma_overview"
-        },
-        {
-          "type": "prerequisite_of",
-          "target_id": "resp_asthma_severe_mgmt"
-        }
-      ]
+      "prerequisites": [],
+      "mastery_data": {
+        "attempts": 0,
+        "correct": 0,
+        "incorrect": 0,
+        "mastery_level": 0,
+        "last_practiced": null
+      }
+    },
+    {
+      "concept_id": "cv_hf_symptoms",
+      "title": "Heart Failure Symptoms",
+      "content": "Common symptoms include fatigue, shortness of breath (especially on exertion or lying flat), swelling in legs/ankles/feet, rapid or irregular heartbeat, persistent cough with white or pink phlegm, and reduced ability to exercise. Signs include elevated JVP, peripheral edema, pulmonary crackles, S3 gallop, and hepatomegaly. NYHA classification grades functional limitation from Class I (no symptoms) to Class IV (symptoms at rest).",
+      "custom_filters": [
+        "cardiology",
+        "clinical-assessment",
+        "symptoms"
+      ],
+      "prerequisites": ["cv_hf_definition"],
+      "mastery_data": {
+        "attempts": 0,
+        "correct": 0,
+        "incorrect": 0,
+        "mastery_level": 0,
+        "last_practiced": null
+      }
+    },
+    {
+      "concept_id": "cv_hf_causes",
+      "title": "Causes of Heart Failure",
+      "content": "Heart failure can result from myocardial damage, hypertension, valvular disease, arrhythmias, or cardiomyopathy. Ischemic heart disease is the most common cause. Other causes include diabetes, alcohol excess, chemotherapy (doxorubicin), viral myocarditis, thyroid disease, and congenital heart disease. Precipitating factors include infection, arrhythmias, medication non-compliance, dietary indiscretion, and myocardial infarction.",
+      "custom_filters": [
+        "cardiology",
+        "etiology",
+        "risk-factors"
+      ],
+      "prerequisites": ["cv_hf_definition"],
+      "mastery_data": {
+        "attempts": 0,
+        "correct": 0,
+        "incorrect": 0,
+        "mastery_level": 0,
+        "last_practiced": null
+      }
+    },
+    {
+      "concept_id": "cv_hf_diagnosis",
+      "title": "Diagnosing Heart Failure",
+      "content": "Diagnosis requires clinical assessment plus objective evidence of cardiac dysfunction. Key investigations include NT-proBNP (>125 pg/mL suggests heart failure), echocardiography (assess EF and structure), ECG (may show arrhythmias, LVH, Q waves), and chest X-ray (cardiomegaly, pulmonary edema). Framingham criteria can aid diagnosis. Consider coronary angiography if ischemic cause suspected.",
+      "custom_filters": [
+        "cardiology",
+        "diagnosis",
+        "investigations"
+      ],
+      "prerequisites": ["cv_hf_symptoms"],
+      "mastery_data": {
+        "attempts": 0,
+        "correct": 0,
+        "incorrect": 0,
+        "mastery_level": 0,
+        "last_practiced": null
+      }
+    },
+    {
+      "concept_id": "cv_ef_classification",
+      "title": "Ejection Fraction Classification",
+      "content": "Ejection fraction (EF) is the percentage of blood pumped out of the left ventricle with each heartbeat. Normal EF is 50-70%. Heart failure with reduced EF (HFrEF) is EF <40%, heart failure with mildly reduced EF (HFmrEF) is 40-49%, and heart failure with preserved EF (HFpEF) is ≥50%. Treatment strategies differ based on EF classification, with ACE inhibitors and beta-blockers proven beneficial in HFrEF.",
+      "custom_filters": [
+        "cardiology",
+        "classification",
+        "echocardiography"
+      ],
+      "prerequisites": ["cv_hf_definition"],
+      "mastery_data": {
+        "attempts": 0,
+        "correct": 0,
+        "incorrect": 0,
+        "mastery_level": 0,
+        "last_practiced": null
+      }
+    },
+    {
+      "concept_id": "cv_hf_stages",
+      "title": "Stages of Heart Failure",
+      "content": "ACC/AHA staging: Stage A (high risk, no symptoms/structural disease), Stage B (structural disease, no symptoms), Stage C (structural disease with symptoms), Stage D (refractory symptoms despite optimal therapy). NYHA functional classification: Class I (no limitation), Class II (slight limitation), Class III (marked limitation), Class IV (symptoms at rest). Staging guides treatment intensity and prognosis.",
+      "custom_filters": [
+        "cardiology",
+        "classification",
+        "prognosis"
+      ],
+      "prerequisites": ["cv_hf_definition"],
+      "mastery_data": {
+        "attempts": 0,
+        "correct": 0,
+        "incorrect": 0,
+        "mastery_level": 0,
+        "last_practiced": null
+      }
+    },
+    {
+      "concept_id": "cv_hf_treatment",
+      "title": "Heart Failure Treatment",
+      "content": "Treatment includes lifestyle modifications (salt restriction, fluid limitation, exercise), ACE inhibitors or ARBs, beta-blockers (bisoprolol, carvedilol), and diuretics for fluid overload. For HFrEF, add aldosterone antagonists (spironolactone) and consider SGLT2 inhibitors. Device therapy includes CRT and ICD for selected patients. Advanced therapies include heart transplantation and mechanical circulatory support.",
+      "custom_filters": [
+        "cardiology",
+        "treatment",
+        "pharmacology"
+      ],
+      "prerequisites": ["cv_hf_diagnosis"],
+      "mastery_data": {
+        "attempts": 0,
+        "correct": 0,
+        "incorrect": 0,
+        "mastery_level": 0,
+        "last_practiced": null
+      }
+    },
+    {
+      "concept_id": "cv_hf_prognosis",
+      "title": "Heart Failure Prognosis",
+      "content": "Heart failure prognosis varies widely based on etiology, EF, age, and comorbidities. 5-year mortality is approximately 50%. Poor prognostic factors include low EF, advanced age, renal dysfunction, hyponatremia, elevated BNP, and frequent hospitalizations. Regular monitoring, medication optimization, and lifestyle modifications can improve outcomes. Palliative care should be considered for end-stage disease.",
+      "custom_filters": [
+        "cardiology",
+        "prognosis",
+        "outcomes"
+      ],
+      "prerequisites": ["cv_hf_treatment"],
+      "mastery_data": {
+        "attempts": 0,
+        "correct": 0,
+        "incorrect": 0,
+        "mastery_level": 0,
+        "last_practiced": null
+      }
+    },
+    {
+      "concept_id": "psych_hf_aspects",
+      "title": "Psychological Aspects of Heart Failure",
+      "content": "Heart failure significantly impacts quality of life and mental health. Depression affects 20-40% of patients and worsens prognosis. Anxiety about symptoms and prognosis is common. Cognitive impairment may result from reduced cardiac output. Psychological support, counseling, and treatment of depression improve outcomes. Patient education about disease management and self-care is crucial for adherence and symptom monitoring.",
+      "custom_filters": [
+        "psychology",
+        "mental-health",
+        "patient-care"
+      ],
+      "prerequisites": ["cv_hf_definition"],
+      "mastery_data": {
+        "attempts": 0,
+        "correct": 0,
+        "incorrect": 0,
+        "mastery_level": 0,
+        "last_practiced": null
+      }
+    },
+    {
+      "concept_id": "misc_apple_color",
+      "title": "Apple Color Variation",
+      "content": "Apples exhibit diverse color variations due to genetic factors and environmental conditions. Common colors include red (anthocyanins), green (chlorophyll retention), and yellow (carotenoids). Color development is influenced by temperature, light exposure, and maturity. Red varieties like Red Delicious develop deeper color with cool nights and warm days. Green varieties like Granny Smith maintain chlorophyll throughout ripening.",
+      "custom_filters": [
+        "botany",
+        "agriculture",
+        "genetics"
+      ],
+      "prerequisites": [],
+      "mastery_data": {
+        "attempts": 0,
+        "correct": 0,
+        "incorrect": 0,
+        "mastery_level": 0,
+        "last_practiced": null
+      }
+    },
+    {
+      "concept_id": "misc_apple_fruit",
+      "title": "Apple as Fruit",
+      "content": "Apples are pome fruits belonging to the Rosaceae family. They develop from the flower's receptacle rather than just the ovary. The core contains seeds (pips) surrounded by carpel walls. Nutritionally, apples provide fiber, vitamin C, potassium, and antioxidants. The saying 'an apple a day keeps the doctor away' reflects their health benefits including improved heart health and digestive function.",
+      "custom_filters": [
+        "nutrition",
+        "botany",
+        "health"
+      ],
+      "prerequisites": [],
+      "mastery_data": {
+        "attempts": 0,
+        "correct": 0,
+        "incorrect": 0,
+        "mastery_level": 0,
+        "last_practiced": null
+      }
     }
   ],
   "dimensions": {
-    "systems": [
-      "Cardiovascular",
-      "Respiratory",
-      "Gastrointestinal",
-      "Neurology",
-      "Endocrinology",
-      "Renal",
-      "Hematology",
-      "Musculoskeletal",
-      "Dermatology",
-      "Psychiatry"
-    ],
-    "competencies": [
-      "Diagnosis",
-      "Management",
-      "Investigation",
-      "Prevention",
-      "Communication",
-      "Ethics"
-    ],
-    "difficulty_levels": [
-      "easy",
-      "medium",
-      "hard"
-    ],
+    "systems": [],
+    "competencies": [],
+    "difficulty_levels": ["easy", "medium", "hard"],
     "mastery_levels": [
-      {
-        "level": 0,
-        "name": "Unseen",
-        "description": "Concept not yet practiced"
-      },
-      {
-        "level": 1,
-        "name": "Introduced",
-        "description": "Concept seen but not mastered"
-      },
-      {
-        "level": 2,
-        "name": "Developing",
-        "description": "Some understanding demonstrated"
-      },
-      {
-        "level": 3,
-        "name": "Competent",
-        "description": "Consistent correct answers"
-      },
-      {
-        "level": 4,
-        "name": "Mastered",
-        "description": "Fully mastered concept"
-      }
-    ],
-    "domains": [
-      "Medicine"
-    ],
-    "subjects": [
-      "Cardiovascular",
-      "Respiratory",
-      "Gastrointestinal",
-      "Neurology",
-      "Endocrinology",
-      "Renal",
-      "Hematology",
-      "Musculoskeletal",
-      "Dermatology",
-      "Psychiatry"
-    ],
-    "topics": [
-      "Acute Coronary Syndrome",
-      "Asthma"
-    ],
-    "subtopics": [
-      "ST-elevation Myocardial Infarction",
-      "Non-ST-elevation Myocardial Infarction"
-    ],
-    "bloom_levels": [
-      "remember",
-      "understand",
-      "apply",
-      "analyze",
-      "evaluate",
-      "create"
-    ],
-    "question_formats": [
-      "sba",
-      "mcq",
-      "emq",
-      "data_interpretation",
-      "osce",
-      "short_answer",
-      "flashcard",
-      "essay",
-      "ukmla_sba"
+      {"level": 0, "name": "Not Started", "description": "No practice attempts"},
+      {"level": 1, "name": "Learning", "description": "< 50% accuracy"},
+      {"level": 2, "name": "Developing", "description": "50-70% accuracy"},
+      {"level": 3, "name": "Proficient", "description": "70-85% accuracy"},
+      {"level": 4, "name": "Mastered", "description": "> 85% accuracy"}
     ]
   }
 }

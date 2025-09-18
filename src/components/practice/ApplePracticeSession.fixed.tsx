@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useMemo, useCallback } from 'react';
-import { X, ChevronLeft, ChevronRight } from 'lucide-react';
+runimport { X, ChevronLeft, ChevronRight } from 'lucide-react';
 import { QuestionRenderer } from './QuestionRenderer';
 import { ExitConfirmationDialog } from '@/components/ui/dialog';
 import { updateQuestionProgress } from '@/utils/userProgressStorage';

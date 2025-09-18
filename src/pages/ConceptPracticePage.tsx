@@ -7,8 +7,10 @@ import { ConceptMasteryView } from '@/components/concept/ConceptMasteryView';
 import { ConceptGraphView } from '@/components/concept/ConceptGraphView';
 import { ApplePracticeSession } from '@/components/practice/ApplePracticeSession';
 import { PracticeConfigModal } from '@/components/practice/PracticeConfigModal';
+import { ConceptBulkUploadModal } from '@/components/concept/ConceptBulkUploadModal';
+import { CustomFilterManager } from '@/components/concept/CustomFilterManager';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Grid, BarChart3, Network, Layers, Settings } from 'lucide-react';
+import { Grid, BarChart3, Network, Layers, Settings, Filter } from 'lucide-react';
 import { GenerationLoadingScreen } from '@/components/practice/GenerationLoadingScreen';
 import { ConceptLoadingScreen } from '@/components/concept/ConceptLoadingScreen';
 
@@ -28,7 +30,17 @@ export const ConceptPracticePage: React.FC = () => {
   
   const [isInitialLoad, setIsInitialLoad] = useState(true);
   const [showPracticeConfig, setShowPracticeConfig] = useState(false);
+  const [showBulkUpload, setShowBulkUpload] = useState(false);
+  const [showFilterManager, setShowFilterManager] = useState(false);
   const [practiceFormat, setPracticeFormat] = useState<'flashcard' | 'ukmla_sba'>('ukmla_sba');
+  
+  // Mock data for custom filters (will be replaced with store integration)
+  const [customFilters, setCustomFilters] = useState<any[]>([]);
+  const [filterCategories, setFilterCategories] = useState<any[]>([
+    { id: 'cat1', name: 'Conditions', color: '#3B82F6', order: 0, created_at: new Date() },
+    { id: 'cat2', name: 'Systems', color: '#10B981', order: 1, created_at: new Date() },
+    { id: 'cat3', name: 'Procedures', color: '#F59E0B', order: 2, created_at: new Date() }
+  ]);
   
   // Load concepts on mount
   useEffect(() => {
@@ -41,15 +53,53 @@ export const ConceptPracticePage: React.FC = () => {
     endPractice();
   };
   
+  // Custom filter handlers
+  const handleCreateFilter = (filter: any) => {
+    const newFilter = {
+      ...filter,
+      id: `filter_${Date.now()}`,
+      created_at: new Date()
+    };
+    setCustomFilters(prev => [...prev, newFilter]);
+  };
+
+  const handleCreateCategory = (category: any) => {
+    const newCategory = {
+      ...category,
+      id: `category_${Date.now()}`,
+      created_at: new Date()
+    };
+    setFilterCategories(prev => [...prev, newCategory]);
+  };
+
+  const handleDeleteFilter = (filterId: string) => {
+    setCustomFilters(prev => prev.filter(f => f.id !== filterId));
+  };
+
   // Handle answer submission
   const handleAnswerSubmit = (questionId: string, isCorrect: boolean) => {
     // Extract concept_id from question
     const question = practiceQuestions.find(q => q.id === questionId);
+    
+    // Development logging
+    if (process.env.NODE_ENV === 'development') {
+      console.log('🔍 handleAnswerSubmit debug:', {
+        questionId,
+        isCorrect,
+        question_found: !!question,
+        concept_id: question?.concept_id
+      });
+    }
+    
     if (question && question.concept_id) {
       console.log(`Updating mastery for concept ${question.concept_id}: ${isCorrect ? 'correct' : 'incorrect'}`);
       updateMastery(question.concept_id, isCorrect);
     } else {
-      console.warn('Could not find concept_id for question:', questionId);
+      console.error('❌ Could not find concept_id for question:', {
+        questionId,
+        question,
+        all_questions: practiceQuestions.map(q => ({ id: q.id, concept_id: q.concept_id }))
+      });
     }
   };
   
@@ -84,15 +134,24 @@ export const ConceptPracticePage: React.FC = () => {
       <div className="flex flex-col md:flex-row justify-between items-center mb-6 bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-6 shadow-sm">
         <div>
           <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100 mb-2">
-            UKMLA Concept Practice
+            Concept Practice
           </h1>
           <p className="text-gray-600 dark:text-gray-400 max-w-2xl">
-            Practice medical concepts across systems, conditions, and presentations. 
-            Track your mastery and focus on areas that need improvement.
+            Practice and master concepts across various topics and categories.
+          </p>
+          <p className="text-gray-600 dark:text-gray-400 max-w-2xl">
+            Track your progress and focus on areas that need improvement.
           </p>
         </div>
         
-        <div className="mt-4 md:mt-0">
+        <div className="mt-4 md:mt-0 flex gap-3">
+          <button
+            className="px-4 py-2.5 bg-gray-100 hover:bg-gray-200 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 rounded-lg transition-colors flex items-center shadow-sm"
+            onClick={() => setShowFilterManager(true)}
+          >
+            <Filter className="h-5 w-5 mr-2" />
+            Manage Filters
+          </button>
           <button
             className="px-6 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors flex items-center shadow-md"
             onClick={() => {
@@ -144,7 +203,7 @@ export const ConceptPracticePage: React.FC = () => {
               
               <div className="mt-4 bg-gray-50 dark:bg-gray-900 rounded-lg p-4">
                 <TabsContent value="grid" className="mt-0">
-                  <ConceptGridView />
+                  <ConceptGridView onBulkUploadClick={() => setShowBulkUpload(true)} />
                 </TabsContent>
                 
                 <TabsContent value="matrix" className="mt-0">
@@ -180,6 +239,25 @@ export const ConceptPracticePage: React.FC = () => {
           conceptCount={filteredConcepts.length}
         />
       )}
+      
+      {/* Custom Filter Manager Modal */}
+      {showFilterManager && (
+        <CustomFilterManager
+          isOpen={showFilterManager}
+          onClose={() => setShowFilterManager(false)}
+          customFilters={customFilters}
+          filterCategories={filterCategories}
+          onCreateFilter={handleCreateFilter}
+          onCreateCategory={handleCreateCategory}
+          onDeleteFilter={handleDeleteFilter}
+        />
+      )}
+      
+      {/* Bulk Upload Modal */}
+      <ConceptBulkUploadModal
+        isOpen={showBulkUpload}
+        onClose={() => setShowBulkUpload(false)}
+      />
     </div>
   );
 };

@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import { X, ChevronDown, ChevronUp, Filter, Search } from 'lucide-react';
 import { useConceptStore } from '@/store/conceptStore';
-import { ConceptFilterState } from '@/types/conceptTypes';
 
 interface FilterSectionProps {
   title: string;
@@ -230,22 +229,22 @@ const MasteryFilterSection: React.FC<MasteryFilterSectionProps> = ({
 
 export const ConceptFilterPanel: React.FC = () => {
   const { 
-    filterOptions, 
     filterState, 
+    filterOptions, 
     stats,
-    updateFilter, 
-    resetFilter 
+    updateFilterState
   } = useConceptStore();
   
   const [isExpanded, setIsExpanded] = useState(true);
   
   const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    updateFilter({ searchQuery: e.target.value });
+    updateFilterState({ searchQuery: e.target.value });
   };
   
   const handleClearSearch = () => {
-    updateFilter({ searchQuery: '' });
+    updateFilterState({ searchQuery: '' });
   };
+
   
   return (
     <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-4">
@@ -254,24 +253,16 @@ export const ConceptFilterPanel: React.FC = () => {
           <Filter className="h-5 w-5 mr-2" />
           Filters
         </h2>
-        <div className="flex items-center">
-          <button
-            onClick={() => resetFilter()}
-            className="px-3 py-1 text-sm bg-blue-600 hover:bg-blue-700 text-white rounded-md transition-colors mr-3"
-          >
-            Reset All
-          </button>
-          <button
-            className="text-gray-500 dark:text-gray-400"
-            onClick={() => setIsExpanded(!isExpanded)}
-          >
-            {isExpanded ? (
-              <ChevronUp className="h-5 w-5" />
-            ) : (
-              <ChevronDown className="h-5 w-5" />
-            )}
-          </button>
-        </div>
+        <button
+          className="text-gray-500 dark:text-gray-400"
+          onClick={() => setIsExpanded(!isExpanded)}
+        >
+          {isExpanded ? (
+            <ChevronUp className="h-5 w-5" />
+          ) : (
+            <ChevronDown className="h-5 w-5" />
+          )}
+        </button>
       </div>
       
       {/* Global search */}
@@ -298,62 +289,21 @@ export const ConceptFilterPanel: React.FC = () => {
         <div className="space-y-4">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
-              <FilterSection
-                title="Systems"
-                options={filterOptions.systems}
-                selected={filterState.systems}
-                onChange={(selected) => updateFilter({ systems: selected })}
-                counts={stats.by_system}
-              />
-              
-              <FilterSection
-                title="Conditions"
-                options={filterOptions.conditions}
-                selected={filterState.conditions}
-                onChange={(selected) => updateFilter({ conditions: selected })}
-                counts={stats.by_condition}
-                searchable
-              />
-              
-              <FilterSection
-                title="Difficulty"
-                options={filterOptions.difficulty}
-                selected={filterState.difficulty}
-                onChange={(selected) => updateFilter({ difficulty: selected })}
-                counts={stats.by_difficulty}
+              <MasteryFilterSection
+                masteryLevels={filterOptions.mastery_levels}
+                selected={filterState.mastery_levels}
+                onChange={(selected) => updateFilterState({ mastery_levels: selected })}
+                counts={stats.by_mastery}
               />
             </div>
             
             <div>
               <FilterSection
-                title="Presentations"
-                options={filterOptions.presentations}
-                selected={filterState.presentations}
-                onChange={(selected) => updateFilter({ presentations: selected })}
-                counts={stats.by_presentation}
-                searchable
-              />
-              
-              <FilterSection
-                title="Competencies"
-                options={filterOptions.competencies}
-                selected={filterState.competencies}
-                onChange={(selected) => updateFilter({ competencies: selected })}
-                counts={stats.by_competency}
-              />
-              
-              <MasteryFilterSection
-                masteryLevels={filterOptions.mastery_levels}
-                selected={filterState.mastery_levels}
-                onChange={(selected) => updateFilter({ mastery_levels: selected })}
-                counts={stats.by_mastery}
-              />
-              
-              <FilterSection
-                title="Tags"
-                options={filterOptions.tags}
-                selected={filterState.tags}
-                onChange={(selected) => updateFilter({ tags: selected })}
+                title="Custom Filters"
+                options={filterOptions.custom_filters || []}
+                selected={filterState.custom_filters || []}
+                onChange={(selected) => updateFilterState({ custom_filters: selected })}
+                counts={stats.by_custom_filter}
                 searchable
               />
             </div>
@@ -362,22 +312,9 @@ export const ConceptFilterPanel: React.FC = () => {
           <div className="pt-2 border-t border-gray-200 dark:border-gray-700">
             <div className="flex items-center justify-between">
               <span className="text-sm text-gray-500 dark:text-gray-400">
-                Showing {stats.total} concepts
+                {stats.total} concepts
               </span>
               
-              <div className="flex space-x-2">
-                {Object.entries(filterState).some(([key, value]) => {
-                  if (key === 'searchQuery') return value !== '';
-                  return Array.isArray(value) && value.length > 0;
-                }) && (
-                  <button
-                    className="text-sm text-blue-600 dark:text-blue-400 hover:underline"
-                    onClick={resetFilter}
-                  >
-                    Clear All Filters
-                  </button>
-                )}
-              </div>
             </div>
           </div>
         </div>

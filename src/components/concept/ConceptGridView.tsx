@@ -1,18 +1,14 @@
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useConceptStore } from '@/store/conceptStore';
 import { ConceptNode } from '@/types/conceptTypes';
-import { Search, Award, BookOpen, Brain, Edit2, Grid, List, Trash2, Check, AlertCircle, Download, Plus } from 'lucide-react';
-import { Link } from 'react-router-dom';
+import { Search, Award, BookOpen, Brain, Grid, List, Check, AlertCircle, Plus } from 'lucide-react';
 import { ConceptEditorModal } from './ConceptEditorModal';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
-import { WorkingDeleteButton } from './WorkingDeleteButton';
 
 interface ConceptCardProps {
   concept: ConceptNode;
   onEdit: (concept: ConceptNode) => void;
-  onDelete: (conceptId: string) => void;
   isSelectMode: boolean;
   isSelected: boolean;
   onToggleSelect: (conceptId: string) => void;
@@ -21,7 +17,6 @@ interface ConceptCardProps {
 const ConceptCard: React.FC<ConceptCardProps> = ({ 
   concept, 
   onEdit, 
-  onDelete, 
   isSelectMode, 
   isSelected, 
   onToggleSelect 
@@ -42,7 +37,7 @@ const ConceptCard: React.FC<ConceptCardProps> = ({
   const getMasteryLevelName = (level: number) => {
     switch(level) {
       case 0: return 'Unseen';
-      case 1: return 'Introduced';
+      case 1: return 'Learning';
       case 2: return 'Developing';
       case 3: return 'Competent';
       case 4: return 'Mastered';
@@ -63,68 +58,67 @@ const ConceptCard: React.FC<ConceptCardProps> = ({
   };
 
   return (
-    <div className={`${getMasteryBackgroundColor(concept.mastery_data.mastery_level)} rounded-lg border border-gray-200 dark:border-gray-700 p-4 shadow-sm hover:shadow-md transition-shadow relative`}>
-      <div className="absolute top-2 right-2 flex space-x-2">
-        {isSelectMode ? (
+    <div 
+      className={`${getMasteryBackgroundColor(concept.mastery_data?.mastery_level || 0)} rounded-lg border border-gray-200 dark:border-gray-700 p-4 shadow-sm hover:shadow-md transition-shadow relative cursor-pointer flex flex-col h-full`}
+      onClick={() => {
+        if (isSelectMode) {
+          onToggleSelect(concept.concept_id);
+        } else {
+          onEdit(concept);
+        }
+      }}
+    >
+      {isSelectMode && (
+        <div className="absolute top-2 right-2">
           <Checkbox
             checked={isSelected}
             onCheckedChange={() => onToggleSelect(concept.concept_id)}
             className="h-4 w-4"
           />
-        ) : (
-          <>
-            <WorkingDeleteButton conceptId={concept.concept_id} />
-            <button
-              onClick={() => onEdit(concept)}
-              className="text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 transition-colors"
-              aria-label="Edit concept"
-            >
-              <Edit2 className="h-3.5 w-3.5" />
-            </button>
-          </>
-        )}
-      </div>
+        </div>
+      )}
+      
       <div className="mb-2">
-        <div className={`px-2 py-1 text-xs rounded-full inline-flex ${getMasteryColor(concept.mastery_data.mastery_level)}`}>
+        <div className={`px-2 py-1 text-xs rounded-full inline-flex ${getMasteryColor(concept.mastery_data?.mastery_level || 0)}`}>
           <span className="flex items-center">
             <Award className="h-3 w-3 mr-1" />
-            {getMasteryLevelName(concept.mastery_data.mastery_level)}
+            {getMasteryLevelName(concept.mastery_data?.mastery_level || 0)}
           </span>
         </div>
       </div>
       
-      <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100 mb-2">
+      <h3 className="text-base sm:text-lg font-medium text-gray-900 dark:text-gray-100 mb-2 leading-tight">
         {concept.title}
       </h3>
       
-      <p className="text-sm text-gray-600 dark:text-gray-400 mb-3 line-clamp-2">
-        {concept.description}
+      <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400 mb-3 line-clamp-3 leading-relaxed flex-grow">
+        {concept.content ? 
+          (() => {
+            if (concept.content.length <= 120) return concept.content;
+            
+            // Find the last space before the 120 character limit to avoid cutting words
+            const truncated = concept.content.substring(0, 120);
+            const lastSpaceIndex = truncated.lastIndexOf(' ');
+            const cutPoint = lastSpaceIndex > 80 ? lastSpaceIndex : 120;
+            
+            return concept.content.substring(0, cutPoint).trim() + '...';
+          })() : 
+          'No content available'
+        }
       </p>
       
-      <div className="space-y-2 mb-3">
-        <div className="flex items-center text-xs text-gray-500 dark:text-gray-400">
-          <BookOpen className="h-3.5 w-3.5 mr-1" />
-          <span className="mr-1">Systems:</span>
-          <div className="flex flex-wrap gap-1">
-            {(concept.dimensions?.exam_specific?.ukmla?.systems || []).map(system => (
-              <span key={system} className="px-1.5 py-0.5 bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300 rounded">
-                {system}
-              </span>
-            ))}
-          </div>
-        </div>
-        
-        <div className="flex items-center text-xs text-gray-500 dark:text-gray-400">
-          <Brain className="h-3.5 w-3.5 mr-1" />
-          <span className="mr-1">Conditions:</span>
-          <div className="flex flex-wrap gap-1">
-            {(concept.dimensions?.exam_specific?.ukmla?.conditions || []).map(condition => (
-              <span key={condition} className="px-1.5 py-0.5 bg-amber-50 dark:bg-amber-900/20 text-amber-700 dark:text-amber-300 rounded truncate max-w-[150px]">
-                {condition}
-              </span>
-            ))}
-          </div>
-        </div>
+      
+      <div className="flex flex-wrap gap-1 mt-auto">
+        {concept.custom_filters?.slice(0, 2).map((filter, index) => (
+          <span key={index} className="px-2 py-1 text-xs bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 rounded-full truncate max-w-20 sm:max-w-none">
+            {filter}
+          </span>
+        ))}
+        {concept.custom_filters && concept.custom_filters.length > 2 && (
+          <span className="px-2 py-1 text-xs bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400 rounded-full">
+            +{concept.custom_filters.length - 2}
+          </span>
+        )}
       </div>
     </div>
   );
@@ -146,7 +140,7 @@ const ConceptListItem: React.FC<ConceptListItemProps> = ({ concept, onPractice }
           </h3>
           <div className="ml-2 flex">
             <span className="px-1.5 py-0.5 text-xs rounded-full bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300">
-              {concept.bloom_level ? concept.bloom_level.charAt(0).toUpperCase() + concept.bloom_level.slice(1) : 'Unknown'}
+              {concept.bloom_levels && concept.bloom_levels.length > 0 ? concept.bloom_levels[0].charAt(0).toUpperCase() + concept.bloom_levels[0].slice(1) : 'Unknown'}
             </span>
           </div>
         </div>
@@ -169,7 +163,11 @@ const ConceptListItem: React.FC<ConceptListItemProps> = ({ concept, onPractice }
   );
 };
 
-export const ConceptGridView: React.FC = () => {
+interface ConceptGridViewProps {
+  onBulkUploadClick?: () => void;
+}
+
+export const ConceptGridView: React.FC<ConceptGridViewProps> = ({ onBulkUploadClick }) => {
   const { filteredConcepts, startPractice, updateConcept, deleteConcept, loadConcepts } = useConceptStore();
   const [selectedConcepts, setSelectedConcepts] = useState<Set<string>>(new Set());
   const [isSelectMode, setIsSelectMode] = useState(false);
@@ -179,7 +177,7 @@ export const ConceptGridView: React.FC = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
   const [sortBy, setSortBy] = useState<'mastery' | 'alphabetical' | 'system'>('mastery');
-  const [quickFilters, setQuickFilters] = useState<{
+  const [quickFilters] = useState<{
     mastery?: number;
     system?: string;
   }>({});
@@ -277,23 +275,31 @@ export const ConceptGridView: React.FC = () => {
       return;
     }
     
-    if (confirm(`Are you sure you want to delete ${selectedConcepts.size} selected concepts?`)) {
-      try {
+    // Skip confirmation and proceed directly with deletion
+    try {
         // Get the concepts to delete
         const conceptsToDelete = Array.from(selectedConcepts);
+        console.log('Deleting concepts:', conceptsToDelete);
         
-        // Delete each concept
+        // Delete from localStorage first (for bulk imported concepts)
+        const storedConcepts = localStorage.getItem('user_concepts');
+        if (storedConcepts) {
+          const concepts = JSON.parse(storedConcepts);
+          console.log('Before deletion - localStorage concepts:', concepts.length);
+          const updatedConcepts = concepts.filter((c: any) => !conceptsToDelete.includes(c.concept_id));
+          console.log('After deletion - localStorage concepts:', updatedConcepts.length);
+          localStorage.setItem('user_concepts', JSON.stringify(updatedConcepts));
+        }
+        
+        // Add to deleted concepts list to prevent them from showing up again
+        const deletedConceptsStr = localStorage.getItem('deleted_concepts');
+        const deletedConceptIds = deletedConceptsStr ? JSON.parse(deletedConceptsStr) : [];
+        const updatedDeletedIds = [...deletedConceptIds, ...conceptsToDelete];
+        localStorage.setItem('deleted_concepts', JSON.stringify(updatedDeletedIds));
+        
+        // Delete each concept from store
         conceptsToDelete.forEach(conceptId => {
-          // Delete from store
           deleteConcept(conceptId);
-          
-          // Delete from localStorage
-          const storedConcepts = localStorage.getItem('user_concepts');
-          if (storedConcepts) {
-            const concepts = JSON.parse(storedConcepts);
-            const updatedConcepts = concepts.filter((c: any) => c.concept_id !== conceptId);
-            localStorage.setItem('user_concepts', JSON.stringify(updatedConcepts));
-          }
         });
         
         // Clear selection
@@ -310,13 +316,14 @@ export const ConceptGridView: React.FC = () => {
         setTimeout(() => {
           loadConcepts();
         }, 100);
-      } catch (error) {
-        console.error('Error bulk deleting concepts:', error);
-        setStatusMessage({
-          type: 'error',
-          message: 'Failed to delete some concepts. See console for details.'
-        });
-      }
+        
+        console.log('Deletion process completed');
+    } catch (error) {
+      console.error('Error bulk deleting concepts:', error);
+      setStatusMessage({
+        type: 'error',
+        message: 'Failed to delete some concepts. See console for details.'
+      });
     }
   };
   
@@ -335,8 +342,9 @@ export const ConceptGridView: React.FC = () => {
   
   // Select all displayed concepts
   const selectAllConcepts = () => {
-    const allIds = displayedConcepts.map(c => c.concept_id);
-    setSelectedConcepts(new Set(allIds));
+    const allIds = displayedConcepts.map(c => c.concept_id).filter(id => id !== undefined);
+    const uniqueIds = [...new Set(allIds)]; // Remove duplicates
+    setSelectedConcepts(new Set(uniqueIds));
   };
   
   // Deselect all concepts
@@ -379,7 +387,9 @@ export const ConceptGridView: React.FC = () => {
     let comparison = 0;
     
     if (sortBy === 'mastery') {
-      comparison = a.mastery_data.mastery_level - b.mastery_data.mastery_level;
+      const aMastery = a.mastery_data?.mastery_level || 0;
+      const bMastery = b.mastery_data?.mastery_level || 0;
+      comparison = aMastery - bMastery;
     } else if (sortBy === 'alphabetical') {
       comparison = a.title.localeCompare(b.title);
     } else if (sortBy === 'system') {
@@ -396,12 +406,11 @@ export const ConceptGridView: React.FC = () => {
     // Apply search query
     if (searchQuery) {
       const query = searchQuery.toLowerCase();
-      const matchesTitle = concept.title.toLowerCase().includes(query);
-      const matchesDescription = concept.description.toLowerCase().includes(query);
-      const matchesSystem = concept.dimensions?.exam_specific?.ukmla?.systems?.some(s => s.toLowerCase().includes(query)) || false;
-      const matchesCondition = concept.dimensions?.exam_specific?.ukmla?.conditions?.some(c => c.toLowerCase().includes(query)) || false;
+      const matchesTitle = concept.title?.toLowerCase().includes(query) || false;
+      const matchesContent = concept.content?.toLowerCase().includes(query) || false;
+      const matchesCustomFilters = concept.custom_filters?.some(f => f.toLowerCase().includes(query)) || false;
       
-      if (!(matchesTitle || matchesDescription || matchesSystem || matchesCondition)) {
+      if (!(matchesTitle || matchesContent || matchesCustomFilters)) {
         return false;
       }
     }
@@ -439,187 +448,172 @@ export const ConceptGridView: React.FC = () => {
         </Alert>
       )}
       
-      {/* Controls and filters */}
-      <div className="bg-gray-50 dark:bg-gray-900 rounded-lg p-4">
-        <div className="flex items-center justify-between mb-4">
-          <div className="flex items-center space-x-3">
-            <div className="relative flex-1">
-              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                <Search className="h-4 w-4 text-gray-400" />
-              </div>
-              <input
-                type="text"
-                placeholder="Search concepts..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="block w-full pl-10 pr-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 placeholder-gray-500 dark:placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
-              />
-            </div>
+      {/* Search Bar */}
+      <div className="mb-4" onClick={(e) => e.stopPropagation()}>
+        <div className="relative">
+          <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+            <Search className="h-4 w-4 sm:h-5 sm:w-5 text-gray-400" />
           </div>
-          
-          {/* Bulk actions */}
-          <div className="flex items-center space-x-2">
-            <Button
-              variant={isSelectMode ? "destructive" : "outline"}
-              size="sm"
-              onClick={() => {
-                if (isSelectMode) {
-                  setIsSelectMode(false);
-                  setSelectedConcepts(new Set());
-                } else {
-                  setIsSelectMode(true);
-                }
-              }}
-            >
-              {isSelectMode ? "Cancel Selection" : "Select Multiple"}
-            </Button>
-            
-            {isSelectMode && (
-              <>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={selectAllConcepts}
-                >
-                  Select All
-                </Button>
-                
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={deselectAllConcepts}
-                >
-                  Deselect All
-                </Button>
-                
-                <Button
-                  variant="destructive"
-                  size="sm"
-                  onClick={handleBulkDelete}
-                  disabled={selectedConcepts.size === 0}
-                >
-                  Delete Selected ({selectedConcepts.size})
-                </Button>
-              </>
-            )}
-          </div>
+          <input
+            type="text"
+            placeholder="Search concepts..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="block w-full pl-9 sm:pl-10 pr-3 py-2 sm:py-2.5 text-sm sm:text-base border border-gray-200 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 placeholder-gray-500 dark:placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+          />
         </div>
-        
-        <div className="flex items-center space-x-3 mb-4">
-          {/* Sort controls */}
-          <div className="flex flex-wrap items-center gap-2 mt-3">
-            <span className="text-sm text-gray-500 dark:text-gray-400">Sort by:</span>
+      </div>
+
+      {/* Controls Bar */}
+      <div className="flex flex-col gap-3 mb-4">
+        {/* Sort and View Toggle */}
+        <div className="flex items-center justify-between">
+          <div className="flex items-center bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-1">
             <button
-              className={`px-2 py-1 text-xs rounded-md flex items-center ${sortBy === 'mastery' ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-200' : 'bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300'}`}
+              className={`px-2 sm:px-3 py-1 sm:py-1.5 text-xs sm:text-sm font-medium rounded-md transition-colors ${
+                sortBy === 'mastery' 
+                  ? 'bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-gray-100' 
+                  : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100'
+              }`}
               onClick={(e) => handleSort(e, 'mastery')}
             >
-              <Award className="h-3 w-3 mr-1" />
               Mastery
             </button>
-            
             <button
-              className={`px-2 py-1 text-xs rounded-md flex items-center ${sortBy === 'alphabetical' ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-200' : 'bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300'}`}
+              className={`px-2 sm:px-3 py-1 sm:py-1.5 text-xs sm:text-sm font-medium rounded-md transition-colors ${
+                sortBy === 'alphabetical' 
+                  ? 'bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-gray-100' 
+                  : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100'
+              }`}
               onClick={(e) => handleSort(e, 'alphabetical')}
             >
-              Alphabetical
-            </button>
-            
-            <button
-              className={`px-2 py-1 text-xs rounded-md flex items-center ${sortBy === 'system' ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-200' : 'bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300'}`}
-              onClick={(e) => handleSort(e, 'system')}
-            >
-              System
-            </button>
-            
-            {/* View mode toggle */}
-            <button
-              className="px-2 py-1 text-xs rounded-md flex items-center bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300"
-              onClick={() => setViewMode(viewMode === 'grid' ? 'list' : 'grid')}
-              title={viewMode === 'grid' ? 'Switch to List View' : 'Switch to Grid View'}
-            >
-              {viewMode === 'grid' ? <List className="h-3 w-3" /> : <Grid className="h-3 w-3" />}
+              A-Z
             </button>
           </div>
+          
+          <button
+            className="p-1.5 sm:p-2 border border-gray-200 dark:border-gray-700 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
+            onClick={() => setViewMode(viewMode === 'grid' ? 'list' : 'grid')}
+            title={viewMode === 'grid' ? 'List View' : 'Grid View'}
+          >
+            {viewMode === 'grid' ? <List className="h-4 w-4 sm:h-5 sm:w-5" /> : <Grid className="h-4 w-4 sm:h-5 sm:w-5" />}
+          </button>
         </div>
+
+        {/* Bulk Actions */}
+        {!isSelectMode ? (
+          <button
+            className="w-full sm:w-auto px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg transition-colors"
+            onClick={() => setIsSelectMode(true)}
+          >
+            Select Multiple
+          </button>
+        ) : (
+          <div className="flex flex-col sm:flex-row gap-2">
+            <div className="flex gap-2">
+              <button
+                className="flex-1 sm:flex-none px-3 py-1.5 text-xs sm:text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100 border border-gray-200 dark:border-gray-700 rounded-lg"
+                onClick={selectAllConcepts}
+              >
+                All
+              </button>
+              <button
+                className="flex-1 sm:flex-none px-3 py-1.5 text-xs sm:text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100 border border-gray-200 dark:border-gray-700 rounded-lg"
+                onClick={deselectAllConcepts}
+              >
+                Clear
+              </button>
+            </div>
+            <div className="flex gap-2">
+              <button
+                className="flex-1 sm:flex-none px-3 py-1.5 text-xs sm:text-sm text-white bg-red-600 hover:bg-red-700 rounded-lg disabled:opacity-50"
+                onClick={(e) => {
+                  console.log('Delete button clicked');
+                  e.preventDefault();
+                  e.stopPropagation();
+                  handleBulkDelete();
+                }}
+                disabled={selectedConcepts.size === 0}
+              >
+                Delete ({selectedConcepts.size})
+              </button>
+              <button
+                className="flex-1 sm:flex-none px-3 py-1.5 text-xs sm:text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg"
+                onClick={() => {
+                  setIsSelectMode(false);
+                  setSelectedConcepts(new Set());
+                }}
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        )}
       </div>
       
-      {/* Results count and export */}
-      <div className="flex justify-between items-center mb-4">
+      {/* Results count */}
+      <div className="mb-4" onClick={(e) => e.stopPropagation()}>
         <div className="text-sm text-gray-600 dark:text-gray-400">
-          Showing {displayedConcepts.length} of {filteredConcepts.length} concepts
+          Showing {displayedConcepts.length} concepts{filteredConcepts.length !== displayedConcepts.length && ` of ${filteredConcepts.length} total`}
           {selectedConcepts.size > 0 && ` (${selectedConcepts.size} selected)`}
         </div>
-        
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={() => {
-            // Export all concepts to JSON file for backup
-            const dataStr = JSON.stringify({ concepts: filteredConcepts }, null, 2);
-            const dataUri = `data:application/json;charset=utf-8,${encodeURIComponent(dataStr)}`;
-            
-            const exportFileDefaultName = `concepts-backup-${new Date().toISOString().slice(0, 10)}.json`;
-            
-            const linkElement = document.createElement('a');
-            linkElement.setAttribute('href', dataUri);
-            linkElement.setAttribute('download', exportFileDefaultName);
-            linkElement.click();
-            
-            setStatusMessage({
-              type: 'success',
-              message: 'Concepts exported successfully!'
-            });
-          }}
-          className="flex items-center gap-1"
-        >
-          <Download className="h-4 w-4" />
-          Export Concepts
-        </Button>
       </div>
       
-      {/* Grid or list view */}
-      {viewMode === 'grid' ? (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-          {/* Add New Concepts Tile */}
-          <Link
-            to="/concept-bulk-upload"
-            className="rounded-lg border-2 border-dashed border-gray-300 dark:border-gray-600 p-6 hover:border-blue-500 dark:hover:border-blue-400 transition-colors group cursor-pointer flex flex-col items-center justify-center min-h-[200px]"
-          >
-            <div className="bg-gray-100 dark:bg-gray-800 p-4 rounded-full mb-3 group-hover:bg-blue-100 dark:group-hover:bg-blue-900/30 transition-colors">
-              <Plus className="h-8 w-8 text-gray-400 dark:text-gray-500 group-hover:text-blue-600 dark:group-hover:text-blue-400" />
-            </div>
-            <h3 className="text-sm font-semibold text-gray-600 dark:text-gray-400 group-hover:text-blue-600 dark:group-hover:text-blue-400 mb-1">
-              Add Concepts
-            </h3>
-            <p className="text-xs text-gray-500 dark:text-gray-500 text-center">
-              Bulk import or create new concepts
-            </p>
-          </Link>
-          
-          {/* Existing Concept Cards */}
-          {displayedConcepts.map(concept => (
-            <ConceptCard
-              key={concept.concept_id}
-              concept={concept}
-              onEdit={handleEdit}
-              onDelete={handleDelete}
-              isSelectMode={isSelectMode}
-              isSelected={selectedConcepts.has(concept.concept_id)}
-              onToggleSelect={toggleConceptSelection}
-            />
-          ))}
-        </div>
-      ) : (
-        <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden">
-          {displayedConcepts.map(concept => (
-            <ConceptListItem
-              key={concept.concept_id}
-              concept={concept}
-              onPractice={handlePractice}
-            />
-          ))}
-        </div>
-      )}
+      {/* Concept Grid */}
+      <div 
+        className={isSelectMode ? "cursor-pointer" : ""}
+        onClick={isSelectMode ? () => {
+          setIsSelectMode(false);
+          setSelectedConcepts(new Set());
+        } : undefined}
+      >
+        {viewMode === 'grid' ? (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            {/* Add Concepts Button */}
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                onBulkUploadClick && onBulkUploadClick();
+              }}
+              className="rounded-lg border-2 border-dashed border-gray-300 dark:border-gray-600 p-6 hover:border-blue-500 dark:hover:border-blue-400 transition-colors group cursor-pointer flex flex-col items-center justify-center min-h-[200px]"
+            >
+              <div className="bg-gray-100 dark:bg-gray-800 p-4 rounded-full mb-3 group-hover:bg-blue-100 dark:group-hover:bg-blue-900/30 transition-colors">
+                <Plus className="h-8 w-8 text-gray-400 dark:text-gray-500 group-hover:text-blue-600 dark:group-hover:text-blue-400" />
+              </div>
+              <h3 className="text-sm font-semibold text-gray-600 dark:text-gray-400 group-hover:text-blue-600 dark:group-hover:text-blue-400 mb-1">
+                Add Concepts
+              </h3>
+              <p className="text-xs text-gray-500 dark:text-gray-500 text-center">
+                Bulk import or create new concepts
+              </p>
+            </button>
+            
+            {/* Existing Concept Cards */}
+            {displayedConcepts.map((concept, index) => (
+              <div key={`${concept.concept_id}-${index}`} onClick={(e) => e.stopPropagation()}>
+                <ConceptCard
+                  concept={concept}
+                  onEdit={handleEdit}
+                  isSelectMode={isSelectMode}
+                  isSelected={selectedConcepts.has(concept.concept_id)}
+                  onToggleSelect={toggleConceptSelection}
+                />
+              </div>
+            ))}
+          </div>
+        ) : (
+          <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden">
+            {displayedConcepts.map((concept, index) => (
+              <div key={`${concept.concept_id}-${index}`} onClick={(e) => e.stopPropagation()}>
+                <ConceptListItem
+                  concept={concept}
+                  onPractice={handlePractice}
+                />
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
       
       {/* Empty state */}
       {displayedConcepts.length === 0 && (

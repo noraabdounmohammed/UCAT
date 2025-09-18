@@ -4,23 +4,30 @@ import { useConceptStore } from '@/store/conceptStore';
 export const ConceptMatrixView: React.FC = () => {
   const { 
     filteredConcepts, 
-    filterOptions, 
-    updateFilter
+    updateFilterState,
+    filterState
   } = useConceptStore();
   
-  // Extract unique systems and conditions from filtered concepts
-  const systems = [...new Set(filteredConcepts.flatMap(c => c.dimensions.exam_specific?.ukmla?.systems || []))].sort();
-  const conditions = [...new Set(filteredConcepts.flatMap(c => c.dimensions.exam_specific?.ukmla?.conditions || []))].sort();
+  // Extract unique custom filters from filtered concepts
+  const allFilters = [...new Set(filteredConcepts.flatMap(c => c.custom_filters || []))].sort();
   
-  // Calculate counts for each system-condition pair
+  // Create a matrix showing mastery levels vs custom filters
+  const masteryLevels = [
+    { level: 0, name: 'Unseen' },
+    { level: 1, name: 'Learning' },
+    { level: 2, name: 'Developing' },
+    { level: 3, name: 'Competent' },
+    { level: 4, name: 'Mastered' }
+  ];
+  
   const matrixData: Record<string, Record<string, number>> = {};
   
-  systems.forEach(system => {
-    matrixData[system] = {};
-    conditions.forEach(condition => {
-      matrixData[system][condition] = filteredConcepts.filter(
-        c => c.dimensions.exam_specific?.ukmla?.systems?.includes(system) && 
-             c.dimensions.exam_specific?.ukmla?.conditions?.includes(condition)
+  masteryLevels.forEach(({ level, name }) => {
+    matrixData[name] = {};
+    allFilters.slice(0, 8).forEach(filter => { // Limit to first 8 filters for display
+      matrixData[name][filter] = filteredConcepts.filter(
+        c => c.mastery_data.mastery_level === level && 
+             c.custom_filters?.includes(filter)
       ).length;
     });
   });
@@ -31,62 +38,47 @@ export const ConceptMatrixView: React.FC = () => {
     1 // Ensure we don't divide by zero
   );
   
-  // Handle cell click to toggle condition filter
-  const handleCellClick = (system: string, condition: string) => {
-    const isSystemSelected = filterOptions.systems.includes(system);
-    const isConditionSelected = filterOptions.conditions.includes(condition);
+  // Handle cell click to toggle custom filter
+  const handleCellClick = (_masteryName: string, filter: string) => {
+    const isFilterSelected = filterState.custom_filters?.includes(filter);
     
-    // Update filters based on current selection state
-    if (isSystemSelected && isConditionSelected) {
-      // Both selected: remove condition
-      updateFilter({
-        conditions: filterOptions.conditions.filter(c => c !== condition)
-      });
-    } else if (isSystemSelected) {
-      // System selected, condition not: add condition
-      updateFilter({
-        conditions: [...filterOptions.conditions, condition]
-      });
-    } else if (isConditionSelected) {
-      // Condition selected, system not: add system
-      updateFilter({
-        systems: [...filterOptions.systems, system]
+    if (isFilterSelected) {
+      // Remove filter
+      updateFilterState({
+        custom_filters: filterState.custom_filters?.filter(f => f !== filter) || []
       });
     } else {
-      // Neither selected: add both
-      updateFilter({
-        systems: [...filterOptions.systems, system],
-        conditions: [...filterOptions.conditions, condition]
+      // Add filter
+      updateFilterState({
+        custom_filters: [...(filterState.custom_filters || []), filter]
       });
     }
   };
   
   // Get cell color based on count and selection state
-  const getCellColor = (system: string, condition: string, count: number) => {
-    const isSystemSelected = filterOptions.systems.includes(system);
-    const isConditionSelected = filterOptions.conditions.includes(condition);
-    const bothSelected = isSystemSelected && isConditionSelected;
+  const getCellColor = (filter: string, count: number) => {
+    const isFilterSelected = filterState.custom_filters?.includes(filter);
     
     if (count === 0) {
-      return 'bg-gray-100 dark:bg-gray-800';
+      return 'bg-gray-100 dark:bg-gray-800 text-gray-400';
     }
     
-    const intensity = Math.max(0.2, Math.min(0.9, count / maxCount));
+    const intensity = Math.min(0.9, Math.max(0.3, count / maxCount));
     
-    if (bothSelected) {
-      return `bg-blue-${Math.round(intensity * 500)} dark:bg-blue-${Math.round(intensity * 800)}`;
-    } else if (isSystemSelected || isConditionSelected) {
-      return `bg-blue-${Math.round(intensity * 200)} dark:bg-blue-${Math.round(intensity * 900)}/50`;
+    if (isFilterSelected) {
+      return `bg-blue-500 dark:bg-blue-600 text-white opacity-${Math.round(intensity * 100)}`;
     } else {
-      return `bg-gray-${Math.round(intensity * 300)} dark:bg-gray-${Math.round(intensity * 700)}`;
+      return `bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-200 opacity-${Math.round(intensity * 100)}`;
     }
   };
   
-  if (systems.length === 0 || conditions.length === 0) {
+  const displayFilters = allFilters.slice(0, 8);
+  
+  if (displayFilters.length === 0) {
     return (
       <div className="text-center py-12">
         <p className="text-gray-500 dark:text-gray-400">
-          No data available for matrix view. Try adjusting your filters.
+          No custom filters available for matrix view. Try adding some concepts with custom filters.
         </p>
       </div>
     );
@@ -95,57 +87,74 @@ export const ConceptMatrixView: React.FC = () => {
   return (
     <div className="overflow-auto -mx-4 sm:mx-0">
       <div className="min-w-[640px] px-4 sm:px-0">
+        <div className="mb-4">
+          <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100 mb-2">
+            Mastery Level × Custom Filter Matrix
+          </h3>
+          <p className="text-sm text-gray-600 dark:text-gray-400">
+            Click cells to filter by custom filters. Color intensity shows concept count.
+          </p>
+        </div>
+        
         <table className="w-full border-collapse">
-        <thead>
-          <tr>
-            <th className="p-2 border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800">
-              System × Condition
-            </th>
-            {conditions.map(condition => (
-              <th 
-                key={condition}
-                className={`p-2 border border-gray-200 dark:border-gray-700 text-xs font-medium ${
-                  filterOptions.conditions.includes(condition) 
-                    ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-200' 
-                    : 'bg-gray-50 dark:bg-gray-800 text-gray-600 dark:text-gray-300'
-                }`}
-                style={{ minWidth: '100px', maxWidth: '150px' }}
-              >
-                <div className="truncate" title={condition}>
-                  {condition}
-                </div>
+          <thead>
+            <tr>
+              <th className="p-3 border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 text-left">
+                <span className="text-sm font-medium text-gray-900 dark:text-gray-100">
+                  Mastery Level
+                </span>
               </th>
-            ))}
-          </tr>
-        </thead>
-        <tbody>
-          {systems.map(system => (
-            <tr key={system}>
-              <td 
-                className={`p-2 border border-gray-200 dark:border-gray-700 font-medium ${
-                  filterOptions.systems.includes(system) 
-                    ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-200' 
-                    : 'bg-gray-50 dark:bg-gray-800 text-gray-800 dark:text-gray-200'
-                }`}
-              >
-                {system}
-              </td>
-              {conditions.map(condition => {
-                const count = matrixData[system][condition] || 0;
-                return (
-                  <td 
-                    key={`${system}-${condition}`}
-                    className={`p-2 border border-gray-200 dark:border-gray-700 text-center cursor-pointer hover:opacity-80 transition-opacity ${getCellColor(system, condition, count)}`}
-                    onClick={() => handleCellClick(system, condition)}
-                  >
-                    {count > 0 ? count : '·'}
-                  </td>
-                );
-              })}
+              {displayFilters.map(filter => (
+                <th 
+                  key={filter}
+                  className={`p-3 border border-gray-200 dark:border-gray-700 text-xs font-medium ${
+                    filterState.custom_filters?.includes(filter)
+                      ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-200' 
+                      : 'bg-gray-50 dark:bg-gray-800 text-gray-600 dark:text-gray-300'
+                  }`}
+                  style={{ minWidth: '100px', maxWidth: '120px' }}
+                >
+                  <div className="truncate" title={filter}>
+                    {filter}
+                  </div>
+                </th>
+              ))}
             </tr>
-          ))}
-        </tbody>
-      </table>
+          </thead>
+          <tbody>
+            {masteryLevels.map(({ level, name }) => (
+              <tr key={level}>
+                <td className="p-3 border border-gray-200 dark:border-gray-700 font-medium bg-gray-50 dark:bg-gray-800 text-gray-800 dark:text-gray-200">
+                  <div className="flex items-center">
+                    <div className={`w-3 h-3 rounded-full mr-2 ${
+                      level === 0 ? 'bg-gray-400' :
+                      level === 1 ? 'bg-red-400' :
+                      level === 2 ? 'bg-yellow-400' :
+                      level === 3 ? 'bg-green-400' :
+                      'bg-blue-400'
+                    }`}></div>
+                    {name}
+                  </div>
+                </td>
+                {displayFilters.map(filter => {
+                  const count = matrixData[name][filter] || 0;
+                  return (
+                    <td 
+                      key={`${level}-${filter}`}
+                      className={`p-3 border border-gray-200 dark:border-gray-700 text-center cursor-pointer hover:opacity-80 transition-all ${getCellColor(filter, count)}`}
+                      onClick={() => handleCellClick(name, filter)}
+                      title={`${count} concepts with ${filter} filter at ${name} level`}
+                    >
+                      <span className="font-medium">
+                        {count > 0 ? count : '·'}
+                      </span>
+                    </td>
+                  );
+                })}
+              </tr>
+            ))}
+          </tbody>
+        </table>
       </div>
       
       <div className="mt-4 text-xs text-gray-500 dark:text-gray-400 flex flex-wrap items-center gap-2 px-4 sm:px-0">

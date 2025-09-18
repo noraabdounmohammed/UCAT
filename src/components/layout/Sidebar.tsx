@@ -1,4 +1,4 @@
-import { useSupabaseClient } from '@supabase/auth-helpers-react';
+// import { useSupabaseClient } from '@supabase/auth-helpers-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
@@ -21,10 +21,10 @@ interface SidebarProps {
 }
 
 const SidebarContent = ({ currentPage, onNavigate }: Pick<SidebarProps, 'currentPage' | 'onNavigate'>) => {
-  const supabase = useSupabaseClient();
+  // const supabase = useSupabaseClient();
 
   const handleSignOut = async () => {
-    await supabase.auth.signOut();
+    // await supabase.auth.signOut();
   };
 
   return (

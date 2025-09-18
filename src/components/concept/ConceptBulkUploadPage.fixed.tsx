@@ -4,7 +4,14 @@ import { ConceptNode } from '@/types/conceptTypes';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Card } from '@/components/ui/card';
-import { Loader2, Plus, Check, AlertCircle, X } from 'lucide-react';
+import { 
+  Loader2, 
+  Plus, 
+  Check, 
+  AlertCircle, 
+  X,
+  Upload
+} from 'lucide-react';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -523,14 +530,26 @@ Output only a valid JSON array of ConceptNodes. No extra text.`;
   };
 
   return (
-    <div className="container py-6 max-w-4xl">
-      <h1 className="text-2xl font-bold mb-6">Bulk Add Concepts</h1>
+    <div className="max-w-7xl mx-auto px-4 py-6">
+      {/* Header */}
+      <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-6 shadow-sm mb-6">
+        <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100 mb-2">
+          Bulk Upload Concepts
+        </h1>
+        <p className="text-gray-600 dark:text-gray-400">
+          Generate medical concepts from educational content using AI. Paste your content and let the system extract individual concept nodes.
+        </p>
+      </div>
       
       <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as any)}>
         <TabsList className="mb-4">
           <TabsTrigger value="input">Input Text</TabsTrigger>
-          <TabsTrigger value="preview" disabled={generatedConcepts.length === 0}>Preview ({generatedConcepts.length})</TabsTrigger>
-          <TabsTrigger value="results" disabled={results.added.length === 0 && results.failed.length === 0}>Results</TabsTrigger>
+          <TabsTrigger value="preview" disabled={generatedConcepts.length === 0}>
+            Preview ({generatedConcepts.length})
+          </TabsTrigger>
+          <TabsTrigger value="results" disabled={results.added.length === 0 && results.failed.length === 0}>
+            Results
+          </TabsTrigger>
         </TabsList>
         
         <TabsContent value="input">
@@ -558,7 +577,7 @@ Output only a valid JSON array of ConceptNodes. No extra text.`;
             <Button 
               onClick={generateConcepts} 
               disabled={isLoading || !inputText.trim()}
-              className="w-full"
+              className="w-full bg-blue-600 hover:bg-blue-700 text-white"
             >
               {isLoading ? (
                 <>
@@ -605,7 +624,7 @@ Output only a valid JSON array of ConceptNodes. No extra text.`;
               <Button variant="outline" onClick={() => setActiveTab('input')}>
                 Back to Input
               </Button>
-              <Button onClick={saveConcepts}>
+              <Button onClick={saveConcepts} className="bg-blue-600 hover:bg-blue-700 text-white">
                 <Check className="mr-2 h-4 w-4" />
                 Save All Concepts
               </Button>
@@ -666,12 +685,15 @@ Output only a valid JSON array of ConceptNodes. No extra text.`;
             )}
             
             <div className="mt-6">
-              <Button onClick={() => {
-                setInputText('');
-                setGeneratedConcepts([]);
-                setResults({ added: [], skipped: [], failed: [] });
-                setActiveTab('input');
-              }}>
+              <Button 
+                onClick={() => {
+                  setInputText('');
+                  setGeneratedConcepts([]);
+                  setResults({ added: [], skipped: [], failed: [] });
+                  setActiveTab('input');
+                }}
+                className="bg-blue-600 hover:bg-blue-700 text-white"
+              >
                 Start New Batch
               </Button>
             </div>

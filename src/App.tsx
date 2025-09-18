@@ -11,7 +11,6 @@ import DynamicQuestionDemo from '@/components/examples/DynamicQuestionDemo';
 import { TestExplanationGenerator } from '@/components/examples/TestExplanationGenerator';
 import { ConciseExplanationDemo } from '@/components/examples/ConciseExplanationDemo';
 import { ConceptNodePracticeSection } from '@/components/practice/ConceptNodePracticeSection';
-import { ConceptBulkUploadPage } from '@/components/concept/ConceptBulkUploadPage';
 import '@/styles/font-sizes.css';
 
 // Mock user data removed
@@ -74,13 +73,6 @@ function App() {
         <Route path="/concept-practice" element={
           <MainLayout currentPage="concept-practice">
             <ConceptPracticePage />
-          </MainLayout>
-        } />
-        
-        {/* Concept Bulk Upload route */}
-        <Route path="/concept-bulk-upload" element={
-          <MainLayout currentPage="concept-bulk-upload">
-            <ConceptBulkUploadPage />
           </MainLayout>
         } />
         

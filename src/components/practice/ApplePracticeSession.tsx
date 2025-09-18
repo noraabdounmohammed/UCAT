@@ -57,8 +57,20 @@ export function ApplePracticeSession({
   const questionContent = useMemo(() => {
     const q = currentQuestion;
     
+    // Debug logging to see what we're receiving
+    if (process.env.NODE_ENV === 'development') {
+      console.log('🔍 ApplePracticeSession received question:', {
+        id: q.id,
+        question: q.question?.substring(0, 50) + '...',
+        question_stem: q.question_stem?.substring(0, 50) + '...',
+        question_stem_length: q.question_stem?.length,
+        has_clinical_vignette: !!q.clinical_vignette,
+        options_count: q.options?.length
+      });
+    }
+    
     // Extract question text from various possible fields
-    const questionText = q.question || q.question_stem || q.content || q.individual_question || '';
+    const questionText = q.question_stem || q.question || q.content || q.individual_question || '';
     
     // Extract options and ensure they have consistent format
     const options = q.options.map((option, index) => {

@@ -21,6 +21,9 @@ export interface ConceptMasteryData {
   incorrect: number;
   mastery_level: number; // 0-4 scale
   last_practiced: string | null; // ISO date string
+  last_practiced_at?: Date; // For compatibility
+  practice_count?: number; // Total practice attempts
+  correct_count?: number; // Total correct answers
   bloom_stats?: Record<BloomLevel, BloomMasteryStats>; // Per-Bloom level stats
   stability?: number; // Memory stability parameter for spaced repetition
   next_review_at?: string; // ISO date string for next review
@@ -99,28 +102,16 @@ export interface AuthoringMetadata {
   author?: string;
 }
 
-// Main concept node interface
+// Ultra-simple concept node interface
 export interface ConceptNode {
   concept_id: string;
   title: string;
-  description: string;
-  tags: string[];
-  bloom_levels?: BloomLevel[];
-  bloom_level?: BloomLevel; // Single bloom level for simplified editing
-  dimensions?: ConceptDimensions;
-  taxonomy?: GenericTaxonomy; // Direct taxonomy access for editing
-  knowledge?: ConceptKnowledge;
-  relations?: ConceptRelation[];
-  relationships?: ConceptRelation[]; // Alternative name for relations
-  templates?: Record<BloomLevel, Record<QuestionFormat, TemplateSpec>>;
-  media?: MediaAsset[];
-  references?: Reference[];
-  authoring?: AuthoringMetadata;
+  content: string; // Single field for all concept content
+  custom_filters: string[]; // User-defined filter tags
+  prerequisites: string[]; // Concept dependencies
   mastery_data: ConceptMasteryData;
-  
-  // New fields for domain-agnostic model
-  question_formats?: QuestionFormat[]; // Supported question formats
-  scope_note?: string; // Clarifies what's included/excluded (keeps MECE)
+  created_at?: Date;
+  updated_at?: Date;
 }
 
 export interface ConceptModel {
@@ -138,70 +129,39 @@ export interface ConceptModel {
 }
 
 export interface ConceptFilterState {
-  // UKMLA-specific filters
-  systems: string[];
-  conditions: string[];
-  presentations: string[];
-  competencies: string[];
-  
-  // Generic filters
-  domain?: string;
-  subject?: string;
-  topic?: string;
-  subtopic?: string;
-  difficulty: string[];
-  mastery_levels: number[];
-  tags: string[];
-  
-  // New filters
-  bloom_levels?: BloomLevel[];
-  question_formats?: QuestionFormat[];
-  due_for_review?: boolean; // Filter for concepts due for review (spaced repetition)
-  
   searchQuery: string;
+  mastery_levels: number[];
+  custom_filters: string[];
 }
 
 export interface ConceptFilterOptions {
-  // UKMLA-specific options
-  systems: string[];
-  conditions: string[];
-  presentations: string[];
-  competencies: string[];
-  
-  // Generic options
-  domains: string[];
-  subjects: string[];
-  topics: string[];
-  subtopics: string[];
-  difficulty: string[];
   mastery_levels: Array<{level: number; name: string}>;
-  tags: string[];
-  
-  // New options
-  bloom_levels: BloomLevel[];
-  question_formats: QuestionFormat[];
+  custom_filters: string[];
 }
 
 export interface ConceptStats {
   total: number;
-  
-  // UKMLA-specific stats
-  by_system: Record<string, number>;
-  by_condition: Record<string, number>;
-  by_presentation: Record<string, number>;
-  by_competency: Record<string, number>;
-  
-  // Generic stats
-  by_domain: Record<string, number>;
-  by_subject: Record<string, number>;
-  by_topic: Record<string, number>;
   by_mastery: Record<number, number>;
-  by_difficulty: Record<string, number>;
-  
-  // New stats
-  by_bloom_level?: Record<BloomLevel, number>;
-  by_question_format?: Record<QuestionFormat, number>;
-  due_for_review?: number; // Count of concepts due for review
+  by_custom_filter: Record<string, number>;
+}
+
+// Custom filter types
+export interface CustomFilter {
+  id: string;
+  name: string;
+  description?: string;
+  color?: string;
+  category_id?: string;
+  created_at: Date;
+}
+
+export interface FilterCategory {
+  id: string;
+  name: string;
+  description?: string;
+  color?: string;
+  parent_id?: string;
+  created_at: Date;
 }
 
 // Practice configuration
@@ -221,20 +181,33 @@ export interface ConceptPracticeState {
   concepts: ConceptNode[];
   filteredConcepts: ConceptNode[];
   stats: ConceptStats;
+  activeView: 'grid' | 'list';
+  customFilters: CustomFilter[];
+  filterCategories: FilterCategory[];
+  
+  // Practice state
   isPracticing: boolean;
-  practiceConfig?: PracticeConfig;
-  practiceQuestions: any[]; // Will be replaced with QuestionData type
-  activeView: 'grid' | 'matrix' | 'tree' | 'graph' | 'mastery';
+  practiceQuestions: any[]; // Will be typed properly later
+  practiceConfig: PracticeConfig;
   
   // Actions
   loadConcepts: () => Promise<void>;
-  updateFilter: (filterUpdates: Partial<ConceptFilterState>) => void;
-  resetFilter: () => void;
-  startPractice: (config?: PracticeConfig) => void;
-  endPractice: () => void;
-  updateMastery: (conceptId: string, isCorrect: boolean) => void;
-  setActiveView: (view: 'grid' | 'matrix' | 'tree' | 'graph' | 'mastery') => void;
-  addConcept: (concept: Partial<ConceptNode>) => void;
+  updateFilterState: (filterUpdates: Partial<ConceptFilterState>) => void;
+  setActiveView: (view: 'grid' | 'list') => void;
+  addConcept: (concept: Omit<ConceptNode, 'concept_id'>) => void;
   updateConcept: (conceptId: string, updates: Partial<ConceptNode>) => void;
   deleteConcept: (conceptId: string) => void;
+  
+  // Practice actions
+  startPractice: (config?: PracticeConfig) => Promise<void>;
+  endPractice: () => void;
+  updateMastery: (conceptId: string, isCorrect: boolean) => void;
+  
+  // Custom filter management
+  createCustomFilter: (filter: Omit<CustomFilter, 'id' | 'created_at'>) => void;
+  updateCustomFilter: (filterId: string, updates: Partial<CustomFilter>) => void;
+  deleteCustomFilter: (filterId: string) => void;
+  
+  // Filter category management
+  createFilterCategory: (category: Omit<FilterCategory, 'id' | 'created_at'>) => void;
 }
