@@ -367,7 +367,7 @@ export function ModernPracticeSession({ questions, onComplete }: PracticeSession
                         <div className="space-y-1">
                           <div className="font-medium text-gray-700">Explanation:</div>
                           <div className="p-2 rounded bg-blue-50 border border-blue-100 text-blue-700">
-                            <div className="prose prose-sm max-w-none">
+                            <div className="prose prose-sm max-w-none whitespace-pre-line">
                               {answer.explanation}
                             </div>
                           </div>
@@ -757,7 +757,7 @@ export function ModernPracticeSession({ questions, onComplete }: PracticeSession
                 </div>
                 <h3 className="text-xs sm:text-sm font-medium text-gray-800">Explanation</h3>
               </div>
-              <div className="bg-gradient-to-r from-amber-50/80 to-white border border-amber-100/80 rounded p-3 sm:p-4 text-xs sm:text-sm text-gray-700 leading-relaxed">
+              <div className="bg-gradient-to-r from-amber-50/80 to-white border border-amber-100/80 rounded p-3 sm:p-4 text-xs sm:text-sm text-gray-700 leading-relaxed whitespace-pre-line">
                 {normalizedQuestion.explanation}
               </div>
               

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useConceptStore } from '@/contexts/ConceptStoreContext';
+import { useConceptStore } from '@/store/conceptStore';
 import { ConceptNode } from '@/types/conceptTypes';
 import { Button } from '@/components/ui/button';
 import { 
@@ -7,8 +7,7 @@ import {
   Plus, 
   Check, 
   AlertCircle, 
-  X,
-  ArrowLeft
+  X
 } from 'lucide-react';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
@@ -17,13 +16,11 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 interface ConceptBulkUploadModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onBack?: () => void;
 }
 
 export const ConceptBulkUploadModal: React.FC<ConceptBulkUploadModalProps> = ({
   isOpen,
-  onClose,
-  onBack
+  onClose
 }) => {
   const [inputText, setInputText] = useState('');
   const [inputMode, setInputMode] = useState<'text' | 'url'>('text');
@@ -396,8 +393,27 @@ Output only a valid JSON array of ConceptNodes. No extra text.`;
       }
     }
 
-    // If all proxies fail, throw error with detailed information
-    throw new Error(`Unable to fetch from ${url}. All methods failed:\n\nDirect fetch: CORS blocked\nProxy attempts:\n${errors.map(e => `• ${e}`).join('\n')}\n\nSuggestions:\n• Use GitHub raw files (raw.githubusercontent.com)\n• Use Google Drive public files with direct download links\n• Use Pastebin raw links\n• Or paste content directly into the text area`);
+    // If all proxies fail, provide helpful suggestions
+    const suggestions = [
+      "This website blocks automated content extraction. Here are alternatives:",
+      "",
+      "✅ **Working URL formats:**",
+      "• GitHub raw files: raw.githubusercontent.com/user/repo/main/file.md",
+      "• Pastebin raw: pastebin.com/raw/[paste-id]", 
+      "• Google Docs (published): docs.google.com/document/d/[id]/export?format=txt",
+      "• Medium articles: Try copying the URL and pasting as text instead",
+      "",
+      "🔄 **For Y Combinator content:**",
+      "• Copy the article text manually and paste it in the 'Plain Text' tab",
+      "• Or find the content on GitHub if it's open source",
+      "",
+      "💡 **Quick solution:**",
+      "• Switch to 'Plain Text' tab above",
+      "• Copy and paste the article content directly",
+      "• This works 100% of the time and gives better results!"
+    ].join('\n');
+
+    throw new Error(suggestions);
   };
 
   // Handle URL input processing
@@ -596,7 +612,7 @@ Output only a valid JSON array of ConceptNodes. No extra text.`;
         {/* Header */}
         <div className="flex justify-between items-center p-6 border-b border-gray-200 dark:border-gray-700">
           <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100">
-            Generate Curriculum with AI
+            Bulk Upload Concepts
           </h2>
           <button
             onClick={handleClose}
@@ -630,6 +646,12 @@ Output only a valid JSON array of ConceptNodes. No extra text.`;
                     <li>• No special formatting required - plain text works perfectly</li>
                     <li>• You can also paste JSON if you have structured data</li>
                   </ul>
+                  <div className="mt-3 p-2 bg-green-100 dark:bg-green-900/30 rounded border border-green-200 dark:border-green-700">
+                    <p className="text-xs text-green-800 dark:text-green-200">
+                      💡 <strong>Pro tip:</strong> For best results with sites like Y Combinator, Medium, or other protected content, 
+                      copy the text manually and paste it here. This gives better extraction than automated fetching!
+                    </p>
+                  </div>
                 </div>
 
                 
@@ -658,107 +680,181 @@ Output only a valid JSON array of ConceptNodes. No extra text.`;
                     </button>
                   </div>
                 </div>
+              </div>
 
-                {inputMode === 'url' ? (
-                  <div className="mb-4">
-                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                      Enter URL to fetch concepts data
-                    </label>
-                    <div className="flex space-x-2">
-                      <input
-                        type="url"
-                        value={urlInput}
-                        onChange={(e) => setUrlInput(e.target.value)}
-                        className="flex-1 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
-                        placeholder="https://example.com/concepts.json"
-                      />
-                      <button
-                        onClick={handleUrlFetch}
-                        disabled={isLoading || !urlInput.trim()}
-                        className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
-                      >
-                        {isLoading ? 'Fetching...' : 'Fetch'}
-                      </button>
-                    </div>
-                    <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                      Supports JSON files, raw text, or any URL. Uses CORS proxies for blocked sites.
-                    </p>
-                    <div className="mt-2 text-xs text-gray-600 dark:text-gray-400">
-                      <p className="font-medium mb-1">✅ Recommended URLs:</p>
-                      <ul className="space-y-0.5 text-xs">
-                        <li>• GitHub raw: <code className="bg-gray-100 dark:bg-gray-800 px-1 rounded">raw.githubusercontent.com/user/repo/main/file.json</code></li>
-                        <li>• Pastebin raw: <code className="bg-gray-100 dark:bg-gray-800 px-1 rounded">pastebin.com/raw/[id]</code></li>
-                        <li>• Google Drive: Make public → Get shareable link</li>
-                      </ul>
-                    </div>
+              {inputMode === 'url' ? (
+                <div className="mb-4">
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    Enter URL to fetch concepts data
+                  </label>
+                  <div className="mb-2 p-2 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded text-xs">
+                    <p className="text-yellow-800 dark:text-yellow-200 mb-1"><strong>✅ URLs that work well:</strong></p>
+                    <p className="text-yellow-700 dark:text-yellow-300">• GitHub raw files • Pastebin raw links • Simple blogs • Wikipedia</p>
+                    <p className="text-yellow-800 dark:text-yellow-200 mt-1"><strong>❌ URLs that may not work:</strong></p>
+                    <p className="text-yellow-700 dark:text-yellow-300">• Y Combinator • Medium • Sites requiring login • JavaScript-heavy sites</p>
                   </div>
-                ) : (
-                  <div className="mb-4">
-                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                      Paste your educational content
-                    </label>
-                    <textarea
-                      value={inputText}
-                      onChange={(e) => setInputText(e.target.value)}
-                      className="w-full h-64 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 text-sm"
-                      placeholder={`Paste any educational text here, for example:
+                  <div className="flex space-x-2">
+                    <input
+                      type="url"
+                      value={urlInput}
+                      onChange={(e) => setUrlInput(e.target.value)}
+                      className="flex-1 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+                      placeholder="https://example.com/concepts.json"
+                    />
+                    <button
+                      onClick={handleUrlFetch}
+                      disabled={isLoading || !urlInput.trim()}
+                      className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      {isLoading ? 'Fetching...' : 'Fetch'}
+                    </button>
+                  </div>
+                  <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                    Supports JSON files, raw text, or any URL. Uses CORS proxies for blocked sites.
+                  </p>
+                  <div className="mt-2 text-xs text-gray-600 dark:text-gray-400">
+                    <p className="font-medium mb-1">✅ Recommended URLs:</p>
+                    <ul className="space-y-0.5 text-xs">
+                      <li>• GitHub raw: <code className="bg-gray-100 dark:bg-gray-800 px-1 rounded">raw.githubusercontent.com/user/repo/main/file.json</code></li>
+                      <li>• Pastebin raw: <code className="bg-gray-100 dark:bg-gray-800 px-1 rounded">pastebin.com/raw/[id]</code></li>
+                      <li>• Google Drive: Make public → Get shareable link</li>
+                    </ul>
+                  </div>
+                </div>
+              ) : (
+                <div className="mb-4">
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    Paste your educational content
+                  </label>
+                  <textarea
+                    value={inputText}
+                    onChange={(e) => setInputText(e.target.value)}
+                    className="w-full h-64 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 text-sm"
+                    placeholder={`Paste any educational text here, for example:
 
 Heart failure is a condition where the heart cannot pump blood effectively to meet the body's needs. It can be caused by coronary artery disease, high blood pressure, or previous heart attacks. Symptoms include shortness of breath, fatigue, and swelling in the legs.
 
 Diabetes mellitus is a group of metabolic disorders characterized by high blood sugar levels. Type 1 diabetes is caused by autoimmune destruction of pancreatic beta cells, while Type 2 diabetes involves insulin resistance.
 
 The AI will automatically extract concepts from your text and create individual concept cards.`}
+                  />
+                </div>
+              )}
+
+              {/* Custom AI Prompt Section */}
+              <div className="mb-4">
+                <button
+                  type="button"
+                  onClick={() => setShowCustomPrompt(!showCustomPrompt)}
+                  className="flex items-center text-sm font-medium text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-gray-100 transition-colors"
+                >
+                  <svg 
+                    className={`h-4 w-4 mr-2 transition-transform ${showCustomPrompt ? 'rotate-90' : ''}`} 
+                    fill="none" 
+                    stroke="currentColor" 
+                    viewBox="0 0 24 24"
+                  >
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                  </svg>
+                  Customize AI Generation Prompt (Optional)
+                </button>
+                
+                {showCustomPrompt && (
+                  <div className="mt-3">
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="text-xs text-gray-500 dark:text-gray-400">
+                        Customize how concepts are extracted
+                      </span>
+                    </div>
+                    <textarea
+                      value={customPrompt}
+                      onChange={(e) => setCustomPrompt(e.target.value)}
+                      className="w-full h-32 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 text-sm"
+                      placeholder="Enter custom prompt for AI concept extraction..."
                     />
                   </div>
                 )}
 
-                {/* Custom AI Prompt Section */}
-                <div className="mb-4">
-                  <button
-                    type="button"
-                    onClick={() => setShowCustomPrompt(!showCustomPrompt)}
-                    className="flex items-center text-sm font-medium text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-gray-100 transition-colors"
+              {/* Generate Button */}
+              <div className="flex justify-end pt-4">
+                <Button 
+                  onClick={generateConcepts}
+                  disabled={isLoading || (!inputText.trim() && inputMode === 'text')}
+                  className="bg-blue-600 hover:bg-blue-700 text-white"
+                >
+                  {isLoading ? (
+                    <>
+                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                      Generating...
+                    </>
+                  ) : (
+                    <>
+                      <Plus className="h-4 w-4 mr-2" />
+                      Generate Concepts
+                    </>
+                  )}
+                </Button>
+              </div>
+              </div>
+            </TabsContent>
+
+            {/* Results Tab */}
+            <TabsContent value="results">
+              <div className="space-y-4">
+                {generatedConcepts.length > 0 ? (
+                  <div>
+                    <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100 mb-4">
+                      Generated Concepts ({generatedConcepts.length})
+                    </h3>
+                    <div className="space-y-3 max-h-96 overflow-y-auto">
+                      {generatedConcepts.map((concept, index) => (
+                        <div key={index} className="p-4 border border-gray-200 dark:border-gray-700 rounded-lg bg-gray-50 dark:bg-gray-800">
+                          <h4 className="font-medium text-gray-900 dark:text-gray-100 mb-2">{concept.title}</h4>
+                          <p className="text-sm text-gray-600 dark:text-gray-400 mb-2">{concept.content}</p>
+                          {concept.custom_filters && concept.custom_filters.length > 0 && (
+                            <div className="flex flex-wrap gap-1">
+                              {concept.custom_filters.map((filter, filterIndex) => (
+                                <Badge key={filterIndex} variant="secondary" className="text-xs">
+                                  {filter}
+                                </Badge>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                ) : (
+                  <div className="text-center py-8">
+                    <p className="text-gray-500 dark:text-gray-400">No concepts generated yet. Go to the Input tab to generate concepts.</p>
+                  </div>
+                )}
+
+                {/* Action Buttons */}
+                <div className="flex justify-end space-x-3 pt-4">
+                  <Button 
+                    onClick={onClose}
+                    variant="outline"
                   >
-                    <svg 
-                      className={`h-4 w-4 mr-2 transition-transform ${showCustomPrompt ? 'rotate-90' : ''}`} 
-                      fill="none" 
-                      stroke="currentColor" 
-                      viewBox="0 0 24 24"
-                    >
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                    </svg>
-                    Customize AI Generation Prompt (Optional)
-                  </button>
-                  
-                  {showCustomPrompt && (
-                    <div className="mt-3">
-                      <div className="flex items-center justify-between mb-2">
-                        <span className="text-xs text-gray-500 dark:text-gray-400">
-                          Customize how concepts are extracted
-                        </span>
-                        <button
-                          type="button"
-                          onClick={() => setCustomPrompt('')}
-                          className="text-xs text-blue-600 dark:text-blue-400 hover:underline"
-                        >
-                          Reset to Default
-                        </button>
-                      </div>
-                      
-                      <textarea
-                        value={customPrompt}
-                        onChange={(e) => setCustomPrompt(e.target.value)}
-                        className="w-full h-32 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 text-sm font-mono"
-                        placeholder="Customize how the AI generates concepts from your text. Leave blank to use our default MECE + Cognitive Chunking approach.
+                    Cancel
+                  </Button>
+                  <Button 
+                    onClick={handleClose}
+                    className="bg-blue-600 hover:bg-blue-700 text-white"
+                  >
+                    Close
+                  </Button>
+                </div>
+              </div>
+            </TabsContent>
+          </Tabs>
+        </div>
+      </div>
+    </div>
+  );
+};
 
-Our Philosophy: Each concept = one distinct idea with no overlap (MECE), containing exactly one bit of information (Chunking)
-
-Example customizations:
-- Extract only definitions, ignore everything else
-- Focus solely on step-by-step processes
-- Include only diagnostic criteria and symptoms
-- Extract just the key facts, exclude background theory
-- Generate concepts only from numbered lists or bullet points"
+export default ConceptBulkUploadModal;
                       />
                       <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
                         💡 Tip: Be specific about what you want. Example: "Focus on cardiology concepts with emphasis on diagnostic criteria and treatment protocols for UKMLA exam preparation."
@@ -775,27 +871,14 @@ Example customizations:
                   </Alert>
                 )}
                 
-                <div className="flex justify-between">
-                  <div>
-                    {onBack && (
-                      <Button 
-                        variant="outline"
-                        onClick={onBack}
-                        className="flex items-center"
-                      >
-                        <ArrowLeft className="mr-2 h-4 w-4" />
-                        Back to Options
-                      </Button>
-                    )}
-                  </div>
-                  <div className="flex gap-3">
-                    <Button 
-                      variant="outline"
-                      onClick={handleClose}
-                    >
-                      Cancel
-                    </Button>
-                    <Button 
+                <div className="flex justify-end gap-3">
+                  <Button 
+                    variant="outline"
+                    onClick={handleClose}
+                  >
+                    Cancel
+                  </Button>
+                  <Button 
                     onClick={generateConcepts} 
                     disabled={isLoading || !inputText.trim()}
                     className="bg-blue-600 hover:bg-blue-700 text-white"
@@ -812,7 +895,6 @@ Example customizations:
                       </>
                     )}
                   </Button>
-                  </div>
                 </div>
               </div>
             </TabsContent>
@@ -844,21 +926,9 @@ Example customizations:
                 </div>
                 
                 <div className="flex justify-between gap-3">
-                  <div className="flex gap-3">
-                    {onBack && (
-                      <Button 
-                        variant="outline"
-                        onClick={onBack}
-                        className="flex items-center"
-                      >
-                        <ArrowLeft className="mr-2 h-4 w-4" />
-                        Back to Options
-                      </Button>
-                    )}
-                    <Button variant="outline" onClick={() => setActiveTab('input')}>
-                      Back to Input
-                    </Button>
-                  </div>
+                  <Button variant="outline" onClick={() => setActiveTab('input')}>
+                    Back to Input
+                  </Button>
                   <div className="flex gap-3">
                     <Button variant="outline" onClick={handleClose}>
                       Cancel

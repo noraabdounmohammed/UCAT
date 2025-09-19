@@ -193,6 +193,7 @@ export interface ConceptPracticeState {
   // Actions
   loadConcepts: () => Promise<void>;
   updateFilterState: (filterUpdates: Partial<ConceptFilterState>) => void;
+  resetFilters: () => void;
   setActiveView: (view: 'grid' | 'list') => void;
   addConcept: (concept: Omit<ConceptNode, 'concept_id'>) => void;
   updateConcept: (conceptId: string, updates: Partial<ConceptNode>) => void;

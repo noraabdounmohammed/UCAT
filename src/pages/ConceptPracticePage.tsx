@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { useConceptStore } from '@/store/conceptStore';
+import { ConceptStoreProvider, useConceptStore } from '@/contexts/ConceptStoreContext';
 import { ConceptFilterPanel } from '@/components/concept/ConceptFilterPanel';
 import { ConceptGridView } from '@/components/concept/ConceptGridView';
 import { ConceptMatrixView } from '@/components/concept/ConceptMatrixView';
@@ -8,15 +8,42 @@ import { ConceptGraphView } from '@/components/concept/ConceptGraphView';
 import { ApplePracticeSession } from '@/components/practice/ApplePracticeSession';
 import { PracticeConfigModal } from '@/components/practice/PracticeConfigModal';
 import { ConceptBulkUploadModal } from '@/components/concept/ConceptBulkUploadModal';
-import { CustomFilterManager } from '@/components/concept/CustomFilterManager';
+import { ConceptCreationHub } from '@/components/concept/ConceptCreationHub';
+import { ConceptManualAddModal } from '@/components/concept/ConceptManualAddModal.new';
+import { ConceptKnowledgeBaseModal } from '@/components/concept/ConceptKnowledgeBaseModal';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Grid, BarChart3, Network, Layers, Settings, Filter } from 'lucide-react';
+import { Grid, BarChart3, Network, Layers, Settings, ArrowLeft } from 'lucide-react';
 import { GenerationLoadingScreen } from '@/components/practice/GenerationLoadingScreen';
-import { ConceptLoadingScreen } from '@/components/concept/ConceptLoadingScreen';
 
-export const ConceptPracticePage: React.FC = () => {
+interface Curriculum {
+  id: string;
+  name: string;
+  description: string;
+  conceptCount: number;
+  lastAccessed: Date;
+  color: string;
+  category: string;
+  progress: number;
+}
+
+interface ConceptPracticePageProps {
+  onBackToCurriculums?: () => void;
+  curriculum?: Curriculum;
+  onUpdateCurriculum?: (curriculum: Curriculum) => void;
+  // Legacy props for backward compatibility
+  curriculumName?: string;
+  curriculumId?: string;
+}
+
+// Internal component that uses the context
+const ConceptPracticePageContent: React.FC<Omit<ConceptPracticePageProps, 'curriculumId'>> = ({ 
+  onBackToCurriculums,
+  curriculum,
+  onUpdateCurriculum,
+  curriculumName = "UKMLA Cardiology"
+}) => {
   const { 
-    isLoading, 
+    isLoading,
     loadConcepts, 
     filteredConcepts, 
     isPracticing, 
@@ -28,53 +55,73 @@ export const ConceptPracticePage: React.FC = () => {
     setActiveView
   } = useConceptStore();
   
-  const [isInitialLoad, setIsInitialLoad] = useState(true);
   const [showPracticeConfig, setShowPracticeConfig] = useState(false);
+  const [showCreationHub, setShowCreationHub] = useState(false);
   const [showBulkUpload, setShowBulkUpload] = useState(false);
-  const [showFilterManager, setShowFilterManager] = useState(false);
+  const [showManualAdd, setShowManualAdd] = useState(false);
+  const [showKnowledgeBase, setShowKnowledgeBase] = useState(false);
   const [practiceFormat, setPracticeFormat] = useState<'flashcard' | 'ukmla_sba'>('ukmla_sba');
   
-  // Mock data for custom filters (will be replaced with store integration)
-  const [customFilters, setCustomFilters] = useState<any[]>([]);
-  const [filterCategories, setFilterCategories] = useState<any[]>([
-    { id: 'cat1', name: 'Conditions', color: '#3B82F6', order: 0, created_at: new Date() },
-    { id: 'cat2', name: 'Systems', color: '#10B981', order: 1, created_at: new Date() },
-    { id: 'cat3', name: 'Procedures', color: '#F59E0B', order: 2, created_at: new Date() }
-  ]);
+  // Inline editing state
+  const [isEditingTitle, setIsEditingTitle] = useState(false);
+  const [isEditingDescription, setIsEditingDescription] = useState(false);
+  const [editTitle, setEditTitle] = useState(curriculum?.name || curriculumName);
+  const [editDescription, setEditDescription] = useState(curriculum?.description || "Practice and master concepts across various topics and categories. Track your progress and focus on areas that need improvement.");
   
   // Load concepts on mount
   useEffect(() => {
     loadConcepts();
-    setIsInitialLoad(false);
   }, [loadConcepts]);
   
   // Handle practice completion
   const handlePracticeComplete = () => {
     endPractice();
   };
+
+  // Handle title save
+  const handleSaveTitle = () => {
+    if (curriculum && onUpdateCurriculum && editTitle.trim()) {
+      const updatedCurriculum = {
+        ...curriculum,
+        name: editTitle.trim()
+      };
+      onUpdateCurriculum(updatedCurriculum);
+    }
+    setIsEditingTitle(false);
+  };
+
+  // Handle description save
+  const handleSaveDescription = () => {
+    if (curriculum && onUpdateCurriculum && editDescription.trim()) {
+      const updatedCurriculum = {
+        ...curriculum,
+        description: editDescription.trim()
+      };
+      onUpdateCurriculum(updatedCurriculum);
+    }
+    setIsEditingDescription(false);
+  };
+
+  // Handle escape key to cancel editing
+  const handleKeyDown = (e: React.KeyboardEvent, type: 'title' | 'description') => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      if (type === 'title') {
+        handleSaveTitle();
+      } else {
+        handleSaveDescription();
+      }
+    } else if (e.key === 'Escape') {
+      if (type === 'title') {
+        setEditTitle(curriculum?.name || curriculumName);
+        setIsEditingTitle(false);
+      } else {
+        setEditDescription(curriculum?.description || "Practice and master concepts across various topics and categories. Track your progress and focus on areas that need improvement.");
+        setIsEditingDescription(false);
+      }
+    }
+  };
   
-  // Custom filter handlers
-  const handleCreateFilter = (filter: any) => {
-    const newFilter = {
-      ...filter,
-      id: `filter_${Date.now()}`,
-      created_at: new Date()
-    };
-    setCustomFilters(prev => [...prev, newFilter]);
-  };
-
-  const handleCreateCategory = (category: any) => {
-    const newCategory = {
-      ...category,
-      id: `category_${Date.now()}`,
-      created_at: new Date()
-    };
-    setFilterCategories(prev => [...prev, newCategory]);
-  };
-
-  const handleDeleteFilter = (filterId: string) => {
-    setCustomFilters(prev => prev.filter(f => f.id !== filterId));
-  };
 
   // Handle answer submission
   const handleAnswerSubmit = (questionId: string, isCorrect: boolean) => {
@@ -103,12 +150,11 @@ export const ConceptPracticePage: React.FC = () => {
     }
   };
   
-  if (isInitialLoad || isLoading) {
-    return <ConceptLoadingScreen />;
-  }
+  // Removed initial loading screen for grid view - concepts load directly
+  // Only show loading when generating practice questions/flashcards after clicking Start Practice
   
-  // Show loading screen when generating questions
-  if (isPracticing && practiceQuestions.length === 0) {
+  // Show loading screen when generating questions (after clicking Start Practice)
+  if (isLoading && isPracticing) {
     return (
       <GenerationLoadingScreen 
         format={practiceFormat}
@@ -130,50 +176,95 @@ export const ConceptPracticePage: React.FC = () => {
   
   return (
     <div className="max-w-7xl mx-auto px-4 py-6">
-      {/* Header with improved spacing and alignment */}
-      <div className="flex flex-col md:flex-row justify-between items-center mb-6 bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-6 shadow-sm">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100 mb-2">
-            Concept Practice
-          </h1>
-          <p className="text-gray-600 dark:text-gray-400 max-w-2xl">
-            Practice and master concepts across various topics and categories.
-          </p>
-          <p className="text-gray-600 dark:text-gray-400 max-w-2xl">
-            Track your progress and focus on areas that need improvement.
-          </p>
-        </div>
-        
-        <div className="mt-4 md:mt-0 flex gap-3">
-          <button
-            className="px-4 py-2.5 bg-gray-100 hover:bg-gray-200 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 rounded-lg transition-colors flex items-center shadow-sm"
-            onClick={() => setShowFilterManager(true)}
-          >
-            <Filter className="h-5 w-5 mr-2" />
-            Manage Filters
-          </button>
-          <button
-            className="px-6 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors flex items-center shadow-md"
-            onClick={() => {
-              setShowPracticeConfig(true);
-            }}
-            disabled={filteredConcepts.length === 0}
-          >
-            <Settings className="h-5 w-5 mr-2" />
-            Start Practice ({filteredConcepts.length} concepts)
-          </button>
+      {/* Clean header with integrated back */}
+      <div className="mb-6 bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-6 shadow-sm">
+        <div className="flex flex-col md:flex-row justify-between items-start md:items-center">
+          <div className="flex items-center space-x-3 flex-1">
+            <button
+              onClick={() => {
+                if (onBackToCurriculums) {
+                  onBackToCurriculums();
+                } else {
+                  alert('Back to Curriculums - Navigation system not fully connected yet');
+                }
+              }}
+              className="p-2 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
+              title="Back to Curriculum Hub"
+            >
+              <ArrowLeft className="h-5 w-5" />
+            </button>
+            <div className="flex-1">
+            {/* Editable Title */}
+            {isEditingTitle ? (
+              <input
+                type="text"
+                value={editTitle}
+                onChange={(e) => setEditTitle(e.target.value)}
+                onBlur={handleSaveTitle}
+                onKeyDown={(e) => handleKeyDown(e, 'title')}
+                className="text-2xl font-bold text-gray-900 dark:text-gray-100 mb-2 bg-transparent border-b-2 border-blue-500 focus:outline-none focus:border-blue-600 w-full"
+                style={{ fontSize: '1.5rem', fontFamily: 'inherit', lineHeight: '2rem' }}
+                autoFocus
+                placeholder="Enter curriculum name"
+              />
+            ) : (
+              <h1 
+                className="text-2xl font-bold text-gray-900 dark:text-gray-100 mb-2 cursor-pointer hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
+                onClick={() => curriculum && onUpdateCurriculum && setIsEditingTitle(true)}
+                title={curriculum && onUpdateCurriculum ? "Click to edit title" : ""}
+              >
+                {curriculum?.name || curriculumName}
+              </h1>
+            )}
+
+            {/* Editable Description */}
+            {isEditingDescription ? (
+              <textarea
+                value={editDescription}
+                onChange={(e) => setEditDescription(e.target.value)}
+                onBlur={handleSaveDescription}
+                onKeyDown={(e) => handleKeyDown(e, 'description')}
+                className="text-gray-600 dark:text-gray-400 max-w-2xl bg-transparent border border-blue-500 rounded-md p-2 focus:outline-none focus:border-blue-600 w-full resize-none"
+                rows={3}
+                autoFocus
+                placeholder="Enter curriculum description"
+              />
+            ) : (
+              <p 
+                className="text-gray-600 dark:text-gray-400 max-w-2xl cursor-pointer hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
+                onClick={() => curriculum && onUpdateCurriculum && setIsEditingDescription(true)}
+                title={curriculum && onUpdateCurriculum ? "Click to edit description" : ""}
+              >
+                {curriculum?.description || "Practice and master concepts across various topics and categories. Track your progress and focus on areas that need improvement."}
+              </p>
+            )}
+            </div>
+          </div>
+          
+          <div className="mt-4 md:mt-0 flex gap-3">
+            <button
+              className="px-6 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors flex items-center shadow-md"
+              onClick={() => {
+                setShowPracticeConfig(true);
+              }}
+              disabled={filteredConcepts.length === 0}
+            >
+              <Settings className="h-5 w-5 mr-2" />
+              Start Practice ({filteredConcepts.length} concepts)
+            </button>
+          </div>
         </div>
       </div>
       
       {/* Main content with improved layout */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
         {/* Filter panel */}
-        <div className="lg:col-span-3">
+        <div className="lg:col-span-4">
           <ConceptFilterPanel />
         </div>
         
         {/* Main content area with improved tabs */}
-        <div className="lg:col-span-9">
+        <div className="lg:col-span-8">
           <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-5 shadow-sm mb-6">
             <Tabs value={activeView} onValueChange={(value: any) => setActiveView(value)}>
               <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4 gap-3">
@@ -203,7 +294,7 @@ export const ConceptPracticePage: React.FC = () => {
               
               <div className="mt-4 bg-gray-50 dark:bg-gray-900 rounded-lg p-4">
                 <TabsContent value="grid" className="mt-0">
-                  <ConceptGridView onBulkUploadClick={() => setShowBulkUpload(true)} />
+                  <ConceptGridView onBulkUploadClick={() => setShowCreationHub(true)} />
                 </TabsContent>
                 
                 <TabsContent value="matrix" className="mt-0">
@@ -240,24 +331,60 @@ export const ConceptPracticePage: React.FC = () => {
         />
       )}
       
-      {/* Custom Filter Manager Modal */}
-      {showFilterManager && (
-        <CustomFilterManager
-          isOpen={showFilterManager}
-          onClose={() => setShowFilterManager(false)}
-          customFilters={customFilters}
-          filterCategories={filterCategories}
-          onCreateFilter={handleCreateFilter}
-          onCreateCategory={handleCreateCategory}
-          onDeleteFilter={handleDeleteFilter}
-        />
-      )}
-      
+      {/* Concept Creation Hub */}
+      <ConceptCreationHub
+        isOpen={showCreationHub}
+        onClose={() => setShowCreationHub(false)}
+        onBulkUpload={() => setShowBulkUpload(true)}
+        onManualAdd={() => setShowManualAdd(true)}
+        onKnowledgeBaseImport={() => setShowKnowledgeBase(true)}
+      />
+
       {/* Bulk Upload Modal */}
       <ConceptBulkUploadModal
         isOpen={showBulkUpload}
         onClose={() => setShowBulkUpload(false)}
+        onBack={() => {
+          setShowBulkUpload(false);
+          setShowCreationHub(true);
+        }}
+      />
+
+      {/* Manual Add Modal */}
+      <ConceptManualAddModal
+        isOpen={showManualAdd}
+        onClose={() => setShowManualAdd(false)}
+        onBack={() => {
+          setShowManualAdd(false);
+          setShowCreationHub(true);
+        }}
+      />
+
+      {/* Knowledge Base Import Modal */}
+      <ConceptKnowledgeBaseModal
+        isOpen={showKnowledgeBase}
+        onClose={() => setShowKnowledgeBase(false)}
+        onBack={() => {
+          setShowKnowledgeBase(false);
+          setShowCreationHub(true);
+        }}
       />
     </div>
+  );
+};
+
+// Main component that provides the curriculum-specific context
+export const ConceptPracticePage: React.FC<ConceptPracticePageProps> = ({ 
+  curriculum,
+  curriculumId,
+  ...props
+}) => {
+  // Use curriculum.id if available, otherwise fall back to curriculumId or default
+  const actualCurriculumId = curriculum?.id || curriculumId || "default";
+  
+  return (
+    <ConceptStoreProvider curriculumId={actualCurriculumId}>
+      <ConceptPracticePageContent curriculum={curriculum} {...props} />
+    </ConceptStoreProvider>
   );
 };

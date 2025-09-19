@@ -1,5 +1,5 @@
 import React from 'react';
-import { useConceptStore } from '@/store/conceptStore';
+import { useConceptStore } from '@/contexts/ConceptStoreContext';
 import { Award, BookOpen, Tag } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 

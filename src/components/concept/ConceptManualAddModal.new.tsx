@@ -1,44 +1,33 @@
 import React, { useState, useEffect } from 'react';
-import { X, Save, Plus, Tag, ChevronDown, Trash2 } from 'lucide-react';
-import { ConceptNode } from '@/types/conceptTypes';
-import { Portal } from '@/components/ui/Portal';
+import { X, Save, Plus, Tag, ChevronDown, ArrowLeft } from 'lucide-react';
 import { useConceptStore } from '@/contexts/ConceptStoreContext';
+import { ConceptNode } from '@/types/conceptTypes';
 
-interface ConceptEditorModalProps {
+interface ConceptManualAddModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onSave: (concept: Partial<ConceptNode>) => void;
-  concept?: ConceptNode | null;
-  mode: 'edit';
+  onBack?: () => void;
 }
 
-export const ConceptEditorModal: React.FC<ConceptEditorModalProps> = ({
+export const ConceptManualAddModal: React.FC<ConceptManualAddModalProps> = ({
   isOpen,
   onClose,
-  onSave,
-  concept,
-  mode
+  onBack
 }) => {
-  const [formData, setFormData] = useState<Partial<ConceptNode>>({
+  const { addConcept, filterOptions } = useConceptStore();
+  const [formData, setFormData] = useState({
     title: '',
     content: '',
-    custom_filters: [],
-    prerequisites: []
+    custom_filters: [] as string[]
   });
-
   const [newCustomFilter, setNewCustomFilter] = useState('');
   const [showFilterDropdown, setShowFilterDropdown] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
-  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
-  
-  // Get available filters and delete function from store
-  const { filterOptions, deleteConcept } = useConceptStore();
 
   // Close dropdown when clicking outside
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       const target = event.target as HTMLElement;
-      // Don't close if clicking inside the dropdown
       if (target.closest('.filter-dropdown')) {
         return;
       }
@@ -56,17 +45,6 @@ export const ConceptEditorModal: React.FC<ConceptEditorModalProps> = ({
     };
   }, [showFilterDropdown]);
 
-  useEffect(() => {
-    if (concept) {
-      setFormData({
-        title: concept.title || '',
-        content: concept.content || '',
-        custom_filters: concept.custom_filters || [],
-        prerequisites: concept.prerequisites || []
-      });
-    }
-  }, [concept, mode]);
-
   const validateForm = () => {
     const newErrors: Record<string, string> = {};
     
@@ -82,17 +60,46 @@ export const ConceptEditorModal: React.FC<ConceptEditorModalProps> = ({
     return Object.keys(newErrors).length === 0;
   };
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     if (validateForm()) {
-      onSave(formData);
-      onClose();
+      try {
+        const newConcept: ConceptNode = {
+          concept_id: `manual_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+          title: formData.title.trim(),
+          content: formData.content.trim(),
+          subject: 'General',
+          topic: '',
+          tags: [],
+          custom_filters: formData.custom_filters,
+          mastery_data: {
+            mastery_level: 0,
+            last_practiced: null,
+            attempts: 0,
+            correct: 0,
+            incorrect: 0
+          }
+        };
+
+        await addConcept(newConcept);
+        
+        // Reset form
+        setFormData({
+          title: '',
+          content: '',
+          custom_filters: []
+        });
+        
+        onClose();
+      } catch (error) {
+        console.error('Failed to add concept:', error);
+      }
     }
   };
 
   const handleAddCustomFilter = (filterName?: string) => {
     const filterToAdd = filterName || newCustomFilter.trim();
     
-    if (filterToAdd && formData.custom_filters && !formData.custom_filters.includes(filterToAdd)) {
+    if (filterToAdd && !formData.custom_filters.includes(filterToAdd)) {
       setFormData({
         ...formData,
         custom_filters: [...formData.custom_filters, filterToAdd]
@@ -106,40 +113,28 @@ export const ConceptEditorModal: React.FC<ConceptEditorModalProps> = ({
   const handleRemoveCustomFilter = (filterToRemove: string) => {
     setFormData({
       ...formData,
-      custom_filters: formData.custom_filters?.filter(filter => filter !== filterToRemove) || []
+      custom_filters: formData.custom_filters.filter(filter => filter !== filterToRemove)
     });
   };
 
-  const handleDelete = () => {
-    if (concept && concept.concept_id) {
-      deleteConcept(concept.concept_id);
-      onClose();
-    }
-  };
-
-
-  // Only continue if modal is open
   if (!isOpen) return null;
 
-  // Handle click outside to close the modal
   const handleBackdropClick = (e: React.MouseEvent<HTMLDivElement>) => {
-    // Only close if clicking directly on the backdrop, not on the modal content
     if (e.target === e.currentTarget) {
       onClose();
     }
   };
 
   return (
-    <Portal>
-      <div 
-        className="fixed inset-0 bg-black/30 flex items-center justify-center overflow-y-auto py-4" 
-        style={{ backdropFilter: 'blur(4px)', pointerEvents: 'auto' }}
-        onClick={handleBackdropClick}
-      >
-        <div className="bg-white dark:bg-gray-800 rounded-xl p-4 sm:p-6 w-[95%] sm:w-[90%] md:w-[80%] lg:w-[70%] max-w-3xl max-h-[90vh] overflow-y-auto shadow-lg my-4">
+    <div 
+      className="fixed inset-0 bg-black/30 flex items-center justify-center overflow-y-auto py-4" 
+      style={{ backdropFilter: 'blur(4px)', pointerEvents: 'auto' }}
+      onClick={handleBackdropClick}
+    >
+      <div className="bg-white dark:bg-gray-800 rounded-xl p-4 sm:p-6 w-[95%] sm:w-[90%] md:w-[80%] lg:w-[70%] max-w-3xl max-h-[90vh] overflow-y-auto shadow-lg my-4">
         <div className="flex justify-between items-center mb-4">
           <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100">
-            Edit Concept
+            Add Concept Manually
           </h2>
           <button
             onClick={onClose}
@@ -161,7 +156,7 @@ export const ConceptEditorModal: React.FC<ConceptEditorModalProps> = ({
                 </label>
                 <input
                   type="text"
-                  value={formData.title || ''}
+                  value={formData.title}
                   onChange={(e) => setFormData({ ...formData, title: e.target.value })}
                   className={`w-full px-3 py-2 border rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 ${
                     errors.title ? 'border-red-500' : 'border-gray-300 dark:border-gray-600'
@@ -178,7 +173,7 @@ export const ConceptEditorModal: React.FC<ConceptEditorModalProps> = ({
                   Content *
                 </label>
                 <textarea
-                  value={formData.content || ''}
+                  value={formData.content}
                   onChange={(e) => setFormData({ ...formData, content: e.target.value })}
                   className={`w-full px-3 py-2 border rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 resize-none ${
                     errors.content ? 'border-red-500' : 'border-gray-300 dark:border-gray-600'
@@ -213,9 +208,9 @@ export const ConceptEditorModal: React.FC<ConceptEditorModalProps> = ({
                 
                 {showFilterDropdown && (
                   <div className="absolute z-50 w-full mt-1 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md shadow-lg max-h-48 overflow-y-auto">
-                    {filterOptions.custom_filters && filterOptions.custom_filters.length > 0 ? (
+                    {filterOptions?.custom_filters && filterOptions.custom_filters.length > 0 ? (
                       filterOptions.custom_filters
-                        .filter(filter => !formData.custom_filters?.includes(filter))
+                        .filter(filter => !formData.custom_filters.includes(filter))
                         .map((filter, index) => (
                           <button
                             key={index}
@@ -235,11 +230,6 @@ export const ConceptEditorModal: React.FC<ConceptEditorModalProps> = ({
                     ) : (
                       <div className="px-3 py-2 text-sm text-gray-500 dark:text-gray-400">
                         No available filters found
-                      </div>
-                    )}
-                    {filterOptions.custom_filters?.filter(filter => !formData.custom_filters?.includes(filter)).length === 0 && filterOptions.custom_filters?.length > 0 && (
-                      <div className="px-3 py-2 text-sm text-gray-500 dark:text-gray-400">
-                        All available filters are already selected
                       </div>
                     )}
                   </div>
@@ -265,7 +255,7 @@ export const ConceptEditorModal: React.FC<ConceptEditorModalProps> = ({
                 </button>
               </div>
               
-              {formData.custom_filters && formData.custom_filters.length > 0 && (
+              {formData.custom_filters.length > 0 && (
                 <div className="flex flex-wrap gap-2">
                   {formData.custom_filters.map((filter, index) => (
                     <span
@@ -288,48 +278,20 @@ export const ConceptEditorModal: React.FC<ConceptEditorModalProps> = ({
             </div>
           </div>
 
-          {/* Prerequisites */}
-          <div>
-            <h3 className="text-base font-medium text-gray-900 dark:text-gray-100 mb-4">Prerequisites</h3>
-            <p className="text-sm text-gray-500 dark:text-gray-400 italic">
-              Prerequisite concept selection will be implemented in a future update.
-            </p>
-          </div>
-
           {/* Action Buttons */}
           <div className="flex justify-between pt-4 border-t border-gray-200 dark:border-gray-700">
-            {/* Delete Button - Left Side */}
-            {showDeleteConfirm ? (
-              <div className="flex gap-2">
+            <div>
+              {onBack && (
                 <button
                   type="button"
-                  onClick={() => setShowDeleteConfirm(false)}
-                  className="px-3 py-2 text-sm text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200 transition-colors"
+                  onClick={onBack}
+                  className="px-4 py-2 text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 rounded-md transition-colors flex items-center"
                 >
-                  Cancel
+                  <ArrowLeft className="h-4 w-4 mr-2" />
+                  Back to Options
                 </button>
-                <button
-                  type="button"
-                  onClick={handleDelete}
-                  className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-md transition-colors flex items-center text-sm"
-                >
-                  <Trash2 className="h-4 w-4 mr-2" />
-                  Confirm Delete
-                </button>
-              </div>
-            ) : (
-              <button
-                type="button"
-                onClick={() => setShowDeleteConfirm(true)}
-                className="px-4 py-2 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-md transition-colors flex items-center"
-                title="Delete this concept"
-              >
-                <Trash2 className="h-4 w-4 mr-2" />
-                Delete
-              </button>
-            )}
-
-            {/* Save/Cancel Buttons - Right Side */}
+              )}
+            </div>
             <div className="flex gap-3">
               <button
                 type="button"
@@ -341,16 +303,15 @@ export const ConceptEditorModal: React.FC<ConceptEditorModalProps> = ({
               <button
                 type="button"
                 onClick={handleSubmit}
-                className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-md transition-colors flex items-center"
+                className="px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-md transition-colors flex items-center"
               >
                 <Save className="h-4 w-4 mr-2" />
-                Save Changes
+                Add Concept
               </button>
             </div>
           </div>
         </div>
-        </div>
       </div>
-    </Portal>
+    </div>
   );
 };

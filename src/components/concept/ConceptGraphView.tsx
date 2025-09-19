@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { useConceptStore } from '@/store/conceptStore';
+import { useConceptStore } from '@/contexts/ConceptStoreContext';
 import { Award, BookOpen, Brain } from 'lucide-react';
 
 interface GraphNode {
@@ -26,7 +26,7 @@ interface Dimensions {
 }
 
 export const ConceptGraphView: React.FC = () => {
-  const { filteredConcepts, onPractice } = useConceptStore();
+  const { filteredConcepts, startPractice } = useConceptStore();
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   
@@ -61,21 +61,22 @@ export const ConceptGraphView: React.FC = () => {
     
     const graphLinks: GraphLink[] = [];
     
-    filteredConcepts.forEach(concept => {
-      if (concept.relations) {
-        concept.relations.forEach(relation => {
-          // Check if target concept exists in our filtered list
-          const targetExists = filteredConcepts.some(c => c.concept_id === relation.target_id);
-          
-          if (targetExists) {
-            graphLinks.push({
-              source: concept.concept_id,
-              target: relation.target_id,
-              type: relation.type
-            });
-          }
-        });
-      }
+    // For now, create links based on shared custom filters since relations don't exist in our ConceptNode type
+    filteredConcepts.forEach((concept, i) => {
+      filteredConcepts.slice(i + 1).forEach(otherConcept => {
+        // Check if concepts share any custom filters
+        const sharedFilters = concept.custom_filters?.filter(filter => 
+          otherConcept.custom_filters?.includes(filter)
+        ) || [];
+        
+        if (sharedFilters.length > 0) {
+          graphLinks.push({
+            source: concept.concept_id,
+            target: otherConcept.concept_id,
+            type: 'shared_filter'
+          });
+        }
+      });
     });
     
     setNodes(graphNodes);
@@ -385,7 +386,7 @@ export const ConceptGraphView: React.FC = () => {
     });
     
     if (clickedNode) {
-      onPractice(clickedNode.concept_id);
+      startPractice();
     }
   };
   
@@ -426,7 +427,7 @@ export const ConceptGraphView: React.FC = () => {
 // Concept list item component
 interface ConceptListItemProps {
   concept: any;
-  onPractice: (id: string) => void;
+  onPractice: () => void;
 }
 
 export const ConceptListItem: React.FC<ConceptListItemProps> = ({ concept, onPractice }) => {
@@ -482,7 +483,7 @@ export const ConceptListItem: React.FC<ConceptListItemProps> = ({ concept, onPra
         
         <button
           className="text-xs px-3 py-1 bg-blue-600 hover:bg-blue-700 text-white rounded-md transition-colors"
-          onClick={() => onPractice(concept.concept_id)}
+          onClick={() => onPractice()}
         >
           Practice
         </button>

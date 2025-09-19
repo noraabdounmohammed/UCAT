@@ -1,5 +1,5 @@
 import React from 'react';
-import { useConceptStore } from '@/store/conceptStore';
+import { useConceptStore } from '@/contexts/ConceptStoreContext';
 
 export const ConceptMatrixView: React.FC = () => {
   const { 

@@ -89,15 +89,20 @@ function filterConcepts(concepts: ConceptNode[], filterState: ConceptFilterState
   });
 }
 
-// Create the concept store
-export const useConceptStore = create<ConceptPracticeState>()(
+// Helper function to get curriculum-specific localStorage keys
+const getCurriculumKey = (curriculumId: string, key: string) => {
+  return `${curriculumId}_${key}`;
+};
+
+// Create the concept store with curriculum context
+export const createConceptStore = (curriculumId: string = 'default') => create<ConceptPracticeState>()(
   persist(
     (set, get) => ({
       isLoading: false,
       filterState: {
-        mastery_levels: [],
+        mastery_levels: [], // Start with no filters selected - show all
         searchQuery: '',
-        custom_filters: []
+        custom_filters: [] // Will be populated when concepts are loaded
       },
       filterOptions: {
         mastery_levels: [
@@ -135,13 +140,32 @@ export const useConceptStore = create<ConceptPracticeState>()(
       loadConcepts: async () => {
         set({ isLoading: true });
         try {
-          const response = await fetch('/conceptModel.json');
-          const data = await response.json();
-          const concepts = data.concepts || [];
+          // Check if this curriculum should start empty or was spec-generated
+          const isEmpty = localStorage.getItem(`${curriculumId}_is_empty`);
+          const isSpecGenerated = localStorage.getItem(`${curriculumId}_spec_generated`);
+          let concepts = [];
           
-          // Load user concepts from localStorage
-          const storedUserConcepts = localStorage.getItem('user_concepts');
+          console.log(`ConceptStore: Loading concepts for curriculum ${curriculumId}, isEmpty flag:`, isEmpty, 'specGenerated:', isSpecGenerated);
+          
+          if (!isEmpty && !isSpecGenerated) {
+            console.log('ConceptStore: Loading default concepts from JSON');
+            const response = await fetch('/conceptModel.json');
+            const data = await response.json();
+            concepts = data.concepts || [];
+          } else if (isSpecGenerated) {
+            console.log('ConceptStore: Spec-generated curriculum - only loading user concepts');
+          } else {
+            console.log('ConceptStore: Starting with empty concepts (fresh curriculum)');
+            // Don't remove the flag yet - keep it until user adds concepts
+          }
+          
+          // Load user concepts from localStorage (curriculum-specific)
+          const storedUserConcepts = localStorage.getItem(getCurriculumKey(curriculumId, 'user_concepts'));
           const userConcepts = storedUserConcepts ? JSON.parse(storedUserConcepts) : [];
+          
+          // Load deleted concepts list to exclude them (curriculum-specific)
+          const deletedConceptsStr = localStorage.getItem(getCurriculumKey(curriculumId, 'deleted_concepts'));
+          const deletedConceptIds = deletedConceptsStr ? JSON.parse(deletedConceptsStr) : [];
           
           // Ensure all concepts have required properties
           const normalizedConcepts = concepts.map((concept: any) => ({
@@ -172,21 +196,54 @@ export const useConceptStore = create<ConceptPracticeState>()(
             }
           }));
           
-          const allConcepts = [...normalizedConcepts, ...normalizedUserConcepts];
+          // Filter out deleted concepts
+          const filteredNormalizedConcepts = normalizedConcepts.filter(
+            (concept: any) => !deletedConceptIds.includes(concept.concept_id)
+          );
+          const filteredUserConcepts = normalizedUserConcepts.filter(
+            (concept: any) => !deletedConceptIds.includes(concept.concept_id)
+          );
           
-          // Load custom filters
-          const storedFilters = localStorage.getItem('custom_filters');
+          const allConcepts = [...filteredNormalizedConcepts, ...filteredUserConcepts];
+          
+          // Load custom filters (curriculum-specific)
+          const storedFilters = localStorage.getItem(getCurriculumKey(curriculumId, 'custom_filters'));
           const customFilters = storedFilters ? JSON.parse(storedFilters) : [];
           
-          const filteredConcepts = filterConcepts(allConcepts, get().filterState);
-          const stats = calculateStats(filteredConcepts);
           const filterOptions = extractFilterOptions(allConcepts);
+          
+          // Force migration to new filter defaults (one-time migration)
+          const migrationKey = `${curriculumId}_filter_migrated_v2`;
+          const alreadyMigrated = localStorage.getItem(migrationKey);
+          
+          let updatedFilterState;
+          
+          if (!alreadyMigrated) {
+            console.log('ConceptStore: Migrating to new filter defaults (show all)');
+            updatedFilterState = {
+              mastery_levels: [], // New default: no filters selected = show all
+              searchQuery: '',
+              custom_filters: []
+            };
+            localStorage.setItem(migrationKey, 'true');
+          } else {
+            // Keep existing filter state for already migrated curriculums
+            const currentFilterState = get().filterState;
+            updatedFilterState = {
+              ...currentFilterState,
+              custom_filters: [] // Also clear custom filters for consistency
+            };
+          }
+          
+          const filteredConcepts = filterConcepts(allConcepts, updatedFilterState);
+          const stats = calculateStats(filteredConcepts);
           
           set({ 
             concepts: allConcepts,
             filteredConcepts,
             stats,
             filterOptions,
+            filterState: updatedFilterState,
             customFilters,
             isLoading: false 
           });
@@ -210,6 +267,24 @@ export const useConceptStore = create<ConceptPracticeState>()(
         });
       },
 
+      // Reset filters to default (show all)
+      resetFilters: () => {
+        const currentState = get();
+        const defaultFilterState: ConceptFilterState = {
+          mastery_levels: [],
+          searchQuery: '',
+          custom_filters: []
+        };
+        const filteredConcepts = filterConcepts(currentState.concepts, defaultFilterState);
+        const stats = calculateStats(filteredConcepts);
+        
+        set({ 
+          filterState: defaultFilterState,
+          filteredConcepts,
+          stats
+        });
+      },
+
 
       // Add new concept
       addConcept: (concept: Omit<ConceptNode, 'concept_id'>) => {
@@ -223,9 +298,12 @@ export const useConceptStore = create<ConceptPracticeState>()(
         const currentState = get();
         const updatedConcepts = [...currentState.concepts, newConcept];
         
-        // Save to localStorage
+        // Save to localStorage (curriculum-specific)
         const userConcepts = updatedConcepts.filter(c => c.concept_id.startsWith('user_'));
-        localStorage.setItem('user_concepts', JSON.stringify(userConcepts));
+        localStorage.setItem(getCurriculumKey(curriculumId, 'user_concepts'), JSON.stringify(userConcepts));
+        
+        // Remove the empty flag since user is now adding concepts
+        localStorage.removeItem(`${curriculumId}_is_empty`);
         
         const filteredConcepts = filterConcepts(updatedConcepts, currentState.filterState);
         const stats = calculateStats(filteredConcepts);
@@ -248,9 +326,9 @@ export const useConceptStore = create<ConceptPracticeState>()(
             : concept
         );
         
-        // Save user concepts to localStorage
+        // Save user concepts to localStorage (curriculum-specific)
         const userConcepts = updatedConcepts.filter(c => c.concept_id.startsWith('user_'));
-        localStorage.setItem('user_concepts', JSON.stringify(userConcepts));
+        localStorage.setItem(getCurriculumKey(curriculumId, 'user_concepts'), JSON.stringify(userConcepts));
         
         const filteredConcepts = filterConcepts(updatedConcepts, currentState.filterState);
         const stats = calculateStats(filteredConcepts);
@@ -269,9 +347,17 @@ export const useConceptStore = create<ConceptPracticeState>()(
         const currentState = get();
         const updatedConcepts = currentState.concepts.filter(c => c.concept_id !== conceptId);
         
-        // Update localStorage
+        // Add to deleted concepts list to prevent reloading from JSON (curriculum-specific)
+        const deletedConceptsStr = localStorage.getItem(getCurriculumKey(curriculumId, 'deleted_concepts'));
+        const deletedConceptIds = deletedConceptsStr ? JSON.parse(deletedConceptsStr) : [];
+        if (!deletedConceptIds.includes(conceptId)) {
+          deletedConceptIds.push(conceptId);
+          localStorage.setItem(getCurriculumKey(curriculumId, 'deleted_concepts'), JSON.stringify(deletedConceptIds));
+        }
+        
+        // Update localStorage for user concepts (curriculum-specific)
         const userConcepts = updatedConcepts.filter(c => c.concept_id.startsWith('user_'));
-        localStorage.setItem('user_concepts', JSON.stringify(userConcepts));
+        localStorage.setItem(getCurriculumKey(curriculumId, 'user_concepts'), JSON.stringify(userConcepts));
         
         const filteredConcepts = filterConcepts(updatedConcepts, currentState.filterState);
         const stats = calculateStats(filteredConcepts);
@@ -307,7 +393,7 @@ export const useConceptStore = create<ConceptPracticeState>()(
           filterOptions
         });
         
-        localStorage.setItem('custom_filters', JSON.stringify(updatedFilters));
+        localStorage.setItem(getCurriculumKey(curriculumId, 'custom_filters'), JSON.stringify(updatedFilters));
       },
 
       updateCustomFilter: (filterId: string, updates: Partial<CustomFilter>) => {
@@ -323,7 +409,7 @@ export const useConceptStore = create<ConceptPracticeState>()(
           filterOptions
         });
         
-        localStorage.setItem('custom_filters', JSON.stringify(updatedFilters));
+        localStorage.setItem(getCurriculumKey(curriculumId, 'custom_filters'), JSON.stringify(updatedFilters));
       },
 
       deleteCustomFilter: (filterId: string) => {
@@ -348,7 +434,7 @@ export const useConceptStore = create<ConceptPracticeState>()(
           filterOptions
         });
         
-        localStorage.setItem('custom_filters', JSON.stringify(updatedFilters));
+        localStorage.setItem(getCurriculumKey(curriculumId, 'custom_filters'), JSON.stringify(updatedFilters));
       },
 
       // Filter Category Management
@@ -363,12 +449,12 @@ export const useConceptStore = create<ConceptPracticeState>()(
         const updatedCategories = [...currentState.filterCategories, newCategory];
         
         set({ filterCategories: updatedCategories });
-        localStorage.setItem('filter_categories', JSON.stringify(updatedCategories));
+        localStorage.setItem(getCurriculumKey(curriculumId, 'filter_categories'), JSON.stringify(updatedCategories));
       },
 
       // Practice functions
       startPractice: async (practiceConfig?: PracticeConfig) => {
-        set({ isLoading: true });
+        set({ isLoading: true, isPracticing: true });
         
         const currentState = get();
         const conceptsToUse = currentState.filteredConcepts.length > 0 
@@ -377,7 +463,7 @@ export const useConceptStore = create<ConceptPracticeState>()(
         
         if (conceptsToUse.length === 0) {
           console.warn('No concepts available for practice');
-          set({ isLoading: false });
+          set({ isLoading: false, isPracticing: false });
           return;
         }
 
@@ -425,7 +511,7 @@ export const useConceptStore = create<ConceptPracticeState>()(
           });
         } catch (error) {
           console.error('Failed to start practice:', error);
-          set({ isLoading: false });
+          set({ isLoading: false, isPracticing: false });
         }
       },
 
@@ -519,9 +605,9 @@ export const useConceptStore = create<ConceptPracticeState>()(
           return concept;
         });
         
-        // Save user concepts to localStorage
+        // Save user concepts to localStorage (curriculum-specific)
         const userConcepts = updatedConcepts.filter(c => c.concept_id && c.concept_id.startsWith('user_'));
-        localStorage.setItem('user_concepts', JSON.stringify(userConcepts));
+        localStorage.setItem(getCurriculumKey(curriculumId, 'user_concepts'), JSON.stringify(userConcepts));
         
         const filteredConcepts = filterConcepts(updatedConcepts, currentState.filterState);
         const stats = calculateStats(filteredConcepts);
@@ -534,13 +620,31 @@ export const useConceptStore = create<ConceptPracticeState>()(
       }
     }),
     {
-      name: 'concept-practice-store',
+      name: getCurriculumKey(curriculumId, 'concept-practice-store'),
+      version: 2, // Increment version to force migration
       partialize: (state) => ({
         filterState: state.filterState,
         activeView: state.activeView,
         customFilters: state.customFilters,
         filterCategories: state.filterCategories
-      })
+      }),
+      migrate: (persistedState: any, version: number) => {
+        // Migration for version 2: ensure all filters are selected by default
+        if (version < 2) {
+          return {
+            ...persistedState,
+            filterState: {
+              mastery_levels: [0, 1, 2, 3, 4], // Select all mastery levels
+              searchQuery: '',
+              custom_filters: persistedState.filterState?.custom_filters || []
+            }
+          };
+        }
+        return persistedState;
+      }
     }
   )
 );
+
+// Default export for backward compatibility
+export const useConceptStore = createConceptStore('default');

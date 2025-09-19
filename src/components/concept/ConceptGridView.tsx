@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useConceptStore } from '@/store/conceptStore';
+import { useConceptStore } from '@/contexts/ConceptStoreContext';
 import { ConceptNode } from '@/types/conceptTypes';
 import { Search, Award, BookOpen, Brain, Grid, List, Check, AlertCircle, Plus } from 'lucide-react';
 import { ConceptEditorModal } from './ConceptEditorModal';
@@ -91,7 +91,7 @@ const ConceptCard: React.FC<ConceptCardProps> = ({
         {concept.title}
       </h3>
       
-      <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400 mb-3 line-clamp-3 leading-relaxed flex-grow">
+      <div className="text-xs sm:text-sm text-gray-600 dark:text-gray-400 mb-3 line-clamp-3 leading-relaxed flex-grow whitespace-pre-line">
         {concept.content ? 
           (() => {
             if (concept.content.length <= 120) return concept.content;
@@ -105,7 +105,7 @@ const ConceptCard: React.FC<ConceptCardProps> = ({
           })() : 
           'No content available'
         }
-      </p>
+      </div>
       
       
       <div className="flex flex-wrap gap-1 mt-auto">

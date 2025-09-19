@@ -38,7 +38,23 @@ export const FlashcardQuestion: React.FC<FlashcardQuestionProps> = ({
 
   // Extract front and back content from question
   const frontContent = question.question || question.question_stem || '';
-  const backContent = question.explanation || question.worked_solution || '';
+  let backContent = question.explanation || question.worked_solution || '';
+  
+  // Convert bullet points to proper markdown format if they're not already
+  console.log('Original backContent:', backContent);
+  if (backContent.includes('•')) {
+    backContent = backContent
+      .split('\n')
+      .map(line => {
+        const trimmed = line.trim();
+        if (trimmed.startsWith('•')) {
+          return trimmed.replace(/^•\s*/, '- ');
+        }
+        return line;
+      })
+      .join('\n');
+    console.log('Converted backContent:', backContent);
+  }
 
   return (
     <div className="max-w-3xl mx-auto">
@@ -83,7 +99,22 @@ export const FlashcardQuestion: React.FC<FlashcardQuestionProps> = ({
           <div className="h-full flex flex-col">
             <div className="flex-1 overflow-auto">
               <div className="prose dark:prose-invert max-w-none">
-                <ReactMarkdown>{backContent}</ReactMarkdown>
+                <ReactMarkdown 
+                  components={{
+                    ul: ({children}) => (
+                      <ul className="list-disc list-inside space-y-1 my-2">
+                        {children}
+                      </ul>
+                    ),
+                    li: ({children}) => (
+                      <li className="text-sm leading-relaxed">
+                        {children}
+                      </li>
+                    )
+                  }}
+                >
+                  {backContent}
+                </ReactMarkdown>
               </div>
             </div>
           </div>

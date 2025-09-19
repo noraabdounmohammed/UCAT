@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { X, ChevronDown, ChevronUp, Filter, Search } from 'lucide-react';
-import { useConceptStore } from '@/store/conceptStore';
+import { useConceptStore } from '@/contexts/ConceptStoreContext';
 
 interface FilterSectionProps {
   title: string;
@@ -78,7 +78,7 @@ const FilterSection: React.FC<FilterSectionProps> = ({
               className="text-xs text-blue-600 dark:text-blue-400 hover:underline"
               onClick={handleSelectAll}
             >
-              {selected.length === options.length ? 'Deselect All' : 'Select All'}
+              {selected.length === 0 ? 'Select Filters' : selected.length === options.length ? 'Show All' : 'Select All'}
             </button>
             <span className="text-xs text-gray-500 dark:text-gray-400">
               {filteredOptions.length} options
@@ -190,7 +190,7 @@ const MasteryFilterSection: React.FC<MasteryFilterSectionProps> = ({
               className="text-xs text-blue-600 dark:text-blue-400 hover:underline"
               onClick={handleSelectAll}
             >
-              {selected.length === masteryLevels.length ? 'Deselect All' : 'Select All'}
+              {selected.length === 0 ? 'Select Filters' : selected.length === masteryLevels.length ? 'Show All' : 'Select All'}
             </button>
           </div>
           
@@ -231,11 +231,10 @@ export const ConceptFilterPanel: React.FC = () => {
   const { 
     filterState, 
     filterOptions, 
-    stats,
-    updateFilterState
+    updateFilterState,
+    resetFilters,
+    stats 
   } = useConceptStore();
-  
-  const [isExpanded, setIsExpanded] = useState(true);
   
   const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     updateFilterState({ searchQuery: e.target.value });
@@ -254,14 +253,10 @@ export const ConceptFilterPanel: React.FC = () => {
           Filters
         </h2>
         <button
-          className="text-gray-500 dark:text-gray-400"
-          onClick={() => setIsExpanded(!isExpanded)}
+          onClick={resetFilters}
+          className="text-xs text-blue-600 dark:text-blue-400 hover:underline"
         >
-          {isExpanded ? (
-            <ChevronUp className="h-5 w-5" />
-          ) : (
-            <ChevronDown className="h-5 w-5" />
-          )}
+          Reset Filters
         </button>
       </div>
       
@@ -285,40 +280,38 @@ export const ConceptFilterPanel: React.FC = () => {
         )}
       </div>
       
-      {isExpanded && (
-        <div className="space-y-4">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <MasteryFilterSection
-                masteryLevels={filterOptions.mastery_levels}
-                selected={filterState.mastery_levels}
-                onChange={(selected) => updateFilterState({ mastery_levels: selected })}
-                counts={stats.by_mastery}
-              />
-            </div>
-            
-            <div>
-              <FilterSection
-                title="Custom Filters"
-                options={filterOptions.custom_filters || []}
-                selected={filterState.custom_filters || []}
-                onChange={(selected) => updateFilterState({ custom_filters: selected })}
-                counts={stats.by_custom_filter}
-                searchable
-              />
-            </div>
+      <div className="space-y-4">
+        <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
+          <div>
+            <MasteryFilterSection
+              masteryLevels={filterOptions.mastery_levels}
+              selected={filterState.mastery_levels}
+              onChange={(selected) => updateFilterState({ mastery_levels: selected })}
+              counts={stats.by_mastery}
+            />
           </div>
           
-          <div className="pt-2 border-t border-gray-200 dark:border-gray-700">
-            <div className="flex items-center justify-between">
-              <span className="text-sm text-gray-500 dark:text-gray-400">
-                {stats.total} concepts
-              </span>
-              
-            </div>
+          <div>
+            <FilterSection
+              title="Custom Filters"
+              options={filterOptions.custom_filters || []}
+              selected={filterState.custom_filters || []}
+              onChange={(selected) => updateFilterState({ custom_filters: selected })}
+              counts={stats.by_custom_filter}
+              searchable
+            />
           </div>
         </div>
-      )}
+        
+        <div className="pt-2 border-t border-gray-200 dark:border-gray-700">
+          <div className="flex items-center justify-between">
+            <span className="text-sm text-gray-500 dark:text-gray-400">
+              {stats.total} concepts
+            </span>
+            
+          </div>
+        </div>
+      </div>
     </div>
   );
 };
