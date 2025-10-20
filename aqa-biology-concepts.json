@@ -1,0 +1,12 @@
+[
+  {
+    "title": "CB-001: Definition of eukaryotic cells",
+    "content": "Eukaryotic cells are cells that contain a nucleus.",
+    "custom_filters": ["cell-structure"]
+  },
+  {
+    "title": "CB-002: Examples of eukaryotic organisms",
+    "content": "Eukaryotic cells are found in plants, animals, fungi, and protists.",
+    "custom_filters": ["cell-structure"]
+  }
+]

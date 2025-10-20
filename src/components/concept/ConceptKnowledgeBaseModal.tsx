@@ -179,40 +179,38 @@ export const ConceptKnowledgeBaseModal: React.FC<ConceptKnowledgeBaseModalProps>
 
   return (
     <div 
-      className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4"
+      className="fixed inset-0 bg-black/20 dark:bg-black/40 flex items-center justify-center z-50 p-4"
+      style={{ backdropFilter: 'blur(20px)' }}
       onClick={handleBackdropClick}
     >
-      <div className="bg-white dark:bg-gray-800 rounded-xl shadow-2xl max-w-5xl w-full max-h-[90vh] overflow-y-auto">
+      <div className="bg-white/95 dark:bg-zinc-900/95 backdrop-blur-2xl rounded-3xl border border-black/[0.08] dark:border-white/[0.08] shadow-2xl max-w-6xl w-full max-h-[90vh] overflow-hidden">
         {/* Header */}
-        <div className="flex items-center justify-between p-6 border-b border-gray-200 dark:border-gray-700">
-          <div>
-            <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100 flex items-center">
-              <BookOpen className="h-6 w-6 mr-3 text-purple-600" />
-              Import Curriculum
-            </h2>
-            <p className="text-gray-600 dark:text-gray-400 mt-1">
-              Import pre-made concept collections curated by experts
-            </p>
-          </div>
+        <div className="px-8 py-6 text-center relative">
           <button
             onClick={onClose}
-            className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
+            className="absolute top-6 right-8 flex items-center justify-center w-8 h-8 hover:bg-gray-100 dark:hover:bg-zinc-800 rounded-full transition-colors"
           >
-            <X className="h-5 w-5 text-gray-500 dark:text-gray-400" />
+            <X className="h-5 w-5 text-gray-400" />
           </button>
+          <h2 className="text-[28px] font-semibold text-gray-900 dark:text-white mb-2">
+            Import Expert Curriculum
+          </h2>
+          <p className="text-[15px] text-gray-500 dark:text-gray-400">
+            Choose from professionally curated curriculums created by medical educators
+          </p>
         </div>
 
         {/* Category Filter */}
-        <div className="p-6 border-b border-gray-200 dark:border-gray-700">
-          <div className="flex flex-wrap gap-2">
+        <div className="px-8 py-4 border-b border-gray-200 dark:border-gray-800">
+          <div className="flex flex-wrap gap-2 justify-center">
             {categories.map((category) => (
               <button
                 key={category}
                 onClick={() => setSelectedCategory(category)}
-                className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+                className={`px-5 py-2 rounded-full text-[14px] font-medium transition-all ${
                   selectedCategory === category
                     ? 'bg-purple-600 text-white'
-                    : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
+                    : 'bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700'
                 }`}
               >
                 {category === 'all' ? 'All Categories' : category}
@@ -222,8 +220,8 @@ export const ConceptKnowledgeBaseModal: React.FC<ConceptKnowledgeBaseModalProps>
         </div>
 
         {/* Knowledge Bases Grid */}
-        <div className="p-6">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div className="p-8 overflow-y-auto" style={{ maxHeight: 'calc(90vh - 220px)' }}>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
             {filteredKnowledgeBases.map((kb) => {
               const isImported = importedBases.has(kb.id);
               const isCurrentlyImporting = isImporting === kb.id;
@@ -231,15 +229,15 @@ export const ConceptKnowledgeBaseModal: React.FC<ConceptKnowledgeBaseModalProps>
               return (
                 <div
                   key={kb.id}
-                  className="bg-gray-50 dark:bg-gray-700 rounded-xl p-6 border border-gray-200 dark:border-gray-600"
+                  className="bg-white/60 dark:bg-zinc-800/60 backdrop-blur-xl rounded-2xl p-6 border border-black/[0.08] dark:border-white/[0.08] hover:bg-white/80 dark:hover:bg-zinc-800/80 hover:shadow-lg transition-all"
                 >
                   {/* Header */}
                   <div className="flex items-start justify-between mb-4">
                     <div className="flex-1">
-                      <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-1">
+                      <h3 className="text-[17px] font-semibold text-zinc-900 dark:text-white mb-1">
                         {kb.title}
                       </h3>
-                      <p className="text-sm text-gray-600 dark:text-gray-400 mb-2">
+                      <p className="text-[13px] text-zinc-600 dark:text-zinc-400 mb-2 leading-relaxed">
                         {kb.description}
                       </p>
                     </div>
@@ -249,7 +247,7 @@ export const ConceptKnowledgeBaseModal: React.FC<ConceptKnowledgeBaseModalProps>
                   </div>
 
                   {/* Stats */}
-                  <div className="flex items-center gap-4 mb-4 text-sm text-gray-600 dark:text-gray-400">
+                  <div className="flex items-center gap-4 mb-4 text-[13px] text-zinc-600 dark:text-zinc-400">
                     <div className="flex items-center">
                       <BookOpen className="h-4 w-4 mr-1" />
                       {kb.conceptCount} concepts
@@ -269,13 +267,13 @@ export const ConceptKnowledgeBaseModal: React.FC<ConceptKnowledgeBaseModalProps>
                     {kb.tags.slice(0, 4).map((tag) => (
                       <span
                         key={tag}
-                        className="px-2 py-1 bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 text-xs rounded-full"
+                        className="px-2 py-1 bg-blue-100/80 dark:bg-blue-900/30 text-blue-800 dark:text-blue-200 text-[11px] rounded-full backdrop-blur-xl"
                       >
                         {tag}
                       </span>
                     ))}
                     {kb.tags.length > 4 && (
-                      <span className="px-2 py-1 bg-gray-100 dark:bg-gray-600 text-gray-600 dark:text-gray-400 text-xs rounded-full">
+                      <span className="px-2 py-1 bg-zinc-100/80 dark:bg-zinc-700/60 text-zinc-600 dark:text-zinc-400 text-[11px] rounded-full backdrop-blur-xl">
                         +{kb.tags.length - 4} more
                       </span>
                     )}
@@ -285,12 +283,12 @@ export const ConceptKnowledgeBaseModal: React.FC<ConceptKnowledgeBaseModalProps>
                   <button
                     onClick={() => handleImport(kb)}
                     disabled={isImported || isCurrentlyImporting}
-                    className={`w-full py-2 px-4 rounded-lg font-medium transition-colors flex items-center justify-center ${
+                    className={`w-full py-2.5 px-4 rounded-xl text-[15px] font-semibold transition-all flex items-center justify-center ${
                       isImported
-                        ? 'bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200 cursor-not-allowed'
+                        ? 'bg-green-100/80 dark:bg-green-900/30 text-green-800 dark:text-green-200 cursor-not-allowed backdrop-blur-xl'
                         : isCurrentlyImporting
-                        ? 'bg-purple-100 dark:bg-purple-900 text-purple-800 dark:text-purple-200 cursor-not-allowed'
-                        : 'bg-purple-600 text-white hover:bg-purple-700'
+                        ? 'bg-purple-100/80 dark:bg-purple-900/30 text-purple-800 dark:text-purple-200 cursor-not-allowed backdrop-blur-xl'
+                        : 'bg-purple-600 text-white hover:opacity-90 shadow-sm'
                     }`}
                   >
                     {isImported ? (

@@ -1,51 +1,176 @@
 import React, { useState, useEffect } from 'react';
-import { ThumbsUp, ThumbsDown, BookOpen } from 'lucide-react';
+import { ArrowLeft, ChevronLeft, ChevronRight, Sun, Moon } from 'lucide-react';
 import type { QuestionData } from './questionTypes';
 import ReactMarkdown from 'react-markdown';
 import { cn } from '@/lib/utils';
+import { motion, useMotionValue, useTransform, PanInfo } from 'framer-motion';
 
 interface ModernFlashcardProps {
   question: QuestionData;
   onAnswer: (isCorrect: boolean) => void;
   onNext: () => void;
+  onPrevious?: () => void;
+  onExit?: () => void;
+  currentIndex?: number;
+  totalCards?: number;
+  title?: string;
 }
+
+// Helper function to convert inline bullet points to proper markdown
+const formatBulletPoints = (text: string): string => {
+  let formatted = text;
+  
+  // Convert inline bullet points (• or *) after colons to proper markdown lists
+  formatted = formatted.replace(
+    /([:\n])\s*[•\*]\s*([^•\*\n]+?)(?=\s*[•\*]|\s*$)/g,
+    (_match: string, prefix: string, content: string) => {
+      if (prefix === ':') {
+        return `:\n- ${content.trim()}`;
+      }
+      return `\n- ${content.trim()}`;
+    }
+  );
+  
+  // Clean up any remaining inline bullets in paragraph form
+  formatted = formatted.replace(
+    /([^:\n])\s+[•\*]\s+/g,
+    '$1\n- '
+  );
+  
+  // Convert numbered lists: "1) text 2) text" -> "1. text\n2. text"
+  formatted = formatted.replace(
+    /(\d+)\)\s+([^0-9]+?)(?=\s*\d+\)|\s*$)/g,
+    '$1. $2\n'
+  );
+  
+  return formatted;
+};
 
 export const ModernFlashcard: React.FC<ModernFlashcardProps> = ({
   question,
   onAnswer,
-  onNext
+  onNext,
+  onPrevious,
+  onExit,
+  currentIndex = 0,
+  totalCards = 0,
+  title = "Flashcards"
 }) => {
   const [isFlipped, setIsFlipped] = useState(false);
   const [hasAnswered, setHasAnswered] = useState(false);
-  const [selfRating, setSelfRating] = useState<number | null>(null);
   const [animation, setAnimation] = useState<string>('');
+  const [showTutorial, setShowTutorial] = useState(false);
+  const [isExiting, setIsExiting] = useState(false);
+  const [exitDirection, setExitDirection] = useState<'left' | 'right' | null>(null);
+  const [isLightMode, setIsLightMode] = useState(false);
+  const [interactionCount, setInteractionCount] = useState(0);
+  const [isDragging, setIsDragging] = useState(false);
 
-  // Extract front and back content 
-  const backContent = question.explanation || 'No explanation available';
-  const title = question.title || 'Flashcard';
+  // Motion values for swipe
+  const x = useMotionValue(0);
+  const y = useMotionValue(0);
+  const rotateX = useTransform(y, [-200, 0, 200], [15, 0, -15]);
+  const rotateZ = useTransform(x, [-200, 0, 200], [-15, 0, 15]);
+  
+  // Opacity transforms for swipe labels
+  const knowOpacity = useTransform(x, [0, 150], [0, 1]);
+  const dontKnowOpacity = useTransform(x, [-150, 0], [1, 0]);
+
+  // Extract front and back content and format bullet points
+  const rawBackContent = question.explanation || 'No explanation available';
+  
+  // Remove "Clinical Relevance" sections and clean up stray markdown
+  const cleanedContent = rawBackContent
+    .replace(/Clinical Relevance:[\s\S]*?(?=\n\n|$)/gi, '')
+    .replace(/\*\*Clinical Relevance:\*\*[\s\S]*?(?=\n\n|$)/gi, '')
+    // Fix malformed markdown bold syntax
+    .replace(/^\*\*([^*\n]+):/gm, '**$1:**')  // Fix **Text: to **Text:**
+    .replace(/\*\*([^*]+)$/gm, '**$1**')  // Add closing ** if missing at end of line
+    // Remove standalone ** that aren't part of proper markdown bold syntax
+    .replace(/\*\*\s*$/gm, '')  // Remove ** at end of lines
+    .replace(/^\s*\*\*\s*$/gm, '')  // Remove lines with only **
+    .replace(/\*\*\s+\*\*/g, '')  // Remove ** ** patterns
+    .trim();
+  
+  const backContent = formatBulletPoints(cleanedContent);
   const custom_filters: string[] = Array.isArray(question.custom_filters) ? question.custom_filters : [];
+  const frontText = question.question || question.question_stem || '';
 
   const handleFlip = () => {
     setIsFlipped(!isFlipped);
+    setInteractionCount(prev => prev + 1);
+  };
+
+  const handleDragEnd = (_event: MouseEvent | TouchEvent | PointerEvent, info: PanInfo) => {
+    const { offset, velocity } = info;
+    const swipeThreshold = 60;
+    const velocityThreshold = 400;
+
+    // Only handle horizontal swipes (know/don't know)
+    if (Math.abs(offset.x) > Math.abs(offset.y)) {
+      if (offset.x > swipeThreshold || velocity.x > velocityThreshold) {
+        // Swipe right = Know
+        setIsDragging(false);
+        handleSelfRating(5);
+        return;
+      }
+      if (offset.x < -swipeThreshold || velocity.x < -velocityThreshold) {
+        // Swipe left = Don't know
+        setIsDragging(false);
+        handleSelfRating(1);
+        return;
+      }
+    }
+    // End dragging state immediately to allow tap to work
+    setTimeout(() => setIsDragging(false), 0);
   };
 
   const handleSelfRating = (rating: number) => {
-    setSelfRating(rating);
     setHasAnswered(true);
+    setIsExiting(true);
+    setExitDirection(rating >= 3 ? 'right' : 'left');
+    setInteractionCount(prev => prev + 1);
+    
     onAnswer(rating >= 3);
-    // Auto-advance to next question after a short delay
+    
+    // Reset motion values immediately before advancing
+    setTimeout(() => {
+      x.set(0);
+      y.set(0);
+    }, 100);
+    
+    // Auto-advance to next question after exit animation
     setTimeout(() => {
       onNext();
-    }, 250);
+      setIsExiting(false);
+      setExitDirection(null);
+    }, 400);
   };
 
   // Reset state when question ID changes (indicating a new question)
   useEffect(() => {
     setIsFlipped(false);
     setHasAnswered(false);
-    setSelfRating(null);
     setAnimation('');
-  }, [question.id, question.question, question.question_stem]);
+    setIsExiting(false);
+    setExitDirection(null);
+    x.set(0);
+    y.set(0);
+  }, [question.id, question.question, question.question_stem, x, y]);
+
+  // Show tutorial on first load
+  useEffect(() => {
+    const hasSeenTutorial = localStorage.getItem('flashcard-tutorial-seen');
+    if (!hasSeenTutorial && currentIndex === 0) {
+      setShowTutorial(true);
+    }
+  }, [currentIndex]);
+
+
+  const dismissTutorial = () => {
+    setShowTutorial(false);
+    localStorage.setItem('flashcard-tutorial-seen', 'true');
+  };
 
   // Reset animation class after animation completes
   useEffect(() => {
@@ -55,59 +180,318 @@ export const ModernFlashcard: React.FC<ModernFlashcardProps> = ({
     return () => clearTimeout(timer);
   }, [animation]);
 
+  // Keyboard shortcuts for flashcard interactions
+  useEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent) => {
+      // Ignore if user is typing in an input field
+      if (event.target instanceof HTMLInputElement || event.target instanceof HTMLTextAreaElement) {
+        return;
+      }
+
+      switch (event.key) {
+        case ' ':
+        case 'ArrowUp':
+        case 'ArrowDown':
+          event.preventDefault();
+          handleFlip();
+          break;
+        case 'ArrowRight':
+          event.preventDefault();
+          // Animate card to the right (Know)
+          x.set(300);
+          setTimeout(() => {
+            handleSelfRating(5);
+          }, 200);
+          break;
+        case 'ArrowLeft':
+          event.preventDefault();
+          // Animate card to the left (Don't Know)
+          x.set(-300);
+          setTimeout(() => {
+            handleSelfRating(1);
+          }, 200);
+          break;
+        case 'Enter':
+          event.preventDefault();
+          handleFlip();
+          break;
+        default:
+          break;
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isFlipped, hasAnswered, onNext, x]);
+
   return (
-    <div className="max-w-3xl mx-auto">
-      <div className="mb-6 flex justify-between items-center">
-        <div>
-          <h2 className="text-xl font-semibold text-gray-800 dark:text-gray-200 mb-1">
-            {title}
-          </h2>
-          <p className="text-sm text-gray-600 dark:text-gray-400">
-            Review the concept, then flip the card to see the explanation
-          </p>
+    <div className={cn(
+      "fixed inset-0 flex flex-col overflow-hidden",
+      isLightMode ? "bg-zinc-50" : "bg-zinc-900"
+    )}>
+      {/* Header */}
+      <div className={cn(
+        "flex items-center justify-between px-4 py-4 border-b",
+        isLightMode ? "border-zinc-200" : "border-zinc-800"
+      )}>
+        <button
+          onClick={onExit}
+          className={cn(
+            "p-2 rounded-lg transition-colors",
+            isLightMode ? "hover:bg-zinc-200" : "hover:bg-zinc-800"
+          )}
+          aria-label="Go back"
+        >
+          <ArrowLeft className={cn("h-5 w-5", isLightMode ? "text-zinc-700" : "text-zinc-300")} />
+        </button>
+        <div className="flex-1 text-center">
+          <h1 className={cn("text-lg font-semibold", isLightMode ? "text-zinc-900" : "text-white")}>{title}</h1>
+          {totalCards > 0 && (
+            <p className={cn("text-sm", isLightMode ? "text-zinc-500" : "text-zinc-400")}>{currentIndex + 1} / {totalCards}</p>
+          )}
         </div>
-        
-        {custom_filters.length > 0 && (
-          <div className="flex flex-wrap gap-2 justify-end">
-            {custom_filters.slice(0, 3).map((filter: string, index: number) => (
-              <span 
-                key={index} 
-                className="px-2 py-1 text-xs rounded-full bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-200"
-              >
-                {filter}
-              </span>
-            ))}
-          </div>
-        )}
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => setIsLightMode(!isLightMode)}
+            className={cn(
+              "p-2 rounded-lg transition-colors",
+              isLightMode ? "hover:bg-zinc-200" : "hover:bg-zinc-800"
+            )}
+            aria-label="Toggle theme"
+          >
+            {isLightMode ? (
+              <Moon className="h-5 w-5 text-zinc-700" />
+            ) : (
+              <Sun className="h-5 w-5 text-zinc-300" />
+            )}
+          </button>
+          <button
+            onClick={onPrevious}
+            disabled={currentIndex === 0}
+            className={cn(
+              "p-2 rounded-full transition-colors",
+              currentIndex === 0
+                ? isLightMode 
+                  ? "bg-zinc-200 text-zinc-400 cursor-not-allowed"
+                  : "bg-zinc-800 text-zinc-600 cursor-not-allowed"
+                : isLightMode
+                  ? "bg-zinc-200 text-zinc-700 hover:bg-zinc-300"
+                  : "bg-zinc-800 text-zinc-300 hover:bg-zinc-700"
+            )}
+            aria-label="Previous card"
+          >
+            <ChevronLeft className="h-5 w-5" />
+          </button>
+          <button
+            onClick={onNext}
+            disabled={currentIndex === totalCards - 1}
+            className={cn(
+              "p-2 rounded-full transition-colors",
+              currentIndex === totalCards - 1
+                ? isLightMode
+                  ? "bg-zinc-200 text-zinc-400 cursor-not-allowed"
+                  : "bg-zinc-800 text-zinc-600 cursor-not-allowed"
+                : "bg-blue-600 text-white hover:bg-blue-700"
+            )}
+            aria-label="Next card"
+          >
+            <ChevronRight className="h-5 w-5" />
+          </button>
+        </div>
       </div>
 
-      <div 
-        className={cn(
-          "relative w-full h-96 rounded-xl shadow-lg transition-all duration-500 cursor-pointer",
-          isFlipped ? "bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20" : "bg-white dark:bg-gray-800",
-          animation
-        )}
-        style={{ perspective: '1000px' }}
-        onClick={handleFlip}
-      >
-        {/* Front of card */}
+      {/* Main Content */}
+      <div className="flex-1 flex items-center justify-center p-4 relative">
+      {/* Tutorial Overlay */}
+      {showTutorial && (
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+          onClick={dismissTutorial}
+        >
+          <motion.div
+            initial={{ scale: 0.9, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            className="bg-white dark:bg-zinc-900 rounded-2xl p-8 max-w-md shadow-2xl"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h3 className="text-2xl font-bold text-zinc-900 dark:text-white mb-4">How to Use Flashcards</h3>
+            <div className="space-y-3 text-zinc-700 dark:text-zinc-300">
+              <p className="flex items-center gap-3">
+                <span className="text-2xl">👆</span>
+                <span><strong>Tap</strong> to flip the card</span>
+              </p>
+              <p className="flex items-center gap-3">
+                <span className="text-2xl">👉</span>
+                <span><strong>Swipe right</strong> if you know it</span>
+              </p>
+              <p className="flex items-center gap-3">
+                <span className="text-2xl">👈</span>
+                <span><strong>Swipe left</strong> if you don't know</span>
+              </p>
+              <p className="flex items-center gap-3">
+                <span className="text-2xl">⌨️</span>
+                <span><strong>Arrow keys</strong> for keyboard control</span>
+              </p>
+            </div>
+            <button
+              onClick={dismissTutorial}
+              className="mt-6 w-full py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-semibold transition-colors"
+            >
+              Got it!
+            </button>
+          </motion.div>
+        </motion.div>
+      )}
+
+
+      {/* Filter Tags */}
+      {custom_filters.length > 0 && (
+        <div className="flex flex-wrap gap-2 justify-center mb-4">
+          {custom_filters.slice(0, 3).map((filter: string, index: number) => (
+            <span 
+              key={index} 
+              className="px-3 py-1 text-[11px] font-medium rounded-lg bg-blue-50/80 dark:bg-blue-900/20 text-[#007AFF] border border-blue-200/50 dark:border-blue-800/50"
+            >
+              {filter}
+            </span>
+          ))}
+        </div>
+      )}
+
+      {/* Stacked Flashcard Container */}
+      <div className="relative w-[360px] mx-auto" style={{ paddingBottom: '20px' }}>
+        {/* Background stacked cards - subtle, peeking from bottom only */}
+        <motion.div 
+          animate={isExiting ? { scale: 0.97, y: -8 } : { scale: 0.94, y: 16 }}
+          transition={{ duration: 0.3 }}
+          className="absolute w-[360px] h-[500px] rounded-[24px] bg-[#2A2A2A] shadow-[0_2px_8px_rgba(0,0,0,0.2)]"
+          style={{ 
+            top: '0',
+            left: '0',
+            zIndex: 1,
+            filter: 'blur(1.5px)',
+            opacity: 0.6
+          }}
+        />
+        <motion.div 
+          animate={isExiting ? { scale: 1, y: 0 } : { scale: 0.97, y: 8 }}
+          transition={{ duration: 0.3 }}
+          className="absolute w-[360px] h-[500px] rounded-[24px] bg-[#252525] shadow-[0_3px_10px_rgba(0,0,0,0.25)]"
+          style={{ 
+            top: '0',
+            left: '0',
+            zIndex: 2,
+            filter: 'blur(0.5px)',
+            opacity: 0.8
+          }}
+        />
+        
+        {/* Front card with exit animation */}
+        <motion.div
+          key={question.id}
+          drag={!isExiting ? 'x' : false}
+          dragConstraints={{ left: 0, right: 0, top: 0, bottom: 0 }}
+          dragElastic={0.8}
+          dragTransition={{ bounceStiffness: 600, bounceDamping: 20 }}
+          dragDirectionLock
+          onDragStart={() => setIsDragging(true)}
+          onDragEnd={handleDragEnd}
+          animate={isExiting ? { 
+            x: exitDirection === 'right' ? 500 : -500,
+            opacity: 0,
+            scale: 0.8,
+            transition: { duration: 0.3 }
+          } : undefined}
+          initial={false}
+          whileTap={!isExiting ? { scale: 0.98 } : undefined}
+          style={!isExiting ? { 
+            x,
+            y,
+            rotateX,
+            rotateZ,
+            perspective: '1000px',
+            zIndex: 3
+          } : {
+            perspective: '1000px',
+            zIndex: 3
+          }}
+          className={cn(
+            "relative w-full h-[500px] rounded-[24px] cursor-grab active:cursor-grabbing overflow-hidden touch-none",
+            "bg-[#1E1E1E] shadow-[0_6px_20px_rgba(0,0,0,0.35)]",
+            animation
+          )}
+          onTap={() => { if (!isDragging) handleFlip(); }}
+        >
+          {/* Gradient overlay for depth */}
+          <div className="absolute inset-0 bg-gradient-to-b from-white/[0.03] to-transparent pointer-events-none rounded-[24px]" />
+          <div className="absolute inset-0 bg-gradient-to-t from-black/10 to-transparent pointer-events-none rounded-[24px]" />
+          {/* Swipe feedback labels */}
+          <motion.div
+            className="absolute top-8 right-8 px-4 py-2 rounded-xl bg-emerald-500 text-white font-bold text-lg shadow-lg z-20"
+            style={{ opacity: knowOpacity }}
+          >
+            ✓ KNOW
+          </motion.div>
+          <motion.div
+            className="absolute top-8 left-8 px-4 py-2 rounded-xl bg-rose-500 text-white font-bold text-lg shadow-lg z-20"
+            style={{ opacity: dontKnowOpacity }}
+          >
+            ✗ DON'T KNOW
+          </motion.div>
+
+        {/* Front Side */}
         <div className={cn(
-          "absolute w-full h-full rounded-xl p-8 backface-hidden transition-all duration-500",
+          "absolute w-full h-full rounded-[24px] p-8 backface-hidden transition-all duration-500",
           isFlipped ? "rotate-y-180 invisible" : "rotate-y-0"
         )}>
           <div className="h-full flex flex-col">
-            <div className="flex-1 overflow-auto">
-              <div className="prose dark:prose-invert max-w-none">
-                {question.question || question.question_stem || ''}
+            <div className="flex-1 overflow-auto touch-pan-y flex items-center justify-center">
+              <div className="text-center">
+                <div 
+                  className="text-[20px] font-medium leading-[1.4] text-white"
+                  style={{ fontFamily: "'Poppins', 'Roboto', sans-serif" }}
+                >
+                  {frontText}
+                </div>
               </div>
             </div>
+            {interactionCount < 5 && (
+              <div className="mt-4 text-center space-y-2">
+                <motion.div
+                  initial={{ opacity: 1 }}
+                  animate={{ opacity: interactionCount >= 5 ? 0 : 1 }}
+                  className="inline-flex items-center gap-2 px-3 py-1.5 bg-white/10 backdrop-blur-xl rounded-lg border border-white/20"
+                >
+                  <span className="text-[13px] text-white/60">Tap or press</span>
+                  <kbd className="px-1.5 py-0.5 text-[11px] font-mono bg-white/20 rounded border border-white/30 text-white">Space</kbd>
+                  <span className="text-[13px] text-white/60">to flip</span>
+                </motion.div>
+                <motion.div
+                  initial={{ opacity: 1 }}
+                  animate={{ opacity: interactionCount >= 5 ? 0 : 1 }}
+                  className="flex items-center justify-center gap-4 text-[11px] text-white/50"
+                >
+                  <div className="flex items-center gap-1.5">
+                    <kbd className="px-1.5 py-0.5 font-mono bg-white/10 rounded border border-white/20 text-white/60">←</kbd>
+                    <span>Don't Know</span>
+                  </div>
+                  <div className="flex items-center gap-1.5">
+                    <kbd className="px-1.5 py-0.5 font-mono bg-white/10 rounded border border-white/20 text-white/60">→</kbd>
+                    <span>Know</span>
+                  </div>
+                </motion.div>
+              </div>
+            )}
           </div>
         </div>
 
-        {/* Card back */}
+        {/* Back Side */}
         <div 
           className={cn(
-            "absolute w-full h-full rounded-xl p-8 backface-hidden transition-all duration-500",
+            "absolute w-full h-full rounded-[24px] p-8 backface-hidden transition-all duration-500",
             isFlipped ? "rotate-y-0" : "rotate-y-180 invisible"
           )}
           onClick={(e) => {
@@ -115,65 +499,77 @@ export const ModernFlashcard: React.FC<ModernFlashcardProps> = ({
             handleFlip();
           }}
         >
-          <div className="h-full flex flex-col">
-            <div className="flex items-center mb-4">
-              <BookOpen className="h-5 w-5 text-blue-600 dark:text-blue-400 mr-2" />
-              <h3 className="text-lg font-medium text-gray-800 dark:text-gray-200">
-                Explanation
-              </h3>
-            </div>
-            <div className="flex-1 overflow-auto">
+          <div className="h-full flex flex-col justify-center">
+            <div className="overflow-auto touch-pan-y scrollbar-thin scrollbar-thumb-white/20 scrollbar-track-transparent">
               <div className="prose dark:prose-invert max-w-none">
-                <ReactMarkdown>{backContent}</ReactMarkdown>
+                <ReactMarkdown 
+                  components={{
+                    p: ({children}) => (
+                      <p 
+                        className="text-[17px] font-medium leading-[1.3] text-white mb-2"
+                        style={{ fontFamily: "'Poppins', 'Roboto', sans-serif" }}
+                      >
+                        {children}
+                      </p>
+                    ),
+                    ul: ({children}) => (
+                      <ul className="list-disc list-outside space-y-1.5 my-2 ml-5 pl-2">
+                        {children}
+                      </ul>
+                    ),
+                    ol: ({children}) => (
+                      <ol className="list-decimal list-outside space-y-1.5 my-2 ml-5 pl-2">
+                        {children}
+                      </ol>
+                    ),
+                    li: ({children}) => (
+                      <li 
+                        className="text-[17px] font-medium leading-[1.3] text-white pl-1"
+                        style={{ fontFamily: "'Poppins', 'Roboto', sans-serif" }}
+                      >
+                        {children}
+                      </li>
+                    ),
+                    strong: ({children}) => (
+                      <strong className="font-semibold text-white">
+                        {children}
+                      </strong>
+                    ),
+                    h1: ({children}) => (
+                      <h1 
+                        className="text-xl font-bold text-white mb-3 mt-4"
+                        style={{ fontFamily: "'Poppins', 'Roboto', sans-serif" }}
+                      >
+                        {children}
+                      </h1>
+                    ),
+                    h2: ({children}) => (
+                      <h2 
+                        className="text-lg font-bold text-white mb-2 mt-3"
+                        style={{ fontFamily: "'Poppins', 'Roboto', sans-serif" }}
+                      >
+                        {children}
+                      </h2>
+                    ),
+                    h3: ({children}) => (
+                      <h3 
+                        className="text-base font-semibold text-white mb-2 mt-3"
+                        style={{ fontFamily: "'Poppins', 'Roboto', sans-serif" }}
+                      >
+                        {children}
+                      </h3>
+                    )
+                  }}
+                >
+                  {backContent}
+                </ReactMarkdown>
               </div>
             </div>
           </div>
         </div>
+        </motion.div>
       </div>
-
-      {isFlipped && (
-        <div className="mt-8 bg-white dark:bg-gray-800 rounded-xl p-6 shadow-md border border-gray-100 dark:border-gray-700">
-          <h3 className="text-md font-medium text-gray-800 dark:text-gray-200 mb-4 flex items-center">
-            <ThumbsUp className="h-4 w-4 mr-2 text-blue-600" />
-            How well did you know this?
-          </h3>
-          
-          <div className="flex justify-between gap-2">
-            {[1, 2, 3, 4, 5].map((rating) => (
-              <button
-                key={rating}
-                onClick={(e) => {
-                  e.stopPropagation();
-                  handleSelfRating(rating);
-                }}
-                disabled={hasAnswered}
-                className={cn(
-                  "flex-1 py-4 rounded-lg transition-colors font-medium text-lg",
-                  selfRating === rating && rating < 3 && "bg-red-500 text-white",
-                  selfRating === rating && rating === 3 && "bg-yellow-500 text-white",
-                  selfRating === rating && rating > 3 && "bg-green-500 text-white",
-                  !selfRating && "bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600",
-                  hasAnswered && selfRating !== rating ? "opacity-50" : ""
-                )}
-              >
-                {rating}
-              </button>
-            ))}
-          </div>
-          
-          <div className="flex justify-between text-xs text-gray-500 dark:text-gray-400 mt-2 px-1">
-            <span className="flex items-center">
-              <ThumbsDown className="h-3 w-3 mr-1 text-red-500" />
-              Not at all
-            </span>
-            <span className="flex items-center">
-              Perfect
-              <ThumbsUp className="h-3 w-3 ml-1 text-green-500" />
-            </span>
-          </div>
-        </div>
-      )}
-
+      </div>
 
       <style dangerouslySetInnerHTML={{ __html: `
         .backface-hidden {

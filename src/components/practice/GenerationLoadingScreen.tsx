@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Loader2, Brain, Sparkles, BookOpen, Zap, Target, TrendingUp, Clock } from 'lucide-react';
 
 interface GenerationLoadingScreenProps {
-  format?: 'flashcard' | 'ukmla_sba';
+  format?: 'flashcard' | 'ukmla_sba' | 'mindmap';
   conceptCount?: number;
   currentProgress?: number;
 }
@@ -20,11 +20,14 @@ export const GenerationLoadingScreen: React.FC<GenerationLoadingScreenProps> = (
     "💡 Flashcards use spaced repetition to optimize memory retention",
     "🧠 Active recall strengthens neural pathways more than passive review",
     "📚 The Feynman Technique: If you can't explain it simply, you don't understand it",
-    "⏰ Short, frequent study sessions are more effective than cramming",
-    "🎯 Testing yourself is 50% more effective than re-reading notes",
-    "🔄 Interleaving different topics improves problem-solving skills",
-    "✨ Your brain consolidates memories during sleep - rest is crucial",
-    "📈 The forgetting curve shows why regular review is essential"
+    "⚡ Testing yourself is more effective than re-reading notes",
+    "🎯 Focus on concepts you find challenging for maximum improvement"
+  ] : format === 'mindmap' ? [
+    "🗺️ Mind maps help visualize relationships between concepts",
+    "🧠 Visual learning engages both hemispheres of your brain",
+    "🔗 Understanding connections improves long-term retention",
+    "🎨 Color coding and spatial arrangement aid memory formation",
+    "📊 Hierarchical thinking develops deeper comprehension"
   ] : [
     "🏥 UKMLA tests clinical reasoning, not just factual recall",
     "📋 Always read the question stem carefully - every detail matters",
@@ -93,94 +96,111 @@ export const GenerationLoadingScreen: React.FC<GenerationLoadingScreenProps> = (
   const progressPercentage = Math.min(estimatedProgress, 100);
   
   return (
-    <div className="fixed inset-0 bg-gradient-to-br from-blue-50 to-indigo-100 dark:from-gray-900 dark:to-gray-800 flex items-center justify-center z-50">
-      <div className="max-w-2xl w-full mx-auto p-8">
-        <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl p-8 space-y-6">
+    <div 
+      className="fixed inset-0 bg-black/20 dark:bg-black/40 flex items-center justify-center z-50 p-4"
+      style={{ backdropFilter: 'blur(20px)' }}
+    >
+      <div className="max-w-md w-full">
+        <div className="bg-white/80 dark:bg-zinc-900/80 backdrop-blur-xl rounded-2xl border border-black/[0.08] dark:border-white/[0.08] shadow-2xl overflow-hidden">
           
-          {/* Animated Icon Header */}
-          <div className="flex justify-center">
-            <div className="relative">
-              <div className={`absolute inset-0 bg-blue-500 rounded-full blur-xl opacity-30 animate-pulse`}></div>
-              <div className="relative bg-gradient-to-br from-blue-500 to-indigo-600 p-6 rounded-full">
-                {animationPhase === 0 && <Brain className="h-12 w-12 text-white animate-pulse" />}
-                {animationPhase === 1 && <Sparkles className="h-12 w-12 text-white animate-pulse" />}
-                {animationPhase === 2 && <BookOpen className="h-12 w-12 text-white animate-pulse" />}
-                {animationPhase === 3 && <Zap className="h-12 w-12 text-white animate-pulse" />}
+          {/* Header with Icon */}
+          <div className="px-6 py-8 text-center">
+            <div className="flex justify-center mb-6">
+              <div className="relative">
+                <div className="absolute inset-0 bg-[#007AFF] rounded-full blur-xl opacity-20 animate-pulse"></div>
+                <div className="relative bg-[#007AFF] p-4 rounded-full shadow-lg">
+                  {animationPhase === 0 && <Brain className="h-8 w-8 text-white" />}
+                  {animationPhase === 1 && <Sparkles className="h-8 w-8 text-white" />}
+                  {animationPhase === 2 && <BookOpen className="h-8 w-8 text-white" />}
+                  {animationPhase === 3 && <Zap className="h-8 w-8 text-white" />}
+                </div>
               </div>
             </div>
-          </div>
-          
-          {/* Main Loading Message */}
-          <div className="text-center">
-            <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">
-              Generating {format === 'flashcard' ? 'Flashcards' : 'Questions'}
+            
+            <h2 className="text-[20px] font-semibold text-zinc-900 dark:text-white mb-2">
+              {format === 'mindmap' ? 'Preparing Mind Maps' : `Generating ${format === 'flashcard' ? 'Flashcards' : 'Questions'}`}
             </h2>
-            <p className="text-gray-600 dark:text-gray-300">
-              Creating {conceptCount} personalized {format === 'flashcard' ? 'flashcard' : 'question'}
-              {conceptCount > 1 ? 's' : ''} using AI...
+            <p className="text-[15px] text-zinc-600 dark:text-zinc-400">
+              {format === 'mindmap' 
+                ? `Preparing ${conceptCount} interactive mind map${conceptCount > 1 ? 's' : ''}...`
+                : `Creating ${conceptCount} personalized ${format === 'flashcard' ? 'flashcard' : 'question'}${conceptCount > 1 ? 's' : ''} using AI...`
+              }
             </p>
           </div>
           
-          {/* Progress Bar */}
-          <div className="space-y-2">
-            <div className="flex justify-between text-sm text-gray-600 dark:text-gray-400">
+          {/* Progress Section */}
+          <div className="px-6 pb-6">
+            <div className="flex justify-between text-[13px] text-zinc-500 dark:text-zinc-400 mb-2">
               <span>Progress</span>
               <span>{Math.round(progressPercentage)}%</span>
             </div>
-            <div className="h-3 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
+            <div className="h-2 bg-zinc-200/60 dark:bg-zinc-700/60 backdrop-blur-xl rounded-full overflow-hidden">
               <div 
-                className="h-full bg-gradient-to-r from-blue-500 to-indigo-600 transition-all duration-500 ease-out relative"
+                className="h-full bg-[#007AFF] transition-all duration-500 ease-out relative rounded-full"
                 style={{ width: `${progressPercentage}%` }}
               >
-                <div className="absolute inset-0 bg-white opacity-30 animate-pulse"></div>
+                <div className="absolute inset-0 bg-white/30 animate-pulse rounded-full"></div>
               </div>
             </div>
           </div>
           
-          {/* Study Tip Section */}
-          <div className="bg-blue-50 dark:bg-blue-900/20 rounded-lg p-4 transition-all duration-500">
-            <div className="flex items-start space-x-3">
-              <Target className="h-5 w-5 text-blue-600 dark:text-blue-400 mt-0.5 flex-shrink-0" />
-              <div>
-                <h3 className="text-sm font-semibold text-blue-900 dark:text-blue-200 mb-1">
-                  Study Tip
-                </h3>
-                <p className="text-sm text-blue-800 dark:text-blue-300 leading-relaxed">
-                  {tips[currentTip]}
-                </p>
+          {/* Content Cards */}
+          <div className="px-6 pb-6 space-y-4">
+            
+            {/* Study Tip Card */}
+            <div className="bg-white/60 dark:bg-zinc-800/60 backdrop-blur-xl rounded-xl border border-black/[0.08] dark:border-white/[0.08] p-4 transition-all duration-500">
+              <div className="flex items-start gap-3">
+                <div className="flex-shrink-0 mt-0.5">
+                  <div className="w-6 h-6 rounded-lg bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center">
+                    <Target className="h-4 w-4 text-[#007AFF]" />
+                  </div>
+                </div>
+                <div className="flex-1 min-w-0">
+                  <h3 className="text-[15px] font-semibold text-zinc-900 dark:text-white mb-1">
+                    Study Tip
+                  </h3>
+                  <p className="text-[13px] text-zinc-600 dark:text-zinc-400 leading-relaxed">
+                    {tips[currentTip]}
+                  </p>
+                </div>
+              </div>
+            </div>
+            
+            {/* Medical Fact Card */}
+            <div className="bg-white/60 dark:bg-zinc-800/60 backdrop-blur-xl rounded-xl border border-black/[0.08] dark:border-white/[0.08] p-4">
+              <div className="flex items-start gap-3">
+                <div className="flex-shrink-0 mt-0.5">
+                  <div className="w-6 h-6 rounded-lg bg-purple-100 dark:bg-purple-900/30 flex items-center justify-center">
+                    <TrendingUp className="h-4 w-4 text-purple-600 dark:text-purple-400" />
+                  </div>
+                </div>
+                <div className="flex-1 min-w-0">
+                  <h3 className="text-[15px] font-semibold text-zinc-900 dark:text-white mb-1">
+                    Did You Know?
+                  </h3>
+                  <p className="text-[13px] text-zinc-600 dark:text-zinc-400 leading-relaxed">
+                    {medicalFacts[currentFact]}
+                  </p>
+                </div>
               </div>
             </div>
           </div>
           
-          {/* Medical Fact Section */}
-          <div className="bg-gradient-to-r from-purple-50 to-pink-50 dark:from-purple-900/20 dark:to-pink-900/20 rounded-lg p-4">
-            <div className="flex items-start space-x-3">
-              <TrendingUp className="h-5 w-5 text-purple-600 dark:text-purple-400 mt-0.5 flex-shrink-0" />
-              <div>
-                <h3 className="text-sm font-semibold text-purple-900 dark:text-purple-200 mb-1">
-                  Did You Know?
-                </h3>
-                <p className="text-sm text-purple-800 dark:text-purple-300 leading-relaxed">
-                  {medicalFacts[currentFact]}
-                </p>
-              </div>
+          {/* Footer */}
+          <div className="px-6 py-4 border-t border-black/[0.08] dark:border-white/[0.08] bg-white/40 dark:bg-zinc-900/40 backdrop-blur-xl">
+            <div className="flex justify-center items-center gap-3 mb-3">
+              <Loader2 className="h-4 w-4 text-zinc-500 dark:text-zinc-400 animate-spin" />
+              <span className="text-[13px] text-zinc-600 dark:text-zinc-400">
+                This usually takes 10-30 seconds...
+              </span>
             </div>
-          </div>
-          
-          {/* Loading Spinner */}
-          <div className="flex justify-center items-center space-x-3">
-            <Loader2 className="h-5 w-5 text-gray-500 dark:text-gray-400 animate-spin" />
-            <span className="text-sm text-gray-600 dark:text-gray-400">
-              This usually takes 10-30 seconds...
-            </span>
-          </div>
-          
-          {/* Bottom Message */}
-          <div className="text-center">
-            <p className="text-xs text-gray-500 dark:text-gray-400">
-              <Clock className="inline h-3 w-3 mr-1" />
-              Quality questions take time to generate. Your patience ensures better learning outcomes.
-            </p>
+            
+            <div className="text-center">
+              <p className="text-[11px] text-zinc-500 dark:text-zinc-400 flex items-center justify-center gap-1">
+                <Clock className="h-3 w-3" />
+                Quality questions take time to generate. Your patience ensures better learning outcomes.
+              </p>
+            </div>
           </div>
         </div>
       </div>

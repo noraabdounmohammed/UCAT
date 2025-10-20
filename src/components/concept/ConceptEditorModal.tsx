@@ -28,6 +28,7 @@ export const ConceptEditorModal: React.FC<ConceptEditorModalProps> = ({
 
   const [newCustomFilter, setNewCustomFilter] = useState('');
   const [showFilterDropdown, setShowFilterDropdown] = useState(false);
+  const [filterSearchQuery, setFilterSearchQuery] = useState('');
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   
@@ -132,22 +133,26 @@ export const ConceptEditorModal: React.FC<ConceptEditorModalProps> = ({
   return (
     <Portal>
       <div 
-        className="fixed inset-0 bg-black/30 flex items-center justify-center overflow-y-auto py-4" 
-        style={{ backdropFilter: 'blur(4px)', pointerEvents: 'auto' }}
+        className="fixed inset-0 bg-black/20 dark:bg-black/40 flex items-center justify-center overflow-y-auto py-4 z-50" 
+        style={{ backdropFilter: 'blur(20px)', pointerEvents: 'auto' }}
         onClick={handleBackdropClick}
       >
-        <div className="bg-white dark:bg-gray-800 rounded-xl p-4 sm:p-6 w-[95%] sm:w-[90%] md:w-[80%] lg:w-[70%] max-w-3xl max-h-[90vh] overflow-y-auto shadow-lg my-4">
-        <div className="flex justify-between items-center mb-4">
-          <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100">
-            Edit Concept
-          </h2>
-          <button
-            onClick={onClose}
-            className="p-1 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700"
-          >
-            <X className="h-5 w-5 text-gray-500 dark:text-gray-400" />
-          </button>
-        </div>
+        <div className="bg-white/80 dark:bg-zinc-900/80 backdrop-blur-xl rounded-2xl border border-black/[0.08] dark:border-white/[0.08] shadow-2xl w-[95%] sm:w-[90%] md:w-[80%] lg:w-[70%] max-w-3xl max-h-[90vh] overflow-hidden my-4">
+          <div className="px-6 py-4 border-b border-black/[0.08] dark:border-white/[0.08] bg-white/60 dark:bg-zinc-900/60 backdrop-blur-xl">
+            <div className="flex items-center justify-between">
+              <h2 className="text-[20px] font-semibold text-zinc-900 dark:text-white">
+                Edit Concept
+              </h2>
+              <button
+                onClick={onClose}
+                className="flex items-center justify-center w-8 h-8 hover:bg-black/5 dark:hover:bg-white/5 rounded-full transition-colors"
+              >
+                <X className="h-5 w-5 text-zinc-600 dark:text-zinc-400" />
+              </button>
+            </div>
+          </div>
+          
+          <div className="p-6 overflow-y-auto" style={{ maxHeight: 'calc(90vh - 80px)' }}>
 
         <div className="space-y-6">
           {/* Basic Information */}
@@ -212,36 +217,59 @@ export const ConceptEditorModal: React.FC<ConceptEditorModalProps> = ({
                 </button>
                 
                 {showFilterDropdown && (
-                  <div className="absolute z-50 w-full mt-1 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md shadow-lg max-h-48 overflow-y-auto">
-                    {filterOptions.custom_filters && filterOptions.custom_filters.length > 0 ? (
-                      filterOptions.custom_filters
-                        .filter(filter => !formData.custom_filters?.includes(filter))
-                        .map((filter, index) => (
-                          <button
-                            key={index}
-                            type="button"
-                            onClick={(e) => {
-                              e.preventDefault();
-                              e.stopPropagation();
-                              handleAddCustomFilter(filter);
-                              setShowFilterDropdown(false);
-                            }}
-                            className="w-full text-left px-3 py-2 hover:bg-gray-100 dark:hover:bg-gray-600 text-gray-900 dark:text-gray-100 text-sm flex items-center"
-                          >
-                            <Tag className="h-3 w-3 mr-2 text-blue-500" />
-                            {filter}
-                          </button>
-                        ))
-                    ) : (
-                      <div className="px-3 py-2 text-sm text-gray-500 dark:text-gray-400">
-                        No available filters found
-                      </div>
-                    )}
-                    {filterOptions.custom_filters?.filter(filter => !formData.custom_filters?.includes(filter)).length === 0 && filterOptions.custom_filters?.length > 0 && (
-                      <div className="px-3 py-2 text-sm text-gray-500 dark:text-gray-400">
-                        All available filters are already selected
-                      </div>
-                    )}
+                  <div className="absolute z-50 w-full mt-1 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md shadow-lg overflow-hidden">
+                    {/* Search Input */}
+                    <div className="p-2 border-b border-gray-200 dark:border-gray-600">
+                      <input
+                        type="text"
+                        value={filterSearchQuery}
+                        onChange={(e) => setFilterSearchQuery(e.target.value)}
+                        placeholder="Search filters..."
+                        className="w-full px-3 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        onClick={(e) => e.stopPropagation()}
+                      />
+                    </div>
+                    
+                    {/* Filter List */}
+                    <div className="max-h-48 overflow-y-auto">
+                      {filterOptions.custom_filters && filterOptions.custom_filters.length > 0 ? (
+                        (() => {
+                          const availableFilters = filterOptions.custom_filters
+                            .filter(filter => !formData.custom_filters?.includes(filter))
+                            .filter(filter => filter.toLowerCase().includes(filterSearchQuery.toLowerCase()));
+                          
+                          if (availableFilters.length === 0) {
+                            return (
+                              <div className="px-3 py-2 text-sm text-gray-500 dark:text-gray-400">
+                                {filterSearchQuery ? 'No filters match your search' : 'All available filters are already selected'}
+                              </div>
+                            );
+                          }
+                          
+                          return availableFilters.map((filter, index) => (
+                            <button
+                              key={index}
+                              type="button"
+                              onClick={(e) => {
+                                e.preventDefault();
+                                e.stopPropagation();
+                                handleAddCustomFilter(filter);
+                                setShowFilterDropdown(false);
+                                setFilterSearchQuery('');
+                              }}
+                              className="w-full text-left px-3 py-2 hover:bg-gray-100 dark:hover:bg-gray-600 text-gray-900 dark:text-gray-100 text-sm flex items-center"
+                            >
+                              <Tag className="h-3 w-3 mr-2 text-blue-500" />
+                              {filter}
+                            </button>
+                          ));
+                        })()
+                      ) : (
+                        <div className="px-3 py-2 text-sm text-gray-500 dark:text-gray-400">
+                          No available filters found
+                        </div>
+                      )}
+                    </div>
                   </div>
                 )}
               </div>
@@ -348,6 +376,7 @@ export const ConceptEditorModal: React.FC<ConceptEditorModalProps> = ({
               </button>
             </div>
           </div>
+        </div>
         </div>
         </div>
       </div>

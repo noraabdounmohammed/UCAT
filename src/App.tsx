@@ -76,6 +76,8 @@ function App() {
           </MainLayout>
         } />
         
+        {/* Curriculum Dashboard route temporarily removed */}
+        
         {/* Redirect any routes to home */}
         <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>

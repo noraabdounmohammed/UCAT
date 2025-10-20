@@ -51,6 +51,22 @@ export const CurriculumApp: React.FC = () => {
   };
 
   const handleBackToCurriculums = () => {
+    // Reload curriculums from localStorage when returning to hub
+    const storedCurriculums = localStorage.getItem('curriculums');
+    if (storedCurriculums) {
+      try {
+        const parsed = JSON.parse(storedCurriculums);
+        const curriculumsWithDates = parsed.map((c: any) => ({
+          ...c,
+          lastAccessed: new Date(c.lastAccessed)
+        }));
+        setCurriculums(curriculumsWithDates);
+        console.log('🔄 Reloaded curriculums from localStorage:', curriculumsWithDates.length);
+      } catch (error) {
+        console.error('Failed to reload curriculums:', error);
+      }
+    }
+    
     setCurrentView('hub');
     setSelectedCurriculum(null);
   };

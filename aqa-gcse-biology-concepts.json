@@ -1,0 +1,42 @@
+[
+  {
+    "concept_id": "cb-001",
+    "title": "CB-001: Definition of eukaryotic cells",
+    "content": "Eukaryotic cells are cells that contain a nucleus.",
+    "prerequisites": [],
+    "custom_filters": ["cell-structure"],
+    "mastery_data": { "attempts": 0, "correct": 0, "incorrect": 0, "mastery_level": 0, "last_practiced": null }
+  },
+  {
+    "concept_id": "cb-002",
+    "title": "CB-002: Examples of eukaryotic organisms",
+    "content": "Eukaryotic cells are found in plants, animals, fungi, and protists.",
+    "prerequisites": [],
+    "custom_filters": ["cell-structure"],
+    "mastery_data": { "attempts": 0, "correct": 0, "incorrect": 0, "mastery_level": 0, "last_practiced": null }
+  },
+  {
+    "concept_id": "cb-003",
+    "title": "CB-003: Three key features of eukaryotic cells",
+    "content": "All eukaryotic cells have a cell membrane, cytoplasm, and genetic material enclosed in a nucleus.",
+    "prerequisites": [],
+    "custom_filters": ["cell-structure"],
+    "mastery_data": { "attempts": 0, "correct": 0, "incorrect": 0, "mastery_level": 0, "last_practiced": null }
+  },
+  {
+    "concept_id": "cb-004",
+    "title": "CB-004: Definition of prokaryotic cells",
+    "content": "Prokaryotic cells are cells without a nucleus.",
+    "prerequisites": [],
+    "custom_filters": ["cell-structure"],
+    "mastery_data": { "attempts": 0, "correct": 0, "incorrect": 0, "mastery_level": 0, "last_practiced": null }
+  },
+  {
+    "concept_id": "cb-005",
+    "title": "CB-005: Examples of prokaryotic organisms",
+    "content": "Prokaryotic cells are found in bacteria.",
+    "prerequisites": [],
+    "custom_filters": ["cell-structure"],
+    "mastery_data": { "attempts": 0, "correct": 0, "incorrect": 0, "mastery_level": 0, "last_practiced": null }
+  }
+]

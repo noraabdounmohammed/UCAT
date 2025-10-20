@@ -4,7 +4,7 @@
 export type BloomLevel = 'remember' | 'understand' | 'apply' | 'analyze' | 'evaluate' | 'create';
 
 // Question formats
-export type QuestionFormat = 'mcq' | 'emq' | 'data_interpretation' | 'osce' | 'short_answer' | 'flashcard' | 'essay' | 'ukmla_sba';
+export type QuestionFormat = 'mcq' | 'sba' | 'emq' | 'true_false' | 'ranking' | 'data_interpretation' | 'osce' | 'short_answer' | 'flashcard' | 'essay' | 'ukmla_sba' | 'mindmap';
 
 // Relationship types between concepts
 export type RelationshipType = 'prerequisite_of' | 'part_of' | 'contrasts_with' | 'analogous_to' | 'misconception_of';
@@ -19,7 +19,7 @@ export interface ConceptMasteryData {
   attempts: number;
   correct: number;
   incorrect: number;
-  mastery_level: number; // 0-4 scale
+  mastery_level: number; // 0 = unseen, 1 = incorrect, 2 = correct
   last_practiced: string | null; // ISO date string
   last_practiced_at?: Date; // For compatibility
   practice_count?: number; // Total practice attempts
@@ -27,6 +27,34 @@ export interface ConceptMasteryData {
   bloom_stats?: Record<BloomLevel, BloomMasteryStats>; // Per-Bloom level stats
   stability?: number; // Memory stability parameter for spaced repetition
   next_review_at?: string; // ISO date string for next review
+}
+
+// Mind map types (optional per concept)
+export type MindMapCategory =
+  | 'central'
+  | 'risk'
+  | 'investigation'
+  | 'management'
+  | 'differential'
+  | 'complication'
+  | 'definition'
+  | 'mechanism'
+  | 'application'
+  | 'example';
+
+export interface MindMapNode {
+  id: string;
+  label: string;
+  category: MindMapCategory;
+  full?: string; // full untruncated label for tooltip/popover
+}
+
+export type MindMapEdge = [string, string]; // [fromId, toId]
+
+export interface MindMapData {
+  title: string;
+  nodes: MindMapNode[];
+  edges: MindMapEdge[];
 }
 
 // UKMLA-specific dimensions
@@ -112,6 +140,8 @@ export interface ConceptNode {
   mastery_data: ConceptMasteryData;
   created_at?: Date;
   updated_at?: Date;
+  // Optional curated mind map representation; if absent, UI can auto-generate
+  mindmap?: MindMapData;
 }
 
 export interface ConceptModel {
@@ -132,6 +162,7 @@ export interface ConceptFilterState {
   searchQuery: string;
   mastery_levels: number[];
   custom_filters: string[];
+  cascading_mode?: boolean; // AND vs OR logic for custom filters
 }
 
 export interface ConceptFilterOptions {
@@ -175,31 +206,38 @@ export interface PracticeConfig {
 }
 
 export interface ConceptPracticeState {
+  getCurriculumId: () => string;
   isLoading: boolean;
   filterState: ConceptFilterState;
   filterOptions: ConceptFilterOptions;
   concepts: ConceptNode[];
   filteredConcepts: ConceptNode[];
   stats: ConceptStats;
-  activeView: 'grid' | 'list';
+  activeView: 'simple' | 'grid' | 'mastery' | 'dashboard';
   customFilters: CustomFilter[];
   filterCategories: FilterCategory[];
+  
+  // Optional selection of concept IDs to drive a targeted practice session
+  practiceSelection: string[] | null;
   
   // Practice state
   isPracticing: boolean;
   practiceQuestions: any[]; // Will be typed properly later
   practiceConfig: PracticeConfig;
+  currentSessionAnswers: Array<{questionId: string; conceptId: string; isCorrect: boolean; timestamp: string}>;
+  sessionStartTime: number | null; // Timestamp when practice session started
   
   // Actions
   loadConcepts: () => Promise<void>;
   updateFilterState: (filterUpdates: Partial<ConceptFilterState>) => void;
   resetFilters: () => void;
-  setActiveView: (view: 'grid' | 'list') => void;
+  setActiveView: (view: 'simple' | 'grid' | 'mastery' | 'dashboard') => void;
   addConcept: (concept: Omit<ConceptNode, 'concept_id'>) => void;
   updateConcept: (conceptId: string, updates: Partial<ConceptNode>) => void;
   deleteConcept: (conceptId: string) => void;
   
   // Practice actions
+  setPracticeSelection: (ids: string[] | null) => void;
   startPractice: (config?: PracticeConfig) => Promise<void>;
   endPractice: () => void;
   updateMastery: (conceptId: string, isCorrect: boolean) => void;

@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useConceptStore } from '@/contexts/ConceptStoreContext';
-import { ConceptNode } from '@/types/conceptTypes';
+import { ConceptNode, FilterCategory } from '@/types/conceptTypes';
 import { Button } from '@/components/ui/button';
 import { 
   Loader2, 
@@ -26,8 +26,60 @@ export const ConceptBulkUploadModal: React.FC<ConceptBulkUploadModalProps> = ({
   onBack
 }) => {
   const [inputText, setInputText] = useState('');
-  const [inputMode, setInputMode] = useState<'text' | 'url'>('text');
-  const [activeTab, setActiveTab] = useState<'input' | 'results'>('input');
+  const [inputMode, setInputMode] = useState<'text' | 'url' | 'json'>('text');
+  const [jsonInput, setJsonInput] = useState('');
+
+  // Helper function to fill JSON template
+  const fillJsonTemplate = () => {
+    const template = `[
+  {
+    "title": "Heart Failure Pathophysiology",
+    "content": "Heart failure occurs when the heart cannot pump blood effectively to meet the body's metabolic demands. This can result from systolic dysfunction (reduced ejection fraction) or diastolic dysfunction (impaired filling). Common causes include coronary artery disease, hypertension, and cardiomyopathy.",
+    "custom_filters": ["cardiology", "shortness-of-breath", "heart-failure"],
+    "filter_categories": [
+      {
+        "name": "System",
+        "color": "#3B82F6",
+        "filters": ["cardiology"]
+      },
+      {
+        "name": "Presentation",
+        "color": "#8B5CF6", 
+        "filters": ["shortness-of-breath"]
+      },
+      {
+        "name": "Condition",
+        "color": "#EF4444",
+        "filters": ["heart-failure"]
+      }
+    ]
+  },
+  {
+    "title": "Diabetes Type 1 vs Type 2",
+    "content": "Type 1 diabetes is an autoimmune condition where pancreatic beta cells are destroyed, leading to absolute insulin deficiency. Type 2 diabetes involves insulin resistance and relative insulin deficiency. Type 1 typically presents in childhood, while Type 2 is more common in adults with obesity.",
+    "custom_filters": ["endocrinology", "polyuria", "diabetes"],
+    "filter_categories": [
+      {
+        "name": "System",
+        "color": "#3B82F6",
+        "filters": ["endocrinology"]
+      },
+      {
+        "name": "Presentation",
+        "color": "#8B5CF6",
+        "filters": ["polyuria"]
+      },
+      {
+        "name": "Condition", 
+        "color": "#EF4444",
+        "filters": ["diabetes"]
+      }
+    ]
+  }
+]`;
+    setJsonInput(template);
+  };
+  const [activeTab, setActiveTab] = useState<'input' | 'preview' | 'results'>('input');
   const [generatedConcepts, setGeneratedConcepts] = useState<ConceptNode[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -44,10 +96,127 @@ export const ConceptBulkUploadModal: React.FC<ConceptBulkUploadModalProps> = ({
     failed: []
   });
 
+  // Function to process JSON input with filter categories support
+  const processJsonInput = async () => {
+    if (!jsonInput.trim()) {
+      setError('Please enter JSON data to import concepts.');
+      return;
+    }
+
+    setIsLoading(true);
+    setError(null);
+
+    try {
+      const parsedData = JSON.parse(jsonInput);
+
+      // Validate that it's an array
+      if (!Array.isArray(parsedData)) {
+        throw new Error('JSON must be an array of concept objects');
+      }
+
+      // Collect all filter categories from all concepts
+      const allCategories = new Map<string, FilterCategory>();
+      const filterAssignments: Record<string, string> = {};
+
+      // Process categories from each concept
+      parsedData.forEach((item: any) => {
+        if (item.filter_categories && Array.isArray(item.filter_categories)) {
+          item.filter_categories.forEach((category: any) => {
+            if (category.name && category.filters && Array.isArray(category.filters)) {
+              // Create or update category
+              const categoryId = category.name.toLowerCase().replace(/\s+/g, '-');
+              
+              if (!allCategories.has(categoryId)) {
+                allCategories.set(categoryId, {
+                  id: categoryId,
+                  name: category.name,
+                  color: category.color || '#6B7280',
+                  description: category.description || `Auto-imported category: ${category.name}`,
+                  created_at: new Date()
+                });
+              }
+
+              // Map filters to this category (normalize to lowercase-with-hyphens)
+              category.filters.forEach((filter: string) => {
+                const normalizedFilter = filter.toLowerCase().replace(/\s+/g, '-');
+                filterAssignments[normalizedFilter] = categoryId;
+              });
+            }
+          });
+        }
+      });
+
+      // Convert to ConceptNode format
+      const concepts: ConceptNode[] = parsedData.map((item: any, index: number) => {
+        // Normalize custom_filters to lowercase-with-hyphens
+        const normalizedFilters = (item.custom_filters || item.tags || []).map((filter: string) => 
+          filter.toLowerCase().replace(/\s+/g, '-')
+        );
+        
+        // Also add filters from filter_categories to custom_filters
+        // This ensures all category filters are actually used
+        const categoryFilters = new Set<string>(normalizedFilters);
+        if (item.filter_categories && Array.isArray(item.filter_categories)) {
+          item.filter_categories.forEach((category: any) => {
+            if (category.filters && Array.isArray(category.filters)) {
+              category.filters.forEach((filter: string) => {
+                const normalizedFilter = filter.toLowerCase().replace(/\s+/g, '-');
+                categoryFilters.add(normalizedFilter);
+              });
+            }
+          });
+        }
+        
+        return {
+          concept_id: `json_import_${Date.now()}_${Math.random().toString(36).substr(2, 9)}_${index}`,
+          title: item.title || `Concept ${index + 1}`,
+          content: item.content || item.description || '',
+          custom_filters: Array.from(categoryFilters),
+          prerequisites: [],
+          mastery_data: {
+            attempts: 0,
+            correct: 0,
+            incorrect: 0,
+            mastery_level: 0,
+            last_reviewed: null,
+            last_practiced: null,
+            next_review: null
+          }
+        };
+      });
+
+      console.log('🎯 Created concepts:', concepts);
+      console.log('📂 Filter categories found:', Array.from(allCategories.values()));
+      console.log('🔗 Filter assignments:', filterAssignments);
+
+      // Store categories and assignments for later use during save
+      (concepts as any)._importCategories = Array.from(allCategories.values());
+      (concepts as any)._importAssignments = filterAssignments;
+
+      setGeneratedConcepts(concepts);
+      setActiveTab('preview');
+
+    } catch (error) {
+      console.error('JSON parsing error:', error);
+      setError(`Invalid JSON format: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   // Function to call DeepSeek API and generate concepts
   const generateConcepts = async () => {
-    if (!inputText.trim()) {
+    if (inputMode === 'json') {
+      return processJsonInput();
+    }
+
+    if (!inputText.trim() && inputMode === 'text') {
       setError('Please enter some text to generate concepts from.');
+      return;
+    }
+
+    if (!urlInput.trim() && inputMode === 'url') {
+      setError('Please enter a URL to fetch content from.');
       return;
     }
 
@@ -61,7 +230,7 @@ export const ConceptBulkUploadModal: React.FC<ConceptBulkUploadModalProps> = ({
         throw new Error('DeepSeek API key not configured. Please set VITE_OPENAI_API_KEY in your .env file.');
       }
 
-      // System prompt for generating concept nodes
+      // System prompt for generating concept nodes with filter categories
       const defaultPrompt = `You are a curriculum architect following MECE principles and cognitive chunking best practices. Given the input text, generate ConceptNode JSON objects that are:
 
 MECE COMPLIANCE:
@@ -75,17 +244,46 @@ COGNITIVE CHUNKING:
 - Can be mastered in one focused study session
 - Builds meaningful connections to related concepts
 
-TECHNICAL REQUIREMENTS:
-- Use exact TypeScript interface from conceptTypes.ts
-- Assign slug-style concept_id (e.g., "cv_acs_stemi_dx")
-- Title: short and exam-relevant
-- Description: 1–2 sentences max
-- Dimensions: Fill domain, subject, topic, subtopic
-- Key facts: Focus on one essential piece of information per concept
-- Decision rule: Add if clinically relevant
-- mastery_data: Fill with default values
+JSON FORMAT REQUIREMENTS:
+Each concept should include:
+- title: Short, exam-relevant title
+- content: 1-2 sentences of essential information
+- custom_filters: Array of relevant tags/filters
+- filter_categories: Array of category objects that organize the filters
 
-Output only a valid JSON array of ConceptNodes. No extra text.`;
+FILTER CATEGORIES STRUCTURE:
+- Create logical groupings for your custom_filters
+- Common categories: "System", "Condition", "Presentation", "Procedure", "Investigation"
+- Each category should have: name, color (hex), filters (array of filter names)
+- Use consistent category names across all concepts
+
+EXAMPLE OUTPUT:
+[
+  {
+    "title": "Heart Failure Pathophysiology",
+    "content": "Heart failure occurs when the heart cannot pump blood effectively to meet metabolic demands.",
+    "custom_filters": ["cardiology", "shortness-of-breath", "heart-failure"],
+    "filter_categories": [
+      {
+        "name": "System",
+        "color": "#3B82F6",
+        "filters": ["cardiology"]
+      },
+      {
+        "name": "Presentation",
+        "color": "#8B5CF6",
+        "filters": ["shortness-of-breath"]
+      },
+      {
+        "name": "Condition",
+        "color": "#EF4444",
+        "filters": ["heart-failure"]
+      }
+    ]
+  }
+]
+
+Output only a valid JSON array. No extra text.`;
 
       const systemPrompt = customPrompt.trim() || defaultPrompt;
 
@@ -108,7 +306,7 @@ Output only a valid JSON array of ConceptNodes. No extra text.`;
             }
           ],
           temperature: 0.3,
-          max_tokens: 2000
+          max_tokens: 8000
         })
       });
 
@@ -129,7 +327,25 @@ Output only a valid JSON array of ConceptNodes. No extra text.`;
       // Parse the JSON response
       let parsedNodes: Partial<ConceptNode>[] = [];
       try {
-        parsedNodes = JSON.parse(content.trim());
+        // Check if content appears to be truncated
+        let trimmedContent = content.trim();
+        
+        // Try to fix truncated JSON
+        if (!trimmedContent.endsWith('}]') && !trimmedContent.endsWith('}')) {
+          console.warn('API response appears to be truncated, attempting to fix...');
+          
+          // If it looks like an array but is missing the closing bracket
+          if (trimmedContent.startsWith('[') && !trimmedContent.endsWith(']')) {
+            // Find the last complete object and close the array
+            const lastCompleteObject = trimmedContent.lastIndexOf('}');
+            if (lastCompleteObject !== -1) {
+              trimmedContent = trimmedContent.substring(0, lastCompleteObject + 1) + ']';
+              console.log('Fixed truncated JSON array');
+            }
+          }
+        }
+        
+        parsedNodes = JSON.parse(trimmedContent);
         
         // Ensure the response is an array
         if (!Array.isArray(parsedNodes)) {
@@ -147,7 +363,7 @@ Output only a valid JSON array of ConceptNodes. No extra text.`;
             mastery_level: 0,
             last_practiced: null
           },
-          custom_filters: node.custom_filters || node.tags || []
+          custom_filters: node.custom_filters || (node as any).tags || []
         }));
         
         setGeneratedConcepts(parsedNodes);
@@ -504,67 +720,134 @@ Output only a valid JSON array of ConceptNodes. No extra text.`;
     return competencies;
   };
 
-  // Function to save concepts to the store
+  // Get store functions and curriculum ID at component level
+  const { addConcept, createFilterCategory, curriculumId } = useConceptStore();
+
+  // Function to save concepts to the store with filter categories
   const saveConcepts = () => {
-    const added: Partial<ConceptNode>[] = [];
-    const skipped: Partial<ConceptNode>[] = [];
-    const failed: Partial<ConceptNode>[] = [];
-
-    // Get existing concepts from localStorage
-    const storedConcepts = localStorage.getItem('user_concepts');
-    const userConcepts = storedConcepts ? JSON.parse(storedConcepts) : [];
+    console.log('💾 Starting to save concepts:', generatedConcepts);
+    console.log('🔑 Curriculum ID from useConceptStore:', curriculumId);
+    console.log('🔍 Type of curriculum ID:', typeof curriculumId);
     
-    // Track existing concept IDs to avoid duplicates
-    const existingIds = new Set(userConcepts.map((c: any) => c.concept_id));
+    const added: ConceptNode[] = [];
+    const skipped: ConceptNode[] = [];
+    const failed: ConceptNode[] = [];
 
+    // First, handle filter categories if they exist
+    const importCategories = (generatedConcepts as any)._importCategories;
+    const importAssignments = (generatedConcepts as any)._importAssignments;
+
+    if (importCategories && Array.isArray(importCategories)) {
+      console.log('📂 Creating filter categories:', importCategories);
+      console.log('📋 Using curriculum ID from store:', curriculumId);
+      
+      // Get existing categories to avoid duplicates
+      const categoriesKey = `${curriculumId}_filter_categories`;
+      const existingCategories = JSON.parse(localStorage.getItem(categoriesKey) || '[]');
+      const existingCategoryNames = new Set(existingCategories.map((cat: any) => cat.name));
+      
+      importCategories.forEach((category: FilterCategory, index: number) => {
+        try {
+          // Only create if category doesn't already exist
+          if (!existingCategoryNames.has(category.name)) {
+            const { id, created_at, ...categoryData } = category;
+            // Create immediately (IDs are now slug-based in store; no collision risk)
+            createFilterCategory(categoryData);
+            console.log('✅ Added new category:', category.name);
+          } else {
+            console.log('⚠️ Category already exists, skipping:', category.name);
+          }
+        } catch (error) {
+          console.error('❌ Error adding category:', category.name, error);
+        }
+      });
+    }
+
+    // Automatically assign filters to their categories
+    if (importAssignments && Object.keys(importAssignments).length > 0) {
+      console.log('🔗 Automatically assigning filters to categories:', importAssignments);
+      console.log('📋 Using curriculum ID from store:', curriculumId);
+      
+      // Store filter assignments in the correct format
+      const assignmentKey = `${curriculumId}_filter_assignments`;
+      const existingAssignments = JSON.parse(localStorage.getItem(assignmentKey) || '{}');
+
+      // Ensure ALL filters from importCategories are included in assignments
+      try {
+        const ensured: Record<string, string> = { ...importAssignments };
+        const importCats = (generatedConcepts as any)._importCategories as FilterCategory[] | undefined;
+        if (importCats && Array.isArray(importCats)) {
+          importCats.forEach(cat => {
+            const catId = cat.id; // Use the actual category ID, not a slug
+            const categoryFilters = (cat as any).filters || [];
+            categoryFilters.forEach((f: string) => {
+              // Always assign filters from categories, even if already assigned
+              ensured[f] = catId;
+            });
+          });
+        }
+        // Also ensure all custom_filters on generated concepts are assigned if present in original mapping
+        (generatedConcepts || []).forEach((c: any) => {
+          (c.custom_filters || []).forEach((f: string) => {
+            if (!ensured[f] && importAssignments[f]) {
+              ensured[f] = importAssignments[f];
+            }
+          });
+        });
+        
+        console.log('🔍 Ensured assignments:', ensured);
+        
+        // Replace importAssignments with ensured values
+        Object.keys(ensured).forEach(key => {
+          importAssignments[key] = ensured[key];
+        });
+      } catch (e) {
+        console.warn('Assignment ensure step failed (non-fatal):', e);
+      }
+      
+      // Merge with existing assignments (don't overwrite)
+      const mergedAssignments = { ...existingAssignments, ...importAssignments };
+      
+      localStorage.setItem(assignmentKey, JSON.stringify(mergedAssignments));
+      console.log('✅ Filter assignments saved to key:', assignmentKey);
+      console.log('✅ Filter assignments content:', mergedAssignments);
+    }
+
+    // Then save concepts
     generatedConcepts.forEach(concept => {
       try {
-        if (!concept.concept_id || !concept.title || !concept.description) {
+        console.log('🔍 Processing concept:', concept);
+        
+        // Validate required fields (content, not description for JSON concepts)
+        if (!concept.concept_id || !concept.title || !concept.content) {
+          console.error('❌ Missing required fields:', { 
+            concept_id: concept.concept_id, 
+            title: concept.title, 
+            content: concept.content 
+          });
           failed.push(concept);
           return;
         }
 
-        // Check if concept already exists
-        if (existingIds.has(concept.concept_id)) {
-          skipped.push(concept);
-          return;
-        }
-
-        // Prepare the concept with required fields including concept_id
-        const newConcept: Partial<ConceptNode> = {
-          concept_id: concept.concept_id, // Ensure concept_id is preserved
-          title: concept.title,
-          content: concept.content || concept.description || '',
-          custom_filters: concept.custom_filters || concept.tags || [],
-          prerequisites: concept.prerequisites || [],
-          mastery_data: {
-            attempts: 0,
-            correct: 0,
-            incorrect: 0,
-            mastery_level: 0,
-            last_practiced: null
-          }
-        };
-
-        // Add to user concepts
-        userConcepts.push(newConcept);
-        existingIds.add(concept.concept_id);
+        // Add concept using the store
+        addConcept(concept);
         added.push(concept);
+        console.log('✅ Successfully added concept:', concept.title);
+        
       } catch (error) {
-        console.error(`Error adding concept ${concept.concept_id}:`, error);
+        console.error(`❌ Error adding concept ${concept.concept_id}:`, error);
         failed.push(concept);
       }
     });
 
-    // Save updated concepts to localStorage
-    localStorage.setItem('user_concepts', JSON.stringify(userConcepts));
+    console.log(`📊 Save results: ${added.length} added, ${skipped.length} skipped, ${failed.length} failed`);
     
-    // Reload concepts in the store
-    if (added.length > 0) {
-      useConceptStore.getState().loadConcepts();
-    }
-
-    setResults({ added, skipped, failed });
+    // Update results and switch to results tab
+    setResults({ 
+      added: added as Partial<ConceptNode>[], 
+      skipped: skipped as Partial<ConceptNode>[], 
+      failed: failed as Partial<ConceptNode>[] 
+    });
     setActiveTab('results');
   };
 
@@ -585,25 +868,27 @@ Output only a valid JSON array of ConceptNodes. No extra text.`;
 
   return (
     <div 
-      className="fixed inset-0 bg-black/30 flex items-center justify-center z-50" 
-      style={{ backdropFilter: 'blur(4px)' }}
+      className="fixed inset-0 bg-black/20 dark:bg-black/40 flex items-center justify-center z-50 p-4" 
+      style={{ backdropFilter: 'blur(20px)' }}
       onClick={handleClose}
     >
       <div 
-        className="bg-white dark:bg-gray-800 rounded-xl max-w-4xl w-full max-h-[90vh] overflow-hidden shadow-lg"
+        className="bg-white/80 dark:bg-zinc-900/80 backdrop-blur-xl rounded-2xl border border-black/[0.08] dark:border-white/[0.08] shadow-2xl max-w-4xl w-full max-h-[90vh] overflow-hidden"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
-        <div className="flex justify-between items-center p-6 border-b border-gray-200 dark:border-gray-700">
-          <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100">
-            Generate Curriculum with AI
-          </h2>
-          <button
-            onClick={handleClose}
-            className="p-1 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700"
-          >
-            <X className="h-5 w-5 text-gray-500 dark:text-gray-400" />
-          </button>
+        <div className="px-6 py-4 border-b border-black/[0.08] dark:border-white/[0.08] bg-white/60 dark:bg-zinc-900/60 backdrop-blur-xl">
+          <div className="flex items-center justify-between">
+            <h2 className="text-[20px] font-semibold text-zinc-900 dark:text-white">
+              Generate with AI
+            </h2>
+            <button
+              onClick={handleClose}
+              className="flex items-center justify-center w-8 h-8 hover:bg-black/5 dark:hover:bg-white/5 rounded-full transition-colors"
+            >
+              <X className="h-5 w-5 text-zinc-600 dark:text-zinc-400" />
+            </button>
+          </div>
         </div>
 
         {/* Content */}
@@ -621,14 +906,15 @@ Output only a valid JSON array of ConceptNodes. No extra text.`;
             
             <TabsContent value="input">
               <div>
-                <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4 mb-4">
-                  <h3 className="text-sm font-medium text-blue-900 dark:text-blue-100 mb-2">How it works:</h3>
-                  <ul className="text-sm text-blue-800 dark:text-blue-200 space-y-1">
+                <div className="bg-blue-50/80 dark:bg-blue-900/20 backdrop-blur-xl border border-blue-200/50 dark:border-blue-800/50 rounded-xl p-4 mb-4">
+                  <h3 className="text-[15px] font-semibold text-blue-900 dark:text-blue-100 mb-2">How it works:</h3>
+                  <ul className="text-[13px] text-blue-800 dark:text-blue-200 space-y-1.5">
                     <li>• Paste any educational text (articles, notes, study materials)</li>
                     <li>• Or use the URL tab to fetch content from web pages</li>
-                    <li>• AI will automatically extract and create concept cards</li>
+                    <li>• AI will automatically extract and create concept cards with organized tags</li>
                     <li>• No special formatting required - plain text works perfectly</li>
-                    <li>• You can also paste JSON if you have structured data</li>
+                    <li>• You can also paste JSON with <strong>filter_categories</strong> for organized tag hierarchies</li>
+                    <li>• Filter categories automatically create organized tag groups in your curriculum</li>
                   </ul>
                 </div>
 
@@ -654,7 +940,17 @@ Output only a valid JSON array of ConceptNodes. No extra text.`;
                           : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100'
                       }`}
                     >
-                      URL
+                      From URL
+                    </button>
+                    <button
+                      onClick={() => setInputMode('json')}
+                      className={`px-3 py-1.5 text-sm font-medium rounded-md transition-colors ${
+                        inputMode === 'json'
+                          ? 'bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 shadow-sm'
+                          : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100'
+                      }`}
+                    >
+                      From JSON
                     </button>
                   </div>
                 </div>
@@ -692,6 +988,92 @@ Output only a valid JSON array of ConceptNodes. No extra text.`;
                       </ul>
                     </div>
                   </div>
+                ) : inputMode === 'json' ? (
+                  <div className="mb-4">
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                      Paste JSON array of concepts
+                    </label>
+                    <div className="mb-3 p-3 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-md">
+                      <div className="flex justify-between items-center mb-2">
+                        <p className="text-sm font-medium text-blue-800 dark:text-blue-200">📋 JSON Template:</p>
+                        <button
+                          onClick={fillJsonTemplate}
+                          className="text-xs px-2 py-1 bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors"
+                        >
+                          Fill Template
+                        </button>
+                      </div>
+                      <pre className="text-xs text-blue-700 dark:text-blue-300 overflow-x-auto">
+{`[
+  {
+    "title": "Heart Failure Pathophysiology",
+    "content": "Heart failure occurs when the heart cannot pump blood effectively to meet the body's metabolic demands. This can result from systolic dysfunction (reduced ejection fraction) or diastolic dysfunction (impaired filling). Common causes include coronary artery disease, hypertension, and cardiomyopathy.",
+    "custom_filters": ["cardiovascular", "shortness-of-breath", "heart-failure"],
+    "filter_categories": [
+      {
+        "name": "System",
+        "color": "#3B82F6",
+        "filters": ["cardiovascular"]
+      },
+      {
+        "name": "Presentation",
+        "color": "#8B5CF6",
+        "filters": ["shortness-of-breath", "fatigue", "oedema"]
+      },
+      {
+        "name": "Condition",
+        "color": "#EF4444",
+        "filters": ["heart-failure"]
+      }
+    ]
+  },
+  {
+    "title": "ACE Inhibitors: Mechanism and Use",
+    "content": "ACE inhibitors block angiotensin-converting enzyme, reducing angiotensin II production. This causes vasodilation and decreased aldosterone secretion. First-line for hypertension in younger patients and essential in heart failure management.",
+    "custom_filters": ["cardiovascular", "hypertension", "pharmacology"],
+    "filter_categories": [
+      {
+        "name": "System",
+        "color": "#3B82F6",
+        "filters": ["cardiovascular"]
+      },
+      {
+        "name": "Presentation",
+        "color": "#8B5CF6",
+        "filters": ["raised-blood-pressure"]
+      },
+      {
+        "name": "Condition",
+        "color": "#EF4444",
+        "filters": ["hypertension", "heart-failure"]
+      },
+      {
+        "name": "Clinical",
+        "color": "#10B981",
+        "filters": ["pharmacology"]
+      }
+    ]
+  }
+]`}
+                      </pre>
+                    </div>
+                    <textarea
+                      value={jsonInput}
+                      onChange={(e) => setJsonInput(e.target.value)}
+                      className="w-full h-64 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 text-sm font-mono"
+                      placeholder="Paste your JSON array here..."
+                    />
+                    <div className="mt-2 text-xs text-gray-600 dark:text-gray-400">
+                      <p className="font-medium mb-1">📝 Important notes:</p>
+                      <ul className="space-y-0.5 text-xs">
+                        <li>• <code className="bg-gray-100 dark:bg-gray-800 px-1 rounded">title</code> and <code className="bg-gray-100 dark:bg-gray-800 px-1 rounded">content</code> are required</li>
+                        <li>• All filters are normalized to lowercase-with-hyphens (e.g., "Cardiovascular" → "cardiovascular")</li>
+                        <li>• Filters in <code className="bg-gray-100 dark:bg-gray-800 px-1 rounded">filter_categories</code> are automatically added to the concept</li>
+                        <li>• Every filter in <code className="bg-gray-100 dark:bg-gray-800 px-1 rounded">custom_filters</code> should appear in at least one category to avoid unassigned filters</li>
+                        <li>• Categories are shared across all concepts in your curriculum</li>
+                      </ul>
+                    </div>
+                  </div>
                 ) : (
                   <div className="mb-4">
                     <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
@@ -712,7 +1094,8 @@ The AI will automatically extract concepts from your text and create individual 
                   </div>
                 )}
 
-                {/* Custom AI Prompt Section */}
+                {/* Custom AI Prompt Section - Only show for text/url modes */}
+                {inputMode !== 'json' && (
                 <div className="mb-4">
                   <button
                     type="button"
@@ -766,6 +1149,7 @@ Example customizations:
                     </div>
                   )}
                 </div>
+                )}
                 
                 {error && (
                   <Alert variant="destructive" className="mb-4">
@@ -797,18 +1181,18 @@ Example customizations:
                     </Button>
                     <Button 
                     onClick={generateConcepts} 
-                    disabled={isLoading || !inputText.trim()}
+                    disabled={isLoading || (inputMode === 'text' && !inputText.trim()) || (inputMode === 'url' && !urlInput.trim()) || (inputMode === 'json' && !jsonInput.trim())}
                     className="bg-blue-600 hover:bg-blue-700 text-white"
                   >
                     {isLoading ? (
                       <>
                         <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                        Generating Concepts...
+                        {inputMode === 'json' ? 'Processing JSON...' : 'Generating Concepts...'}
                       </>
                     ) : (
                       <>
                         <Plus className="mr-2 h-4 w-4" />
-                        Generate Concepts
+                        {inputMode === 'json' ? 'Import Concepts' : 'Generate Concepts'}
                       </>
                     )}
                   </Button>
@@ -831,7 +1215,7 @@ Example customizations:
                         <h4 className="font-medium">{concept.title}</h4>
                         <span className="text-xs text-gray-500">{concept.concept_id}</span>
                       </div>
-                      <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">{concept.content || concept.description}</p>
+                      <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">{concept.content || (concept as any).description}</p>
                       {concept.custom_filters && concept.custom_filters.length > 0 && (
                         <div className="flex flex-wrap gap-1 mt-2">
                           {concept.custom_filters.map(filter => (
