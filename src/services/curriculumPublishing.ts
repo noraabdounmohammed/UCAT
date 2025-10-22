@@ -13,6 +13,7 @@ export interface PublishedCurriculum {
   category: string;
   country: string;
   color: string;
+  imageUrl?: string; // Optional custom image URL for carousel display
   author: string;
   version: string;
   publishedAt: Date;
@@ -168,6 +169,7 @@ const MOCK_PUBLISHED_CURRICULUMS: PublishedCurriculum[] = [
     category: 'Medical',
     country: 'United Kingdom',
     color: 'bg-red-500',
+    imageUrl: '/cardiology-heart.png',
     author: 'Dr. Sarah Johnson',
     version: '1.2.0',
     publishedAt: new Date('2024-01-15'),

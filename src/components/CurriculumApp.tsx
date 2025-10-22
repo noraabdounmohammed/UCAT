@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { CurriculumHub } from '@/pages/CurriculumHub';
-import { ConceptPracticePage } from '@/pages/ConceptPracticePage';
+import { CurriculumHubLoft } from '@/pages/CurriculumHub.loft';
+import { ConceptPracticePageLoft } from '@/pages/ConceptPracticePage.loft';
 
 interface Curriculum {
   id: string;
@@ -91,7 +91,7 @@ export const CurriculumApp: React.FC = () => {
 
   if (currentView === 'curriculum' && selectedCurriculum) {
     return (
-      <ConceptPracticePage
+      <ConceptPracticePageLoft
         onBackToCurriculums={handleBackToCurriculums}
         curriculum={selectedCurriculum}
         onUpdateCurriculum={handleUpdateCurriculum}
@@ -100,7 +100,7 @@ export const CurriculumApp: React.FC = () => {
   }
 
   return (
-    <CurriculumHub 
+    <CurriculumHubLoft 
       onOpenCurriculum={handleOpenCurriculum}
       curriculums={curriculums}
       setCurriculums={setCurriculums}
