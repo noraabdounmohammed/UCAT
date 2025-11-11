@@ -33,16 +33,28 @@ export const CurriculumDashboardContent: React.FC<CurriculumDashboardProps> = ({
   }, [curriculumId]);
 
   // Calculate current stats
+  // Simple: correct/incorrect/unseen based on most recent answer (mastery_level)
   const stats = useMemo(() => {
     const total = filteredConcepts.length;
     const attempted = filteredConcepts.filter((c) => c.mastery_data.attempts > 0).length;
-    const correct = filteredConcepts.filter((c) => {
-      const accuracy = c.mastery_data.attempts > 0 
-        ? c.mastery_data.correct / c.mastery_data.attempts 
-        : 0;
-      return accuracy >= 0.7;
-    }).length;
+    const correct = filteredConcepts.filter((c) => c.mastery_data.mastery_level === 2).length;
+    const incorrect = filteredConcepts.filter((c) => c.mastery_data.mastery_level === 1).length;
+    const unseen = filteredConcepts.filter((c) => c.mastery_data.mastery_level === 0).length;
     const accuracy = attempted > 0 ? correct / attempted : 0;
+
+    console.log('📊 Dashboard Stats:', {
+      total,
+      attempted,
+      correct,
+      incorrect,
+      unseen,
+      accuracy: Math.round(accuracy * 100) + '%',
+      sampleConcepts: filteredConcepts.slice(0, 3).map(c => ({
+        title: c.title,
+        mastery_level: c.mastery_data.mastery_level,
+        attempts: c.mastery_data.attempts
+      }))
+    });
 
     return {
       total,

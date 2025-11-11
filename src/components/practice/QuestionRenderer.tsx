@@ -63,6 +63,11 @@ export const QuestionRenderer: React.FC<QuestionRendererProps> = ({
           question={question}
           onAnswer={onAnswer}
           onNext={onNext}
+          onPrevious={onPrevious}
+          onExit={onExit}
+          currentIndex={currentIndex}
+          totalQuestions={totalCards}
+          title={title || "UKMLA SBA"}
         />
       );
     
@@ -117,6 +122,11 @@ export const QuestionRenderer: React.FC<QuestionRendererProps> = ({
           question={question}
           onAnswer={onAnswer}
           onNext={onNext}
+          onPrevious={onPrevious}
+          onExit={onExit}
+          currentIndex={currentIndex}
+          totalQuestions={totalCards}
+          title={title || "UKMLA SBA"}
         />
       );
   }

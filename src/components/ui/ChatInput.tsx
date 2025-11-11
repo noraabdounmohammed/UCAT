@@ -10,6 +10,8 @@ interface ChatInputProps {
   onStop?: () => void;
   isStreaming?: boolean;
   replyPreview?: React.ReactNode;
+  contained?: boolean; // New prop to control positioning
+  lightMode?: boolean; // New prop for light mode styling
 }
 
 export const ChatInput: React.FC<ChatInputProps> = ({
@@ -19,7 +21,9 @@ export const ChatInput: React.FC<ChatInputProps> = ({
   maxRows = 8,
   onStop,
   isStreaming = false,
-  replyPreview
+  replyPreview,
+  contained = false,
+  lightMode = false
 }) => {
   const [value, setValue] = useState('');
   const [isComposing, setIsComposing] = useState(false);
@@ -165,8 +169,8 @@ export const ChatInput: React.FC<ChatInputProps> = ({
 
   return (
     <div 
-      className={`fixed bottom-0 left-0 right-0 z-50 bg-white dark:bg-gray-900 border-t border-gray-200 dark:border-gray-700 pb-[env(safe-area-inset-bottom)] mobile-fixed-input ${isFocused ? 'input-focused' : ''}`}
-      style={{
+      className={`${contained ? 'relative' : 'fixed bottom-0 left-0 right-0'} z-50 border-t border-white/10 ${contained ? '' : 'pb-[env(safe-area-inset-bottom)] mobile-fixed-input'} ${isFocused ? 'input-focused' : ''}`}
+      style={contained ? {} : {
         position: 'fixed',
         bottom: 0,
         left: 0,
@@ -179,9 +183,11 @@ export const ChatInput: React.FC<ChatInputProps> = ({
       }}
     >
       <div className="w-full px-3 py-2">
-        <div className={`relative bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 shadow-sm hover:shadow-md focus-within:border-blue-500 dark:focus-within:border-blue-400 focus-within:shadow-lg transition-all duration-200 max-w-4xl mx-auto ${
-          replyPreview ? 'rounded-b-xl' : 'rounded-xl'
-        }`}>
+        <div className={`relative border-2 transition-all duration-200 max-w-4xl mx-auto ${
+          lightMode 
+            ? 'bg-black/[0.03] border-black/[0.08] hover:bg-black/[0.05] hover:border-black/[0.12] focus-within:border-black/[0.20]'
+            : 'bg-white/5 border-white/10 hover:bg-white/10 hover:border-white/20 focus-within:border-white/30'
+        } ${replyPreview ? 'rounded-b-xl' : 'rounded-xl'}`}>
           {replyPreview && (
             <div className="">
               {replyPreview}
@@ -203,7 +209,9 @@ export const ChatInput: React.FC<ChatInputProps> = ({
               placeholder={placeholder}
               disabled={disabled}
               aria-label="Chat message"
-              className="flex-1 resize-none bg-transparent border-none outline-none text-gray-900 dark:text-gray-100 placeholder-gray-500 dark:placeholder-gray-400 leading-relaxed"
+              className={`flex-1 resize-none bg-transparent border-none outline-none leading-relaxed ${
+                lightMode ? 'text-stone-900 placeholder-stone-400' : 'text-white placeholder-white/50'
+              }`}
               style={{
                 fontSize: '16px',
                 fontFamily: 'system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif',
@@ -222,7 +230,7 @@ export const ChatInput: React.FC<ChatInputProps> = ({
             {isStreaming && onStop ? (
               <button
                 onClick={onStop}
-                className="flex items-center justify-center w-8 h-8 bg-red-500 hover:bg-red-600 text-white rounded-full transition-all duration-200 hover:scale-105 shadow-sm flex-shrink-0"
+                className="flex items-center justify-center w-8 h-8 bg-rose-500/80 hover:bg-rose-500 text-white rounded-full transition-all duration-200 hover:scale-105 flex-shrink-0"
                 aria-label="Stop generation"
               >
                 <Square className="w-3 h-3" />
@@ -231,10 +239,14 @@ export const ChatInput: React.FC<ChatInputProps> = ({
               <button
                 onClick={handleSend}
                 disabled={!canSend}
-                className={`flex items-center justify-center w-8 h-8 rounded-full transition-all duration-200 hover:scale-105 shadow-sm flex-shrink-0 ${
-                  canSend 
-                    ? 'bg-blue-500 hover:bg-blue-600 text-white' 
-                    : 'bg-gray-200 dark:bg-gray-700 text-gray-400 dark:text-gray-500 cursor-not-allowed'
+                className={`flex items-center justify-center w-8 h-8 rounded-full transition-all duration-200 hover:scale-105 flex-shrink-0 ${
+                  lightMode
+                    ? canSend 
+                      ? 'bg-black/[0.12] hover:bg-black/[0.18] text-stone-900' 
+                      : 'bg-black/[0.03] text-stone-400 cursor-not-allowed'
+                    : canSend 
+                      ? 'bg-white/20 hover:bg-white/30 text-white' 
+                      : 'bg-white/5 text-white/30 cursor-not-allowed'
                 }`}
                 aria-label="Send message"
               >

@@ -6,23 +6,31 @@ import { CurriculumApp } from '@/components/CurriculumApp';
 import { MainLayout } from '@/components/layout/MainLayout';
 import { ThemeProvider } from '@/contexts/ThemeContext';
 import { FontSizeProvider } from '@/contexts/FontSizeContext';
+import { AuthProvider } from '@/contexts/AuthContext';
 import { ChatInputExample } from '@/components/examples/ChatInputExample';
 import DynamicQuestionDemo from '@/components/examples/DynamicQuestionDemo';
 import { TestExplanationGenerator } from '@/components/examples/TestExplanationGenerator';
 import { ConciseExplanationDemo } from '@/components/examples/ConciseExplanationDemo';
 import { ConceptNodePracticeSection } from '@/components/practice/ConceptNodePracticeSection';
 import { CurriculumLandingPage } from '@/pages/CurriculumLandingPage';
+import { LandingPage } from '@/pages/LandingPage';
+import { StorageNotification } from '@/components/StorageNotification';
 import '@/styles/font-sizes.css';
 
 // Mock user data removed
 
 function App() {
   return (
-    <ThemeProvider>
-      <FontSizeProvider>
-        <Routes>
+    <AuthProvider>
+      <ThemeProvider>
+        <FontSizeProvider>
+          <StorageNotification />
+          <Routes>
+          {/* Landing Page - Elevated Learning */}
+          <Route path="/" element={<LandingPage />} />
+          
           {/* Dashboard route */}
-          <Route path="/" element={
+          <Route path="/dashboard" element={
             <MainLayout currentPage="dashboard">
               <Dashboard />
             </MainLayout>
@@ -82,8 +90,9 @@ function App() {
           {/* Redirect any routes to home */}
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
-      </FontSizeProvider>
-    </ThemeProvider>
+        </FontSizeProvider>
+      </ThemeProvider>
+    </AuthProvider>
   );
 }
 

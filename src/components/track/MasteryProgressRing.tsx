@@ -36,7 +36,7 @@ export default function MasteryProgressRing({ counts, onSelect }: Props) {
               fill="none"
               stroke="currentColor"
               strokeWidth={strokeWidth}
-              className="text-zinc-100 dark:text-zinc-800"
+              className="text-stone-200"
             />
             
             {/* Correct (green) arc */}
@@ -49,7 +49,7 @@ export default function MasteryProgressRing({ counts, onSelect }: Props) {
               strokeWidth={strokeWidth}
               strokeDasharray={circumference}
               strokeDashoffset={circumference - (correctPercent / 100) * circumference}
-              className="text-green-500 dark:text-green-400 transition-all duration-500"
+              className="text-green-500 transition-all duration-500"
               strokeLinecap="round"
             />
             
@@ -63,7 +63,7 @@ export default function MasteryProgressRing({ counts, onSelect }: Props) {
               strokeWidth={strokeWidth}
               strokeDasharray={circumference}
               strokeDashoffset={circumference - ((correctPercent + incorrectPercent) / 100) * circumference}
-              className="text-red-500 dark:text-red-400 transition-all duration-500"
+              className="text-red-500 transition-all duration-500"
               strokeLinecap="round"
               style={{ 
                 strokeDasharray: `${(incorrectPercent / 100) * circumference} ${circumference}`,
@@ -74,10 +74,10 @@ export default function MasteryProgressRing({ counts, onSelect }: Props) {
           
           {/* Center text */}
           <div className="absolute inset-0 flex flex-col items-center justify-center">
-            <div className="text-4xl font-bold text-zinc-900 dark:text-white">
+            <div className="text-4xl font-bold text-stone-900" style={{ fontFamily: "'Unbounded', sans-serif", fontWeight: 600 }}>
               {masteryPercent}%
             </div>
-            <div className="text-sm text-zinc-500 dark:text-zinc-400 mt-1">
+            <div className="text-sm text-stone-600 mt-1" style={{ fontFamily: "'Manrope', sans-serif", fontWeight: 300 }}>
               Mastered
             </div>
           </div>
@@ -86,11 +86,11 @@ export default function MasteryProgressRing({ counts, onSelect }: Props) {
         {/* Stats */}
         <div className="w-full space-y-3">
           <div className="text-center">
-            <div className="font-semibold text-zinc-900 dark:text-white text-[15px] mb-2">
+            <div className="font-medium text-stone-900 text-sm mb-2" style={{ fontFamily: "'Unbounded', sans-serif", fontWeight: 500 }}>
               Overall Mastery
             </div>
-            <div className="text-sm text-zinc-600 dark:text-zinc-400">
-              {accuracy}% accuracy • {attempted}/{total} concepts attempted
+            <div className="text-sm text-stone-600" style={{ fontFamily: "'Manrope', sans-serif", fontWeight: 300 }}>
+              {Math.round((attempted / total) * 100)}% coverage • {attempted}/{total} concepts attempted
             </div>
           </div>
 
@@ -100,8 +100,8 @@ export default function MasteryProgressRing({ counts, onSelect }: Props) {
               onClick={() => onSelect?.('correct')}
               className="flex items-center gap-2 text-sm hover:opacity-70 transition-opacity"
             >
-              <span className="inline-block h-3 w-3 rounded-full bg-green-500 dark:bg-green-400" />
-              <span className="text-zinc-700 dark:text-zinc-300">
+              <span className="inline-block h-3 w-3 rounded-full bg-green-500" />
+              <span className="text-stone-700" style={{ fontFamily: "'Manrope', sans-serif", fontWeight: 300 }}>
                 Correct <span className="font-semibold">{counts.correct}</span>
               </span>
             </button>
@@ -110,8 +110,8 @@ export default function MasteryProgressRing({ counts, onSelect }: Props) {
               onClick={() => onSelect?.('incorrect')}
               className="flex items-center gap-2 text-sm hover:opacity-70 transition-opacity"
             >
-              <span className="inline-block h-3 w-3 rounded-full bg-red-500 dark:bg-red-400" />
-              <span className="text-zinc-700 dark:text-zinc-300">
+              <span className="inline-block h-3 w-3 rounded-full bg-red-500" />
+              <span className="text-stone-700" style={{ fontFamily: "'Manrope', sans-serif", fontWeight: 300 }}>
                 Incorrect <span className="font-semibold">{counts.incorrect}</span>
               </span>
             </button>
@@ -120,8 +120,8 @@ export default function MasteryProgressRing({ counts, onSelect }: Props) {
               onClick={() => onSelect?.('unseen')}
               className="flex items-center gap-2 text-sm hover:opacity-70 transition-opacity"
             >
-              <span className="inline-block h-3 w-3 rounded-full bg-zinc-300 dark:bg-zinc-600" />
-              <span className="text-zinc-700 dark:text-zinc-300">
+              <span className="inline-block h-3 w-3 rounded-full bg-stone-300" />
+              <span className="text-stone-700" style={{ fontFamily: "'Manrope', sans-serif", fontWeight: 300 }}>
                 Unseen <span className="font-semibold">{counts.unseen}</span>
               </span>
             </button>

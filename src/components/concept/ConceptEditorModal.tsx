@@ -133,23 +133,15 @@ export const ConceptEditorModal: React.FC<ConceptEditorModalProps> = ({
   return (
     <Portal>
       <div 
-        className="fixed inset-0 bg-black/20 dark:bg-black/40 flex items-center justify-center overflow-y-auto py-4 z-50" 
-        style={{ backdropFilter: 'blur(20px)', pointerEvents: 'auto' }}
+        className="fixed inset-0 bg-black/20 backdrop-blur-sm flex items-center justify-center overflow-y-auto py-4 z-50" 
+        style={{ pointerEvents: 'auto' }}
         onClick={handleBackdropClick}
       >
-        <div className="bg-white/80 dark:bg-zinc-900/80 backdrop-blur-xl rounded-2xl border border-black/[0.08] dark:border-white/[0.08] shadow-2xl w-[95%] sm:w-[90%] md:w-[80%] lg:w-[70%] max-w-3xl max-h-[90vh] overflow-hidden my-4">
-          <div className="px-6 py-4 border-b border-black/[0.08] dark:border-white/[0.08] bg-white/60 dark:bg-zinc-900/60 backdrop-blur-xl">
-            <div className="flex items-center justify-between">
-              <h2 className="text-[20px] font-semibold text-zinc-900 dark:text-white">
-                Edit Concept
-              </h2>
-              <button
-                onClick={onClose}
-                className="flex items-center justify-center w-8 h-8 hover:bg-black/5 dark:hover:bg-white/5 rounded-full transition-colors"
-              >
-                <X className="h-5 w-5 text-zinc-600 dark:text-zinc-400" />
-              </button>
-            </div>
+        <div className="bg-white/90 backdrop-blur-2xl rounded-3xl border border-white/30 shadow-[0_8px_32px_0_rgba(0,0,0,0.12)] backdrop-saturate-150 w-[95%] sm:w-[90%] md:w-[80%] lg:w-[70%] max-w-3xl max-h-[90vh] overflow-hidden my-4">
+          <div className="px-8 py-6 border-b border-stone-200/50">
+            <h2 className="text-2xl font-medium text-stone-900 tracking-tight" style={{ fontFamily: "'Unbounded', sans-serif", fontWeight: 500 }}>
+              Edit Concept
+            </h2>
           </div>
           
           <div className="p-6 overflow-y-auto" style={{ maxHeight: 'calc(90vh - 80px)' }}>
@@ -157,20 +149,21 @@ export const ConceptEditorModal: React.FC<ConceptEditorModalProps> = ({
         <div className="space-y-6">
           {/* Basic Information */}
           <div>
-            <h3 className="text-base font-medium text-gray-900 dark:text-gray-100 mb-4">Basic Information</h3>
+            <h3 className="text-sm font-medium text-stone-900 mb-4 uppercase tracking-wider" style={{ fontFamily: "'Unbounded', sans-serif", fontWeight: 500 }}>Basic Information</h3>
             
             <div className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                <label className="block text-xs font-medium text-stone-700 mb-2 uppercase tracking-wider" style={{ fontFamily: "'Unbounded', sans-serif", fontWeight: 500 }}>
                   Title *
                 </label>
                 <input
                   type="text"
                   value={formData.title || ''}
                   onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-                  className={`w-full px-3 py-2 border rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 ${
-                    errors.title ? 'border-red-500' : 'border-gray-300 dark:border-gray-600'
+                  className={`w-full px-4 py-3 border rounded-xl bg-white text-stone-900 focus:outline-none focus:ring-2 focus:ring-stone-900 ${
+                    errors.title ? 'border-red-500' : 'border-stone-300'
                   }`}
+                  style={{ fontFamily: "'Manrope', sans-serif", fontWeight: 300 }}
                   placeholder="e.g., Acute Myocardial Infarction"
                 />
                 {errors.title && (
@@ -179,15 +172,16 @@ export const ConceptEditorModal: React.FC<ConceptEditorModalProps> = ({
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                <label className="block text-xs font-medium text-stone-700 mb-2 uppercase tracking-wider" style={{ fontFamily: "'Unbounded', sans-serif", fontWeight: 500 }}>
                   Content *
                 </label>
                 <textarea
                   value={formData.content || ''}
                   onChange={(e) => setFormData({ ...formData, content: e.target.value })}
-                  className={`w-full px-3 py-2 border rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 resize-none ${
-                    errors.content ? 'border-red-500' : 'border-gray-300 dark:border-gray-600'
+                  className={`w-full px-4 py-3 border rounded-xl bg-white text-stone-900 resize-none focus:outline-none focus:ring-2 focus:ring-stone-900 ${
+                    errors.content ? 'border-red-500' : 'border-stone-300'
                   }`}
+                  style={{ fontFamily: "'Manrope', sans-serif", fontWeight: 300 }}
                   rows={6}
                   placeholder="Enter all concept information here - description, key facts, clinical context, etc."
                 />
@@ -200,7 +194,7 @@ export const ConceptEditorModal: React.FC<ConceptEditorModalProps> = ({
 
           {/* Custom Filters */}
           <div>
-            <h3 className="text-base font-medium text-gray-900 dark:text-gray-100 mb-4">Custom Filters</h3>
+            <h3 className="text-sm font-medium text-stone-900 mb-4 uppercase tracking-wider" style={{ fontFamily: "'Unbounded', sans-serif", fontWeight: 500 }}>Custom Filters</h3>
             
             <div className="space-y-3">
               {/* Available Filters Dropdown */}
@@ -208,24 +202,26 @@ export const ConceptEditorModal: React.FC<ConceptEditorModalProps> = ({
                 <button
                   type="button"
                   onClick={() => setShowFilterDropdown(!showFilterDropdown)}
-                  className="w-full flex items-center justify-between px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors"
+                  className="w-full flex items-center justify-between px-4 py-3 border border-stone-300 rounded-xl bg-white text-stone-900 hover:bg-stone-50 transition-colors"
+                  style={{ fontFamily: "'Manrope', sans-serif", fontWeight: 300 }}
                 >
-                  <span className="text-sm text-gray-500 dark:text-gray-400">
+                  <span className="text-sm text-stone-500">
                     Select from available filters...
                   </span>
-                  <ChevronDown className="h-4 w-4 text-gray-400" />
+                  <ChevronDown className="h-4 w-4 text-stone-400" />
                 </button>
                 
                 {showFilterDropdown && (
-                  <div className="absolute z-50 w-full mt-1 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md shadow-lg overflow-hidden">
+                  <div className="absolute z-50 w-full mt-1 bg-white/95 backdrop-blur-xl border border-stone-300 rounded-xl shadow-lg overflow-hidden">
                     {/* Search Input */}
-                    <div className="p-2 border-b border-gray-200 dark:border-gray-600">
+                    <div className="p-2 border-b border-stone-200">
                       <input
                         type="text"
                         value={filterSearchQuery}
                         onChange={(e) => setFilterSearchQuery(e.target.value)}
                         placeholder="Search filters..."
-                        className="w-full px-3 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        className="w-full px-3 py-1.5 text-sm border border-stone-300 rounded-lg bg-white text-stone-900 focus:outline-none focus:ring-2 focus:ring-stone-900"
+                        style={{ fontFamily: "'Manrope', sans-serif", fontWeight: 300 }}
                         onClick={(e) => e.stopPropagation()}
                       />
                     </div>
@@ -280,14 +276,15 @@ export const ConceptEditorModal: React.FC<ConceptEditorModalProps> = ({
                   type="text"
                   value={newCustomFilter}
                   onChange={(e) => setNewCustomFilter(e.target.value)}
-                  className="flex-1 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+                  className="flex-1 px-4 py-3 border border-stone-300 rounded-xl bg-white text-stone-900 focus:outline-none focus:ring-2 focus:ring-stone-900"
+                  style={{ fontFamily: "'Manrope', sans-serif", fontWeight: 300 }}
                   placeholder="Or create a new filter tag..."
                   onKeyPress={(e) => e.key === 'Enter' && handleAddCustomFilter()}
                 />
                 <button
                   type="button"
                   onClick={() => handleAddCustomFilter()}
-                  className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-md transition-colors flex items-center"
+                  className="px-4 py-3 bg-stone-900 hover:bg-stone-800 text-white rounded-xl transition-colors flex items-center"
                 >
                   <Plus className="h-4 w-4" />
                 </button>
@@ -298,7 +295,8 @@ export const ConceptEditorModal: React.FC<ConceptEditorModalProps> = ({
                   {formData.custom_filters.map((filter, index) => (
                     <span
                       key={index}
-                      className="inline-flex items-center px-3 py-1 rounded-full text-sm bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200"
+                      className="inline-flex items-center px-3 py-1.5 rounded-full text-sm bg-stone-100 text-stone-900"
+                      style={{ fontFamily: "'Manrope', sans-serif", fontWeight: 400 }}
                     >
                       <Tag className="h-3 w-3 mr-1" />
                       {filter}
@@ -316,30 +314,24 @@ export const ConceptEditorModal: React.FC<ConceptEditorModalProps> = ({
             </div>
           </div>
 
-          {/* Prerequisites */}
-          <div>
-            <h3 className="text-base font-medium text-gray-900 dark:text-gray-100 mb-4">Prerequisites</h3>
-            <p className="text-sm text-gray-500 dark:text-gray-400 italic">
-              Prerequisite concept selection will be implemented in a future update.
-            </p>
-          </div>
-
           {/* Action Buttons */}
-          <div className="flex justify-between pt-4 border-t border-gray-200 dark:border-gray-700">
+          <div className="flex justify-between pt-6 border-t border-stone-200/50">
             {/* Delete Button - Left Side */}
             {showDeleteConfirm ? (
-              <div className="flex gap-2">
+              <div className="flex gap-3">
                 <button
                   type="button"
                   onClick={() => setShowDeleteConfirm(false)}
-                  className="px-3 py-2 text-sm text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200 transition-colors"
+                  className="px-5 py-2.5 text-sm text-stone-600 hover:text-stone-900 transition-colors uppercase tracking-wider"
+                  style={{ fontFamily: "'Unbounded', sans-serif", fontWeight: 500 }}
                 >
                   Cancel
                 </button>
                 <button
                   type="button"
                   onClick={handleDelete}
-                  className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-md transition-colors flex items-center text-sm"
+                  className="px-5 py-2.5 bg-red-600 hover:bg-red-700 text-white rounded-full transition-colors flex items-center text-sm uppercase tracking-wider shadow-lg"
+                  style={{ fontFamily: "'Unbounded', sans-serif", fontWeight: 500 }}
                 >
                   <Trash2 className="h-4 w-4 mr-2" />
                   Confirm Delete
@@ -349,7 +341,8 @@ export const ConceptEditorModal: React.FC<ConceptEditorModalProps> = ({
               <button
                 type="button"
                 onClick={() => setShowDeleteConfirm(true)}
-                className="px-4 py-2 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-md transition-colors flex items-center"
+                className="px-5 py-2.5 text-red-600 hover:bg-red-50 rounded-full transition-colors flex items-center text-sm uppercase tracking-wider"
+                style={{ fontFamily: "'Unbounded', sans-serif", fontWeight: 500 }}
                 title="Delete this concept"
               >
                 <Trash2 className="h-4 w-4 mr-2" />
@@ -362,14 +355,16 @@ export const ConceptEditorModal: React.FC<ConceptEditorModalProps> = ({
               <button
                 type="button"
                 onClick={onClose}
-                className="px-4 py-2 text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 rounded-md transition-colors"
+                className="px-6 py-2.5 text-stone-700 border border-stone-300 hover:bg-stone-50 rounded-full transition-colors text-sm uppercase tracking-wider"
+                style={{ fontFamily: "'Unbounded', sans-serif", fontWeight: 500 }}
               >
                 Cancel
               </button>
               <button
                 type="button"
                 onClick={handleSubmit}
-                className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-md transition-colors flex items-center"
+                className="px-6 py-2.5 bg-stone-900 hover:bg-stone-800 text-white rounded-full transition-colors flex items-center text-sm uppercase tracking-wider shadow-lg"
+                style={{ fontFamily: "'Unbounded', sans-serif", fontWeight: 500 }}
               >
                 <Save className="h-4 w-4 mr-2" />
                 Save Changes

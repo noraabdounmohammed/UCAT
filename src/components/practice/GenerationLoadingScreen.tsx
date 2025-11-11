@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Loader2, Brain, Sparkles, BookOpen, Zap, Target, TrendingUp, Clock } from 'lucide-react';
+import { Brain, Sparkles, BookOpen, Zap } from 'lucide-react';
 
 interface GenerationLoadingScreenProps {
   format?: 'flashcard' | 'ukmla_sba' | 'mindmap';
@@ -51,23 +51,13 @@ export const GenerationLoadingScreen: React.FC<GenerationLoadingScreenProps> = (
     "Human blood vessels laid end to end would circle Earth 2.5 times"
   ];
   
-  const [currentFact, setCurrentFact] = useState(0);
-  
-  // Rotate through tips
+  // Rotate through tips and facts
   useEffect(() => {
     const interval = setInterval(() => {
-      setCurrentTip((prev) => (prev + 1) % tips.length);
+      setCurrentTip((prev) => (prev + 1) % (tips.length + medicalFacts.length));
     }, 3000);
     return () => clearInterval(interval);
-  }, [tips.length]);
-  
-  // Rotate through facts
-  useEffect(() => {
-    const interval = setInterval(() => {
-      setCurrentFact((prev) => (prev + 1) % medicalFacts.length);
-    }, 4000);
-    return () => clearInterval(interval);
-  }, []);
+  }, [tips.length, medicalFacts.length]);
   
   // Animation phases
   useEffect(() => {
@@ -97,112 +87,58 @@ export const GenerationLoadingScreen: React.FC<GenerationLoadingScreenProps> = (
   
   return (
     <div 
-      className="fixed inset-0 bg-black/20 dark:bg-black/40 flex items-center justify-center z-50 p-4"
-      style={{ backdropFilter: 'blur(20px)' }}
+      className="fixed inset-0 bg-white dark:bg-gray-900 flex items-center justify-center z-50 p-4 sm:p-6"
     >
-      <div className="max-w-md w-full">
-        <div className="bg-white/80 dark:bg-zinc-900/80 backdrop-blur-xl rounded-2xl border border-black/[0.08] dark:border-white/[0.08] shadow-2xl overflow-hidden">
-          
-          {/* Header with Icon */}
-          <div className="px-6 py-8 text-center">
-            <div className="flex justify-center mb-6">
-              <div className="relative">
-                <div className="absolute inset-0 bg-[#007AFF] rounded-full blur-xl opacity-20 animate-pulse"></div>
-                <div className="relative bg-[#007AFF] p-4 rounded-full shadow-lg">
-                  {animationPhase === 0 && <Brain className="h-8 w-8 text-white" />}
-                  {animationPhase === 1 && <Sparkles className="h-8 w-8 text-white" />}
-                  {animationPhase === 2 && <BookOpen className="h-8 w-8 text-white" />}
-                  {animationPhase === 3 && <Zap className="h-8 w-8 text-white" />}
-                </div>
-              </div>
-            </div>
-            
-            <h2 className="text-[20px] font-semibold text-zinc-900 dark:text-white mb-2">
-              {format === 'mindmap' ? 'Preparing Mind Maps' : `Generating ${format === 'flashcard' ? 'Flashcards' : 'Questions'}`}
-            </h2>
-            <p className="text-[15px] text-zinc-600 dark:text-zinc-400">
-              {format === 'mindmap' 
-                ? `Preparing ${conceptCount} interactive mind map${conceptCount > 1 ? 's' : ''}...`
-                : `Creating ${conceptCount} personalized ${format === 'flashcard' ? 'flashcard' : 'question'}${conceptCount > 1 ? 's' : ''} using AI...`
-              }
-            </p>
-          </div>
-          
-          {/* Progress Section */}
-          <div className="px-6 pb-6">
-            <div className="flex justify-between text-[13px] text-zinc-500 dark:text-zinc-400 mb-2">
-              <span>Progress</span>
-              <span>{Math.round(progressPercentage)}%</span>
-            </div>
-            <div className="h-2 bg-zinc-200/60 dark:bg-zinc-700/60 backdrop-blur-xl rounded-full overflow-hidden">
-              <div 
-                className="h-full bg-[#007AFF] transition-all duration-500 ease-out relative rounded-full"
-                style={{ width: `${progressPercentage}%` }}
-              >
-                <div className="absolute inset-0 bg-white/30 animate-pulse rounded-full"></div>
-              </div>
-            </div>
-          </div>
-          
-          {/* Content Cards */}
-          <div className="px-6 pb-6 space-y-4">
-            
-            {/* Study Tip Card */}
-            <div className="bg-white/60 dark:bg-zinc-800/60 backdrop-blur-xl rounded-xl border border-black/[0.08] dark:border-white/[0.08] p-4 transition-all duration-500">
-              <div className="flex items-start gap-3">
-                <div className="flex-shrink-0 mt-0.5">
-                  <div className="w-6 h-6 rounded-lg bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center">
-                    <Target className="h-4 w-4 text-[#007AFF]" />
-                  </div>
-                </div>
-                <div className="flex-1 min-w-0">
-                  <h3 className="text-[15px] font-semibold text-zinc-900 dark:text-white mb-1">
-                    Study Tip
-                  </h3>
-                  <p className="text-[13px] text-zinc-600 dark:text-zinc-400 leading-relaxed">
-                    {tips[currentTip]}
-                  </p>
-                </div>
-              </div>
-            </div>
-            
-            {/* Medical Fact Card */}
-            <div className="bg-white/60 dark:bg-zinc-800/60 backdrop-blur-xl rounded-xl border border-black/[0.08] dark:border-white/[0.08] p-4">
-              <div className="flex items-start gap-3">
-                <div className="flex-shrink-0 mt-0.5">
-                  <div className="w-6 h-6 rounded-lg bg-purple-100 dark:bg-purple-900/30 flex items-center justify-center">
-                    <TrendingUp className="h-4 w-4 text-purple-600 dark:text-purple-400" />
-                  </div>
-                </div>
-                <div className="flex-1 min-w-0">
-                  <h3 className="text-[15px] font-semibold text-zinc-900 dark:text-white mb-1">
-                    Did You Know?
-                  </h3>
-                  <p className="text-[13px] text-zinc-600 dark:text-zinc-400 leading-relaxed">
-                    {medicalFacts[currentFact]}
-                  </p>
-                </div>
-              </div>
-            </div>
-          </div>
-          
-          {/* Footer */}
-          <div className="px-6 py-4 border-t border-black/[0.08] dark:border-white/[0.08] bg-white/40 dark:bg-zinc-900/40 backdrop-blur-xl">
-            <div className="flex justify-center items-center gap-3 mb-3">
-              <Loader2 className="h-4 w-4 text-zinc-500 dark:text-zinc-400 animate-spin" />
-              <span className="text-[13px] text-zinc-600 dark:text-zinc-400">
-                This usually takes 10-30 seconds...
-              </span>
-            </div>
-            
-            <div className="text-center">
-              <p className="text-[11px] text-zinc-500 dark:text-zinc-400 flex items-center justify-center gap-1">
-                <Clock className="h-3 w-3" />
-                Quality questions take time to generate. Your patience ensures better learning outcomes.
-              </p>
+      <div className="max-w-lg w-full text-center px-4">
+        {/* Animated Icon */}
+        <div className="flex justify-center mb-8 sm:mb-12">
+          <div className="relative">
+            <div className="absolute inset-0 bg-gray-900/5 dark:bg-white/5 rounded-full animate-ping" style={{ animationDuration: '2s' }}></div>
+            <div className="relative bg-gray-100 dark:bg-gray-800 p-5 sm:p-6 rounded-full border border-gray-200 dark:border-gray-700">
+              {animationPhase === 0 && <Brain className="h-8 w-8 sm:h-10 sm:w-10 text-gray-900 dark:text-gray-100" strokeWidth={1.5} />}
+              {animationPhase === 1 && <Sparkles className="h-8 w-8 sm:h-10 sm:w-10 text-gray-900 dark:text-gray-100" strokeWidth={1.5} />}
+              {animationPhase === 2 && <BookOpen className="h-8 w-8 sm:h-10 sm:w-10 text-gray-900 dark:text-gray-100" strokeWidth={1.5} />}
+              {animationPhase === 3 && <Zap className="h-8 w-8 sm:h-10 sm:w-10 text-gray-900 dark:text-gray-100" strokeWidth={1.5} />}
             </div>
           </div>
         </div>
+        
+        {/* Title */}
+        <h2 className="text-2xl sm:text-3xl font-medium text-gray-900 dark:text-gray-100 mb-2 sm:mb-3 tracking-tight" style={{ fontFamily: "'Unbounded', sans-serif", fontWeight: 500 }}>
+          {format === 'mindmap' ? 'Crafting Mind Maps' : format === 'flashcard' ? 'Creating Flashcards' : 'Generating Questions'}
+        </h2>
+        <p className="text-sm text-gray-600 dark:text-gray-400 font-light mb-8 sm:mb-12 max-w-sm mx-auto" style={{ fontFamily: "'Manrope', sans-serif", fontWeight: 300 }}>
+          {format === 'mindmap' 
+            ? `Building ${conceptCount} interactive visualization${conceptCount > 1 ? 's' : ''}`
+            : `Crafting ${conceptCount} personalized ${format === 'flashcard' ? 'flashcard' : 'question'}${conceptCount > 1 ? 's' : ''}`
+          }
+        </p>
+        
+        {/* Progress Bar */}
+        <div className="mb-10 sm:mb-16">
+          <div className="flex justify-between text-[10px] text-gray-500 dark:text-gray-400 mb-3 uppercase tracking-[0.2em]" style={{ fontFamily: "'Unbounded', sans-serif", fontWeight: 500 }}>
+            <span>Progress</span>
+            <span>{Math.round(progressPercentage)}%</span>
+          </div>
+          <div className="h-1 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
+            <div 
+              className="h-full bg-gray-900 dark:bg-gray-100 transition-all duration-500 ease-out"
+              style={{ width: `${progressPercentage}%` }}
+            />
+          </div>
+        </div>
+        
+        {/* Single Rotating Tip */}
+        <div className="bg-gray-50 dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 p-4 sm:p-6 mb-6 sm:mb-8">
+          <p className="text-sm text-gray-600 dark:text-gray-300 leading-relaxed" style={{ fontFamily: "'Manrope', sans-serif", fontWeight: 300 }}>
+            {currentTip % 2 === 0 ? tips[Math.floor(currentTip / 2)] : medicalFacts[Math.floor(currentTip / 2)]}
+          </p>
+        </div>
+        
+        {/* Footer */}
+        <p className="text-xs text-gray-500 dark:text-gray-400" style={{ fontFamily: "'Manrope', sans-serif", fontWeight: 300 }}>
+          This usually takes 10-30 seconds
+        </p>
       </div>
     </div>
   );

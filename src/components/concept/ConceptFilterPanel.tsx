@@ -42,10 +42,11 @@ const MasteryFilterSection: React.FC<MasteryFilterSectionProps> = ({
   };
   
   return (
-    <div className="mb-6">
-      <h3 className="text-base font-semibold text-gray-900 dark:text-white mb-2">Mastery Level</h3>
+    <div className="mb-8">
+      <div className="h-[1px] w-16 bg-stone-300 mb-4"></div>
+      <h3 className="text-[11px] uppercase tracking-widest text-stone-600 mb-4" style={{ fontFamily: "'Unbounded', sans-serif", fontWeight: 500 }}>Mastery Level</h3>
       
-      <div className="bg-white dark:bg-zinc-900 rounded-lg border border-zinc-200/60 dark:border-zinc-800/60 overflow-hidden">
+      <div className="bg-white/60 backdrop-blur-xl rounded-2xl border border-black/[0.06] overflow-hidden">
         {masteryLevels.map(({ level, name }, index) => {
           const isSelected = selected.includes(level);
           const count = counts?.[level];
@@ -54,20 +55,20 @@ const MasteryFilterSection: React.FC<MasteryFilterSectionProps> = ({
             <button
               key={level}
               onClick={() => handleToggle(level)}
-              className={`w-full flex items-center justify-between px-4 py-3 text-sm transition-colors ${
-                index !== masteryLevels.length - 1 ? 'border-b border-zinc-200/60 dark:border-zinc-800/60' : ''
-              } hover:bg-zinc-50 dark:hover:bg-zinc-800/50 active:bg-zinc-100 dark:active:bg-zinc-800`}
+              className={`w-full flex items-center justify-between px-5 py-4 text-sm transition-all ${
+                index !== masteryLevels.length - 1 ? 'border-b border-black/[0.04]' : ''
+              } hover:bg-black/[0.02] active:bg-black/[0.04]`}
             >
               <div className="flex items-center gap-3">
                 <div className={`w-3 h-3 rounded-full ${getMasteryColor(level)}`} />
-                <span className="text-zinc-900 dark:text-white font-medium">{name}</span>
+                <span className="text-stone-900 font-light" style={{ fontFamily: "'Manrope', sans-serif" }}>{name}</span>
               </div>
               <div className="flex items-center gap-2">
                 {count !== undefined && (
-                  <span className="text-xs text-zinc-500 dark:text-zinc-400">{count}</span>
+                  <span className="text-xs text-stone-400" style={{ fontFamily: "'Unbounded', sans-serif" }}>{count}</span>
                 )}
                 {isSelected && (
-                  <svg className="w-5 h-5 text-[#007AFF]" fill="currentColor" viewBox="0 0 20 20">
+                  <svg className="w-5 h-5 text-stone-900" fill="currentColor" viewBox="0 0 20 20">
                     <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
                   </svg>
                 )}
@@ -167,6 +168,29 @@ const CategorizedCustomFilters: React.FC<CategorizedCustomFiltersProps> = ({
     return assignments;
   }, [curriculumId, refreshKey, filterCategories, filterOptions.custom_filters]); // Re-read when refreshKey changes
 
+  // Calculate progress for each filter
+  const filterProgress = React.useMemo(() => {
+    const progress: Record<string, { completed: number; total: number; percentage: number }> = {};
+    
+    filterOptions.custom_filters?.forEach((filterName: string) => {
+      const conceptsWithFilter = concepts.filter((c: any) => 
+        c.custom_filters?.includes(filterName)
+      );
+      const completed = conceptsWithFilter.filter((c: any) => 
+        c.mastery_data?.mastery_level >= 3
+      ).length;
+      const total = conceptsWithFilter.length;
+      
+      progress[filterName] = {
+        completed,
+        total,
+        percentage: total > 0 ? Math.round((completed / total) * 100) : 0
+      };
+    });
+    
+    return progress;
+  }, [concepts, filterOptions.custom_filters]);
+
   const handleToggle = (filterName: string) => {
     const newSelected = selectedFilters.includes(filterName)
       ? selectedFilters.filter(item => item !== filterName)
@@ -176,14 +200,17 @@ const CategorizedCustomFilters: React.FC<CategorizedCustomFiltersProps> = ({
 
 
   return (
-    <div className="mb-6">
-      <div className="flex items-center justify-between mb-3">
-        <h3 className="text-base font-semibold text-gray-900 dark:text-white whitespace-nowrap">
-          Custom Filters
-        </h3>
+    <div className="mb-8">
+      <div className="flex items-center justify-between mb-4">
+        <div>
+          <div className="h-[1px] w-16 bg-stone-300 mb-4"></div>
+          <h3 className="text-[11px] uppercase tracking-widest text-stone-600" style={{ fontFamily: "'Unbounded', sans-serif", fontWeight: 500 }}>
+            Custom Filters
+          </h3>
+        </div>
         <div className="flex items-center gap-2">
           {selectedFilters.length > 0 && (
-            <span className="text-xs font-semibold bg-blue-500/10 dark:bg-blue-500/20 text-blue-700 dark:text-blue-300 px-2.5 py-1 rounded-full">
+            <span className="text-[10px] font-medium bg-stone-900/10 text-stone-900 px-2.5 py-1 rounded-full" style={{ fontFamily: "'Unbounded', sans-serif" }}>
               {selectedFilters.length}
             </span>
           )}
@@ -192,7 +219,7 @@ const CategorizedCustomFilters: React.FC<CategorizedCustomFiltersProps> = ({
               e.stopPropagation();
               onManageCategories();
             }}
-            className="p-1.5 text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
+            className="p-2 text-stone-400 hover:text-stone-900 hover:bg-black/[0.04] rounded-full transition-colors"
             title="Manage Categories"
           >
             <Settings className="h-4 w-4" />
@@ -206,12 +233,12 @@ const CategorizedCustomFilters: React.FC<CategorizedCustomFiltersProps> = ({
           {filterCategories.length > 0 && (
             <div className="space-y-3">
               {filterCategories.map(category => {
-                // Get filters assigned to this category, filtered by compatibility and search query
-                const assignedFilters = filterOptions.custom_filters?.filter((filterName: string) => 
+                // Get filters assigned to this category, filtered by compatibility and search query, sorted alphabetically
+                const assignedFilters = (filterOptions.custom_filters?.filter((filterName: string) => 
                   filterAssignments[filterName] === category.id && 
                   compatibleFilters.has(filterName) &&
                   (!searchQuery || filterName.toLowerCase().includes(searchQuery.toLowerCase()))
-                ) || [];
+                ) || []).sort((a: string, b: string) => a.toLowerCase().localeCompare(b.toLowerCase()));
 
                 // Only show categories that have assigned filters or show empty state
                 if (assignedFilters.length === 0) {
@@ -232,36 +259,46 @@ const CategorizedCustomFilters: React.FC<CategorizedCustomFiltersProps> = ({
                 }
 
                 return (
-                  <div key={category.id} className="space-y-1">
-                    <div className="flex items-center text-xs font-medium text-gray-600 dark:text-gray-400">
+                  <div key={category.id} className="space-y-3">
+                    <div className="flex items-center gap-2 text-[10px] font-medium text-stone-500" style={{ fontFamily: "'Unbounded', sans-serif" }}>
                       <div
-                        className="w-2 h-2 rounded-full mr-2"
+                        className="w-2 h-2 rounded-full"
                         style={{ backgroundColor: category.color || '#3B82F6' }}
                       />
-                      {category.name} ({assignedFilters.length})
+                      <span className="uppercase tracking-widest">{category.name}</span>
+                      <span className="text-stone-400">({assignedFilters.length})</span>
                     </div>
-                    <div className="flex flex-wrap gap-1.5">
+                    <div className="flex flex-wrap gap-2">
                       {assignedFilters.map((filterName: string) => {
                         const isSelected = selectedFilters.includes(filterName);
                         const count = counts?.[filterName];
+                        const progress = filterProgress[filterName];
                         
                         return (
                           <button
                             key={filterName}
                             onClick={() => handleToggle(filterName)}
-                            className={`inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-full text-xs font-medium transition-all duration-200 ${
+                            className={`relative overflow-hidden inline-flex items-center gap-2 px-4 py-2 rounded-full text-[11px] font-light transition-all ${
                               isSelected
-                                ? 'bg-blue-600 text-white shadow-sm hover:bg-blue-700'
-                                : 'bg-gray-100 dark:bg-gray-800 text-gray-900 dark:text-white hover:bg-gray-200 dark:hover:bg-gray-700'
+                                ? 'bg-stone-900 text-white shadow-sm hover:bg-stone-800'
+                                : 'bg-white/60 backdrop-blur-xl text-stone-900 border border-black/[0.06] hover:border-black/[0.12]'
                             }`}
+                            style={{ fontFamily: "'Manrope', sans-serif" }}
                           >
-                            <span className="capitalize">{filterName}</span>
-                            {count && (
-                              <span className={`px-1.5 py-0.5 rounded-full text-[10px] font-bold ${
+                            {/* Progress bar background */}
+                            <div 
+                              className={`absolute inset-0 transition-all duration-500 ${
+                                isSelected ? 'bg-white/10' : 'bg-green-500/20'
+                              }`}
+                              style={{ width: `${progress?.percentage || 0}%` }}
+                            />
+                            <span className="relative z-10">{filterName.replace(/-/g, ' ')}</span>
+                            {count !== undefined && (
+                              <span className={`relative z-10 text-[10px] font-medium ${
                                 isSelected
-                                  ? 'bg-white/20 text-white'
-                                  : 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300'
-                              }`}>
+                                  ? 'text-white/60'
+                                  : 'text-stone-400'
+                              }`} style={{ fontFamily: "'Unbounded', sans-serif" }}>
                                 {count}
                               </span>
                             )}
@@ -279,11 +316,13 @@ const CategorizedCustomFilters: React.FC<CategorizedCustomFiltersProps> = ({
           {filterOptions.custom_filters && filterOptions.custom_filters.length > 0 && (
             <div className="space-y-1">
               {(() => {
-                // Get filters that are not assigned to any category
-                const unassignedFilters = filterOptions.custom_filters.filter((filterName: string) => 
-                  !filterAssignments[filterName] && 
-                  (!searchQuery || filterName.toLowerCase().includes(searchQuery.toLowerCase()))
-                );
+                // Get filters that are not assigned to any category, sorted alphabetically
+                const unassignedFilters = filterOptions.custom_filters
+                  .filter((filterName: string) => 
+                    !filterAssignments[filterName] && 
+                    (!searchQuery || filterName.toLowerCase().includes(searchQuery.toLowerCase()))
+                  )
+                  .sort((a: string, b: string) => a.toLowerCase().localeCompare(b.toLowerCase()));
 
                 if (unassignedFilters.length === 0) {
                   return null;
@@ -292,27 +331,48 @@ const CategorizedCustomFilters: React.FC<CategorizedCustomFiltersProps> = ({
                 return (
                   <>
                     {filterCategories.length > 0 && (
-                      <div className="text-xs font-medium text-gray-600 dark:text-gray-400">
-                        Unassigned Filters ({unassignedFilters.length})
+                      <div className="flex items-center gap-2 text-[10px] font-medium text-stone-500" style={{ fontFamily: "'Unbounded', sans-serif" }}>
+                        <div className="w-2 h-2 rounded-full bg-stone-400" />
+                        <span className="uppercase tracking-widest">Unassigned</span>
+                        <span className="text-stone-400">({unassignedFilters.length})</span>
                       </div>
                     )}
-                    <div className={filterCategories.length > 0 ? "ml-4 space-y-1" : "space-y-1"}>
-                      {unassignedFilters.map((filterName: string) => (
-                        <label key={filterName} className="flex items-center text-sm hover:bg-gray-50 dark:hover:bg-gray-700/50 p-1 rounded">
-                          <input
-                            type="checkbox"
-                            checked={selectedFilters.includes(filterName)}
-                            onChange={() => handleToggle(filterName)}
-                            className="mr-2 h-3 w-3 text-blue-600 rounded"
-                          />
-                          <span className="flex-1">{filterName}</span>
-                          {counts && counts[filterName] && (
-                            <span className="text-xs text-gray-500 dark:text-gray-400 ml-2">
-                              ({counts[filterName]})
-                            </span>
-                          )}
-                        </label>
-                      ))}
+                    <div className="flex flex-wrap gap-2">
+                      {unassignedFilters.map((filterName: string) => {
+                        const isSelected = selectedFilters.includes(filterName);
+                        const count = counts?.[filterName];
+                        const progress = filterProgress[filterName];
+                        return (
+                          <button
+                            key={filterName}
+                            onClick={() => handleToggle(filterName)}
+                            className={`relative overflow-hidden inline-flex items-center gap-2 px-4 py-2 rounded-full text-[11px] font-light transition-all ${
+                              isSelected
+                                ? 'bg-stone-900 text-white shadow-sm hover:bg-stone-800'
+                                : 'bg-white/60 backdrop-blur-xl text-stone-900 border border-black/[0.06] hover:border-black/[0.12]'
+                            }`}
+                            style={{ fontFamily: "'Manrope', sans-serif" }}
+                          >
+                            {/* Progress bar background */}
+                            <div 
+                              className={`absolute inset-0 transition-all duration-500 ${
+                                isSelected ? 'bg-white/10' : 'bg-green-500/20'
+                              }`}
+                              style={{ width: `${progress?.percentage || 0}%` }}
+                            />
+                            <span className="relative z-10">{filterName.replace(/-/g, ' ')}</span>
+                            {count !== undefined && (
+                              <span className={`relative z-10 text-[10px] font-medium ${
+                                isSelected
+                                  ? 'text-white/60'
+                                  : 'text-stone-400'
+                              }`} style={{ fontFamily: "'Unbounded', sans-serif" }}>
+                                {count}
+                              </span>
+                            )}
+                          </button>
+                        );
+                      })}
                     </div>
                   </>
                 );
@@ -378,33 +438,8 @@ export const ConceptFilterPanel: React.FC<ConceptFilterPanelProps> = ({ activeVi
   
   return (
     <div className="flex flex-col h-full">
-      {/* Sticky Results Summary - Liquid Glass */}
-      <div className="sticky top-0 bg-white/70 dark:bg-zinc-900/70 backdrop-blur-3xl border-b border-black/[0.08] dark:border-white/[0.08] z-10 p-6 -m-6 mb-0">
-        <div className="space-y-3">
-          <div className="flex items-center justify-center gap-2 px-4 py-3 bg-white/60 dark:bg-zinc-800/60 backdrop-blur-xl rounded-xl border border-black/[0.08] dark:border-white/[0.08]">
-            <span className="text-2xl font-bold text-zinc-900 dark:text-white">
-              {filteredStats.total}
-            </span>
-            <span className="text-sm font-medium text-zinc-500 dark:text-zinc-400">
-              {filteredStats.total === 1 ? 'concept found' : 'concepts found'}
-            </span>
-          </div>
-          
-          {/* Practice Button - Liquid Glass */}
-          {filteredStats.total > 0 && (
-            <button
-              onClick={onStartPractice}
-              className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-[#007AFF] hover:opacity-90 text-white rounded-xl text-[15px] font-semibold transition-opacity shadow-sm"
-            >
-              <Play className="h-[18px] w-[18px]" strokeWidth={2.5} />
-              <span>Start Practice</span>
-            </button>
-          )}
-        </div>
-      </div>
-      
       {/* Scrollable Content */}
-      <div className="flex-1 space-y-6 pt-6">
+      <div className="flex-1 space-y-6">
 
       {/* Filter Hint - Show on both Concepts and Progress pages */}
       {showFilterHint && !filterState.mastery_levels.length && !filterState.custom_filters.length && (
@@ -436,63 +471,66 @@ export const ConceptFilterPanel: React.FC<ConceptFilterPanelProps> = ({ activeVi
         </div>
       )}
 
-      {/* Filter Mode - Liquid Glass */}
-      <div className="mb-6 p-4 bg-white/60 dark:bg-zinc-800/60 backdrop-blur-xl rounded-xl border border-black/[0.08] dark:border-white/[0.08]">
+      {/* Filter Mode */}
+      <div className="mb-8 p-5 bg-white/60 backdrop-blur-xl rounded-2xl border border-black/[0.06]">
         <div className="flex items-center justify-between gap-4">
           <div className="flex-1">
-            <h3 className="text-[15px] font-semibold text-zinc-900 dark:text-white mb-1 flex items-center gap-2">
-              <Filter className="h-[18px] w-[18px] text-[#007AFF]" strokeWidth={2} />
+            <h3 className="text-[11px] font-medium text-stone-900 mb-2 flex items-center gap-2 uppercase tracking-widest" style={{ fontFamily: "'Unbounded', sans-serif" }}>
+              <Filter className="h-4 w-4 text-stone-600" strokeWidth={2} />
               Filter Mode
             </h3>
-            <p className="text-[13px] text-zinc-600 dark:text-zinc-400">
+            <p className="text-[13px] text-stone-600 font-light" style={{ fontFamily: "'Manrope', sans-serif" }}>
               {filterState.cascading_mode ? 'Match ALL selected' : 'Match ANY selected'}
             </p>
           </div>
           <button
             onClick={() => updateFilterState({ cascading_mode: !filterState.cascading_mode })}
-            className={`px-4 py-2 rounded-lg text-[13px] font-semibold transition-all ${
+            className={`px-5 py-2.5 rounded-full text-[11px] font-medium transition-all uppercase tracking-widest ${
               filterState.cascading_mode
-                ? 'bg-[#007AFF] text-white'
-                : 'bg-white/80 dark:bg-zinc-700/80 text-zinc-900 dark:text-white border border-black/[0.08] dark:border-white/[0.08]'
+                ? 'bg-stone-900 text-white'
+                : 'bg-white/60 text-stone-900 border border-black/[0.06]'
             }`}
+            style={{ fontFamily: "'Unbounded', sans-serif" }}
           >
             {filterState.cascading_mode ? 'AND' : 'OR'}
           </button>
         </div>
       </div>
 
-      {/* Search - Liquid Glass */}
-      <div className="relative mb-6">
-        <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-[18px] w-[18px] text-zinc-400" />
+      {/* Search */}
+      <div className="relative mb-8">
+        <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 h-4 w-4 text-stone-400" />
         <input
           type="search"
           placeholder="Search filters..."
-          className="w-full pl-10 pr-10 py-2.5 text-[15px] bg-white/60 dark:bg-zinc-800/60 backdrop-blur-xl border border-black/[0.08] dark:border-white/[0.08] rounded-xl text-zinc-900 dark:text-white placeholder-zinc-400 focus:outline-none focus:ring-2 focus:ring-[#007AFF]/50 transition-all"
+          className="w-full pl-11 pr-10 py-3 text-[13px] bg-white/60 backdrop-blur-xl border border-black/[0.06] rounded-2xl text-stone-900 placeholder-stone-400 focus:outline-none focus:border-black/[0.12] transition-all font-light"
+          style={{ fontFamily: "'Manrope', sans-serif" }}
           value={filterState.searchQuery}
           onChange={handleSearchChange}
         />
         {filterState.searchQuery && (
           <button
-            className="absolute right-3 top-1/2 transform -translate-y-1/2 p-1 hover:bg-black/5 dark:hover:bg-white/5 rounded-full transition-colors"
+            className="absolute right-3 top-1/2 transform -translate-y-1/2 p-1 hover:bg-black/[0.04] rounded-full transition-colors"
             onClick={handleClearSearch}
           >
-            <X className="h-4 w-4 text-zinc-500" />
+            <X className="h-4 w-4 text-stone-400" />
           </button>
         )}
       </div>
 
       {/* Clear All Button */}
-      <div className="flex items-center justify-end mb-6">
+      <div className="flex items-center justify-end mb-8">
         <button
           onClick={resetFilters}
-          className="text-sm font-medium text-[#007AFF] hover:opacity-70 transition-opacity"
+          className="text-[11px] font-medium text-stone-900 hover:text-stone-600 transition-colors uppercase tracking-widest"
+          style={{ fontFamily: "'Unbounded', sans-serif" }}
         >
           Clear All
         </button>
       </div>
       
-      <div className="space-y-4">
-        <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
+      <div className="space-y-6">
+        <div className="space-y-8">
           <div>
             <MasteryFilterSection
               masteryLevels={filterOptions.mastery_levels}

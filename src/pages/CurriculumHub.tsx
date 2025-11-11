@@ -6,6 +6,7 @@ import { ImportExpertModal } from '@/components/curriculum/ImportExpertModal';
 import { PublishCurriculumModal } from '@/components/curriculum/PublishCurriculumModal';
 import { CurriculumPublishingService, PublishedCurriculum, WORLD_COUNTRIES, EXAM_CATEGORIES } from '@/services/curriculumPublishing';
 import { AuthBar } from '@/components/auth/AuthBar';
+import { useAuth } from '@/contexts/AuthContext';
 
 interface Curriculum {
   id: string;
@@ -16,6 +17,8 @@ interface Curriculum {
   color: string;
   category: string;
   progress: number; // 0-100
+  imageUrl?: string;
+  createdBy?: string; // User ID of the creator
 }
 
 interface CurriculumHubProps {
@@ -40,7 +43,8 @@ const EditCurriculumModal: React.FC<EditCurriculumModalProps> = ({
     name: curriculum.name,
     description: curriculum.description,
     category: curriculum.category,
-    color: curriculum.color
+    color: curriculum.color,
+    imageUrl: curriculum.imageUrl || ''
   });
 
   
@@ -77,7 +81,8 @@ const EditCurriculumModal: React.FC<EditCurriculumModalProps> = ({
       name: formData.name.trim(),
       description: formData.description.trim(),
       category: formData.category,
-      color: formData.color
+      color: formData.color,
+      imageUrl: formData.imageUrl.trim() || undefined
     };
 
     onSave(updatedCurriculum);
@@ -173,6 +178,23 @@ const EditCurriculumModal: React.FC<EditCurriculumModalProps> = ({
             </select>
           </div>
 
+          {/* Image URL Field */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+              Image URL
+            </label>
+            <input
+              type="url"
+              value={formData.imageUrl}
+              onChange={(e) => setFormData(prev => ({ ...prev, imageUrl: e.target.value }))}
+              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-gray-100"
+              placeholder="https://example.com/image.jpg"
+            />
+            <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+              Add a link to an image for this curriculum card
+            </p>
+          </div>
+
           {/* Color Field */}
           <div>
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
@@ -224,6 +246,9 @@ export const CurriculumHub: React.FC<CurriculumHubProps> = ({
   setCurriculums: propSetCurriculums,
   onCreateCurriculum
 }) => {
+  // Get current user for ownership checks
+  const { user } = useAuth();
+  
   // Use props if provided, otherwise use local state
   const [localCurriculums, setLocalCurriculums] = useState<Curriculum[]>([]);
   const [isLoaded, setIsLoaded] = useState(false);
@@ -534,7 +559,8 @@ export const CurriculumHub: React.FC<CurriculumHubProps> = ({
       lastAccessed: new Date(),
       color: 'bg-blue-500',
       category: 'Other',
-      progress: 0
+      progress: 0,
+      createdBy: user?.id // Track the creator
     };
 
     // Clear any existing localStorage data for this curriculum to ensure it starts empty
@@ -647,7 +673,8 @@ export const CurriculumHub: React.FC<CurriculumHubProps> = ({
         lastAccessed: new Date(),
         color: 'bg-blue-500',
         category: 'Other',
-        progress: 0
+        progress: 0,
+        createdBy: user?.id // Track the creator
       };
 
       // Clear any existing localStorage data for this curriculum to ensure it starts empty
@@ -705,25 +732,33 @@ export const CurriculumHub: React.FC<CurriculumHubProps> = ({
       const newCurriculumId = await CurriculumPublishingService.importCurriculum(publishedCurriculum);
       console.log('✅ Import successful, new ID:', newCurriculumId);
       
-      // Reload curriculums to show the newly imported one
-      const storedCurriculums = localStorage.getItem('curriculums');
-      if (storedCurriculums) {
-        const parsed = JSON.parse(storedCurriculums);
-        console.log('📚 Total curriculums in localStorage:', parsed.length);
-        const curriculumsWithDates = parsed.map((c: any) => ({
-          ...c,
-          lastAccessed: new Date(c.lastAccessed)
-        }));
-        setLocalCurriculums(curriculumsWithDates);
-        console.log('📚 Updated local state with', curriculumsWithDates.length, 'curriculums');
-        
-        // Find and open the newly imported curriculum
-        const importedCurriculum = curriculumsWithDates.find((c: any) => c.id === newCurriculumId);
-        console.log('🔍 Found imported curriculum:', importedCurriculum?.name);
-        if (importedCurriculum && onOpenCurriculum) {
-          console.log('🚀 Opening curriculum:', importedCurriculum.name);
-          onOpenCurriculum(importedCurriculum);
+      // If we have onOpenCurriculum (from CurriculumApp), open directly
+      if (onOpenCurriculum) {
+        // Reload curriculums to show the newly imported one
+        const storedCurriculums = localStorage.getItem('curriculums');
+        if (storedCurriculums) {
+          const parsed = JSON.parse(storedCurriculums);
+          console.log('📚 Total curriculums in localStorage:', parsed.length);
+          const curriculumsWithDates = parsed.map((c: any) => ({
+            ...c,
+            lastAccessed: new Date(c.lastAccessed)
+          }));
+          setLocalCurriculums(curriculumsWithDates);
+          console.log('📚 Updated local state with', curriculumsWithDates.length, 'curriculums');
+          
+          // Find and open the newly imported curriculum
+          const importedCurriculum = curriculumsWithDates.find((c: any) => c.id === newCurriculumId);
+          console.log('🔍 Found imported curriculum:', importedCurriculum?.name);
+          if (importedCurriculum) {
+            console.log('🚀 Opening curriculum:', importedCurriculum.name);
+            onOpenCurriculum(importedCurriculum);
+          }
         }
+      } else {
+        // If no onOpenCurriculum (standalone page), set sessionStorage and reload
+        sessionStorage.setItem('autoOpenCurriculumId', newCurriculumId);
+        sessionStorage.setItem('fromLandingPage', 'true');
+        window.location.reload();
       }
     } catch (error) {
       console.error('❌ Failed to import curriculum:', error);
@@ -1040,7 +1075,7 @@ export const CurriculumHub: React.FC<CurriculumHubProps> = ({
                   return (
                     <div
                       key={published.id}
-                      className={`bg-gradient-to-br ${gradient} border-gray-200/50 dark:border-gray-700/50 backdrop-blur-xl rounded-2xl border transition-all duration-200 p-6 relative group ${
+                      className={`${published.imageUrl ? 'relative overflow-hidden' : `bg-gradient-to-br ${gradient}`} border-gray-200/50 dark:border-gray-700/50 backdrop-blur-xl rounded-2xl border transition-all duration-200 p-6 relative group ${
                         viewMode === 'grid' ? 'h-[200px]' : 'h-auto'
                       } flex ${viewMode === 'grid' ? 'flex-col' : 'flex-row items-center'} ${
                         published.isLocked ? 'opacity-60 cursor-not-allowed' : 'hover:shadow-2xl hover:scale-[1.02] active:scale-[0.98] cursor-pointer'
@@ -1053,6 +1088,31 @@ export const CurriculumHub: React.FC<CurriculumHubProps> = ({
                         if (!published.isLocked) handleImportPublished(published);
                       }}
                     >
+                      {/* Background Image if provided */}
+                      {published.imageUrl && (
+                        <>
+                          <img 
+                            src={published.imageUrl} 
+                            alt={published.name}
+                            className="absolute inset-0 w-full h-full object-cover z-0"
+                            onLoad={() => {
+                              console.log('CurriculumHub: image loaded for', published.name, published.imageUrl);
+                            }}
+                            onError={(e) => {
+                              const img = e.currentTarget as HTMLImageElement;
+                              if (!(img as any).dataset.fallbackTried) {
+                                (img as any).dataset.fallbackTried = 'true';
+                                img.src = 'https://images.unsplash.com/photo-1554774853-719586f8d76d?auto=format&fit=crop&w=800&q=60';
+                                console.warn('CurriculumHub: primary image failed, using fallback for', published.name);
+                                return;
+                              }
+                              img.style.display = 'none';
+                              console.error('CurriculumHub: fallback image also failed for', published.name);
+                            }}
+                          />
+                          <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent z-0"></div>
+                        </>
+                      )}
                       {/* Admin delete button - Subtle hover-only */}
                       {isPublisherAllowed && CurriculumPublishingService.canDeleteCurriculum(published.id) && (
                         <button
@@ -1083,17 +1143,17 @@ export const CurriculumHub: React.FC<CurriculumHubProps> = ({
                       )}
                       {viewMode === 'grid' ? (
                         <>
-                          <div className="flex justify-between items-start mb-3">
+                          <div className="flex justify-between items-start mb-3 relative z-10">
                             <h3 className="text-xl font-semibold tracking-tight pr-8 text-white">
                               {published.name}
                             </h3>
                             {!published.isLocked && <ArrowRight className="h-5 w-5 group-hover:translate-x-1 transition-transform text-gray-400" />}
                           </div>
-                          <p className="text-sm leading-relaxed mb-4 line-clamp-2 flex-grow text-gray-300">
+                          <p className="text-sm leading-relaxed mb-4 line-clamp-2 flex-grow text-gray-300 relative z-10">
                             {published.description}
                           </p>
 
-                          <div className="flex items-center justify-between text-sm font-medium mt-auto">
+                          <div className="flex items-center justify-between text-sm font-medium mt-auto relative z-10">
                             <span className="text-gray-300">
                               {published.conceptCount} concepts
                             </span>
@@ -1104,7 +1164,7 @@ export const CurriculumHub: React.FC<CurriculumHubProps> = ({
                         </>
                       ) : (
                         <>
-                          <div className="flex-1 min-w-0 pr-12">
+                          <div className="flex-1 min-w-0 pr-12 relative z-10">
                             <h3 className="text-lg font-semibold tracking-tight mb-1 text-white">
                               {published.name}
                             </h3>
@@ -1160,7 +1220,7 @@ export const CurriculumHub: React.FC<CurriculumHubProps> = ({
             return (
             <div
               key={curriculum.id}
-              className={`bg-gradient-to-br ${gradient} ${
+              className={`${curriculum.imageUrl ? 'relative overflow-hidden' : `bg-gradient-to-br ${gradient}`} ${
                 isExpert 
                   ? 'border-gray-700' 
                   : 'border-gray-200/50 dark:border-gray-700/50'
@@ -1173,6 +1233,20 @@ export const CurriculumHub: React.FC<CurriculumHubProps> = ({
                 handleOpenCurriculum(curriculum.id);
               }}
             >
+              {/* Background Image if provided */}
+              {curriculum.imageUrl && (
+                <>
+                  <img 
+                    src={curriculum.imageUrl} 
+                    alt={curriculum.name}
+                    className="absolute inset-0 w-full h-full object-cover z-0"
+                    onError={(e) => {
+                      e.currentTarget.style.display = 'none';
+                    }}
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent z-0"></div>
+                </>
+              )}
               {/* Dropdown Menu */}
               <div className="absolute top-3 right-3 z-50">
                 <button
@@ -1192,22 +1266,32 @@ export const CurriculumHub: React.FC<CurriculumHubProps> = ({
                 {/* Dropdown Menu - Apple Style */}
                 {openDropdown === curriculum.id && (
                   <div className="absolute right-0 top-full mt-2 w-56 bg-white/95 dark:bg-gray-800/95 backdrop-blur-2xl rounded-2xl shadow-2xl border border-gray-200/50 dark:border-gray-700/50 z-50 overflow-hidden">
-                    <button
-                      onClick={(e) => handleEditCurriculum(curriculum, e)}
-                      className="w-full px-4 py-3 text-left text-sm font-medium text-gray-900 dark:text-white hover:bg-gray-100/80 dark:hover:bg-gray-700/80 flex items-center transition-colors"
-                    >
-                      <Edit3 className="h-4 w-4 mr-3 text-blue-500" />
-                      <span className="font-medium">Edit Curriculum</span>
-                    </button>
-                    <div className="border-t border-gray-100 dark:border-gray-700"></div>
-                    <button
-                      onClick={(e) => handleDuplicateCurriculum(curriculum, e)}
-                      className="w-full px-4 py-3 text-left text-sm font-medium text-gray-900 dark:text-white hover:bg-gray-100/80 dark:hover:bg-gray-700/80 flex items-center transition-colors"
-                    >
-                      <Copy className="h-4 w-4 mr-3 text-green-500" />
-                      <span className="font-medium">Duplicate</span>
-                    </button>
-                    <div className="border-t border-gray-100 dark:border-gray-700"></div>
+                    {/* Only show Edit for creators */}
+                    {isPublisherAllowed && (
+                      <>
+                        <button
+                          onClick={(e) => handleEditCurriculum(curriculum, e)}
+                          className="w-full px-4 py-3 text-left text-sm font-medium text-gray-900 dark:text-white hover:bg-gray-100/80 dark:hover:bg-gray-700/80 flex items-center transition-colors"
+                        >
+                          <Edit3 className="h-4 w-4 mr-3 text-blue-500" />
+                          <span className="font-medium">Edit Curriculum</span>
+                        </button>
+                        <div className="border-t border-gray-100 dark:border-gray-700"></div>
+                      </>
+                    )}
+                    {/* Only show Duplicate for creators */}
+                    {isPublisherAllowed && (
+                      <>
+                        <button
+                          onClick={(e) => handleDuplicateCurriculum(curriculum, e)}
+                          className="w-full px-4 py-3 text-left text-sm font-medium text-gray-900 dark:text-white hover:bg-gray-100/80 dark:hover:bg-gray-700/80 flex items-center transition-colors"
+                        >
+                          <Copy className="h-4 w-4 mr-3 text-green-500" />
+                          <span className="font-medium">Duplicate</span>
+                        </button>
+                        <div className="border-t border-gray-100 dark:border-gray-700"></div>
+                      </>
+                    )}
                     {isPublisherAllowed && (
                       <button
                         onClick={(e) => {
@@ -1236,38 +1320,38 @@ export const CurriculumHub: React.FC<CurriculumHubProps> = ({
 
               {viewMode === 'grid' ? (
                 <>
-                  <div className="flex justify-between items-start mb-3">
+                  <div className="flex justify-between items-start mb-3 relative z-10">
                     <h3 className={`text-xl font-semibold tracking-tight pr-8 ${
-                      isExpert ? 'text-white' : 'text-gray-900 dark:text-white'
+                      isExpert || curriculum.imageUrl ? 'text-white' : 'text-gray-900 dark:text-white'
                     }`}>
                       {curriculum.name}
                     </h3>
                     <ArrowRight className={`h-5 w-5 group-hover:translate-x-1 transition-transform ${
-                      isExpert ? 'text-gray-400' : 'text-gray-400'
+                      isExpert || curriculum.imageUrl ? 'text-gray-400' : 'text-gray-400'
                     }`} />
                   </div>
-                  <p className={`text-sm leading-relaxed mb-4 line-clamp-2 flex-grow ${
-                    isExpert ? 'text-gray-300' : 'text-gray-600 dark:text-gray-400'
+                  <p className={`text-sm leading-relaxed mb-4 line-clamp-2 flex-grow relative z-10 ${
+                    isExpert || curriculum.imageUrl ? 'text-gray-300' : 'text-gray-600 dark:text-gray-400'
                   }`}>
                     {curriculum.description}
                   </p>
 
-                  <div className="flex items-center text-sm font-medium mt-auto">
-                    <span className={isExpert ? 'text-gray-300' : 'text-gray-600 dark:text-gray-400'}>
+                  <div className="flex items-center text-sm font-medium mt-auto relative z-10">
+                    <span className={isExpert || curriculum.imageUrl ? 'text-gray-300' : 'text-gray-600 dark:text-gray-400'}>
                       {getActualConceptCount(curriculum.id)} concepts
                     </span>
                   </div>
                 </>
               ) : (
                 <>
-                  <div className="flex-1 min-w-0 pr-12">
+                  <div className="flex-1 min-w-0 pr-12 relative z-10">
                     <h3 className={`text-lg font-semibold tracking-tight mb-1 ${
-                      isExpert ? 'text-white' : 'text-gray-900 dark:text-white'
+                      isExpert || curriculum.imageUrl ? 'text-white' : 'text-gray-900 dark:text-white'
                     }`}>
                       {curriculum.name}
                     </h3>
-                    <p className={`text-sm leading-relaxed line-clamp-1 ${
-                      isExpert ? 'text-gray-300' : 'text-gray-600 dark:text-gray-400'
+                    <p className={`text-sm leading-relaxed line-clamp-1 relative z-10 ${
+                      isExpert || curriculum.imageUrl ? 'text-gray-300' : 'text-gray-600 dark:text-gray-400'
                     }`}>
                       {curriculum.description}
                     </p>
@@ -1383,22 +1467,32 @@ export const CurriculumHub: React.FC<CurriculumHubProps> = ({
                 {/* Dropdown Menu - Apple Style */}
                 {openDropdown === curriculum.id && (
                   <div className="absolute right-0 top-full mt-2 w-56 bg-white/95 dark:bg-gray-800/95 backdrop-blur-2xl rounded-2xl shadow-2xl border border-gray-200/50 dark:border-gray-700/50 z-50 overflow-hidden">
-                    <button
-                      onClick={(e) => handleEditCurriculum(curriculum, e)}
-                      className="w-full px-4 py-3 text-left text-sm font-medium text-gray-900 dark:text-white hover:bg-gray-100/80 dark:hover:bg-gray-700/80 flex items-center transition-colors"
-                    >
-                      <Edit3 className="h-4 w-4 mr-3 text-blue-500" />
-                      <span className="font-medium">Edit Curriculum</span>
-                    </button>
-                    <div className="border-t border-gray-100 dark:border-gray-700"></div>
-                    <button
-                      onClick={(e) => handleDuplicateCurriculum(curriculum, e)}
-                      className="w-full px-4 py-3 text-left text-sm font-medium text-gray-900 dark:text-white hover:bg-gray-100/80 dark:hover:bg-gray-700/80 flex items-center transition-colors"
-                    >
-                      <Copy className="h-4 w-4 mr-3 text-green-500" />
-                      <span className="font-medium">Duplicate</span>
-                    </button>
-                    <div className="border-t border-gray-100 dark:border-gray-700"></div>
+                    {/* Only show Edit for creators */}
+                    {isPublisherAllowed && (
+                      <>
+                        <button
+                          onClick={(e) => handleEditCurriculum(curriculum, e)}
+                          className="w-full px-4 py-3 text-left text-sm font-medium text-gray-900 dark:text-white hover:bg-gray-100/80 dark:hover:bg-gray-700/80 flex items-center transition-colors"
+                        >
+                          <Edit3 className="h-4 w-4 mr-3 text-blue-500" />
+                          <span className="font-medium">Edit Curriculum</span>
+                        </button>
+                        <div className="border-t border-gray-100 dark:border-gray-700"></div>
+                      </>
+                    )}
+                    {/* Only show Duplicate for creators */}
+                    {isPublisherAllowed && (
+                      <>
+                        <button
+                          onClick={(e) => handleDuplicateCurriculum(curriculum, e)}
+                          className="w-full px-4 py-3 text-left text-sm font-medium text-gray-900 dark:text-white hover:bg-gray-100/80 dark:hover:bg-gray-700/80 flex items-center transition-colors"
+                        >
+                          <Copy className="h-4 w-4 mr-3 text-green-500" />
+                          <span className="font-medium">Duplicate</span>
+                        </button>
+                        <div className="border-t border-gray-100 dark:border-gray-700"></div>
+                      </>
+                    )}
                     {isPublisherAllowed && (
                       <button
                         onClick={(e) => handlePublishCurriculum(curriculum, e)}
@@ -1408,14 +1502,18 @@ export const CurriculumHub: React.FC<CurriculumHubProps> = ({
                         <span className="font-medium">Publish to Expert</span>
                       </button>
                     )}
-                    <div className="border-t border-gray-100 dark:border-gray-700"></div>
-                    <button
-                      onClick={(e) => handleDeleteCurriculum(curriculum, e)}
-                      className="w-full px-4 py-3 text-left text-sm font-medium text-red-600 dark:text-red-400 hover:bg-red-50/80 dark:hover:bg-red-900/30 flex items-center transition-colors"
-                    >
-                      <Trash2 className="h-4 w-4 mr-3 text-red-500" />
-                      <span className="font-medium">Delete</span>
-                    </button>
+                    {isPublisherAllowed && (
+                      <>
+                        <div className="border-t border-gray-100 dark:border-gray-700"></div>
+                        <button
+                          onClick={(e) => handleDeleteCurriculum(curriculum, e)}
+                          className="w-full px-4 py-3 text-left text-sm font-medium text-red-600 dark:text-red-400 hover:bg-red-50/80 dark:hover:bg-red-900/30 flex items-center transition-colors"
+                        >
+                          <Trash2 className="h-4 w-4 mr-3 text-red-500" />
+                          <span className="font-medium">Delete</span>
+                        </button>
+                      </>
+                    )}
                   </div>
                 )}
               </div>
@@ -1568,22 +1666,26 @@ export const CurriculumHub: React.FC<CurriculumHubProps> = ({
                     {/* Dropdown Menu - Apple Style */}
                     {openDropdown === curriculum.id && (
                       <div className="absolute right-0 top-full mt-2 w-56 bg-white/95 dark:bg-gray-800/95 backdrop-blur-2xl rounded-2xl shadow-2xl border border-gray-200/50 dark:border-gray-700/50 z-50 overflow-hidden">
-                        <button
-                          onClick={(e) => handleEditCurriculum(curriculum, e)}
-                          className="w-full px-4 py-3 text-left text-sm font-medium text-gray-900 dark:text-white hover:bg-gray-100/80 dark:hover:bg-gray-700/80 flex items-center transition-colors"
-                        >
-                          <Edit3 className="h-4 w-4 mr-3 text-blue-500" />
-                          <span className="font-medium">Edit Curriculum</span>
-                        </button>
-                        <div className="border-t border-gray-100 dark:border-gray-700"></div>
-                        <button
-                          onClick={(e) => handleDuplicateCurriculum(curriculum, e)}
-                          className="w-full px-4 py-3 text-left text-sm font-medium text-gray-900 dark:text-white hover:bg-gray-100/80 dark:hover:bg-gray-700/80 flex items-center transition-colors"
-                        >
-                          <Copy className="h-4 w-4 mr-3 text-green-500" />
-                          <span className="font-medium">Duplicate</span>
-                        </button>
-                        <div className="border-t border-gray-100 dark:border-gray-700"></div>
+                        {isPublisherAllowed && (
+                          <>
+                            <button
+                              onClick={(e) => handleEditCurriculum(curriculum, e)}
+                              className="w-full px-4 py-3 text-left text-sm font-medium text-gray-900 dark:text-white hover:bg-gray-100/80 dark:hover:bg-gray-700/80 flex items-center transition-colors"
+                            >
+                              <Edit3 className="h-4 w-4 mr-3 text-blue-500" />
+                              <span className="font-medium">Edit Curriculum</span>
+                            </button>
+                            <div className="border-t border-gray-100 dark:border-gray-700"></div>
+                            <button
+                              onClick={(e) => handleDuplicateCurriculum(curriculum, e)}
+                              className="w-full px-4 py-3 text-left text-sm font-medium text-gray-900 dark:text-white hover:bg-gray-100/80 dark:hover:bg-gray-700/80 flex items-center transition-colors"
+                            >
+                              <Copy className="h-4 w-4 mr-3 text-green-500" />
+                              <span className="font-medium">Duplicate</span>
+                            </button>
+                            <div className="border-t border-gray-100 dark:border-gray-700"></div>
+                          </>
+                        )}
                         {isPublisherAllowed && (
                           <button
                             onClick={(e) => handlePublishCurriculum(curriculum, e)}
@@ -1593,14 +1695,18 @@ export const CurriculumHub: React.FC<CurriculumHubProps> = ({
                             <span className="font-medium">Publish to Expert</span>
                           </button>
                         )}
-                        <div className="border-t border-gray-100 dark:border-gray-700"></div>
-                        <button
-                          onClick={(e) => handleDeleteCurriculum(curriculum, e)}
-                          className="w-full px-4 py-3 text-left text-sm font-medium text-red-600 dark:text-red-400 hover:bg-red-50/80 dark:hover:bg-red-900/30 flex items-center transition-colors"
-                        >
-                          <Trash2 className="h-4 w-4 mr-3 text-red-500" />
-                          <span className="font-medium">Delete</span>
-                        </button>
+                        {isPublisherAllowed && (
+                          <>
+                            <div className="border-t border-gray-100 dark:border-gray-700"></div>
+                            <button
+                              onClick={(e) => handleDeleteCurriculum(curriculum, e)}
+                              className="w-full px-4 py-3 text-left text-sm font-medium text-red-600 dark:text-red-400 hover:bg-red-50/80 dark:hover:bg-red-900/30 flex items-center transition-colors"
+                            >
+                              <Trash2 className="h-4 w-4 mr-3 text-red-500" />
+                              <span className="font-medium">Delete</span>
+                            </button>
+                          </>
+                        )}
                       </div>
                     )}
                   </div>
@@ -1956,7 +2062,10 @@ export const CurriculumHub: React.FC<CurriculumHubProps> = ({
         isOpen={showImportExpertModal}
         onClose={() => setShowImportExpertModal(false)}
         onImport={(curriculumId) => {
-          // Refresh the curriculum list
+          // Set the curriculum to auto-open after reload
+          sessionStorage.setItem('autoOpenCurriculumId', curriculumId);
+          sessionStorage.setItem('fromLandingPage', 'true');
+          // Refresh to load the new curriculum and trigger auto-open
           window.location.reload();
         }}
       />

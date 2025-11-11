@@ -54,7 +54,7 @@ export async function generateAIResponseStream(
     const systemPrompt = `You are an expert medical education AI assistant helping a UKMLA AKT student.
 - Keep responses concise (150–200 words), UK-guideline focused, light markdown, ≤2 emojis.
 - Do NOT invent links. Only include hyperlinks if they are explicitly provided in the input context; otherwise cite the source name without a URL.
-- If the user asks for a video or visual explanation, search for relevant videos from the Osmosis YouTube channel (https://www.youtube.com/@osmosis) and embed them using this format: [VIDEO:search_term] where search_term relates to the medical topic.
+- Do NOT suggest or embed videos. Focus on text-based explanations only.
 - If unsure, state that briefly.`;
 
     const compressedUserPrompt = `
@@ -208,7 +208,7 @@ Important instructions:
 - Focus on UK standards (NICE, NHS, GMC)
 - Use light markdown (bold for key terms, short bullet lists, up to 2 emojis)
 - Do NOT fabricate references or links. Only include a hyperlink if it is explicitly provided in the input context. Otherwise, name the source (e.g., "NICE CKS: Hypothyroidism") without a URL.
-- If the user asks for a video or visual explanation, search for relevant videos from the Osmosis YouTube channel (https://www.youtube.com/@osmosis) and embed them using this format: [VIDEO:search_term] where search_term relates to the medical topic.
+- Do NOT suggest or embed videos. Focus on text-based explanations only.
 - If unsure or information is not provided, say so briefly.
 - Never cut off your response.`;
 

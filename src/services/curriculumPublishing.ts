@@ -1,5 +1,9 @@
 import { ConceptNode } from '@/types/conceptTypes';
 import { supabase } from '@/lib/supabase';
+import { StorageManager } from '@/utils/storageManager';
+
+// Local cache key for published curriculums metadata (no concepts)
+const PUBLISHED_CACHE_KEY = 'expert_published_curriculums_cache_v1';
 
 export async function canPublishToExpert(): Promise<boolean> {
   // Allow anyone to publish to Expert (no authentication required)
@@ -43,6 +47,7 @@ export interface CurriculumExportData {
     description: string;
     category: string;
     color: string;
+    imageUrl?: string;
   };
   concepts: ConceptNode[];
   customFilters: string[];
@@ -160,8 +165,11 @@ export const EXAM_CATEGORIES = [
   { name: 'University', icon: '🏫', color: 'bg-indigo-100 text-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-300' }
 ];
 
-// Mock published curriculums for demonstration
-const MOCK_PUBLISHED_CURRICULUMS: PublishedCurriculum[] = [
+// Mock published curriculums removed - now using only real published curriculums from Supabase
+export const MOCK_PUBLISHED_CURRICULUMS: PublishedCurriculum[] = [];
+
+/*
+// OLD MOCK DATA - REMOVED
   {
     id: 'pub-ukmla-cardiology-v1',
     name: 'UKMLA Cardiology Complete',
@@ -563,108 +571,140 @@ const MOCK_PUBLISHED_CURRICULUMS: PublishedCurriculum[] = [
     difficulty: 'Advanced',
     estimatedHours: 90
   },
-];
+*/
 
 export class CurriculumPublishingService {
   
-  // Get all published curriculums from Supabase
-  static async getPublishedCurriculums(): Promise<PublishedCurriculum[]> {
+  // Get all published curriculums (metadata only for speed) with local cache
+  static async getPublishedCurriculums(options?: { useCache?: boolean; cacheMaxAgeMs?: number }): Promise<PublishedCurriculum[]> {
+    const useCache = options?.useCache !== false; // default true
+    const cacheMaxAgeMs = options?.cacheMaxAgeMs ?? 5 * 60 * 1000; // 5 minutes
+
     try {
-      // Fetch curriculums from Supabase
+      // Try cache first for instant render
+      if (useCache) {
+        const cachedStr = localStorage.getItem(PUBLISHED_CACHE_KEY);
+        if (cachedStr) {
+          try {
+            const cached = JSON.parse(cachedStr) as { timestamp: number; data: PublishedCurriculum[] };
+            if (Array.isArray(cached?.data)) {
+              const age = Date.now() - (cached.timestamp || 0);
+              if (age < cacheMaxAgeMs) {
+                return cached.data;
+              }
+            }
+          } catch {}
+        }
+      }
+
+      // Fetch metadata only (no concepts) from Supabase
       const { data: curriculums, error } = await supabase
         .from('published_curriculums')
-        .select('*')
+        .select('id,name,description,category,country,color,image_url,author,version,published_at,download_count,rating,tags,custom_filters,filter_categories,filter_assignments,practice_templates,concept_count,difficulty,estimated_hours,is_locked')
         .order('published_at', { ascending: false });
 
       if (error) {
         console.error('Error fetching published curriculums:', error);
-        // Fallback to mock data if Supabase fails
-        return MOCK_PUBLISHED_CURRICULUMS;
+        // Fall back to stale cache if available
+        const cachedStr = localStorage.getItem(PUBLISHED_CACHE_KEY);
+        if (cachedStr) {
+          try {
+            const cached = JSON.parse(cachedStr) as { timestamp: number; data: PublishedCurriculum[] };
+            if (Array.isArray(cached?.data)) return cached.data;
+          } catch {}
+        }
+        return [];
       }
 
-      if (!curriculums || curriculums.length === 0) {
-        // If no remote curriculums, show local first, then mocks
-        const localStr = localStorage.getItem('published_curriculums');
-        const localList: PublishedCurriculum[] = localStr ? JSON.parse(localStr) : [];
-        const localIds = new Set(localList.map(c => c.id));
-        return [...localList, ...MOCK_PUBLISHED_CURRICULUMS.filter(c => !localIds.has(c.id))];
-      }
+      const mapped: PublishedCurriculum[] = (curriculums || []).map((curriculum: any) => ({
+        id: curriculum.id,
+        name: curriculum.name,
+        description: curriculum.description,
+        category: curriculum.category,
+        country: curriculum.country,
+        color: curriculum.color,
+        imageUrl: curriculum.image_url || curriculum.imageUrl || curriculum.image,
+        author: curriculum.author,
+        version: curriculum.version,
+        publishedAt: new Date(curriculum.published_at),
+        downloadCount: curriculum.download_count || 0,
+        rating: curriculum.rating || 0,
+        tags: curriculum.tags || [],
+        concepts: [], // defer heavy payload until import
+        customFilters: curriculum.custom_filters || [],
+        filterCategories: curriculum.filter_categories || [],
+        filterAssignments: curriculum.filter_assignments || {},
+        practiceTemplates: curriculum.practice_templates || { ukmla_templates: [], flashcard_templates: [] },
+        conceptCount: curriculum.concept_count || 0,
+        difficulty: curriculum.difficulty as 'Beginner' | 'Intermediate' | 'Advanced',
+        estimatedHours: curriculum.estimated_hours || 0,
+        isLocked: curriculum.is_locked || false
+      }));
 
-      // Fetch concepts for each curriculum
-      const curriculumsWithConcepts = await Promise.all(
-        curriculums.map(async (curriculum) => {
-          const { data: concepts, error: conceptsError } = await supabase
-            .from('curriculum_concepts')
-            .select('*')
-            .eq('curriculum_id', curriculum.id);
+      // Save to cache
+      try {
+        localStorage.setItem(PUBLISHED_CACHE_KEY, JSON.stringify({ timestamp: Date.now(), data: mapped }));
+      } catch {}
 
-          if (conceptsError) {
-            console.error(`Error fetching concepts for ${curriculum.id}:`, conceptsError);
-          }
-
-          // Transform database format to PublishedCurriculum format
-          return {
-            id: curriculum.id,
-            name: curriculum.name,
-            description: curriculum.description,
-            category: curriculum.category,
-            country: curriculum.country,
-            color: curriculum.color,
-            author: curriculum.author,
-            version: curriculum.version,
-            publishedAt: new Date(curriculum.published_at),
-            downloadCount: curriculum.download_count || 0,
-            rating: curriculum.rating || 0,
-            tags: curriculum.tags || [],
-            concepts: (concepts || []).map(c => ({
-              concept_id: c.concept_id,
-              title: c.title,
-              content: c.content,
-              prerequisites: c.prerequisites || [],
-              custom_filters: c.custom_filters || [],
-              mastery_data: c.mastery_data || {
-                attempts: 0,
-                correct: 0,
-                incorrect: 0,
-                mastery_level: 0,
-                last_practiced: null
-              }
-            })),
-            customFilters: curriculum.custom_filters || [],
-            filterCategories: curriculum.filter_categories || [],
-            filterAssignments: curriculum.filter_assignments || {},
-            practiceTemplates: curriculum.practice_templates || {
-              ukmla_templates: [],
-              flashcard_templates: []
-            },
-            conceptCount: curriculum.concept_count || 0,
-            difficulty: curriculum.difficulty as 'Beginner' | 'Intermediate' | 'Advanced',
-            estimatedHours: curriculum.estimated_hours || 0,
-            isLocked: curriculum.is_locked || false
-          } as PublishedCurriculum;
-        })
-      );
-
-      // Merge in locally published curriculums (Expert tab should show user-published items)
-      const localStr = localStorage.getItem('published_curriculums');
-      const localList: PublishedCurriculum[] = localStr ? JSON.parse(localStr) : [];
-      const existingIds = new Set(curriculumsWithConcepts.map(c => c.id));
-      
-      // Append mock curriculums at the end (after Supabase + local)
-      const allRemote = [...curriculumsWithConcepts, ...localList.filter(c => !existingIds.has(c.id))];
-      const remoteIds = new Set(allRemote.map(c => c.id));
-      return [...allRemote, ...MOCK_PUBLISHED_CURRICULUMS.filter(c => !remoteIds.has(c.id))];
+      return mapped;
     } catch (error) {
       console.error('Error in getPublishedCurriculums:', error);
-      // Fallback: show local first, then mocks
-      try {
-        const localStr = localStorage.getItem('published_curriculums');
-        const localList: PublishedCurriculum[] = localStr ? JSON.parse(localStr) : [];
-        const localIds = new Set(localList.map(c => c.id));
-        return [...localList, ...MOCK_PUBLISHED_CURRICULUMS.filter(c => !localIds.has(c.id))];
-      } catch {
-        return MOCK_PUBLISHED_CURRICULUMS;
+      // Attempt stale cache fallback
+      if (useCache) {
+        const cachedStr = localStorage.getItem(PUBLISHED_CACHE_KEY);
+        if (cachedStr) {
+          try {
+            const cached = JSON.parse(cachedStr) as { timestamp: number; data: PublishedCurriculum[] };
+            if (Array.isArray(cached?.data)) return cached.data;
+          } catch {}
+        }
       }
+      return [];
+    }
+  }
+
+  // Return cached published curriculums synchronously (metadata only)
+  static getCachedPublishedCurriculums(): PublishedCurriculum[] {
+    try {
+      const cachedStr = localStorage.getItem(PUBLISHED_CACHE_KEY);
+      if (!cachedStr) return [];
+      const cached = JSON.parse(cachedStr) as { timestamp: number; data: PublishedCurriculum[] };
+      return Array.isArray(cached?.data) ? cached.data : [];
+    } catch {
+      return [];
+    }
+  }
+
+  // Helper to fetch concepts for a specific published curriculum
+  static async getPublishedCurriculumConcepts(curriculumId: string): Promise<ConceptNode[]> {
+    try {
+      const { data: concepts, error } = await supabase
+        .from('curriculum_concepts')
+        .select('*')
+        .eq('curriculum_id', curriculumId);
+
+      if (error) {
+        console.error(`Error fetching concepts for ${curriculumId}:`, error);
+        return [];
+      }
+
+      return (concepts || []).map((c: any) => ({
+        concept_id: c.concept_id,
+        title: c.title,
+        content: c.content,
+        prerequisites: c.prerequisites || [],
+        custom_filters: c.custom_filters || [],
+        mastery_data: c.mastery_data || {
+          attempts: 0,
+          correct: 0,
+          incorrect: 0,
+          mastery_level: 0,
+          last_practiced: null
+        }
+      }));
+    } catch (e) {
+      console.error('Unexpected error fetching curriculum concepts:', e);
+      return [];
     }
   }
 
@@ -692,22 +732,24 @@ export class CurriculumPublishingService {
         const parsedConcepts = JSON.parse(storedConcepts);
         console.log(`CurriculumPublishing: Found ${parsedConcepts.length} concepts in localStorage`);
         
-        // Normalize concepts for export
-        concepts = parsedConcepts.map((concept: any) => ({
-          concept_id: concept.concept_id,
-          title: concept.title,
-          content: concept.content || concept.description || concept.knowledge || 'No content available',
-          custom_filters: concept.custom_filters || concept.tags || [],
-          prerequisites: concept.prerequisites || [],
-          mastery_data: concept.mastery_data || {
-            attempts: 0,
-            correct: 0,
-            incorrect: 0,
-            mastery_level: 0,
-            last_practiced: null
-          },
-          created_at: concept.created_at,
-          updated_at: concept.updated_at
+        // Optimized normalization - only process what's needed
+        const defaultMastery = {
+          attempts: 0,
+          correct: 0,
+          incorrect: 0,
+          mastery_level: 0,
+          last_practiced: null
+        };
+        
+        concepts = parsedConcepts.map((c: any) => ({
+          concept_id: c.concept_id,
+          title: c.title,
+          content: c.content || c.description || c.knowledge || 'No content available',
+          custom_filters: c.custom_filters || c.tags || [],
+          prerequisites: c.prerequisites || [],
+          mastery_data: c.mastery_data || defaultMastery,
+          created_at: c.created_at,
+          updated_at: c.updated_at
         }));
       } else {
         console.log(`CurriculumPublishing: No concepts found in localStorage for ${curriculumId}`);
@@ -744,7 +786,8 @@ export class CurriculumPublishingService {
           name: curriculum.name,
           description: curriculum.description,
           category: curriculum.category,
-          color: curriculum.color
+          color: curriculum.color,
+          imageUrl: curriculum.imageUrl
         },
         concepts,
         customFilters,
@@ -822,7 +865,7 @@ export class CurriculumPublishingService {
   }
 
   // Import curriculum from published data
-  static async importCurriculum(publishedCurriculum: PublishedCurriculum): Promise<string> {
+  static async importCurriculum(publishedCurriculum: PublishedCurriculum, userId?: string): Promise<string> {
     try {
       // Use a stable ID based on the published curriculum ID (without timestamp)
       // This ensures re-importing the same curriculum uses the same ID
@@ -840,6 +883,21 @@ export class CurriculumPublishingService {
         console.log(`CurriculumPublishing: Curriculum ${newCurriculumId} already exists, updating last accessed`);
         return newCurriculumId;
       }
+
+      // Fetch concepts first to estimate size
+      let conceptsToImport: ConceptNode[] = Array.isArray(publishedCurriculum.concepts) ? publishedCurriculum.concepts : [];
+      if (!conceptsToImport || conceptsToImport.length === 0) {
+        conceptsToImport = await this.getPublishedCurriculumConcepts(publishedCurriculum.id);
+      }
+      console.log(`CurriculumPublishing: Importing ${conceptsToImport.length} concepts for ${newCurriculumId}`);
+
+      // Estimate size and check storage before importing
+      const estimatedSize = JSON.stringify(conceptsToImport).length * 2; // UTF-16 encoding
+      const canSave = await StorageManager.checkBeforeSave(estimatedSize);
+      
+      if (!canSave) {
+        throw new Error('Unable to free enough storage space for import');
+      }
       
       // Create curriculum metadata
       const newCurriculum = {
@@ -850,7 +908,8 @@ export class CurriculumPublishingService {
         color: publishedCurriculum.color,
         conceptCount: publishedCurriculum.conceptCount,
         lastAccessed: new Date(),
-        progress: 0
+        progress: 0,
+        createdBy: userId // Track who imported this curriculum
       };
 
       // Add to curriculums list
@@ -859,14 +918,7 @@ export class CurriculumPublishingService {
 
       // Import concepts
       const conceptsKey = `${newCurriculumId}_user_concepts`;
-      console.log(`CurriculumPublishing: Importing ${publishedCurriculum.concepts.length} concepts for ${newCurriculumId}`);
-      console.log('Published curriculum concepts:', publishedCurriculum.concepts);
-      
-      if (!publishedCurriculum.concepts || publishedCurriculum.concepts.length === 0) {
-        console.warn('⚠️ No concepts found in published curriculum!');
-      }
-      
-      localStorage.setItem(conceptsKey, JSON.stringify(publishedCurriculum.concepts));
+      localStorage.setItem(conceptsKey, JSON.stringify(conceptsToImport));
 
       // Import custom filters
       const filtersKey = `${newCurriculumId}_custom_filters`;
@@ -915,70 +967,8 @@ export class CurriculumPublishingService {
       const newPubId = `pub-${curriculumId}-${Date.now()}`;
 
       // Insert metadata into Supabase (public access enabled)
-      const { error: insertMetaError } = await supabase
-        .from('published_curriculums')
-        .insert([
-          {
-            id: newPubId,
-            name: exportData.curriculum.name,
-            description: exportData.curriculum.description,
-            category: exportData.curriculum.category,
-            country: publishData.country || 'International',
-            color: exportData.curriculum.color,
-            author: publishData.author,
-            version: exportData.version,
-            published_at: new Date().toISOString(),
-            download_count: 0,
-            rating: 5.0,
-            tags: publishData.tags,
-            custom_filters: exportData.customFilters,
-            filter_categories: exportData.filterCategories,
-            filter_assignments: exportData.filterAssignments,
-            practice_templates: exportData.practiceTemplates,
-            concept_count: exportData.concepts.length,
-            difficulty: publishData.difficulty,
-            estimated_hours: publishData.estimatedHours,
-            is_locked: false
-          }
-        ]);
-
-      if (insertMetaError) {
-        console.error('Failed to insert published curriculum metadata:', insertMetaError);
-        return false;
-      }
-
-      // Insert concepts in batch
-      if (exportData.concepts.length > 0) {
-        const conceptRows = exportData.concepts.map(c => ({
-          curriculum_id: newPubId,
-          concept_id: c.concept_id,
-          title: c.title,
-          content: c.content,
-          prerequisites: c.prerequisites || [],
-          custom_filters: c.custom_filters || [],
-          mastery_data: c.mastery_data || {
-            attempts: 0,
-            correct: 0,
-            incorrect: 0,
-            mastery_level: 0,
-            last_practiced: null
-          }
-        }));
-
-        const { error: insertConceptsError } = await supabase
-          .from('curriculum_concepts')
-          .insert(conceptRows);
-
-        if (insertConceptsError) {
-          console.error('Failed to insert curriculum concepts:', insertConceptsError);
-          // Best-effort cleanup: delete the metadata row if concept insert fails
-          await supabase.from('published_curriculums').delete().eq('id', newPubId);
-          return false;
-        }
-      }
-
-      // Also add to localStorage for immediate visibility
-      const publishedCurriculum: PublishedCurriculum = {
+      // Build the insert object, only include image_url if it exists
+      const insertData: any = {
         id: newPubId,
         name: exportData.curriculum.name,
         description: exportData.curriculum.description,
@@ -987,27 +977,83 @@ export class CurriculumPublishingService {
         color: exportData.curriculum.color,
         author: publishData.author,
         version: exportData.version,
-        publishedAt: new Date(),
-        downloadCount: 0,
+        published_at: new Date().toISOString(),
+        download_count: 0,
         rating: 5.0,
         tags: publishData.tags,
-        concepts: exportData.concepts,
-        customFilters: exportData.customFilters,
-        filterCategories: exportData.filterCategories,
-        filterAssignments: exportData.filterAssignments,
-        practiceTemplates: exportData.practiceTemplates,
-        conceptCount: exportData.concepts.length,
+        custom_filters: exportData.customFilters,
+        filter_categories: exportData.filterCategories,
+        filter_assignments: exportData.filterAssignments,
+        practice_templates: exportData.practiceTemplates,
+        concept_count: exportData.concepts.length,
         difficulty: publishData.difficulty,
-        estimatedHours: publishData.estimatedHours,
-        isLocked: false
+        estimated_hours: publishData.estimatedHours,
+        is_locked: false
       };
+      
+      // Only add image_url if it exists (in case column doesn't exist in DB yet)
+      if (exportData.curriculum.imageUrl) {
+        insertData.image_url = exportData.curriculum.imageUrl;
+      }
+      
+      const { error: insertMetaError } = await supabase
+        .from('published_curriculums')
+        .insert([insertData]);
 
-      const existingPublished = localStorage.getItem('published_curriculums');
-      const publishedList: PublishedCurriculum[] = existingPublished ? JSON.parse(existingPublished) : [];
-      publishedList.push(publishedCurriculum);
-      localStorage.setItem('published_curriculums', JSON.stringify(publishedList));
+      if (insertMetaError) {
+        console.error('Failed to insert published curriculum metadata:', insertMetaError);
+        return false;
+      }
 
-      console.log('✅ Curriculum published to Expert (Supabase + localStorage) successfully:', publishedCurriculum.name);
+      // Insert concepts in optimized batches (chunks of 100 for better performance)
+      if (exportData.concepts.length > 0) {
+        const BATCH_SIZE = 100;
+        const totalBatches = Math.ceil(exportData.concepts.length / BATCH_SIZE);
+        
+        console.log(`📦 Uploading ${exportData.concepts.length} concepts in ${totalBatches} batches...`);
+        
+        for (let i = 0; i < exportData.concepts.length; i += BATCH_SIZE) {
+          const batch = exportData.concepts.slice(i, i + BATCH_SIZE);
+          const batchNum = Math.floor(i / BATCH_SIZE) + 1;
+          
+          const conceptRows = batch.map(c => ({
+            curriculum_id: newPubId,
+            concept_id: c.concept_id,
+            title: c.title,
+            content: c.content,
+            prerequisites: c.prerequisites || [],
+            custom_filters: c.custom_filters || [],
+            mastery_data: c.mastery_data || {
+              attempts: 0,
+              correct: 0,
+              incorrect: 0,
+              mastery_level: 0,
+              last_practiced: null
+            }
+          }));
+
+          const { error: insertConceptsError } = await supabase
+            .from('curriculum_concepts')
+            .insert(conceptRows);
+
+          if (insertConceptsError) {
+            console.error(`Failed to insert batch ${batchNum}/${totalBatches}:`, insertConceptsError);
+            // Best-effort cleanup: delete the metadata row if concept insert fails
+            await supabase.from('published_curriculums').delete().eq('id', newPubId);
+            return false;
+          }
+          
+          console.log(`✅ Batch ${batchNum}/${totalBatches} uploaded (${batch.length} concepts)`);
+        }
+      }
+
+      // Invalidate cache so new curriculum appears immediately
+      try {
+        localStorage.removeItem(PUBLISHED_CACHE_KEY);
+        console.log('🗑️ Cache invalidated after publish');
+      } catch {}
+      
+      console.log('✅ Curriculum published to Expert (Supabase) successfully:', exportData.curriculum.name);
       return true;
     } catch (error) {
       console.error('Error publishing curriculum:', error);
@@ -1015,15 +1061,9 @@ export class CurriculumPublishingService {
     }
   }
 
-  // Delete published curriculum (only user-published ones)
+  // Delete published curriculum
   static async deletePublishedCurriculum(curriculumId: string): Promise<boolean> {
     try {
-      // Protect built-in mock items from deletion
-      const mockIds = MOCK_PUBLISHED_CURRICULUMS.map(c => c.id);
-      if (mockIds.includes(curriculumId)) {
-        console.warn('Cannot delete mock curriculum:', curriculumId);
-        return false;
-      }
 
       // If admin (allowlisted), attempt Supabase deletion first (cascades to concepts)
       const allowed = await canPublishToExpert();
@@ -1035,25 +1075,16 @@ export class CurriculumPublishingService {
 
         if (delErr) {
           console.error('Error deleting from Supabase:', delErr);
+          return false;
         } else if ((count ?? 0) > 0) {
-          // Also remove from local cache if present
-          const existingPublished = localStorage.getItem('published_curriculums');
-          const publishedList: PublishedCurriculum[] = existingPublished ? JSON.parse(existingPublished) : [];
-          const updatedList = publishedList.filter(c => c.id !== curriculumId);
-          localStorage.setItem('published_curriculums', JSON.stringify(updatedList));
+          // Invalidate cache so deletion reflects immediately
+          try {
+            localStorage.removeItem(PUBLISHED_CACHE_KEY);
+            console.log('🗑️ Cache invalidated after delete');
+          } catch {}
           console.log('✅ Deleted published curriculum from Supabase:', curriculumId);
           return true;
         }
-      }
-
-      // Fallback: delete from localStorage (user-published local-only)
-      const existingPublished = localStorage.getItem('published_curriculums');
-      const publishedList: PublishedCurriculum[] = existingPublished ? JSON.parse(existingPublished) : [];
-      const updatedList = publishedList.filter(curriculum => curriculum.id !== curriculumId);
-      if (updatedList.length !== publishedList.length) {
-        localStorage.setItem('published_curriculums', JSON.stringify(updatedList));
-        console.log('✅ Deleted local published curriculum:', curriculumId);
-        return true;
       }
 
       console.warn('Curriculum not found for deletion in Supabase or local:', curriculumId);
@@ -1064,10 +1095,10 @@ export class CurriculumPublishingService {
     }
   }
 
-  // Check if a curriculum can be deleted (only user-published ones)
-  static canDeleteCurriculum(curriculumId: string): boolean {
-    const mockIds = MOCK_PUBLISHED_CURRICULUMS.map(c => c.id);
-    return !mockIds.includes(curriculumId);
+  // Check if a curriculum can be deleted
+  static canDeleteCurriculum(_curriculumId: string): boolean {
+    // All published curriculums can be deleted (no more mock protection)
+    return true;
   }
 
   // Download curriculum as JSON file

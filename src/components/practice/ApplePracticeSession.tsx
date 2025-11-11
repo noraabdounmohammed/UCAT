@@ -203,14 +203,13 @@ export function ApplePracticeSession({
       className={cn(
         "flex flex-col h-screen overflow-hidden",
         (questionContent.format === 'flashcard' || questionContent.format === 'sba' || questionContent.format === 'ukmla_sba')
-          ? "bg-zinc-950" 
-          : "bg-zinc-50/50 dark:bg-zinc-950/50"
+          ? "bg-gradient-to-br from-stone-900 via-stone-800 to-stone-900" 
+          : "bg-gradient-to-br from-stone-50 to-stone-100/50"
       )}
-      style={(questionContent.format !== 'flashcard' && questionContent.format !== 'sba' && questionContent.format !== 'ukmla_sba') ? { backdropFilter: 'blur(20px)' } : undefined}
     >
       {/* Header - Hidden for flashcards and SBA */}
       {(questionContent.format !== 'flashcard' && questionContent.format !== 'sba' && questionContent.format !== 'ukmla_sba') && (
-      <header className="sticky top-0 z-10 bg-white/80 dark:bg-zinc-900/80 backdrop-blur-xl border-b border-black/[0.08] dark:border-white/[0.08]">
+      <header className="sticky top-0 z-10 bg-white/60 backdrop-blur-2xl border-b border-white/30">
         <div className="max-w-4xl mx-auto px-4 py-3 flex items-center justify-between">
           
           {/* Left: Close Button */}
@@ -366,20 +365,26 @@ export function ApplePracticeSession({
       {/* Exit confirmation modal */}
       {showExitConfirmation && (
         <Dialog open={showExitConfirmation}>
-          <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center">
-            <div className="bg-white dark:bg-gray-800 p-6 rounded-lg max-w-md w-full">
-              <h2 className="text-xl font-semibold mb-4">Exit Practice Session?</h2>
-              <p className="text-gray-600 dark:text-gray-400 mb-6">Are you sure you want to exit? Your progress will be saved.</p>
-              <div className="flex justify-end gap-4">
+          <div className="fixed inset-0 bg-black/20 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+            <div className="bg-white/90 backdrop-blur-2xl rounded-3xl border border-white/30 shadow-[0_8px_32px_0_rgba(0,0,0,0.12)] p-8 max-w-md w-full">
+              <h2 className="text-2xl font-medium text-stone-900 mb-3 tracking-tight" style={{ fontFamily: "'Unbounded', sans-serif", fontWeight: 500 }}>
+                Exit Practice Session?
+              </h2>
+              <p className="text-sm text-stone-600 font-light mb-8" style={{ fontFamily: "'Manrope', sans-serif", fontWeight: 300 }}>
+                Are you sure you want to exit? Your progress will be saved.
+              </p>
+              <div className="flex justify-end gap-3">
                 <button 
                   onClick={handleExitCancel}
-                  className="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-md"
+                  className="px-6 py-2.5 rounded-full border border-stone-300 text-stone-700 hover:bg-stone-50 transition-all text-sm font-medium uppercase tracking-wider"
+                  style={{ fontFamily: "'Unbounded', sans-serif", fontWeight: 500 }}
                 >
                   Cancel
                 </button>
                 <button 
                   onClick={handleExitConfirm}
-                  className="px-4 py-2 bg-blue-600 text-white rounded-md"
+                  className="px-6 py-2.5 rounded-full bg-stone-900 text-white hover:bg-stone-800 transition-all text-sm font-medium uppercase tracking-wider shadow-lg"
+                  style={{ fontFamily: "'Unbounded', sans-serif", fontWeight: 500 }}
                 >
                   Exit
                 </button>

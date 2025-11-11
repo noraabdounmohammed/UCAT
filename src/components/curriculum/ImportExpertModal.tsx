@@ -3,6 +3,7 @@ import ReactDOM from 'react-dom';
 import { X, Download, Star, Clock, BookOpen, User, Search, Trash2, MoreVertical, ChevronDown } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { CurriculumPublishingService, PublishedCurriculum, WORLD_COUNTRIES, EXAM_CATEGORIES } from '@/services/curriculumPublishing';
+import { useAuth } from '@/contexts/AuthContext';
 
 interface ImportExpertModalProps {
   isOpen: boolean;
@@ -15,6 +16,7 @@ export const ImportExpertModal: React.FC<ImportExpertModalProps> = ({
   onClose,
   onImport
 }) => {
+  const { user } = useAuth();
   const [publishedCurriculums, setPublishedCurriculums] = useState<PublishedCurriculum[]>([]);
   const [loading, setLoading] = useState(true);
   const [importing, setImporting] = useState<string | null>(null);
@@ -94,7 +96,7 @@ export const ImportExpertModal: React.FC<ImportExpertModalProps> = ({
   const handleImport = async (curriculum: PublishedCurriculum) => {
     setImporting(curriculum.id);
     try {
-      const newCurriculumId = await CurriculumPublishingService.importCurriculum(curriculum);
+      const newCurriculumId = await CurriculumPublishingService.importCurriculum(curriculum, user?.id);
       onImport(newCurriculumId);
       onClose();
     } catch (error) {

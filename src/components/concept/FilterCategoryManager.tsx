@@ -33,10 +33,11 @@ export const FilterCategoryManager: React.FC<FilterCategoryManagerProps> = ({ on
   const [dragOverCategory, setDragOverCategory] = useState<string | null>(null);
   const [editingFilter, setEditingFilter] = useState<string | null>(null);
   const [newFilterName, setNewFilterName] = useState('');
+  const [draggedCategoryId, setDraggedCategoryId] = useState<string | null>(null);
+  const [dragOverCategoryIndex, setDragOverCategoryIndex] = useState<number | null>(null);
 
   const store = useConceptStore() as any;
   const { 
-    filterCategories, 
     customFilters,
     filterOptions,
     createFilterCategory, 
@@ -48,6 +49,17 @@ export const FilterCategoryManager: React.FC<FilterCategoryManagerProps> = ({ on
     updateConcept,
     curriculumId
   } = store;
+
+  // Read filter categories from localStorage directly so they update when refreshTrigger changes
+  const filterCategories = React.useMemo(() => {
+    try {
+      const categoriesKey = `${curriculumId}_filter_categories`;
+      const stored = localStorage.getItem(categoriesKey);
+      return stored ? JSON.parse(stored) : [];
+    } catch {
+      return [];
+    }
+  }, [curriculumId, refreshTrigger]);
 
   // curriculumId now comes directly from the curriculum-specific concept store context
   // This guarantees we read/write assignments for the active curriculum
@@ -210,13 +222,83 @@ export const FilterCategoryManager: React.FC<FilterCategoryManagerProps> = ({ on
   const handleDeleteCategory = (categoryId: string) => {
     if (window.confirm('Are you sure you want to delete this category? Filters in this category will become uncategorized.')) {
       // Remove category from any filters that use it
-      customFilters.forEach(filter => {
+      customFilters.forEach((filter: any) => {
         if (filter.category_id === categoryId) {
           updateCustomFilter(filter.id, { category_id: undefined });
         }
       });
       deleteFilterCategory(categoryId);
     }
+  };
+
+  // Handle category reordering
+  const handleCategoryDragStart = (e: React.DragEvent, categoryId: string) => {
+    console.log('🚀 Drag started:', categoryId);
+    e.dataTransfer.effectAllowed = 'move';
+    setDraggedCategoryId(categoryId);
+  };
+
+  const handleCategoryDragOver = (e: React.DragEvent, index: number) => {
+    e.preventDefault();
+    e.stopPropagation();
+    e.dataTransfer.dropEffect = 'move';
+    console.log('👆 Dragging over index:', index);
+    setDragOverCategoryIndex(index);
+  };
+
+  const handleCategoryDrop = (e: React.DragEvent, dropIndex: number) => {
+    e.preventDefault();
+    e.stopPropagation();
+    
+    console.log('🎯 Drop event triggered!', {
+      draggedCategoryId,
+      dropIndex,
+      currentCategories: filterCategories.map((c: FilterCategory) => c.name)
+    });
+    
+    if (!draggedCategoryId) {
+      console.log('❌ No dragged category ID');
+      return;
+    }
+    
+    const draggedIndex = filterCategories.findIndex((cat: FilterCategory) => cat.id === draggedCategoryId);
+    
+    console.log('📍 Drag details:', {
+      draggedIndex,
+      dropIndex,
+      samePosition: draggedIndex === dropIndex
+    });
+    
+    if (draggedIndex === -1 || draggedIndex === dropIndex) {
+      setDraggedCategoryId(null);
+      setDragOverCategoryIndex(null);
+      return;
+    }
+
+    // Reorder categories
+    const newCategories = [...filterCategories];
+    const [draggedCategory] = newCategories.splice(draggedIndex, 1);
+    newCategories.splice(dropIndex, 0, draggedCategory);
+
+    console.log('✅ New order:', newCategories.map((c: FilterCategory) => c.name));
+
+    // Save to localStorage directly
+    const categoriesKey = `${curriculumId}_filter_categories`;
+    localStorage.setItem(categoriesKey, JSON.stringify(newCategories));
+    
+    console.log('💾 Saved to localStorage key:', categoriesKey);
+    
+    // Force component to re-render with new data from localStorage
+    setRefreshTrigger(prev => prev + 1);
+    
+    setDraggedCategoryId(null);
+    setDragOverCategoryIndex(null);
+  };
+
+  const handleCategoryDragEnd = () => {
+    console.log('🏁 Drag ended');
+    setDraggedCategoryId(null);
+    setDragOverCategoryIndex(null);
   };
 
   const modalContent = (
@@ -348,8 +430,22 @@ export const FilterCategoryManager: React.FC<FilterCategoryManagerProps> = ({ on
 
             {/* Categories List */}
             <div className="space-y-2">
-              {filterCategories.map((category: FilterCategory) => (
-                <div key={category.id} className="p-3 border border-gray-200 dark:border-gray-600 rounded-lg">
+              {filterCategories.map((category: FilterCategory, index: number) => (
+                <div 
+                  key={category.id} 
+                  draggable
+                  onDragStart={(e) => handleCategoryDragStart(e, category.id)}
+                  onDragOver={(e) => handleCategoryDragOver(e, index)}
+                  onDrop={(e) => handleCategoryDrop(e, index)}
+                  onDragEnd={handleCategoryDragEnd}
+                  className={`p-3 border rounded-lg cursor-move transition-all ${
+                    draggedCategoryId === category.id 
+                      ? 'opacity-50 border-blue-500 dark:border-blue-400' 
+                      : dragOverCategoryIndex === index
+                      ? 'border-blue-500 dark:border-blue-400 bg-blue-50 dark:bg-blue-900/20'
+                      : 'border-gray-200 dark:border-gray-600'
+                  }`}
+                >
                   <div className="flex items-center justify-between">
                     <div className="flex items-center">
                       <div

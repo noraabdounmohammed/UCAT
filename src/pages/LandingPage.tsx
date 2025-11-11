@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { CurriculumPublishingService, PublishedCurriculum } from '@/services/curriculumPublishing';
+import { AuthBar } from '@/components/auth/AuthBar';
 import { Trash2 } from 'lucide-react';
 import { useUserRole } from '@/hooks/useUserRole';
-import { AuthBar } from '@/components/auth/AuthBar';
 
 interface CardData {
   id: string;
@@ -14,10 +14,11 @@ interface CardData {
   category: string;
   country: string;
   imageUrl: string;
-  curriculum: PublishedCurriculum;
+  curriculum?: PublishedCurriculum;
+  comingSoon?: boolean;
 }
 
-export const CurriculumLandingPage: React.FC = () => {
+export const LandingPage: React.FC = () => {
   const navigate = useNavigate();
   const { isCreator } = useUserRole();
   const [currentIndex, setCurrentIndex] = useState(0);
@@ -25,7 +26,6 @@ export const CurriculumLandingPage: React.FC = () => {
   const [touchStart, setTouchStart] = useState<number | null>(null);
   const [touchEnd, setTouchEnd] = useState<number | null>(null);
   const [publishedCurriculums, setPublishedCurriculums] = useState<PublishedCurriculum[]>([]);
-  const [isImporting, setIsImporting] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
@@ -33,7 +33,7 @@ export const CurriculumLandingPage: React.FC = () => {
     if (cached && cached.length > 0) {
       setPublishedCurriculums(cached);
       setIsLoading(false);
-      // Refresh in background silently
+      // Refresh in background without showing spinner
       loadPublishedCurriculums(true);
     } else {
       loadPublishedCurriculums();
@@ -44,7 +44,6 @@ export const CurriculumLandingPage: React.FC = () => {
     if (!suppressLoading) setIsLoading(true);
     try {
       const published = await CurriculumPublishingService.getPublishedCurriculums();
-      console.log('📚 Loaded published curriculums:', published.length, published);
       setPublishedCurriculums(published);
     } catch (error) {
       console.error('Failed to load published curriculums:', error);
@@ -89,25 +88,30 @@ export const CurriculumLandingPage: React.FC = () => {
     }
   ];
 
-  const cards: CardData[] = publishedCurriculums.map((curriculum, index) => {
-    // Cycle through color palette for variety
-    const colors = colorPalette[index % colorPalette.length];
-    // Use custom image if available, otherwise generate placeholder from Unsplash
-    const imageUrl = curriculum.imageUrl || 
-      `https://source.unsplash.com/400x600/?medical,${curriculum.category.toLowerCase().replace(/\s+/g, '-')}`;
+  // Show all published curriculums from Supabase
+  const cards: CardData[] = React.useMemo(() => {
+    const cardsList: CardData[] = [];
     
-    return {
-      id: curriculum.id,
-      title: curriculum.name,
-      color: colors.gradient,
-      bgColor: colors.bg,
-      content: curriculum.category,
-      category: curriculum.category,
-      country: curriculum.country,
-      imageUrl: imageUrl,
-      curriculum
-    };
-  });
+    // Map all published curriculums to cards
+    publishedCurriculums.forEach((curriculum, index) => {
+      const colorIndex = index % colorPalette.length;
+      cardsList.push({
+        id: curriculum.id,
+        title: curriculum.name,
+        color: colorPalette[colorIndex].gradient,
+        bgColor: colorPalette[colorIndex].bg,
+        content: curriculum.category,
+        category: curriculum.category,
+        country: curriculum.country,
+        imageUrl: curriculum.imageUrl || `https://source.unsplash.com/400x600/?medical,${curriculum.category.toLowerCase()}`,
+        curriculum: curriculum,
+        comingSoon: false
+      });
+    });
+    
+    console.log('LandingPage: Showing all published curriculums:', cardsList.length);
+    return cardsList;
+  }, [publishedCurriculums]);
 
   const filteredCards = cards.filter(card =>
     card.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -160,39 +164,50 @@ export const CurriculumLandingPage: React.FC = () => {
   const getCardStyle = (index: number) => {
     const position = (index - currentIndex + displayCards.length) % displayCards.length;
 
+    const baseStyle = {
+      transition: 'all 700ms ease-out',
+      transformStyle: 'preserve-3d' as const,
+    };
+
     if (position === 0) {
       return {
+        ...baseStyle,
         transform: 'translateX(0) translateY(0) scale(1) rotateY(0deg)',
         zIndex: 50,
         opacity: 1,
       };
     } else if (position === 1) {
       return {
-        transform: 'translateX(120px) translateY(40px) scale(0.92) rotateY(-15deg)',
+        ...baseStyle,
+        transform: 'translateX(96px) translateY(32px) scale(0.92) rotateY(-15deg)',
         zIndex: 40,
         opacity: 1,
       };
     } else if (position === 2) {
       return {
-        transform: 'translateX(240px) translateY(80px) scale(0.84) rotateY(-20deg)',
+        ...baseStyle,
+        transform: 'translateX(192px) translateY(64px) scale(0.84) rotateY(-20deg)',
         zIndex: 30,
         opacity: 1,
       };
     } else if (position === displayCards.length - 1) {
       return {
-        transform: 'translateX(-120px) translateY(40px) scale(0.92) rotateY(15deg)',
+        ...baseStyle,
+        transform: 'translateX(-96px) translateY(32px) scale(0.92) rotateY(15deg)',
         zIndex: 40,
         opacity: 1,
       };
     } else if (position === displayCards.length - 2) {
       return {
-        transform: 'translateX(-240px) translateY(80px) scale(0.84) rotateY(20deg)',
+        ...baseStyle,
+        transform: 'translateX(-192px) translateY(64px) scale(0.84) rotateY(20deg)',
         zIndex: 30,
         opacity: 1,
       };
     } else {
       return {
-        transform: 'translateX(360px) translateY(120px) scale(0.76) rotateY(-25deg)',
+        ...baseStyle,
+        transform: 'translateX(288px) translateY(96px) scale(0.76) rotateY(-25deg)',
         zIndex: 10,
         opacity: 0,
       };
@@ -225,40 +240,31 @@ export const CurriculumLandingPage: React.FC = () => {
   };
 
   const handleCardClick = async (index: number) => {
+    const selectedCard = displayCards[index];
+    
     if (index === currentIndex) {
-      // Center card clicked - import and navigate to curriculum
-      const selectedCurriculum = displayCards[index].curriculum;
+      // Center card clicked
       
-      setIsImporting(true);
-      try {
-        console.log('🔵 Importing curriculum:', selectedCurriculum.name);
-        const newCurriculumId = await CurriculumPublishingService.importCurriculum(selectedCurriculum);
-        console.log('✅ Import successful, new ID:', newCurriculumId);
-        
-        // Small delay to ensure localStorage is written
-        await new Promise(resolve => setTimeout(resolve, 100));
-        
-        // Store curriculum ID in sessionStorage for auto-open
-        console.log('📝 Setting sessionStorage:', {
-          autoOpenCurriculumId: newCurriculumId,
-          fromLandingPage: true
-        });
-        sessionStorage.setItem('autoOpenCurriculumId', newCurriculumId);
-        sessionStorage.setItem('fromLandingPage', 'true');
-        
-        // Verify it was set
-        console.log('✅ SessionStorage set:', {
-          autoOpenCurriculumId: sessionStorage.getItem('autoOpenCurriculumId'),
-          fromLandingPage: sessionStorage.getItem('fromLandingPage')
-        });
-        
-        // Navigate to concept practice
-        navigate('/concept-practice');
-      } catch (error) {
-        console.error('❌ Failed to import curriculum:', error);
-        alert('Failed to import curriculum. Please try again.');
-        setIsImporting(false);
+      // Check if it's a "coming soon" card
+      if (selectedCard.comingSoon) {
+        // Do nothing for coming soon cards
+        return;
       }
+      
+      // Check if curriculum exists
+      if (!selectedCard.curriculum) {
+        console.error('No curriculum data available');
+        return;
+      }
+      
+      // Allow users to explore curriculum without signing in
+      // Import curriculum in background and navigate immediately
+      // Store curriculum data for import after navigation
+      sessionStorage.setItem('pendingCurriculumImport', JSON.stringify(selectedCard.curriculum));
+      sessionStorage.setItem('fromLandingPage', 'true');
+      
+      // Navigate immediately - import will happen in CurriculumApp
+      navigate('/concept-practice');
     } else {
       // Side card clicked - bring to center
       setCurrentIndex(index);
@@ -270,35 +276,21 @@ export const CurriculumLandingPage: React.FC = () => {
       {/* Subtle texture overlay */}
       <div className="absolute inset-0 opacity-[0.015] pointer-events-none" style={{ backgroundImage: 'url("data:image/svg+xml,%3Csvg width="100" height="100" xmlns="http://www.w3.org/2000/svg"%3E%3Cfilter id="noise"%3E%3CfeTurbulence type="fractalNoise" baseFrequency="0.9" numOctaves="4" /%3E%3C/filter%3E%3Crect width="100" height="100" filter="url(%23noise)" /%3E%3C/svg%3E")' }}></div>
 
-      {/* Importing overlay */}
-      {isImporting && (
-        <div className="absolute inset-0 bg-black/20 backdrop-blur-sm flex items-center justify-center z-50">
-          <div className="bg-white/90 dark:bg-gray-800/90 backdrop-blur-xl rounded-2xl p-8 shadow-2xl">
-            <div className="flex flex-col items-center">
-              <div className="animate-spin rounded-full h-12 w-12 border-4 border-stone-300 border-t-stone-800 mb-4"></div>
-              <p className="text-lg font-medium text-stone-800 dark:text-stone-100" style={{ fontFamily: "'Unbounded', sans-serif" }}>
-                Importing Curriculum...
-              </p>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Auth Bar - Floating */}
+      {/* Minimal Top Bar - Floating Sign In */}
       <div className="fixed top-6 right-6 z-40">
         <AuthBar />
       </div>
 
       {/* Header */}
-      <div className="w-full px-8 pt-12 pb-6 flex-shrink-0">
-        <div className="max-w-4xl mx-auto w-full text-center">
-          <div className="inline-block relative">
-            <h1 className="text-6xl md:text-7xl font-bold text-stone-800 tracking-tight transition-all duration-700 mb-0" style={{ fontFamily: "'Unbounded', sans-serif", fontWeight: 500, letterSpacing: '-0.02em' }}>
-              Expert Curriculums
+      <div className="w-full px-8 pt-16 pb-0 flex-shrink-0">
+        <div className="max-w-6xl mx-auto w-full text-center">
+          <div className="inline-block relative mb-8">
+            <h1 className="font-bold text-stone-800 tracking-tight transition-all duration-700 mb-0" style={{ fontFamily: "'Unbounded', sans-serif", fontWeight: 500, letterSpacing: '-0.02em', fontSize: '3.75rem', lineHeight: '1' }}>
+              Elevated Learning
             </h1>
-            <div className="h-[1px] w-16 bg-stone-300 mx-auto mt-3"></div>
+            <div className="h-[1px] w-20 bg-stone-400 mx-auto mt-6"></div>
           </div>
-          <p className="text-xl md:text-2xl text-stone-600 tracking-normal transition-all duration-700 mt-4" style={{ fontFamily: "'Manrope', sans-serif", fontWeight: 300 }}>
+          <p className="text-xl md:text-2xl text-stone-600 tracking-normal transition-all duration-700" style={{ fontFamily: "'Manrope', sans-serif", fontWeight: 300 }}>
             {displayCards[currentIndex]?.title || 'Medical Education'}
           </p>
         </div>
@@ -306,7 +298,7 @@ export const CurriculumLandingPage: React.FC = () => {
 
       {/* Main Carousel Container */}
       <div
-        className="flex-1 flex items-center justify-center perspective-[2000px] relative overflow-hidden min-h-0"
+        className="flex-1 flex items-center justify-center perspective-[2000px] relative overflow-hidden min-h-0 -mt-12"
         onWheel={handleWheel}
         onTouchStart={handleTouchStart}
         onTouchMove={handleTouchMove}
@@ -324,36 +316,52 @@ export const CurriculumLandingPage: React.FC = () => {
             No curriculums found
           </div>
         ) : (
-          <div className="relative w-[280px] h-[420px]" style={{ perspective: '2000px' }}>
+          <div className="relative w-[224px] h-[336px]" style={{ perspective: '2000px' }}>
             {displayCards.map((card, index) => (
               <div
                 key={card.id}
-                className="absolute inset-0 transition-all duration-700 ease-out cursor-pointer"
+                className={`absolute inset-0 ${card.comingSoon ? 'cursor-not-allowed' : 'cursor-pointer'}`}
                 style={getCardStyle(index)}
                 onClick={() => handleCardClick(index)}
               >
                 <div className="w-full h-full rounded-3xl shadow-2xl flex flex-col items-center justify-center overflow-hidden relative border border-white/10">
-                  {/* Glass effect layers */}
-                  <div className="absolute inset-0 backdrop-blur-xl bg-white/5"></div>
-                  <div className="absolute inset-0 backdrop-blur-lg bg-white/3"></div>
+                  {/* Glass effect layers - hide on center card for clarity */}
+                  {index !== currentIndex && (
+                    <>
+                      <div className="absolute inset-0 backdrop-blur-xl bg-white/5"></div>
+                      <div className="absolute inset-0 backdrop-blur-lg bg-white/3"></div>
+                    </>
+                  )}
 
                   {/* Background Image */}
                   <img
                     src={card.imageUrl}
                     alt={card.title}
-                    className="absolute inset-0 w-full h-full object-cover opacity-70 grayscale"
+                    className={`absolute inset-0 w-full h-full object-cover ${index === currentIndex ? 'opacity-100' : 'opacity-70 grayscale'}`}
                     style={{ objectPosition: 'center', transform: 'scale(0.85)' }}
+                    onLoad={() => {
+                      console.log('LandingPage: image loaded for', card.title, card.imageUrl);
+                    }}
                     onError={(e) => {
-                      // Fallback to a solid pattern if image fails to load
-                      e.currentTarget.style.display = 'none';
+                      // Try a reliable Unsplash fallback once before hiding
+                      const img = e.currentTarget as HTMLImageElement;
+                      if (!(img as any).dataset.fallbackTried) {
+                        (img as any).dataset.fallbackTried = 'true';
+                        img.src = 'https://images.unsplash.com/photo-1554774853-719586f8d76d?auto=format&fit=crop&w=800&q=60';
+                        console.warn('LandingPage: primary image failed, using fallback for', card.title);
+                        return;
+                      }
+                      // Hide only if fallback also fails
+                      img.style.display = 'none';
+                      console.error('LandingPage: fallback image also failed for', card.title);
                     }}
                   />
 
                   {/* Gradient overlay - only for non-center cards */}
                   <div className={`absolute inset-0 ${card.color} transition-opacity duration-700`} style={{ opacity: index === currentIndex ? 0 : 0.6 }}></div>
                   
-                  {/* Delete button - only show on center card and for creators */}
-                  {index === currentIndex && isCreator && CurriculumPublishingService.canDeleteCurriculum(card.id) && (
+                  {/* Delete button - only show on center card if not coming soon and user is creator */}
+                  {index === currentIndex && !card.comingSoon && card.curriculum && isCreator && CurriculumPublishingService.canDeleteCurriculum(card.id) && (
                     <button
                       onClick={(e) => handleDeleteCurriculum(card.id, e)}
                       className="absolute top-4 right-4 z-20 p-2 bg-red-600/90 hover:bg-red-700 text-white rounded-full transition-all shadow-lg backdrop-blur-sm"
@@ -361,6 +369,17 @@ export const CurriculumLandingPage: React.FC = () => {
                     >
                       <Trash2 className="h-4 w-4" />
                     </button>
+                  )}
+                  
+                  {/* Coming Soon Badge */}
+                  {card.comingSoon && (
+                    <div className="absolute inset-0 flex items-center justify-center z-10">
+                      <div className="bg-stone-900/90 backdrop-blur-sm px-6 py-3 rounded-full border border-white/20">
+                        <span className="text-white text-sm uppercase tracking-widest" style={{ fontFamily: "'Unbounded', sans-serif", fontWeight: 500 }}>
+                          Coming Soon
+                        </span>
+                      </div>
+                    </div>
                   )}
                 </div>
               </div>
@@ -411,4 +430,4 @@ export const CurriculumLandingPage: React.FC = () => {
   );
 };
 
-export default CurriculumLandingPage;
+export default LandingPage;

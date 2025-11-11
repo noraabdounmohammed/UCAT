@@ -10,7 +10,7 @@ export function CoverageRings({
 }) {
   if (buckets.length === 0) {
     return (
-      <div className="text-center py-8 text-zinc-500 dark:text-zinc-400">
+      <div className="text-center py-8 text-stone-500" style={{ fontFamily: "'Manrope', sans-serif", fontWeight: 300 }}>
         No coverage data yet.
       </div>
     );
@@ -26,7 +26,7 @@ export function CoverageRings({
           <button
             key={b.bucket}
             onClick={() => onReview?.(b.bucket)}
-            className="group relative flex flex-col items-center gap-3 p-4 rounded-xl border border-zinc-200/60 dark:border-zinc-700/60 hover:border-zinc-300 dark:hover:border-zinc-600 hover:shadow-md active:scale-[0.98] transition-all duration-200"
+            className="group relative flex flex-col items-center gap-3 p-4 rounded-2xl border border-stone-300 hover:border-stone-400 hover:shadow-md transition-all duration-200 bg-white/60 backdrop-blur-xl"
           >
             {/* Progress Ring */}
             <div className="relative">
@@ -38,7 +38,7 @@ export function CoverageRings({
               />
               {/* Center percentage */}
               <div className="absolute inset-0 flex items-center justify-center">
-                <span className="text-sm font-bold text-zinc-900 dark:text-white">
+                <span className="text-sm font-bold text-stone-900" style={{ fontFamily: "'Unbounded', sans-serif", fontWeight: 600 }}>
                   {b.mastered}%
                 </span>
               </div>
@@ -46,10 +46,10 @@ export function CoverageRings({
 
             {/* Label and stats */}
             <div className="text-center w-full">
-              <div className="font-semibold text-zinc-900 dark:text-white text-[13px] mb-1 truncate">
+              <div className="font-medium text-stone-900 text-xs mb-1 truncate" style={{ fontFamily: "'Unbounded', sans-serif", fontWeight: 500 }}>
                 {b.label}
               </div>
-              <div className="text-[11px] text-zinc-500 dark:text-zinc-400">
+              <div className="text-[11px] text-stone-500" style={{ fontFamily: "'Manrope', sans-serif", fontWeight: 300 }}>
                 {showAttempted && b.attempted !== undefined 
                   ? `${b.attempted}/${b.total} ${b.total === 1 ? 'concept' : 'concepts'} attempted` 
                   : `${b.total} ${b.total === 1 ? 'concept' : 'concepts'}`}
@@ -58,7 +58,7 @@ export function CoverageRings({
 
             {/* Hover arrow indicator */}
             <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity">
-              <svg className="w-3 h-3 text-zinc-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg className="w-3 h-3 text-stone-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
               </svg>
             </div>
@@ -97,7 +97,7 @@ function MiniProgressRing({
           fill="none"
           stroke="currentColor"
           strokeWidth={strokeWidth}
-          className="text-zinc-200 dark:text-zinc-700"
+          className="text-stone-200"
         />
         
         {/* Correct (green) arc */}
@@ -149,7 +149,7 @@ function MiniProgressRing({
           fill="none"
           stroke="currentColor"
           strokeWidth={strokeWidth}
-          className="text-zinc-200 dark:text-zinc-700"
+          className="text-stone-200"
         />
         
         {/* Progress arc */}

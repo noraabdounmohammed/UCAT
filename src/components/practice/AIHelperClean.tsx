@@ -4,6 +4,7 @@ import rehypeRaw from 'rehype-raw';
 import { generateAIResponseStream, QuestionContext } from '../../services/openai';
 import { ChatInput } from '../ui/ChatInput';
 import { processVideoTags } from '../../utils/videoEmbedder';
+import { Lightbulb, Stethoscope, List, AlertTriangle, BookOpen } from 'lucide-react';
 import '../../styles/markdown-styles.css';
 import './apple-fixed-input.css';
 import './whatsapp-reply-styles.css';
@@ -48,9 +49,10 @@ interface AIHelperProps {
   explanation: string;
   integrated?: boolean;
   onMessageSent?: () => void;
+  lightMode?: boolean;
 }
 
-export function AIHelper({ question, correctAnswer, selectedAnswer, explanation, onMessageSent }: AIHelperProps) {
+export function AIHelper({ question, correctAnswer, selectedAnswer, explanation, onMessageSent, lightMode = false }: AIHelperProps) {
   const questionId = question.id || `q-${Date.now()}`;
   
   const getCurrentSessionId = (): string | null => {
@@ -229,104 +231,134 @@ export function AIHelper({ question, correctAnswer, selectedAnswer, explanation,
 
 
   return (
-    <div className="flex flex-col h-full bg-white dark:bg-gray-900">
+    <div className={`flex flex-col h-full ${lightMode ? 'bg-stone-50' : 'bg-[#1a1a1a]'}`}>
       {/* Messages Container */}
-      <div className="flex-1 overflow-y-auto space-y-4 py-4">
+      <div className="flex-1 overflow-y-auto space-y-4 md:space-y-6 py-4 md:py-8 px-4 md:px-6">
         {messages.length === 0 && (
-          <div className="text-center py-8">
-            <div className="text-4xl mb-4">🐱</div>
-            <h4 className="text-lg font-medium text-gray-900 dark:text-gray-100 mb-4">
+          <div className="text-center py-8 md:py-12 px-4 md:px-6">
+            <div className={`h-[1px] w-12 mx-auto mb-6 md:mb-8 ${lightMode ? 'bg-black/10' : 'bg-white/10'}`}></div>
+            <h4 className={`text-lg md:text-xl font-light mb-2 ${lightMode ? 'text-stone-900' : 'text-white/90'}`} style={{ fontFamily: "'Manrope', sans-serif" }}>
               How can I help?
             </h4>
-            <div className="flex flex-col gap-3 max-w-sm mx-auto">
+            <p className={`text-xs md:text-sm mb-6 md:mb-8 font-light ${lightMode ? 'text-stone-500' : 'text-white/50'}`} style={{ fontFamily: "'Manrope', sans-serif" }}>
+              Choose a prompt or ask your own question
+            </p>
+            <div className="flex flex-col gap-2 md:gap-3 max-w-md mx-auto">
               <button
-                onClick={() => handleSendMessage("Explain this question step by step")}
-                className="px-4 py-2 bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300 rounded-lg text-sm hover:bg-blue-100 dark:hover:bg-blue-900/30 transition-colors"
+                onClick={() => handleSendMessage("Teach me this from scratch")}
+                className={`group px-4 md:px-5 py-3 md:py-4 rounded-2xl text-xs md:text-sm transition-all text-left font-light flex items-center gap-2 md:gap-3 ${
+                  lightMode 
+                    ? 'bg-black/[0.03] border border-black/[0.08] text-stone-700 hover:bg-black/[0.06] hover:border-black/[0.12] hover:text-stone-900'
+                    : 'bg-white/[0.03] border border-white/[0.08] text-white/70 hover:bg-white/[0.06] hover:border-white/[0.12] hover:text-white/90'
+                }`}
+                style={{ fontFamily: "'Manrope', sans-serif" }}
               >
-                📚 Explain this question step by step
+                <BookOpen className={`h-4 w-4 transition-colors ${lightMode ? 'text-stone-500 group-hover:text-stone-700' : 'text-white/50 group-hover:text-white/70'}`} />
+                <span>Teach me this from scratch</span>
               </button>
               <button
-                onClick={() => handleSendMessage("What's the correct answer and why?")}
-                className="px-4 py-2 bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-300 rounded-lg text-sm hover:bg-green-100 dark:hover:bg-green-900/30 transition-colors"
+                onClick={() => handleSendMessage("Explain this step by step")}
+                className={`group px-4 md:px-5 py-3 md:py-4 rounded-2xl text-xs md:text-sm transition-all text-left font-light flex items-center gap-2 md:gap-3 ${
+                  lightMode 
+                    ? 'bg-black/[0.03] border border-black/[0.08] text-stone-700 hover:bg-black/[0.06] hover:border-black/[0.12] hover:text-stone-900'
+                    : 'bg-white/[0.03] border border-white/[0.08] text-white/70 hover:bg-white/[0.06] hover:border-white/[0.12] hover:text-white/90'
+                }`}
+                style={{ fontFamily: "'Manrope', sans-serif" }}
               >
-                ✅ What's the correct answer and why?
+                <List className={`h-4 w-4 transition-colors ${lightMode ? 'text-stone-500 group-hover:text-stone-700' : 'text-white/50 group-hover:text-white/70'}`} />
+                <span>Explain step by step</span>
               </button>
               <button
-                onClick={() => handleSendMessage("Help me understand the key concepts")}
-                className="px-4 py-2 bg-purple-50 dark:bg-purple-900/20 text-purple-700 dark:text-purple-300 rounded-lg text-sm hover:bg-purple-100 dark:hover:bg-purple-900/30 transition-colors"
+                onClick={() => handleSendMessage("Give me a clinical example of this")}
+                className={`group px-4 md:px-5 py-3 md:py-4 rounded-2xl text-xs md:text-sm transition-all text-left font-light flex items-center gap-2 md:gap-3 ${
+                  lightMode 
+                    ? 'bg-black/[0.03] border border-black/[0.08] text-stone-700 hover:bg-black/[0.06] hover:border-black/[0.12] hover:text-stone-900'
+                    : 'bg-white/[0.03] border border-white/[0.08] text-white/70 hover:bg-white/[0.06] hover:border-white/[0.12] hover:text-white/90'
+                }`}
+                style={{ fontFamily: "'Manrope', sans-serif" }}
               >
-                💡 Help me understand the key concepts
+                <Stethoscope className={`h-4 w-4 transition-colors ${lightMode ? 'text-stone-500 group-hover:text-stone-700' : 'text-white/50 group-hover:text-white/70'}`} />
+                <span>Give me a clinical example</span>
               </button>
               <button
-                onClick={() => handleSendMessage("What are common mistakes for this type of question?")}
-                className="px-4 py-2 bg-orange-50 dark:bg-orange-900/20 text-orange-700 dark:text-orange-300 rounded-lg text-sm hover:bg-orange-100 dark:hover:bg-orange-900/30 transition-colors"
+                onClick={() => handleSendMessage("Explain like I'm 10")}
+                className={`group px-4 md:px-5 py-3 md:py-4 rounded-2xl text-xs md:text-sm transition-all text-left font-light flex items-center gap-2 md:gap-3 ${
+                  lightMode 
+                    ? 'bg-black/[0.03] border border-black/[0.08] text-stone-700 hover:bg-black/[0.06] hover:border-black/[0.12] hover:text-stone-900'
+                    : 'bg-white/[0.03] border border-white/[0.08] text-white/70 hover:bg-white/[0.06] hover:border-white/[0.12] hover:text-white/90'
+                }`}
+                style={{ fontFamily: "'Manrope', sans-serif" }}
               >
-                ⚠️ Common mistakes to avoid
+                <Lightbulb className={`h-4 w-4 transition-colors ${lightMode ? 'text-stone-500 group-hover:text-stone-700' : 'text-white/50 group-hover:text-white/70'}`} />
+                <span>Explain like I'm 10</span>
+              </button>
+              <button
+                onClick={() => handleSendMessage("What are common mistakes to avoid?")}
+                className={`group px-4 md:px-5 py-3 md:py-4 rounded-2xl text-xs md:text-sm transition-all text-left font-light flex items-center gap-2 md:gap-3 ${
+                  lightMode 
+                    ? 'bg-black/[0.03] border border-black/[0.08] text-stone-700 hover:bg-black/[0.06] hover:border-black/[0.12] hover:text-stone-900'
+                    : 'bg-white/[0.03] border border-white/[0.08] text-white/70 hover:bg-white/[0.06] hover:border-white/[0.12] hover:text-white/90'
+                }`}
+                style={{ fontFamily: "'Manrope', sans-serif" }}
+              >
+                <AlertTriangle className={`h-4 w-4 transition-colors ${lightMode ? 'text-stone-500 group-hover:text-stone-700' : 'text-white/50 group-hover:text-white/70'}`} />
+                <span>Common mistakes to avoid</span>
               </button>
             </div>
           </div>
         )}
 
-        <div className="px-4 sm:px-6 md:px-8">
-          <div className="apple-question-content space-y-4">
+        <div className="px-4">
+          <div className="space-y-4">
             {messages.map((message, index) => (
               <div key={message.id || index} className={`flex w-full ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}>
-                <div className={`${message.role === 'user' ? 'max-w-[85%]' : 'w-full'}`}>
-                  {/* WhatsApp-style reply context */}
+                <div className={`${message.role === 'user' ? 'max-w-[85%]' : 'max-w-[95%]'}`}>
+                  {/* Reply context */}
                   {message.replyTo && (
-                    <div className={`mb-2 px-3 py-2 rounded-lg border-l-4 text-sm ${
+                    <div className={`mb-3 px-4 py-3 rounded-xl border-l-2 text-sm ${
                       message.role === 'user' 
-                        ? 'bg-blue-50 dark:bg-white/10 border-blue-400 dark:border-white/30' 
-                        : 'bg-gray-50 dark:bg-gray-800 border-blue-500'
-                    }`}>
-                      <div className={`text-xs font-medium mb-1 ${
-                        message.role === 'user' 
-                          ? 'text-blue-700 dark:text-white/80' 
-                          : message.replyTo.role === 'assistant' 
-                            ? 'text-blue-600 dark:text-blue-400' 
-                            : 'text-green-600 dark:text-green-400'
-                      }`}>
+                        ? 'bg-white/[0.05] border-white/20' 
+                        : 'bg-white/[0.02] border-white/10'
+                    }`} style={{ fontFamily: "'Manrope', sans-serif" }}>
+                      <div className="text-xs font-light mb-1.5 text-white/60 uppercase tracking-wider">
                         {message.replyTo.role === 'assistant' ? 'AI Assistant' : 'You'}
                       </div>
-                      <div className={`text-sm leading-relaxed ${
-                        message.role === 'user' 
-                          ? 'text-blue-800 dark:text-white/90' 
-                          : 'text-gray-600 dark:text-gray-300'
-                      }`}>
+                      <div className="text-sm leading-relaxed text-white/70 font-light">
                         {message.replyTo.content.replace(/✓/g, '').replace(/✅/g, '').trim() || 'Message content'}
                       </div>
                     </div>
                   )}
-                  {/* WhatsApp-style message bubble */}
+                  {/* Message bubble */}
                   <div 
-                    className={`group relative px-4 py-3 rounded-2xl shadow-sm ${
+                    className={`group relative px-5 py-4 rounded-2xl ${
                       message.role === 'user' 
-                        ? 'bg-blue-500 text-white rounded-br-md hover:bg-blue-600' 
-                        : 'bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-gray-900 dark:text-gray-100 rounded-bl-md'
+                        ? 'bg-white/[0.08] border border-white/[0.12] text-white' 
+                        : 'bg-white/[0.03] border border-white/[0.08] text-white'
                     }`}
+                    style={{ fontFamily: "'Manrope', sans-serif" }}
                   >
                     {message.role === 'assistant' && message.content === '' && isStreaming ? (
                       <div className="flex space-x-1">
-                        <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce"></div>
-                        <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0.1s' }}></div>
-                        <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
+                        <div className="w-2 h-2 bg-white/40 rounded-full animate-bounce"></div>
+                        <div className="w-2 h-2 bg-white/40 rounded-full animate-bounce" style={{ animationDelay: '0.1s' }}></div>
+                        <div className="w-2 h-2 bg-white/40 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
                       </div>
                     ) : (
-                      <div className="ai-chat-message">
+                      <div className="text-[13px] sm:text-[15px]">
                         <ReactMarkdown 
                           rehypePlugins={[rehypeRaw]}
                           components={{
-                            p: ({ children }) => <p className={`mb-2 last:mb-0 leading-relaxed ${message.role === 'user' ? 'text-white' : 'text-gray-900 dark:text-gray-100'}`}>{children}</p>,
-                            h1: ({ children }) => <h1 className={`font-bold mb-2 ${message.role === 'user' ? 'text-white' : 'text-gray-900 dark:text-gray-100'}`}>{children}</h1>,
-                            h2: ({ children }) => <h2 className={`font-semibold mb-2 mt-3 first:mt-0 ${message.role === 'user' ? 'text-white' : 'text-gray-900 dark:text-gray-100'}`}>{children}</h2>,
-                            h3: ({ children }) => <h3 className={`font-medium mb-2 mt-2 first:mt-0 ${message.role === 'user' ? 'text-white' : 'text-gray-900 dark:text-gray-100'}`}>{children}</h3>,
+                            p: ({ children }) => <p className="mb-2 last:mb-0 leading-[1.4] text-white">{children}</p>,
+                            h1: ({ children }) => <h1 className="font-bold mb-2 text-white">{children}</h1>,
+                            h2: ({ children }) => <h2 className="font-semibold mb-2 mt-3 first:mt-0 text-white">{children}</h2>,
+                            h3: ({ children }) => <h3 className="font-medium mb-2 mt-2 first:mt-0 text-white">{children}</h3>,
                             ul: ({ children }) => <ul className="list-disc pl-4 mb-2 space-y-1">{children}</ul>,
                             ol: ({ children }) => <ol className="list-decimal pl-4 mb-2 space-y-1">{children}</ol>,
-                            li: ({ children }) => <li className={`leading-relaxed ${message.role === 'user' ? 'text-white' : 'text-gray-900 dark:text-gray-100'}`}>{children}</li>,
-                            strong: ({ children }) => <strong className={`font-semibold ${message.role === 'user' ? 'text-white' : 'text-gray-900 dark:text-white'}`}>{children}</strong>,
-                            em: ({ children }) => <em className={`italic ${message.role === 'user' ? 'text-white' : 'text-blue-600 dark:text-blue-400'}`}>{children}</em>,
-                            code: ({ children }) => <code className={`px-1 py-0.5 rounded text-xs font-mono ${message.role === 'user' ? 'bg-white/20 text-white' : 'bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-200'}`}>{children}</code>,
-                            blockquote: ({ children }) => <blockquote className={`border-l-2 pl-3 py-1 italic my-2 ${message.role === 'user' ? 'border-white/50 text-white/90' : 'border-blue-400 dark:border-blue-500 text-gray-700 dark:text-gray-300'}`}>{children}</blockquote>
+                            li: ({ children }) => <li className="leading-[1.4] text-white">{children}</li>,
+                            strong: ({ children }) => <strong className="font-semibold text-white">{children}</strong>,
+                            em: ({ children }) => <em className="italic text-white/90">{children}</em>,
+                            code: ({ children }) => <code className="px-1 py-0.5 rounded text-xs font-mono bg-white/20 text-white">{children}</code>,
+                            blockquote: ({ children }) => <blockquote className="border-l-2 pl-3 py-1 italic my-2 border-white/30 text-white/80">{children}</blockquote>
                           }}
                         >
                           {processVideoTags(message.content)}
@@ -337,11 +369,10 @@ export function AIHelper({ question, correctAnswer, selectedAnswer, explanation,
                   
                   {/* Reply and Copy buttons */}
                   {message.role === 'assistant' && message.content && !isStreaming && (
-                    <div className="flex justify-start mt-1 gap-2">
+                    <div className="flex justify-start mt-3 gap-2">
                       <button
                         onClick={() => {
                           setReplyingTo(message);
-                          // Auto-focus the textarea after setting reply mode
                           setTimeout(() => {
                             const textarea = document.querySelector('textarea[aria-label="Chat message"]') as HTMLTextAreaElement;
                             if (textarea) {
@@ -349,7 +380,8 @@ export function AIHelper({ question, correctAnswer, selectedAnswer, explanation,
                             }
                           }, 100);
                         }}
-                        className="text-xs text-gray-500 dark:text-gray-400 px-2 py-1 cursor-pointer hover:text-gray-700 dark:hover:text-gray-300 transition-colors"
+                        className="text-xs text-white/50 px-3 py-1.5 rounded-lg hover:bg-white/[0.05] hover:text-white/80 transition-all font-light"
+                        style={{ fontFamily: "'Manrope', sans-serif" }}
                         title="Reply to this message"
                       >
                         ↩ Reply
@@ -377,18 +409,18 @@ export function AIHelper({ question, correctAnswer, selectedAnswer, explanation,
                             if (button) {
                               if (successful) {
                                 button.textContent = '✓ Copied!';
-                                button.classList.add('text-green-600', 'dark:text-green-400');
-                                button.classList.remove('text-gray-500', 'dark:text-gray-400');
+                                button.classList.add('text-emerald-400');
+                                button.classList.remove('text-white/60');
                               } else {
                                 button.textContent = '✗ Failed';
-                                button.classList.add('text-red-600', 'dark:text-red-400');
-                                button.classList.remove('text-gray-500', 'dark:text-gray-400');
+                                button.classList.add('text-rose-400');
+                                button.classList.remove('text-white/60');
                               }
                               
                               setTimeout(() => {
                                 button.textContent = originalText;
-                                button.classList.remove('text-green-600', 'dark:text-green-400', 'text-red-600', 'dark:text-red-400');
-                                button.classList.add('text-gray-500', 'dark:text-gray-400');
+                                button.classList.remove('text-emerald-400', 'text-rose-400');
+                                button.classList.add('text-white/60');
                               }, 1500);
                             }
                           } catch (err) {
@@ -396,18 +428,19 @@ export function AIHelper({ question, correctAnswer, selectedAnswer, explanation,
                             console.error('Copy failed:', err);
                             if (button) {
                               button.textContent = '✗ Failed';
-                              button.classList.add('text-red-600', 'dark:text-red-400');
-                              button.classList.remove('text-gray-500', 'dark:text-gray-400');
+                              button.classList.add('text-rose-400');
+                              button.classList.remove('text-white/60');
                               setTimeout(() => {
                                 button.textContent = originalText;
-                                button.classList.remove('text-red-600', 'dark:text-red-400');
-                                button.classList.add('text-gray-500', 'dark:text-gray-400');
+                                button.classList.remove('text-rose-400');
+                                button.classList.add('text-white/60');
                               }, 1500);
                             }
                           }
                         }}
-                        className="text-xs text-gray-500 dark:text-gray-400 px-2 py-1 cursor-pointer hover:text-gray-700 dark:hover:text-gray-300 transition-colors"
-                        title="Copy message text"
+                        className="text-xs text-white/50 px-3 py-1.5 rounded-lg hover:bg-white/[0.05] hover:text-white/80 transition-all font-light"
+                        style={{ fontFamily: "'Manrope', sans-serif" }}
+                        title="Copy message"
                       >
                         ⧉ Copy
                       </button>
@@ -433,23 +466,19 @@ export function AIHelper({ question, correctAnswer, selectedAnswer, explanation,
           maxRows={4}
           onStop={handleStopGeneration}
           isStreaming={isStreaming}
+          contained={true}
+          lightMode={lightMode}
           replyPreview={replyingTo ? (
-            <div className="p-3 bg-gray-50 dark:bg-gray-800 rounded-t-lg border-b border-gray-200 dark:border-gray-700">
+            <div className="p-3 bg-white/5 rounded-t-lg border-b border-white/10">
               <div className="flex items-start justify-between gap-3">
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 mb-1">
-                    <div className={`w-2 h-2 rounded-full ${
-                      replyingTo.role === 'assistant' ? 'bg-blue-500' : 'bg-green-500'
-                    }`}></div>
-                    <span className={`text-xs font-medium ${
-                      replyingTo.role === 'assistant' 
-                        ? 'text-blue-600 dark:text-blue-400' 
-                        : 'text-green-600 dark:text-green-400'
-                    }`}>
+                    <div className="w-2 h-2 rounded-full bg-white/40"></div>
+                    <span className="text-xs font-medium text-white/70">
                       {replyingTo.role === 'assistant' ? 'AI Assistant' : 'You'}
                     </span>
                   </div>
-                  <div className="text-sm text-gray-600 dark:text-gray-300 line-clamp-2 leading-relaxed">
+                  <div className="text-sm text-white/80 line-clamp-2 leading-relaxed">
                     {replyingTo.content.length > 120 
                       ? replyingTo.content.substring(0, 120) + '...' 
                       : replyingTo.content
@@ -458,10 +487,10 @@ export function AIHelper({ question, correctAnswer, selectedAnswer, explanation,
                 </div>
                 <button
                   onClick={() => setReplyingTo(null)}
-                  className="flex-shrink-0 p-1 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors group"
+                  className="flex-shrink-0 p-1 rounded-full hover:bg-white/10 transition-colors group"
                   title="Cancel reply"
                 >
-                  <svg className="w-4 h-4 text-gray-400 group-hover:text-gray-600 dark:group-hover:text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <svg className="w-4 h-4 text-white/60 group-hover:text-white/90" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                   </svg>
                 </button>

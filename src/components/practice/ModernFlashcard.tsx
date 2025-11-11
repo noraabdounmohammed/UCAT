@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { ArrowLeft, ChevronLeft, ChevronRight, Sun, Moon } from 'lucide-react';
+import { ArrowLeft, ChevronLeft, ChevronRight, Sun, Moon, Sparkles, X } from 'lucide-react';
 import type { QuestionData } from './questionTypes';
 import ReactMarkdown from 'react-markdown';
 import { cn } from '@/lib/utils';
 import { motion, useMotionValue, useTransform, PanInfo } from 'framer-motion';
+import { AIHelper } from './AIHelperClean';
 
 interface ModernFlashcardProps {
   question: QuestionData;
@@ -65,6 +66,7 @@ export const ModernFlashcard: React.FC<ModernFlashcardProps> = ({
   const [isLightMode, setIsLightMode] = useState(false);
   const [interactionCount, setInteractionCount] = useState(0);
   const [isDragging, setIsDragging] = useState(false);
+  const [showAIHelper, setShowAIHelper] = useState(false);
 
   // Motion values for swipe
   const x = useMotionValue(0);
@@ -183,8 +185,15 @@ export const ModernFlashcard: React.FC<ModernFlashcardProps> = ({
   // Keyboard shortcuts for flashcard interactions
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
-      // Ignore if user is typing in an input field
-      if (event.target instanceof HTMLInputElement || event.target instanceof HTMLTextAreaElement) {
+      // Close AI Helper with Escape
+      if (event.key === 'Escape' && showAIHelper) {
+        event.preventDefault();
+        setShowAIHelper(false);
+        return;
+      }
+
+      // Ignore if user is typing in an input field or AI Helper is open
+      if (event.target instanceof HTMLInputElement || event.target instanceof HTMLTextAreaElement || showAIHelper) {
         return;
       }
 
@@ -222,7 +231,7 @@ export const ModernFlashcard: React.FC<ModernFlashcardProps> = ({
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [isFlipped, hasAnswered, onNext, x]);
+  }, [isFlipped, hasAnswered, onNext, x, showAIHelper]);
 
   return (
     <div className={cn(
@@ -291,7 +300,9 @@ export const ModernFlashcard: React.FC<ModernFlashcardProps> = ({
                 ? isLightMode
                   ? "bg-zinc-200 text-zinc-400 cursor-not-allowed"
                   : "bg-zinc-800 text-zinc-600 cursor-not-allowed"
-                : "bg-blue-600 text-white hover:bg-blue-700"
+                : isLightMode
+                  ? "bg-zinc-200 text-zinc-700 hover:bg-zinc-300"
+                  : "bg-zinc-800 text-zinc-300 hover:bg-zinc-700"
             )}
             aria-label="Next card"
           >
@@ -299,6 +310,89 @@ export const ModernFlashcard: React.FC<ModernFlashcardProps> = ({
           </button>
         </div>
       </div>
+
+      {/* AI Helper Floating Button - always visible, toggles panel */}
+      <button
+        onClick={() => setShowAIHelper(!showAIHelper)}
+        className={cn(
+          "fixed bottom-4 right-4 md:bottom-6 md:right-6 p-3 md:p-4 rounded-full shadow-2xl transition-all duration-300 hover:scale-105",
+          showAIHelper ? "z-[60]" : "z-40", // Higher z-index when open to stay above panel
+          isLightMode 
+            ? "bg-white/90 backdrop-blur-xl border border-black/[0.08] hover:bg-white" 
+            : "bg-white/[0.08] backdrop-blur-xl border border-white/[0.12] hover:bg-white/[0.12]"
+        )}
+        aria-label={showAIHelper ? "Close AI Helper" : "Open AI Helper"}
+      >
+        <Sparkles className={cn("h-4 w-4 md:h-5 md:w-5", isLightMode ? "text-stone-900" : "text-white/80")} />
+      </button>
+
+      {/* AI Helper Side Panel */}
+      {showAIHelper && (
+        <>
+          {/* Backdrop for mobile only */}
+          <div 
+            className="fixed inset-0 bg-black/50 backdrop-blur-sm z-40 md:hidden"
+            onClick={() => setShowAIHelper(false)}
+          />
+          
+          {/* Side Panel */}
+          <motion.div
+            initial={{ x: '100%' }}
+            animate={{ x: 0 }}
+            exit={{ x: '100%' }}
+            transition={{ type: 'spring', damping: 30, stiffness: 300 }}
+            className={cn(
+              "fixed right-0 top-0 bottom-0 w-full md:w-[500px] lg:w-[600px] z-50 shadow-2xl flex flex-col",
+              isLightMode ? "bg-stone-50" : "bg-[#1a1a1a]"
+            )}
+          >
+            {/* Header */}
+            <div className={cn(
+              "flex items-center justify-between px-4 md:px-6 py-3 md:py-4 border-b flex-shrink-0",
+              isLightMode ? "border-black/[0.08] bg-stone-50" : "border-white/10 bg-[#1a1a1a]"
+            )}>
+              <div className="flex items-center gap-2 md:gap-3 min-w-0">
+                <div className={cn(
+                  "p-1.5 md:p-2 rounded-xl border flex-shrink-0",
+                  isLightMode ? "bg-black/[0.03] border-black/[0.06]" : "bg-white/[0.05] border-white/[0.08]"
+                )}>
+                  <Sparkles className={cn("h-4 w-4 md:h-5 md:w-5", isLightMode ? "text-stone-700" : "text-white/70")} />
+                </div>
+                <div className="min-w-0">
+                  <h2 className={cn("text-base md:text-lg font-light truncate", isLightMode ? "text-stone-900" : "text-white/90")} style={{ fontFamily: "'Manrope', sans-serif" }}>
+                    AI Helper
+                  </h2>
+                  <p className={cn("text-xs md:text-sm font-light truncate hidden sm:block", isLightMode ? "text-stone-500" : "text-white/50")} style={{ fontFamily: "'Manrope', sans-serif" }}>
+                    Ask me anything about this flashcard
+                  </p>
+                </div>
+              </div>
+              <button
+                onClick={() => setShowAIHelper(false)}
+                className={cn(
+                  "p-2 rounded-lg transition-colors flex-shrink-0 md:hidden",
+                  isLightMode ? "hover:bg-black/[0.05]" : "hover:bg-white/10"
+                )}
+                aria-label="Close AI Helper"
+              >
+                <X className={cn("h-5 w-5", isLightMode ? "text-stone-700" : "text-zinc-300")} />
+              </button>
+            </div>
+
+            {/* AI Helper Content */}
+            <div className={cn("flex-1 overflow-hidden", isLightMode ? "bg-stone-50" : "bg-[#1a1a1a]")}>
+              <AIHelper
+                question={question}
+                correctAnswer={backContent}
+                selectedAnswer={null}
+                explanation={backContent}
+                integrated={true}
+                lightMode={isLightMode}
+              />
+            </div>
+          </motion.div>
+        </>
+      )}
 
       {/* Main Content */}
       <div className="flex-1 flex items-center justify-center p-4 relative">

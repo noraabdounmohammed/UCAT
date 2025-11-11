@@ -67,10 +67,8 @@ export const ConceptManualAddModal: React.FC<ConceptManualAddModalProps> = ({
           concept_id: `manual_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
           title: formData.title.trim(),
           content: formData.content.trim(),
-          subject: 'General',
-          topic: '',
-          tags: [],
           custom_filters: formData.custom_filters,
+          prerequisites: [],
           mastery_data: {
             mastery_level: 0,
             last_practiced: null,
@@ -127,63 +125,73 @@ export const ConceptManualAddModal: React.FC<ConceptManualAddModalProps> = ({
 
   return (
     <div 
-      className="fixed inset-0 bg-black/20 dark:bg-black/40 flex items-center justify-center overflow-y-auto py-4 z-50" 
-      style={{ backdropFilter: 'blur(20px)', pointerEvents: 'auto' }}
+      className="fixed inset-0 bg-black/10 flex items-center justify-center overflow-y-auto py-4 z-50" 
+      style={{ backdropFilter: 'blur(12px)', pointerEvents: 'auto' }}
       onClick={handleBackdropClick}
     >
-      <div className="bg-white/80 dark:bg-zinc-900/80 backdrop-blur-xl rounded-2xl border border-black/[0.08] dark:border-white/[0.08] shadow-2xl w-[95%] sm:w-[90%] md:w-[80%] lg:w-[70%] max-w-3xl max-h-[90vh] overflow-hidden my-4">
-        <div className="px-6 py-4 border-b border-black/[0.08] dark:border-white/[0.08] bg-white/60 dark:bg-zinc-900/60 backdrop-blur-xl">
-          <div className="flex items-center justify-between">
-            <h2 className="text-[20px] font-semibold text-zinc-900 dark:text-white">
-              Add Manually
-            </h2>
-            <button
-              onClick={onClose}
-              className="flex items-center justify-center w-8 h-8 hover:bg-black/5 dark:hover:bg-white/5 rounded-full transition-colors"
-            >
-              <X className="h-5 w-5 text-zinc-600 dark:text-zinc-400" />
-            </button>
-          </div>
+      {/* Subtle texture overlay */}
+      <div className="absolute inset-0 opacity-[0.015] pointer-events-none" style={{ backgroundImage: 'url("data:image/svg+xml,%3Csvg width=\"100\" height=\"100\" xmlns=\"http://www.w3.org/2000/svg\"%3E%3Cfilter id=\"noise\"%3E%3CfeTurbulence type=\"fractalNoise\" baseFrequency=\"0.9\" numOctaves=\"4\" /%3E%3C/filter%3E%3Crect width=\"100\" height=\"100\" filter=\"url(%23noise)\" /%3E%3C/svg%3E")' }}></div>
+      
+      <div className="relative bg-[#FAFAF9]/95 backdrop-blur-2xl border-0 shadow-2xl w-[95%] sm:w-[90%] md:w-[80%] lg:w-[70%] max-w-3xl max-h-[90vh] overflow-hidden my-4" style={{ borderRadius: 0 }}>
+        <div className="px-12 py-10 border-b border-black/[0.04] relative">
+          <button
+            onClick={onClose}
+            className="absolute top-6 right-6 w-9 h-9 flex items-center justify-center rounded-full hover:bg-stone-100 transition-colors"
+            aria-label="Close"
+          >
+            <X className="h-4 w-4 text-stone-400" />
+          </button>
+          
+          <div className="h-[1px] w-16 bg-stone-300 mb-6"></div>
+          
+          <h2 className="text-3xl font-medium text-stone-900 mb-3 tracking-tight" style={{ fontFamily: "'Unbounded', sans-serif", fontWeight: 500 }}>
+            Add Manually
+          </h2>
+          <p className="text-sm text-stone-600 font-light" style={{ fontFamily: "'Manrope', sans-serif", fontWeight: 300 }}>
+            Create individual concepts with full control over content
+          </p>
         </div>
         
-        <div className="p-6 overflow-y-auto" style={{ maxHeight: 'calc(90vh - 80px)' }}>
+        <div className="px-12 py-10 overflow-y-auto" style={{ maxHeight: 'calc(90vh - 180px)' }}>
 
         <div className="space-y-6">
           {/* Basic Information */}
           <div>
-            <h3 className="text-base font-medium text-gray-900 dark:text-gray-100 mb-4">Basic Information</h3>
+            <h3 className="text-base font-medium text-stone-900 mb-4">Basic Information</h3>
             
             <div className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                  Title *
+              <div className="mb-6">
+                <label className="block text-[11px] uppercase tracking-widest font-medium text-stone-900 mb-3" style={{ fontFamily: "'Unbounded', sans-serif", fontWeight: 500 }}>
+                  Title <span className="text-red-500">*</span>
                 </label>
                 <input
                   type="text"
                   value={formData.title}
                   onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-                  className={`w-full px-3 py-2 border rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 ${
-                    errors.title ? 'border-red-500' : 'border-gray-300 dark:border-gray-600'
-                  }`}
+                  className={`w-full px-4 py-3 bg-white/60 backdrop-blur-xl border ${
+                    errors.title ? 'border-red-500' : 'border-black/[0.06]'
+                  } rounded-none focus:outline-none focus:border-black/[0.12] text-stone-900 font-light transition-all`}
                   placeholder="e.g., Acute Myocardial Infarction"
+                  style={{ fontFamily: "'Manrope', sans-serif", fontWeight: 300 }}
                 />
                 {errors.title && (
                   <p className="text-red-500 text-sm mt-1">{errors.title}</p>
                 )}
               </div>
 
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                  Content *
+              <div className="mb-6">
+                <label className="block text-[11px] uppercase tracking-widest font-medium text-stone-900 mb-3" style={{ fontFamily: "'Unbounded', sans-serif", fontWeight: 500 }}>
+                  Content <span className="text-red-500">*</span>
                 </label>
                 <textarea
                   value={formData.content}
                   onChange={(e) => setFormData({ ...formData, content: e.target.value })}
-                  className={`w-full px-3 py-2 border rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 resize-none ${
-                    errors.content ? 'border-red-500' : 'border-gray-300 dark:border-gray-600'
-                  }`}
-                  rows={6}
+                  rows={8}
+                  className={`w-full px-4 py-3 bg-white/60 backdrop-blur-xl border ${
+                    errors.content ? 'border-red-500' : 'border-black/[0.06]'
+                  } rounded-none focus:outline-none focus:border-black/[0.12] text-stone-900 font-light resize-none transition-all`}
                   placeholder="Enter all concept information here - description, key facts, clinical context, etc."
+                  style={{ fontFamily: "'Manrope', sans-serif", fontWeight: 300 }}
                 />
                 {errors.content && (
                   <p className="text-red-500 text-sm mt-1">{errors.content}</p>
@@ -193,8 +201,8 @@ export const ConceptManualAddModal: React.FC<ConceptManualAddModalProps> = ({
           </div>
 
           {/* Custom Filters */}
-          <div>
-            <h3 className="text-base font-medium text-gray-900 dark:text-gray-100 mb-4">Custom Filters</h3>
+          <div className="mb-6">
+            <label className="block text-[11px] uppercase tracking-widest font-medium text-stone-900 mb-3" style={{ fontFamily: "'Unbounded', sans-serif", fontWeight: 500 }}>Custom Filters</label>
             
             <div className="space-y-3">
               {/* Available Filters Dropdown */}
@@ -202,16 +210,16 @@ export const ConceptManualAddModal: React.FC<ConceptManualAddModalProps> = ({
                 <button
                   type="button"
                   onClick={() => setShowFilterDropdown(!showFilterDropdown)}
-                  className="w-full flex items-center justify-between px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors"
+                  className="w-full flex items-center justify-between px-4 py-3 border border-black/[0.06] rounded-none bg-white/60 backdrop-blur-xl text-stone-900 hover:border-black/[0.12] transition-all"
                 >
-                  <span className="text-sm text-gray-500 dark:text-gray-400">
+                  <span className="text-sm text-stone-600 font-light" style={{ fontFamily: "'Manrope', sans-serif", fontWeight: 300 }}>
                     Select from available filters...
                   </span>
-                  <ChevronDown className="h-4 w-4 text-gray-400" />
+                  <ChevronDown className="h-4 w-4 text-stone-400" />
                 </button>
                 
                 {showFilterDropdown && (
-                  <div className="absolute z-50 w-full mt-1 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md shadow-lg max-h-48 overflow-y-auto">
+                  <div className="absolute z-50 w-full mt-1 bg-white/95 backdrop-blur-xl border border-black/[0.08] rounded-none shadow-2xl max-h-48 overflow-y-auto">
                     {filterOptions?.custom_filters && filterOptions.custom_filters.length > 0 ? (
                       filterOptions.custom_filters
                         .filter(filter => !formData.custom_filters.includes(filter))
@@ -225,14 +233,14 @@ export const ConceptManualAddModal: React.FC<ConceptManualAddModalProps> = ({
                               handleAddCustomFilter(filter);
                               setShowFilterDropdown(false);
                             }}
-                            className="w-full text-left px-3 py-2 hover:bg-gray-100 dark:hover:bg-gray-600 text-gray-900 dark:text-gray-100 text-sm flex items-center"
+                            className="w-full text-left px-4 py-2 hover:bg-stone-50 text-stone-900 text-sm flex items-center font-light transition-colors" style={{ fontFamily: "'Manrope', sans-serif", fontWeight: 300 }}
                           >
                             <Tag className="h-3 w-3 mr-2 text-blue-500" />
                             {filter}
                           </button>
                         ))
                     ) : (
-                      <div className="px-3 py-2 text-sm text-gray-500 dark:text-gray-400">
+                      <div className="px-4 py-2 text-sm text-stone-500 font-light" style={{ fontFamily: "'Manrope', sans-serif", fontWeight: 300 }}>
                         No available filters found
                       </div>
                     )}
@@ -246,14 +254,15 @@ export const ConceptManualAddModal: React.FC<ConceptManualAddModalProps> = ({
                   type="text"
                   value={newCustomFilter}
                   onChange={(e) => setNewCustomFilter(e.target.value)}
-                  className="flex-1 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+                  className="flex-1 px-4 py-3 border border-black/[0.06] rounded-none bg-white/60 backdrop-blur-xl text-stone-900 font-light focus:outline-none focus:border-black/[0.12] transition-all"
                   placeholder="Or create a new filter tag..."
                   onKeyPress={(e) => e.key === 'Enter' && handleAddCustomFilter()}
+                  style={{ fontFamily: "'Manrope', sans-serif", fontWeight: 300 }}
                 />
                 <button
                   type="button"
                   onClick={() => handleAddCustomFilter()}
-                  className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-md transition-colors flex items-center"
+                  className="px-4 py-3 bg-stone-900 hover:bg-stone-800 text-white rounded-full transition-all flex items-center"
                 >
                   <Plus className="h-4 w-4" />
                 </button>
@@ -264,7 +273,8 @@ export const ConceptManualAddModal: React.FC<ConceptManualAddModalProps> = ({
                   {formData.custom_filters.map((filter, index) => (
                     <span
                       key={index}
-                      className="inline-flex items-center px-3 py-1 rounded-full text-sm bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200"
+                      className="inline-flex items-center px-3 py-1.5 rounded-full text-[11px] uppercase tracking-wider bg-stone-900 text-white"
+                      style={{ fontFamily: "'Unbounded', sans-serif", fontWeight: 500 }}
                     >
                       <Tag className="h-3 w-3 mr-1" />
                       {filter}
@@ -283,13 +293,14 @@ export const ConceptManualAddModal: React.FC<ConceptManualAddModalProps> = ({
           </div>
 
           {/* Action Buttons */}
-          <div className="flex justify-between pt-4 border-t border-gray-200 dark:border-gray-700">
+          <div className="flex justify-between pt-6 mt-6 border-t border-black/[0.04]">
             <div>
               {onBack && (
                 <button
                   type="button"
                   onClick={onBack}
-                  className="px-4 py-2 text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 rounded-md transition-colors flex items-center"
+                  className="px-6 py-3 text-stone-600 bg-white/60 backdrop-blur-xl border border-black/[0.06] hover:border-black/[0.12] rounded-full transition-all flex items-center text-[11px] uppercase tracking-widest"
+                  style={{ fontFamily: "'Unbounded', sans-serif", fontWeight: 500 }}
                 >
                   <ArrowLeft className="h-4 w-4 mr-2" />
                   Back to Options
@@ -300,14 +311,16 @@ export const ConceptManualAddModal: React.FC<ConceptManualAddModalProps> = ({
               <button
                 type="button"
                 onClick={onClose}
-                className="px-4 py-2 text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 rounded-md transition-colors"
+                className="px-6 py-3 text-stone-600 bg-white/60 backdrop-blur-xl border border-black/[0.06] hover:border-black/[0.12] rounded-full transition-all text-[11px] uppercase tracking-widest"
+                style={{ fontFamily: "'Unbounded', sans-serif", fontWeight: 500 }}
               >
                 Cancel
               </button>
               <button
                 type="button"
                 onClick={handleSubmit}
-                className="px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-md transition-colors flex items-center"
+                className="px-6 py-3 bg-stone-900 hover:bg-stone-800 text-white rounded-full transition-all flex items-center text-[11px] uppercase tracking-widest"
+                style={{ fontFamily: "'Unbounded', sans-serif", fontWeight: 500 }}
               >
                 <Save className="h-4 w-4 mr-2" />
                 Add Concept

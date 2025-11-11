@@ -868,31 +868,40 @@ Output only a valid JSON array. No extra text.`;
 
   return (
     <div 
-      className="fixed inset-0 bg-black/20 dark:bg-black/40 flex items-center justify-center z-50 p-4" 
-      style={{ backdropFilter: 'blur(20px)' }}
+      className="fixed inset-0 bg-black/10 flex items-center justify-center z-50 p-4" 
+      style={{ backdropFilter: 'blur(12px)' }}
       onClick={handleClose}
     >
+      {/* Subtle texture overlay */}
+      <div className="absolute inset-0 opacity-[0.015] pointer-events-none" style={{ backgroundImage: 'url("data:image/svg+xml,%3Csvg width=\"100\" height=\"100\" xmlns=\"http://www.w3.org/2000/svg\"%3E%3Cfilter id=\"noise\"%3E%3CfeTurbulence type=\"fractalNoise\" baseFrequency=\"0.9\" numOctaves=\"4\" /%3E%3C/filter%3E%3Crect width=\"100\" height=\"100\" filter=\"url(%23noise)\" /%3E%3C/svg%3E")' }}></div>
+      
       <div 
-        className="bg-white/80 dark:bg-zinc-900/80 backdrop-blur-xl rounded-2xl border border-black/[0.08] dark:border-white/[0.08] shadow-2xl max-w-4xl w-full max-h-[90vh] overflow-hidden"
+        className="relative bg-[#FAFAF9]/95 backdrop-blur-2xl border-0 shadow-2xl max-w-4xl w-full max-h-[90vh] overflow-hidden"
+        style={{ borderRadius: 0 }}
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
-        <div className="px-6 py-4 border-b border-black/[0.08] dark:border-white/[0.08] bg-white/60 dark:bg-zinc-900/60 backdrop-blur-xl">
-          <div className="flex items-center justify-between">
-            <h2 className="text-[20px] font-semibold text-zinc-900 dark:text-white">
-              Generate with AI
-            </h2>
-            <button
-              onClick={handleClose}
-              className="flex items-center justify-center w-8 h-8 hover:bg-black/5 dark:hover:bg-white/5 rounded-full transition-colors"
-            >
-              <X className="h-5 w-5 text-zinc-600 dark:text-zinc-400" />
-            </button>
-          </div>
+        <div className="px-12 py-10 border-b border-black/[0.04] relative">
+          <button
+            onClick={handleClose}
+            className="absolute top-6 right-6 w-9 h-9 flex items-center justify-center rounded-full hover:bg-stone-100 transition-colors"
+            aria-label="Close"
+          >
+            <X className="h-4 w-4 text-stone-400" />
+          </button>
+          
+          <div className="h-[1px] w-16 bg-stone-300 mb-6"></div>
+          
+          <h2 className="text-3xl font-medium text-stone-900 mb-3 tracking-tight" style={{ fontFamily: "'Unbounded', sans-serif", fontWeight: 500 }}>
+            Generate with AI
+          </h2>
+          <p className="text-sm text-stone-600 font-light" style={{ fontFamily: "'Manrope', sans-serif", fontWeight: 300 }}>
+            Auto-generate concepts from text, URLs, or documents
+          </p>
         </div>
 
         {/* Content */}
-        <div className="p-6 overflow-y-auto" style={{ maxHeight: 'calc(90vh - 80px)' }}>
+        <div className="px-12 py-6 overflow-y-auto" style={{ maxHeight: 'calc(90vh - 200px)' }}>
           <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as any)}>
             <TabsList className="mb-4">
               <TabsTrigger value="input">Input Text</TabsTrigger>
@@ -906,9 +915,9 @@ Output only a valid JSON array. No extra text.`;
             
             <TabsContent value="input">
               <div>
-                <div className="bg-blue-50/80 dark:bg-blue-900/20 backdrop-blur-xl border border-blue-200/50 dark:border-blue-800/50 rounded-xl p-4 mb-4">
-                  <h3 className="text-[15px] font-semibold text-blue-900 dark:text-blue-100 mb-2">How it works:</h3>
-                  <ul className="text-[13px] text-blue-800 dark:text-blue-200 space-y-1.5">
+                <div className="bg-white/60 backdrop-blur-xl border border-black/[0.06] rounded-none p-6 mb-6">
+                  <h3 className="text-sm font-medium text-stone-900 mb-3 uppercase tracking-widest" style={{ fontFamily: "'Unbounded', sans-serif", fontWeight: 500 }}>How it works:</h3>
+                  <ul className="text-sm text-stone-600 space-y-2 font-light" style={{ fontFamily: "'Manrope', sans-serif", fontWeight: 300 }}>
                     <li>• Paste any educational text (articles, notes, study materials)</li>
                     <li>• Or use the URL tab to fetch content from web pages</li>
                     <li>• AI will automatically extract and create concept cards with organized tags</li>
@@ -920,35 +929,38 @@ Output only a valid JSON array. No extra text.`;
 
                 
                 {/* Input Mode Toggle */}
-                <div className="mb-4">
-                  <div className="flex space-x-1 bg-gray-100 dark:bg-gray-800 p-1 rounded-lg">
+                <div className="mb-6">
+                  <div className="flex gap-1 bg-white/60 backdrop-blur-xl p-1 rounded-full border border-black/[0.06]">
                     <button
                       onClick={() => setInputMode('text')}
-                      className={`px-3 py-1.5 text-sm font-medium rounded-md transition-colors ${
+                      className={`flex-1 px-4 py-2 text-[11px] uppercase tracking-widest font-medium rounded-full transition-all duration-300 ${
                         inputMode === 'text'
-                          ? 'bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 shadow-sm'
-                          : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100'
+                          ? 'bg-stone-900 text-white'
+                          : 'text-stone-600 hover:text-stone-900'
                       }`}
+                      style={{ fontFamily: "'Unbounded', sans-serif", fontWeight: 500 }}
                     >
                       Plain Text
                     </button>
                     <button
                       onClick={() => setInputMode('url')}
-                      className={`px-3 py-1.5 text-sm font-medium rounded-md transition-colors ${
+                      className={`flex-1 px-4 py-2 text-[11px] uppercase tracking-widest font-medium rounded-full transition-all duration-300 ${
                         inputMode === 'url'
-                          ? 'bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 shadow-sm'
-                          : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100'
+                          ? 'bg-stone-900 text-white'
+                          : 'text-stone-600 hover:text-stone-900'
                       }`}
+                      style={{ fontFamily: "'Unbounded', sans-serif", fontWeight: 500 }}
                     >
                       From URL
                     </button>
                     <button
                       onClick={() => setInputMode('json')}
-                      className={`px-3 py-1.5 text-sm font-medium rounded-md transition-colors ${
+                      className={`flex-1 px-4 py-2 text-[11px] uppercase tracking-widest font-medium rounded-full transition-all duration-300 ${
                         inputMode === 'json'
-                          ? 'bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 shadow-sm'
-                          : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100'
+                          ? 'bg-stone-900 text-white'
+                          : 'text-stone-600 hover:text-stone-900'
                       }`}
+                      style={{ fontFamily: "'Unbounded', sans-serif", fontWeight: 500 }}
                     >
                       From JSON
                     </button>
@@ -971,7 +983,8 @@ Output only a valid JSON array. No extra text.`;
                       <button
                         onClick={handleUrlFetch}
                         disabled={isLoading || !urlInput.trim()}
-                        className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                        className="px-6 py-3 bg-stone-900 text-white rounded-full hover:bg-stone-800 disabled:opacity-50 disabled:cursor-not-allowed transition-all text-[11px] uppercase tracking-widest"
+                        style={{ fontFamily: "'Unbounded', sans-serif", fontWeight: 500 }}
                       >
                         {isLoading ? 'Fetching...' : 'Fetch'}
                       </button>
@@ -993,17 +1006,18 @@ Output only a valid JSON array. No extra text.`;
                     <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                       Paste JSON array of concepts
                     </label>
-                    <div className="mb-3 p-3 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-md">
+                    <div className="mb-3 p-4 bg-white/60 backdrop-blur-xl border border-black/[0.06] rounded-none">
                       <div className="flex justify-between items-center mb-2">
-                        <p className="text-sm font-medium text-blue-800 dark:text-blue-200">📋 JSON Template:</p>
+                        <p className="text-[11px] uppercase tracking-widest font-medium text-stone-900" style={{ fontFamily: "'Unbounded', sans-serif", fontWeight: 500 }}>📋 JSON Template:</p>
                         <button
                           onClick={fillJsonTemplate}
-                          className="text-xs px-2 py-1 bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors"
+                          className="text-[10px] px-3 py-1.5 bg-stone-900 text-white rounded-full hover:bg-stone-800 transition-all uppercase tracking-wider"
+                          style={{ fontFamily: "'Unbounded', sans-serif", fontWeight: 500 }}
                         >
                           Fill Template
                         </button>
                       </div>
-                      <pre className="text-xs text-blue-700 dark:text-blue-300 overflow-x-auto">
+                      <pre className="text-xs text-stone-700 overflow-x-auto font-light" style={{ fontFamily: "'Manrope', sans-serif", fontWeight: 300 }}>
 {`[
   {
     "title": "Heart Failure Pathophysiology",
@@ -1122,7 +1136,8 @@ The AI will automatically extract concepts from your text and create individual 
                         <button
                           type="button"
                           onClick={() => setCustomPrompt('')}
-                          className="text-xs text-blue-600 dark:text-blue-400 hover:underline"
+                          className="text-xs text-stone-600 hover:text-stone-900 underline transition-colors font-light"
+                          style={{ fontFamily: "'Manrope', sans-serif", fontWeight: 300 }}
                         >
                           Reset to Default
                         </button>
@@ -1162,28 +1177,33 @@ Example customizations:
                 <div className="flex justify-between">
                   <div>
                     {onBack && (
-                      <Button 
-                        variant="outline"
+                      <button
+                        type="button"
                         onClick={onBack}
-                        className="flex items-center"
+                        className="px-6 py-3 text-stone-600 bg-white/60 backdrop-blur-xl border border-black/[0.06] hover:border-black/[0.12] rounded-full transition-all flex items-center text-[11px] uppercase tracking-widest"
+                        style={{ fontFamily: "'Unbounded', sans-serif", fontWeight: 500 }}
                       >
-                        <ArrowLeft className="mr-2 h-4 w-4" />
+                        <ArrowLeft className="h-4 w-4 mr-2" />
                         Back to Options
-                      </Button>
+                      </button>
                     )}
                   </div>
                   <div className="flex gap-3">
-                    <Button 
-                      variant="outline"
+                    <button
+                      type="button"
                       onClick={handleClose}
+                      className="px-6 py-3 text-stone-600 bg-white/60 backdrop-blur-xl border border-black/[0.06] hover:border-black/[0.12] rounded-full transition-all text-[11px] uppercase tracking-widest"
+                      style={{ fontFamily: "'Unbounded', sans-serif", fontWeight: 500 }}
                     >
                       Cancel
-                    </Button>
-                    <Button 
-                    onClick={generateConcepts} 
-                    disabled={isLoading || (inputMode === 'text' && !inputText.trim()) || (inputMode === 'url' && !urlInput.trim()) || (inputMode === 'json' && !jsonInput.trim())}
-                    className="bg-blue-600 hover:bg-blue-700 text-white"
-                  >
+                    </button>
+                    <button
+                      type="button"
+                      onClick={generateConcepts} 
+                      disabled={isLoading || (inputMode === 'text' && !inputText.trim()) || (inputMode === 'url' && !urlInput.trim()) || (inputMode === 'json' && !jsonInput.trim())}
+                      className="px-6 py-3 bg-stone-900 hover:bg-stone-800 text-white rounded-full transition-all flex items-center text-[11px] uppercase tracking-widest disabled:opacity-50 disabled:cursor-not-allowed"
+                      style={{ fontFamily: "'Unbounded', sans-serif", fontWeight: 500 }}
+                    >
                     {isLoading ? (
                       <>
                         <Loader2 className="mr-2 h-4 w-4 animate-spin" />
@@ -1195,7 +1215,7 @@ Example customizations:
                         {inputMode === 'json' ? 'Import Concepts' : 'Generate Concepts'}
                       </>
                     )}
-                  </Button>
+                    </button>
                   </div>
                 </div>
               </div>
@@ -1226,31 +1246,47 @@ Example customizations:
                     </div>
                   ))}
                 </div>
-                
-                <div className="flex justify-between gap-3">
-                  <div className="flex gap-3">
+
+                <div className="flex justify-between">
+                  <div>
                     {onBack && (
-                      <Button 
-                        variant="outline"
+                      <button
+                        type="button"
                         onClick={onBack}
-                        className="flex items-center"
+                        className="px-6 py-3 text-stone-600 bg-white/60 backdrop-blur-xl border border-black/[0.06] hover:border-black/[0.12] rounded-full transition-all flex items-center text-[11px] uppercase tracking-widest"
+                        style={{ fontFamily: "'Unbounded', sans-serif", fontWeight: 500 }}
                       >
-                        <ArrowLeft className="mr-2 h-4 w-4" />
+                        <ArrowLeft className="h-4 w-4 mr-2" />
                         Back to Options
-                      </Button>
+                      </button>
                     )}
-                    <Button variant="outline" onClick={() => setActiveTab('input')}>
+                    <button
+                      type="button"
+                      onClick={() => setActiveTab('input')}
+                      className="px-6 py-3 text-stone-600 bg-white/60 backdrop-blur-xl border border-black/[0.06] hover:border-black/[0.12] rounded-full transition-all text-[11px] uppercase tracking-widest"
+                      style={{ fontFamily: "'Unbounded', sans-serif", fontWeight: 500 }}
+                    >
                       Back to Input
-                    </Button>
+                    </button>
                   </div>
                   <div className="flex gap-3">
-                    <Button variant="outline" onClick={handleClose}>
+                    <button
+                      type="button"
+                      onClick={handleClose}
+                      className="px-6 py-3 text-stone-600 bg-white/60 backdrop-blur-xl border border-black/[0.06] hover:border-black/[0.12] rounded-full transition-all text-[11px] uppercase tracking-widest"
+                      style={{ fontFamily: "'Unbounded', sans-serif", fontWeight: 500 }}
+                    >
                       Cancel
-                    </Button>
-                    <Button onClick={saveConcepts} className="bg-blue-600 hover:bg-blue-700 text-white">
-                      <Check className="mr-2 h-4 w-4" />
+                    </button>
+                    <button
+                      type="button"
+                      onClick={saveConcepts}
+                      className="px-6 py-3 bg-stone-900 hover:bg-stone-800 text-white rounded-full transition-all flex items-center text-[11px] uppercase tracking-widest"
+                      style={{ fontFamily: "'Unbounded', sans-serif", fontWeight: 500 }}
+                    >
+                      <Check className="h-4 w-4 mr-2" />
                       Save All Concepts
-                    </Button>
+                    </button>
                   </div>
                 </div>
               </div>
@@ -1309,18 +1345,22 @@ Example customizations:
                 )}
                 
                 <div className="flex justify-end gap-3">
-                  <Button 
-                    variant="outline"
+                  <button
+                    type="button"
                     onClick={handleReset}
+                    className="px-6 py-3 text-stone-600 bg-white/60 backdrop-blur-xl border border-black/[0.06] hover:border-black/[0.12] rounded-full transition-all text-[11px] uppercase tracking-widest"
+                    style={{ fontFamily: "'Unbounded', sans-serif", fontWeight: 500 }}
                   >
                     Upload More
-                  </Button>
-                  <Button 
+                  </button>
+                  <button
+                    type="button"
                     onClick={handleClose}
-                    className="bg-blue-600 hover:bg-blue-700 text-white"
+                    className="px-6 py-3 bg-stone-900 hover:bg-stone-800 text-white rounded-full transition-all text-[11px] uppercase tracking-widest"
+                    style={{ fontFamily: "'Unbounded', sans-serif", fontWeight: 500 }}
                   >
                     Close
-                  </Button>
+                  </button>
                 </div>
               </div>
             </TabsContent>

@@ -9,7 +9,7 @@ export function WeakestList({
 }) {
   if (items.length === 0) {
     return (
-      <div className="text-center py-8 text-zinc-500 dark:text-zinc-400">
+      <div className="text-center py-8 text-stone-500" style={{ fontFamily: "'Manrope', sans-serif", fontWeight: 300 }}>
         No weak concepts. Great work!
       </div>
     );
@@ -20,31 +20,31 @@ export function WeakestList({
       {items.slice(0, 5).map((it) => (
         <div
           key={it.id}
-          className="group flex items-center gap-3 rounded-xl border border-zinc-200/60 dark:border-zinc-700/60 bg-zinc-50/50 dark:bg-zinc-800/50 p-3 hover:bg-zinc-100/50 dark:hover:bg-zinc-800/70 active:scale-[0.98] transition-all duration-200"
+          className="group flex items-center gap-3 rounded-2xl border border-stone-300 bg-white/60 backdrop-blur-xl p-3 hover:bg-white/80 hover:border-stone-400 hover:shadow-md transition-all duration-200"
         >
           <MiniRing pct={it.masteryScore} />
           <div className="flex-1 min-w-0">
-            <div className="font-semibold text-zinc-900 dark:text-white truncate text-[15px]">{it.title}</div>
+            <div className="font-medium text-stone-900 text-sm leading-snug" style={{ fontFamily: "'Unbounded', sans-serif", fontWeight: 500 }}>{it.title}</div>
             {it.preview && (
-              <div className="mt-0.5 text-xs text-zinc-600 dark:text-zinc-400 line-clamp-1">
+              <div className="mt-0.5 text-xs text-stone-600 line-clamp-1" style={{ fontFamily: "'Manrope', sans-serif", fontWeight: 300 }}>
                 {it.preview.substring(0, 80)}...
               </div>
             )}
-            <div className="mt-1 flex items-center gap-2 text-xs">
-              {it.masteryScore === 0 ? (
-                <span className="text-zinc-500 dark:text-zinc-400">Not practiced</span>
+            <div className="mt-1 flex items-center gap-2 text-xs" style={{ fontFamily: "'Manrope', sans-serif", fontWeight: 300 }}>
+              {it.attempts === 0 || !it.attempts ? (
+                <span className="text-stone-500">Not practiced</span>
               ) : (
                 <>
                   <span className={`font-medium ${
                     it.masteryScore >= 0.8 
-                      ? 'text-green-600 dark:text-green-400'
+                      ? 'text-green-600'
                       : it.masteryScore >= 0.5
-                      ? 'text-yellow-600 dark:text-yellow-400'
-                      : 'text-red-600 dark:text-red-400'
+                      ? 'text-yellow-600'
+                      : 'text-red-600'
                   }`}>
                     {Math.round(it.masteryScore * 100)}% accuracy
                   </span>
-                  <span className="text-zinc-500 dark:text-zinc-400">• {it.attempts} attempts</span>
+                  <span className="text-stone-500">• {it.attempts} attempts</span>
                 </>
               )}
             </div>
@@ -65,7 +65,7 @@ function MiniRing({ pct }: { pct: number }) {
   
   return (
     <svg width="32" height="32" viewBox="0 0 32 32" className="flex-shrink-0">
-      <circle cx="16" cy="16" r={r} fill="none" stroke="#E5E7EB" strokeWidth="6" className="dark:stroke-zinc-700" />
+      <circle cx="16" cy="16" r={r} fill="none" stroke="#E7E5E4" strokeWidth="6" />
       <circle
         cx="16"
         cy="16"

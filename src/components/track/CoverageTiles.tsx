@@ -22,54 +22,36 @@ export function CoverageTiles({
       {buckets.map((b) => (
         <div
           key={b.bucket}
-          className="relative rounded-xl border border-zinc-200/60 dark:border-zinc-700/60 overflow-hidden hover:border-zinc-300 dark:hover:border-zinc-600 active:scale-[0.98] transition-all duration-200"
+          className="relative rounded-2xl border border-stone-300 overflow-hidden hover:border-stone-400 hover:shadow-md transition-all duration-200 bg-white/60 backdrop-blur-xl"
         >
-          {/* Background Progress Bar */}
-          {showAttempted ? (
-            <div className="absolute inset-0 flex">
-              {/* Green for correct */}
-              {b.correct !== undefined && b.total > 0 && (
-                <div 
-                  className="bg-green-100/50 dark:bg-green-900/20 transition-all duration-500"
-                  style={{ width: `${(b.correct / b.total) * 100}%` }}
-                />
-              )}
-              {/* Red for incorrect */}
-              {b.incorrect !== undefined && b.total > 0 && (
-                <div 
-                  className="bg-red-100/50 dark:bg-red-900/20 transition-all duration-500"
-                  style={{ width: `${(b.incorrect / b.total) * 100}%` }}
-                />
-              )}
-              {/* Grey for unseen - fills remaining space */}
-              <div className="flex-1 bg-zinc-100/50 dark:bg-zinc-800/50" />
-            </div>
-          ) : (
-            <div className="absolute inset-0 flex">
+          {/* Background Progress Bar - Three segments: mastered (green), attempted (red), unseen (grey) */}
+          <div className="absolute inset-0 flex">
+            {/* Green for mastered concepts (mastery_level === 2) */}
+            <div 
+              className="bg-green-100/60 transition-all duration-500"
+              style={{ width: `${b.mastered}%` }}
+            />
+            {/* Red for attempted but not mastered - calculate from attempted and mastered */}
+            {b.attempted !== undefined && b.total > 0 && (
               <div 
-                className={`transition-all duration-500 ${
-                  b.mastered >= 80 
-                    ? 'bg-green-100/50 dark:bg-green-900/20' 
-                    : b.mastered >= 50 
-                    ? 'bg-yellow-100/50 dark:bg-yellow-900/20' 
-                    : 'bg-red-100/50 dark:bg-red-900/20'
-                }`}
-                style={{ width: `${b.mastered}%` }}
+                className="bg-red-100/60 transition-all duration-500"
+                style={{ width: `${Math.max(0, ((b.attempted - (b.mastered * b.total / 100)) / b.total) * 100)}%` }}
               />
-              <div className="flex-1 bg-zinc-100/50 dark:bg-zinc-800/50" />
-            </div>
-          )}
+            )}
+            {/* Grey for unseen - fills remaining space */}
+            <div className="flex-1 bg-stone-100/60" />
+          </div>
           
           {/* Content */}
-          <div className="relative px-3 py-2.5 backdrop-blur-sm">
+          <div className="relative px-4 py-3 backdrop-blur-sm">
             <div className="flex items-center justify-between gap-3">
               <div className="flex-1 min-w-0">
-                <div className="font-semibold text-zinc-900 dark:text-white truncate mb-1 text-[15px]">{b.label}</div>
-                <div className="text-xs flex items-center gap-1">
-                  <span className="font-medium text-zinc-900 dark:text-white">
-                    {b.mastered}% accuracy
+                <div className="font-medium text-stone-900 truncate mb-1 text-sm" style={{ fontFamily: "'Unbounded', sans-serif", fontWeight: 500 }}>{b.label}</div>
+                <div className="text-xs flex items-center gap-1" style={{ fontFamily: "'Manrope', sans-serif", fontWeight: 300 }}>
+                  <span className="font-medium text-stone-900">
+                    {b.mastered}% mastery
                   </span>
-                  <span className="text-zinc-500 dark:text-zinc-400">
+                  <span className="text-stone-500">
                     • {showAttempted && b.attempted !== undefined 
                         ? `${b.attempted}/${b.total} ${b.total === 1 ? 'concept' : 'concepts'} attempted` 
                         : `${b.total} ${b.total === 1 ? 'concept' : 'concepts'}`}
@@ -77,9 +59,9 @@ export function CoverageTiles({
                 </div>
               </div>
               
-              {/* Apple HIG style button - subtle, icon-based */}
+              {/* Arrow button */}
               <button 
-                className="flex-shrink-0 w-8 h-8 flex items-center justify-center rounded-full bg-zinc-900/5 dark:bg-white/10 hover:bg-zinc-900/10 dark:hover:bg-white/20 active:scale-95 transition-all"
+                className="flex-shrink-0 w-8 h-8 flex items-center justify-center rounded-full bg-stone-100 hover:bg-stone-200 transition-all"
                 onClick={() => {
                   if (onReview) {
                     onReview(b.bucket);
@@ -87,7 +69,7 @@ export function CoverageTiles({
                 }}
                 aria-label={`Review ${b.label}`}
               >
-                <svg className="w-4 h-4 text-zinc-700 dark:text-zinc-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg className="w-4 h-4 text-stone-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
                 </svg>
               </button>

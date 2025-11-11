@@ -36,7 +36,7 @@ export const SessionsTable: React.FC<SessionsTableProps> = ({ sessions }) => {
               <th className="text-left py-3 px-4 text-sm font-semibold text-gray-700 dark:text-gray-300">
                 Accuracy
               </th>
-              <th className="text-left py-3 px-4 text-sm font-semibold text-gray-700 dark:text-gray-300">
+              <th className="hidden md:table-cell text-left py-3 px-4 text-sm font-semibold text-gray-700 dark:text-gray-300">
                 Time
               </th>
               <th className="text-right py-3 px-4 text-sm font-semibold text-gray-700 dark:text-gray-300">
@@ -73,7 +73,7 @@ export const SessionsTable: React.FC<SessionsTableProps> = ({ sessions }) => {
                       {accuracyPercent.toFixed(0)}%
                     </span>
                   </td>
-                  <td className="py-3 px-4 text-sm text-gray-700 dark:text-gray-300">
+                  <td className="hidden md:table-cell py-3 px-4 text-sm text-gray-700 dark:text-gray-300">
                     {session.minutes} min
                   </td>
                   <td className="py-3 px-4 text-right">

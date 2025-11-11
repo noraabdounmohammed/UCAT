@@ -9,7 +9,7 @@ export function SessionsCompletedTable({
   
   if (sessions.length === 0) {
     return (
-      <div className="text-center py-8 text-zinc-500 dark:text-zinc-400">
+      <div className="text-center py-8 text-stone-500" style={{ fontFamily: "'Manrope', sans-serif", fontWeight: 300 }}>
         No sessions yet. Start practicing to see your history!
       </div>
     );
@@ -19,20 +19,17 @@ export function SessionsCompletedTable({
     <div className="overflow-x-auto">
       <table className="w-full">
         <thead>
-          <tr className="border-b border-zinc-200 dark:border-zinc-700">
-            <th className="text-left py-3 px-4 text-sm font-semibold text-zinc-700 dark:text-zinc-300">
+          <tr className="border-b border-stone-200">
+            <th className="text-left py-3 px-4 text-xs font-medium text-stone-700 uppercase tracking-wider" style={{ fontFamily: "'Unbounded', sans-serif", fontWeight: 500 }}>
               Date
             </th>
-            <th className="text-left py-3 px-4 text-sm font-semibold text-zinc-700 dark:text-zinc-300">
-              Items
+            <th className="text-left py-3 px-4 text-xs font-medium text-stone-700 uppercase tracking-wider" style={{ fontFamily: "'Unbounded', sans-serif", fontWeight: 500 }}>
+              Session
             </th>
-            <th className="text-left py-3 px-4 text-sm font-semibold text-zinc-700 dark:text-zinc-300">
-              Type
-            </th>
-            <th className="text-left py-3 px-4 text-sm font-semibold text-zinc-700 dark:text-zinc-300">
+            <th className="text-left py-3 px-4 text-xs font-medium text-stone-700 uppercase tracking-wider" style={{ fontFamily: "'Unbounded', sans-serif", fontWeight: 500 }}>
               Accuracy
             </th>
-            <th className="text-left py-3 px-4 text-sm font-semibold text-zinc-700 dark:text-zinc-300">
+            <th className="hidden md:table-cell text-left py-3 px-4 text-xs font-medium text-stone-700 uppercase tracking-wider" style={{ fontFamily: "'Unbounded', sans-serif", fontWeight: 500 }}>
               Time
             </th>
           </tr>
@@ -51,31 +48,29 @@ export function SessionsCompletedTable({
             return (
               <tr
                 key={i}
-                className="border-b border-zinc-100 dark:border-zinc-800 hover:bg-zinc-50 dark:hover:bg-zinc-800/50 transition-colors"
+                className="border-b border-stone-100 hover:bg-stone-50 transition-colors"
               >
-                <td className="py-3 px-4 text-sm text-zinc-900 dark:text-white">{formattedDate}</td>
-                <td className="py-3 px-4 text-sm text-zinc-700 dark:text-zinc-300">{session.items}</td>
-                <td className="py-3 px-4 text-sm text-zinc-700 dark:text-zinc-300">
-                  <div className="flex flex-wrap gap-1.5">
-                    {(session.formats || []).map((fmt, idx) => {
-                      const label = fmt === 'ukmla_sba' ? 'SBA' : fmt === 'flashcard' ? 'Flashcard' : (fmt || '').toString();
-                      return (
-                        <span
-                          key={idx}
-                          className="px-2 py-0.5 rounded-full text-xs font-medium bg-gray-100 dark:bg-gray-800 text-gray-800 dark:text-gray-200"
-                        >
-                          {label}
-                        </span>
-                      );
-                    })}
-                    {(session.formats || []).length === 0 && (
-                      <span className="text-xs text-zinc-400">—</span>
-                    )}
-                  </div>
+                <td className="py-3 px-4 text-sm text-stone-900" style={{ fontFamily: "'Manrope', sans-serif", fontWeight: 400 }}>{formattedDate}</td>
+                <td className="py-3 px-4 text-sm text-stone-700" style={{ fontFamily: "'Manrope', sans-serif", fontWeight: 300 }}>
+                  {(session.formats || []).length > 0 ? (
+                    <div className="flex flex-wrap gap-1.5">
+                      {(session.formats || []).map((fmt, idx) => {
+                        const label = fmt === 'ukmla_sba' ? 'SBA' : fmt === 'flashcard' ? 'Flashcard' : (fmt || '').toString();
+                        return (
+                          <span key={idx}>
+                            {session.items} × {label}
+                          </span>
+                        );
+                      })}
+                    </div>
+                  ) : (
+                    <span>{session.items} items</span>
+                  )}
                 </td>
                 <td className="py-3 px-4">
                   <div className="flex items-center gap-2">
-                    <div className="h-2 w-20 rounded-full bg-zinc-200 dark:bg-zinc-700">
+                    {/* Hide bar on mobile, show on desktop */}
+                    <div className="hidden sm:block h-2 w-20 rounded-full bg-stone-200">
                       <div
                         className="h-2 rounded-full transition-all duration-500"
                         style={{
@@ -97,12 +92,13 @@ export function SessionsCompletedTable({
                           ? 'text-[#FFD60A]'
                           : 'text-[#FF3B30]'
                       }`}
+                      style={{ fontFamily: "'Manrope', sans-serif", fontWeight: 600 }}
                     >
                       {accuracyPercent.toFixed(0)}%
                     </span>
                   </div>
                 </td>
-                <td className="py-3 px-4 text-sm text-zinc-700 dark:text-zinc-300">
+                <td className="hidden md:table-cell py-3 px-4 text-sm text-stone-700" style={{ fontFamily: "'Manrope', sans-serif", fontWeight: 300 }}>
                   {session.minutes} min
                 </td>
               </tr>

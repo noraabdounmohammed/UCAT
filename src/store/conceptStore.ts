@@ -11,6 +11,7 @@ import {
   FilterCategory
 } from '@/types/conceptTypes';
 import { generateQuestionWithConfig } from '@/services/aiQuestionGenerator';
+import { StorageManager } from '@/utils/storageManager';
 
 // Calculate statistics from filtered concepts
 function calculateStats(concepts: ConceptNode[]): ConceptStats {
@@ -68,11 +69,22 @@ function filterConcepts(concepts: ConceptNode[], filterState: ConceptFilterState
       }
     }
 
-    // Custom filters
+    // Custom filters with AND/OR logic
     if (filterState.custom_filters && filterState.custom_filters.length > 0) {
       const conceptFilters = concept.custom_filters || [];
-      if (!filterState.custom_filters.some(filter => conceptFilters.includes(filter))) {
-        return false;
+      
+      if (filterState.cascading_mode) {
+        // AND mode: concept must have ALL selected filters
+        const hasAllFilters = filterState.custom_filters.every(filter => conceptFilters.includes(filter));
+        if (!hasAllFilters) {
+          return false;
+        }
+      } else {
+        // OR mode: concept must have AT LEAST ONE selected filter
+        const hasAnyFilter = filterState.custom_filters.some(filter => conceptFilters.includes(filter));
+        if (!hasAnyFilter) {
+          return false;
+        }
       }
     }
 
@@ -102,7 +114,8 @@ export const createConceptStore = (curriculumId: string = 'default') => {
       filterState: {
         mastery_levels: [], // Start with no filters selected - show all
         searchQuery: '',
-        custom_filters: [] // Will be populated when concepts are loaded
+        custom_filters: [], // Will be populated when concepts are loaded
+        cascading_mode: false // Default to OR mode (match ANY selected filter)
       },
       filterOptions: {
         mastery_levels: [
@@ -127,6 +140,7 @@ export const createConceptStore = (curriculumId: string = 'default') => {
       // Practice state
       isPracticing: false,
       practiceQuestions: [],
+      generatingQuestionCount: 0,
       practiceConfig: {
         target_bloom_levels: [],
         target_formats: [],
@@ -358,11 +372,10 @@ export const createConceptStore = (curriculumId: string = 'default') => {
 
 
       // Add new concept
-      addConcept: (concept: Omit<ConceptNode, 'concept_id'> | ConceptNode) => {
+      addConcept: async (concept: Omit<ConceptNode, 'concept_id' | 'created_at' | 'updated_at'>) => {
         const newConcept: ConceptNode = {
           ...concept,
-          // Only generate new ID if concept doesn't already have one
-          concept_id: 'concept_id' in concept && concept.concept_id 
+          concept_id: concept.concept_id 
             ? concept.concept_id 
             : `user_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
           created_at: new Date(),
@@ -371,6 +384,10 @@ export const createConceptStore = (curriculumId: string = 'default') => {
         
         const currentState = get();
         const updatedConcepts = [...currentState.concepts, newConcept];
+        
+        // Check storage before saving
+        const dataSize = JSON.stringify(updatedConcepts).length * 2;
+        await StorageManager.checkBeforeSave(dataSize);
         
         // Persist full concept list (curriculum-specific)
         localStorage.setItem(getCurriculumKey(curriculumId, 'user_concepts'), JSON.stringify(updatedConcepts));
@@ -675,9 +692,21 @@ export const createConceptStore = (curriculumId: string = 'default') => {
       },
       startPractice: async (practiceConfig?: PracticeConfig) => {
         const startTime = Date.now();
-        set({ isLoading: true, isPracticing: true, currentSessionAnswers: [], sessionStartTime: startTime });
+        
+        // Calculate actual question count first
+        const questionCount = practiceConfig?.question_count || 10;
+        
+        set({ isLoading: true, isPracticing: true, currentSessionAnswers: [], sessionStartTime: startTime, generatingQuestionCount: questionCount });
         
         const currentState = get();
+        
+        console.log('🔍 Practice Selection Debug:', {
+          practiceSelection: currentState.practiceSelection,
+          practiceSelectionLength: currentState.practiceSelection?.length,
+          totalConcepts: currentState.concepts.length,
+          filteredConcepts: currentState.filteredConcepts.length
+        });
+        
         // If a targeted selection exists, honor it
         let conceptsToUse = currentState.filteredConcepts.length > 0 
           ? currentState.filteredConcepts 
@@ -685,10 +714,15 @@ export const createConceptStore = (curriculumId: string = 'default') => {
         if (currentState.practiceSelection && currentState.practiceSelection.length > 0) {
           const idSet = new Set(currentState.practiceSelection);
           conceptsToUse = currentState.concepts.filter(c => idSet.has(c.concept_id));
+          console.log('✅ Using practice selection:', {
+            selectedIds: currentState.practiceSelection,
+            conceptsToUse: conceptsToUse.length,
+            conceptTitles: conceptsToUse.map(c => c.title).slice(0, 3)
+          });
         }
         
         if (conceptsToUse.length === 0) {
-          console.warn('No concepts available for practice');
+          console.warn('⚠️ No concepts available for practice');
           set({ isLoading: false, isPracticing: false });
           return;
         }
@@ -707,6 +741,9 @@ export const createConceptStore = (curriculumId: string = 'default') => {
           
           // Use the specified number of concepts, up to what's available
           const conceptsForQuestions = conceptsToUse.slice(0, Math.min(questionCount, conceptsToUse.length));
+          
+          // Update the actual count being generated
+          set({ generatingQuestionCount: conceptsForQuestions.length });
           
           console.log(`🎯 Practice Session: Generating ${conceptsForQuestions.length} questions from ${conceptsToUse.length} available concepts`);
           
@@ -802,10 +839,12 @@ export const createConceptStore = (curriculumId: string = 'default') => {
         
         const sessionStats = {
           date: new Date().toISOString().split('T')[0], // YYYY-MM-DD format
-          timestamp: new Date().toISOString(),
-          items: totalAnswers,
-          accuracy: accuracy,
-          minutes: actualMinutes, // Actual time spent in session
+          completedAt: new Date().toISOString(), // ISO timestamp for proper date parsing
+          totalQuestions: totalAnswers, // Total number of questions answered
+          correctAnswers: correctAnswers, // Number of correct answers
+          accuracy: accuracy, // Percentage (for backward compatibility)
+          duration: actualMinutes * 60, // Duration in seconds (TrackDashboard converts to minutes)
+          minutes: actualMinutes, // Minutes (for backward compatibility)
           concepts_practiced: currentState.currentSessionAnswers.map(a => a.conceptId).filter(Boolean),
           formats: Array.from(new Set((currentState.practiceQuestions || []).map((q: any) => q.format).filter(Boolean))) as string[]
         };
@@ -831,7 +870,8 @@ export const createConceptStore = (curriculumId: string = 'default') => {
           isPracticing: false,
           practiceQuestions: [],
           currentSessionAnswers: [],
-          sessionStartTime: null
+          sessionStartTime: null,
+          generatingQuestionCount: 0
         });
       },
 

@@ -99,6 +99,7 @@ export const TrackDashboard: React.FC<TrackDashboardProps> = ({ curriculumId = '
     });
 
     // Calculate mastery counts from filtered concepts
+    // Simple: correct/incorrect/unseen based on most recent answer (mastery_level)
     const counts = {
       correct: filteredConcepts.filter(c => c.mastery_data?.mastery_level === 2).length,
       incorrect: filteredConcepts.filter(c => c.mastery_data?.mastery_level === 1).length,
@@ -109,14 +110,26 @@ export const TrackDashboard: React.FC<TrackDashboardProps> = ({ curriculumId = '
       ? Math.round((counts.correct / filteredConcepts.length) * 100) 
       : 0;
 
+    console.log('📈 Progress Tab Stats:', {
+      total: filteredConcepts.length,
+      correct: counts.correct,
+      incorrect: counts.incorrect,
+      unseen: counts.unseen,
+      masteryPercent: masteryPercent + '%',
+      sampleConcepts: filteredConcepts.slice(0, 3).map(c => ({
+        title: c.title,
+        mastery_level: c.mastery_data?.mastery_level,
+        attempts: c.mastery_data?.attempts
+      }))
+    });
+
     // Find weakest concepts from filtered set
-    // Only show concepts that have been attempted (mastery_level > 0 OR correct_count > 0)
+    // Only show concepts that have been attempted
     const weakestConcepts: ConceptStat[] = filteredConcepts
       .filter(c => {
-        const masteryLevel = c.mastery_data?.mastery_level || 0;
-        const attempts = c.mastery_data?.correct_count || 0;
+        const attempts = c.mastery_data?.attempts || 0;
         // Only include concepts that have been practiced
-        return masteryLevel > 0 || attempts > 0;
+        return attempts > 0;
       })
       .map(c => {
         const attempts = c.mastery_data?.attempts || 0;
@@ -191,7 +204,7 @@ export const TrackDashboard: React.FC<TrackDashboardProps> = ({ curriculumId = '
         const group = filterGroups.get(filter)!;
         group.total += 1;
         
-        // Count by mastery level
+        // Count by mastery level (0=unseen, 1=incorrect, 2=correct)
         if (masteryLevel === 2) {
           group.correct += 1;
         } else if (masteryLevel === 1) {
@@ -211,7 +224,7 @@ export const TrackDashboard: React.FC<TrackDashboardProps> = ({ curriculumId = '
     const coverageByCategory = new Map<string, CoverageBucket[]>();
     
     Array.from(filterGroups.entries()).forEach(([filterName, stats]) => {
-      // Calculate percentage of correct concepts
+      // Calculate percentage of correct concepts (mastery_level === 2)
       const correctPercent = stats.total > 0 ? Math.round((stats.correct / stats.total) * 100) : 0;
       const categoryId = filterAssignments[filterName];
       const category = filterCategories.find(c => c.id === categoryId);
