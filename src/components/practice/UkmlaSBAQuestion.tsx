@@ -1,8 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { CheckCircle, XCircle, ChevronRight, Brain, ArrowLeft, ChevronLeft, Sun, Moon } from 'lucide-react';
+import { CheckCircle, XCircle, ChevronRight, Brain, ArrowLeft, ChevronLeft, Sun, Moon, Sparkles, X } from 'lucide-react';
 import type { QuestionData } from './questionTypes';
 import ReactMarkdown from 'react-markdown';
 import { AIHelper } from './AIHelperClean';
+import { motion } from 'framer-motion';
+import { cn } from '@/lib/utils';
 
 interface UkmlaSBAQuestionProps {
   question: QuestionData;
@@ -253,42 +255,6 @@ export const UkmlaSBAQuestion: React.FC<UkmlaSBAQuestionProps> = ({
                   </div>
                 )}
 
-                {/* AI Helper toggle */}
-                <div className="mt-4 sm:mt-5 md:mt-6 flex justify-end">
-                  <button
-                    onClick={() => setShowAIHelper(!showAIHelper)}
-                    className={`flex items-center px-3 sm:px-4 py-2 rounded-lg sm:rounded-xl transition-all text-xs sm:text-sm md:text-base active:scale-95 ${
-                      showAIHelper
-                        ? 'bg-white/20 border-2 border-white/30 text-white'
-                        : 'bg-white/5 border-2 border-white/10 text-white/70 hover:bg-white/10 hover:border-white/20'
-                    }`}
-                  >
-                    <Brain className="h-3.5 w-3.5 sm:h-4 sm:w-4 mr-1.5 sm:mr-2" />
-                    <span className="hidden sm:inline">{showAIHelper ? 'Hide AI Helper' : 'Show AI Helper'}</span>
-                    <span className="sm:hidden">{showAIHelper ? 'Hide AI' : 'AI Helper'}</span>
-                  </button>
-                </div>
-
-                {/* AI Helper */}
-                {showAIHelper && (
-                  <div className="mt-4 sm:mt-5 md:mt-6 pt-4 sm:pt-5 md:pt-6 border-t border-white/10">
-                    <AIHelper 
-                      question={question}
-                      selectedAnswer={selectedOption || ''}
-                      correctAnswer={correctAnswerId}
-                      explanation={explanation}
-                      integrated={true}
-                      onMessageSent={() => {
-                        setTimeout(() => {
-                          window.scrollTo({
-                            top: document.body.scrollHeight,
-                            behavior: 'smooth'
-                          });
-                        }, 100);
-                      }}
-                    />
-                  </div>
-                )}
 
                 {/* Next button */}
                 <div className="mt-4 sm:mt-5 md:mt-6 pt-4 sm:pt-5 md:pt-6 border-t border-white/10">
@@ -307,6 +273,91 @@ export const UkmlaSBAQuestion: React.FC<UkmlaSBAQuestionProps> = ({
       </div>
         </div>
       </div>
+
+      {/* AI Helper Floating Button - only show after answer submitted */}
+      {hasSubmitted && (
+        <button
+          onClick={() => setShowAIHelper(!showAIHelper)}
+          className={cn(
+            "fixed bottom-4 right-4 md:bottom-6 md:right-6 p-3 md:p-4 rounded-full shadow-2xl transition-all duration-300 hover:scale-105",
+            showAIHelper ? "z-[60]" : "z-40",
+            isLightMode 
+              ? "bg-white/90 backdrop-blur-xl border border-black/[0.08] hover:bg-white" 
+              : "bg-white/[0.08] backdrop-blur-xl border border-white/[0.12] hover:bg-white/[0.12]"
+          )}
+          aria-label={showAIHelper ? "Close AI Helper" : "Open AI Helper"}
+        >
+          <Sparkles className={cn("h-4 w-4 md:h-5 md:w-5", isLightMode ? "text-stone-900" : "text-white/80")} />
+        </button>
+      )}
+
+      {/* AI Helper Side Panel */}
+      {showAIHelper && hasSubmitted && (
+        <>
+          {/* Backdrop for mobile only */}
+          <div 
+            className="fixed inset-0 bg-black/50 backdrop-blur-sm z-40 md:hidden"
+            onClick={() => setShowAIHelper(false)}
+          />
+          
+          {/* Side Panel */}
+          <motion.div
+            initial={{ x: '100%' }}
+            animate={{ x: 0 }}
+            exit={{ x: '100%' }}
+            transition={{ type: 'spring', damping: 30, stiffness: 300 }}
+            className={cn(
+              "fixed right-0 top-0 bottom-0 w-full md:w-[500px] lg:w-[600px] z-50 shadow-2xl flex flex-col",
+              isLightMode ? "bg-stone-50" : "bg-[#1a1a1a]"
+            )}
+          >
+            {/* Header */}
+            <div className={cn(
+              "flex items-center justify-between px-4 md:px-6 py-3 md:py-4 border-b flex-shrink-0",
+              isLightMode ? "border-black/[0.08] bg-stone-50" : "border-white/10 bg-[#1a1a1a]"
+            )}>
+              <div className="flex items-center gap-2 md:gap-3 min-w-0">
+                <div className={cn(
+                  "p-1.5 md:p-2 rounded-xl border flex-shrink-0",
+                  isLightMode ? "bg-black/[0.03] border-black/[0.06]" : "bg-white/[0.05] border-white/[0.08]"
+                )}>
+                  <Sparkles className={cn("h-4 w-4 md:h-5 md:w-5", isLightMode ? "text-stone-700" : "text-white/70")} />
+                </div>
+                <div className="min-w-0">
+                  <h2 className={cn("text-base md:text-lg font-light truncate", isLightMode ? "text-stone-900" : "text-white/90")} style={{ fontFamily: "'Manrope', sans-serif" }}>
+                    AI Helper
+                  </h2>
+                  <p className={cn("text-xs md:text-sm font-light truncate hidden sm:block", isLightMode ? "text-stone-500" : "text-white/50")} style={{ fontFamily: "'Manrope', sans-serif" }}>
+                    Ask me anything about this question
+                  </p>
+                </div>
+              </div>
+              <button
+                onClick={() => setShowAIHelper(false)}
+                className={cn(
+                  "p-2 rounded-lg transition-colors flex-shrink-0",
+                  isLightMode ? "hover:bg-black/[0.05]" : "hover:bg-white/10"
+                )}
+                aria-label="Close AI Helper"
+              >
+                <X className={cn("h-5 w-5", isLightMode ? "text-stone-700" : "text-zinc-300")} />
+              </button>
+            </div>
+
+            {/* AI Helper Content */}
+            <div className={cn("flex-1 overflow-hidden", isLightMode ? "bg-stone-50" : "bg-[#1a1a1a]")}>
+              <AIHelper
+                question={question}
+                correctAnswer={correctAnswerId}
+                selectedAnswer={selectedOption || ''}
+                explanation={explanation}
+                integrated={true}
+                lightMode={isLightMode}
+              />
+            </div>
+          </motion.div>
+        </>
+      )}
     </div>
   );
 };

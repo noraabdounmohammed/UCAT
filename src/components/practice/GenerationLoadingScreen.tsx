@@ -87,27 +87,27 @@ export const GenerationLoadingScreen: React.FC<GenerationLoadingScreenProps> = (
   
   return (
     <div 
-      className="fixed inset-0 bg-white dark:bg-gray-900 flex items-center justify-center z-50 p-4 sm:p-6"
+      className="fixed inset-0 bg-white flex items-center justify-center z-50 p-4 sm:p-6"
     >
       <div className="max-w-lg w-full text-center px-4">
         {/* Animated Icon */}
         <div className="flex justify-center mb-8 sm:mb-12">
           <div className="relative">
-            <div className="absolute inset-0 bg-gray-900/5 dark:bg-white/5 rounded-full animate-ping" style={{ animationDuration: '2s' }}></div>
-            <div className="relative bg-gray-100 dark:bg-gray-800 p-5 sm:p-6 rounded-full border border-gray-200 dark:border-gray-700">
-              {animationPhase === 0 && <Brain className="h-8 w-8 sm:h-10 sm:w-10 text-gray-900 dark:text-gray-100" strokeWidth={1.5} />}
-              {animationPhase === 1 && <Sparkles className="h-8 w-8 sm:h-10 sm:w-10 text-gray-900 dark:text-gray-100" strokeWidth={1.5} />}
-              {animationPhase === 2 && <BookOpen className="h-8 w-8 sm:h-10 sm:w-10 text-gray-900 dark:text-gray-100" strokeWidth={1.5} />}
-              {animationPhase === 3 && <Zap className="h-8 w-8 sm:h-10 sm:w-10 text-gray-900 dark:text-gray-100" strokeWidth={1.5} />}
+            <div className="absolute inset-0 bg-gray-900/5 rounded-full animate-ping" style={{ animationDuration: '2s' }}></div>
+            <div className="relative bg-gray-100 p-5 sm:p-6 rounded-full border border-gray-200">
+              {animationPhase === 0 && <Brain className="h-8 w-8 sm:h-10 sm:w-10 text-gray-900" strokeWidth={1.5} />}
+              {animationPhase === 1 && <Sparkles className="h-8 w-8 sm:h-10 sm:w-10 text-gray-900" strokeWidth={1.5} />}
+              {animationPhase === 2 && <BookOpen className="h-8 w-8 sm:h-10 sm:w-10 text-gray-900" strokeWidth={1.5} />}
+              {animationPhase === 3 && <Zap className="h-8 w-8 sm:h-10 sm:w-10 text-gray-900" strokeWidth={1.5} />}
             </div>
           </div>
         </div>
         
         {/* Title */}
-        <h2 className="text-2xl sm:text-3xl font-medium text-gray-900 dark:text-gray-100 mb-2 sm:mb-3 tracking-tight" style={{ fontFamily: "'Unbounded', sans-serif", fontWeight: 500 }}>
+        <h2 className="text-2xl sm:text-3xl font-medium text-gray-900 mb-2 sm:mb-3 tracking-tight" style={{ fontFamily: "'Unbounded', sans-serif", fontWeight: 500 }}>
           {format === 'mindmap' ? 'Crafting Mind Maps' : format === 'flashcard' ? 'Creating Flashcards' : 'Generating Questions'}
         </h2>
-        <p className="text-sm text-gray-600 dark:text-gray-400 font-light mb-8 sm:mb-12 max-w-sm mx-auto" style={{ fontFamily: "'Manrope', sans-serif", fontWeight: 300 }}>
+        <p className="text-sm text-gray-600 font-light mb-8 sm:mb-12 max-w-sm mx-auto" style={{ fontFamily: "'Manrope', sans-serif", fontWeight: 300 }}>
           {format === 'mindmap' 
             ? `Building ${conceptCount} interactive visualization${conceptCount > 1 ? 's' : ''}`
             : `Crafting ${conceptCount} personalized ${format === 'flashcard' ? 'flashcard' : 'question'}${conceptCount > 1 ? 's' : ''}`
@@ -116,27 +116,27 @@ export const GenerationLoadingScreen: React.FC<GenerationLoadingScreenProps> = (
         
         {/* Progress Bar */}
         <div className="mb-10 sm:mb-16">
-          <div className="flex justify-between text-[10px] text-gray-500 dark:text-gray-400 mb-3 uppercase tracking-[0.2em]" style={{ fontFamily: "'Unbounded', sans-serif", fontWeight: 500 }}>
+          <div className="flex justify-between text-[10px] text-gray-500 mb-3 uppercase tracking-[0.2em]" style={{ fontFamily: "'Unbounded', sans-serif", fontWeight: 500 }}>
             <span>Progress</span>
             <span>{Math.round(progressPercentage)}%</span>
           </div>
-          <div className="h-1 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
+          <div className="h-1 bg-gray-200 rounded-full overflow-hidden">
             <div 
-              className="h-full bg-gray-900 dark:bg-gray-100 transition-all duration-500 ease-out"
+              className="h-full bg-gray-900 transition-all duration-500 ease-out"
               style={{ width: `${progressPercentage}%` }}
             />
           </div>
         </div>
         
         {/* Single Rotating Tip */}
-        <div className="bg-gray-50 dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 p-4 sm:p-6 mb-6 sm:mb-8">
-          <p className="text-sm text-gray-600 dark:text-gray-300 leading-relaxed" style={{ fontFamily: "'Manrope', sans-serif", fontWeight: 300 }}>
+        <div className="bg-gray-50 rounded-2xl border border-gray-200 p-4 sm:p-6 mb-6 sm:mb-8">
+          <p className="text-sm text-gray-600 leading-relaxed" style={{ fontFamily: "'Manrope', sans-serif", fontWeight: 300 }}>
             {currentTip % 2 === 0 ? tips[Math.floor(currentTip / 2)] : medicalFacts[Math.floor(currentTip / 2)]}
           </p>
         </div>
         
         {/* Footer */}
-        <p className="text-xs text-gray-500 dark:text-gray-400" style={{ fontFamily: "'Manrope', sans-serif", fontWeight: 300 }}>
+        <p className="text-xs text-gray-500" style={{ fontFamily: "'Manrope', sans-serif", fontWeight: 300 }}>
           This usually takes 10-30 seconds
         </p>
       </div>
