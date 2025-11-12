@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, memo, useCallback } from 'react';
 import { useConceptStore } from '@/store/conceptStore';
 import { ConceptNode } from '@/types/conceptTypes';
 import { Search, Filter, Award, BookOpen, Brain } from 'lucide-react';
@@ -8,9 +8,9 @@ interface ConceptCardProps {
   onPractice: (conceptId: string) => void;
 }
 
-const ConceptCard: React.FC<ConceptCardProps> = ({ concept, onPractice }) => {
+const ConceptCard: React.FC<ConceptCardProps> = memo(({ concept, onPractice }) => {
   // Get mastery level color
-  const getMasteryColor = (level: number) => {
+  const getMasteryColor = useCallback((level: number) => {
     switch(level) {
       case 0: return 'bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300';
       case 1: return 'bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-200';
@@ -19,10 +19,10 @@ const ConceptCard: React.FC<ConceptCardProps> = ({ concept, onPractice }) => {
       case 4: return 'bg-purple-100 dark:bg-purple-900/30 text-purple-800 dark:text-purple-200';
       default: return 'bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300';
     }
-  };
+  }, []);
   
   // Get mastery level name
-  const getMasteryLevelName = (level: number) => {
+  const getMasteryLevelName = useCallback((level: number) => {
     switch(level) {
       case 0: return 'Unseen';
       case 1: return 'Introduced';
@@ -31,7 +31,7 @@ const ConceptCard: React.FC<ConceptCardProps> = ({ concept, onPractice }) => {
       case 4: return 'Mastered';
       default: return 'Unknown';
     }
-  };
+  }, []);
 
   return (
     <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-4 shadow-sm hover:shadow-md transition-shadow">
@@ -95,7 +95,7 @@ const ConceptCard: React.FC<ConceptCardProps> = ({ concept, onPractice }) => {
       </div>
     </div>
   );
-};
+});
 
 // List item version for more compact view
 interface ConceptListItemProps {
@@ -103,7 +103,7 @@ interface ConceptListItemProps {
   onPractice: (conceptId: string) => void;
 }
 
-const ConceptListItem: React.FC<ConceptListItemProps> = ({ concept, onPractice }) => {
+const ConceptListItem: React.FC<ConceptListItemProps> = memo(({ concept, onPractice }) => {
   return (
     <div className="flex items-center justify-between p-3 border-b border-gray-200 dark:border-gray-700">
       <div className="flex-1">
@@ -138,16 +138,16 @@ const ConceptListItem: React.FC<ConceptListItemProps> = ({ concept, onPractice }
       </button>
     </div>
   );
-};
+});
 
 export const ConceptGridView: React.FC = () => {
   const { filteredConcepts } = useConceptStore();
   
-  // Define practice handler
-  const handlePractice = (conceptId: string) => {
+  // Define practice handler with useCallback to prevent re-renders
+  const handlePractice = useCallback((conceptId: string) => {
     console.log('Practice concept:', conceptId);
     // In a real implementation, this would start a practice session
-  };
+  }, []);
   
   // Local state for grid view
   const [sortBy, setSortBy] = useState<'mastery' | 'difficulty' | 'lastPracticed'>('mastery');
