@@ -146,19 +146,19 @@ export function AuthForm({ onSuccess }: AuthFormProps = {}) {
   };
 
   return (
-    <div className="w-full max-w-md mx-4">
+    <div className="w-full">
       {/* Main Card */}
       <div className="bg-white/90 backdrop-blur-2xl rounded-3xl shadow-2xl overflow-hidden relative border border-black/[0.08]">
         
         {/* Header */}
-        <div className="px-8 pt-10 pb-8 text-center">
-          <div className="inline-block relative mb-6">
-            <h1 className="text-4xl font-bold text-stone-800 tracking-tight mb-0" style={{ fontFamily: "'Unbounded', sans-serif", fontWeight: 500, letterSpacing: '-0.02em' }}>
+        <div className="px-4 sm:px-8 pt-8 sm:pt-10 pb-6 sm:pb-8 text-center">
+          <div className="inline-block relative mb-4 sm:mb-6">
+            <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold text-stone-800 tracking-tight mb-0" style={{ fontFamily: "'Unbounded', sans-serif", fontWeight: 500, letterSpacing: '-0.02em' }}>
               {mode === 'signin' ? 'Welcome Back' : 'Get Started'}
             </h1>
             <div className="h-[1px] w-12 bg-stone-300 mx-auto mt-3"></div>
           </div>
-          <p className="text-base text-stone-600 tracking-normal" style={{ fontFamily: "'Manrope', sans-serif", fontWeight: 300 }}>
+          <p className="text-sm sm:text-base text-stone-600 tracking-normal px-2" style={{ fontFamily: "'Manrope', sans-serif", fontWeight: 300 }}>
             {mode === 'signin' 
               ? 'Sign in to continue your learning journey' 
               : 'Create an account to start learning'}
@@ -166,7 +166,7 @@ export function AuthForm({ onSuccess }: AuthFormProps = {}) {
         </div>
         
         {/* Form */}
-        <form onSubmit={handleSubmit(onSubmit)} className="px-8 pt-6 pb-6 space-y-4">
+        <form onSubmit={handleSubmit(onSubmit)} className="px-4 sm:px-8 pt-6 pb-6 space-y-4">
             {info && (
               <div className="p-4 rounded-2xl bg-emerald-50 border border-emerald-200">
                 <div className="text-sm text-emerald-700" style={{ fontFamily: "'Manrope', sans-serif", fontWeight: 400 }}>

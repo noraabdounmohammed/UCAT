@@ -201,13 +201,13 @@ export const CurriculumApp: React.FC = () => {
   // Protect hub view - require sign-in to access "My Curriculums"
   if (currentView === 'hub' && !user) {
     return (
-      <div className="fixed inset-0 flex items-center justify-center bg-stone-50 overflow-hidden">
-        <div className="max-w-md mx-4">
-          <div className="mb-6 text-center">
-            <h2 className="text-2xl font-medium text-stone-900 mb-2" style={{ fontFamily: "'Unbounded', sans-serif" }}>
+      <div className="fixed inset-0 flex items-center justify-center bg-stone-50 overflow-hidden p-4">
+        <div className="w-full max-w-md">
+          <div className="mb-6 text-center px-4">
+            <h2 className="text-xl sm:text-2xl font-medium text-stone-900 mb-2" style={{ fontFamily: "'Unbounded', sans-serif" }}>
               Sign In Required
             </h2>
-            <p className="text-stone-600" style={{ fontFamily: "'Manrope', sans-serif", fontWeight: 300 }}>
+            <p className="text-sm sm:text-base text-stone-600" style={{ fontFamily: "'Manrope', sans-serif", fontWeight: 300 }}>
               Please sign in to access your curriculums
             </p>
           </div>
