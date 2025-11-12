@@ -5,6 +5,7 @@ import { ThemeProvider } from '@/contexts/ThemeContext';
 import { FontSizeProvider } from '@/contexts/FontSizeContext';
 import { AuthProvider } from '@/contexts/AuthContext';
 import { StorageNotification } from '@/components/StorageNotification';
+import { PWAInstallPrompt } from '@/components/PWAInstallPrompt';
 import '@/styles/font-sizes.css';
 
 // Lazy load heavy components for better performance
@@ -38,6 +39,7 @@ function App() {
       <ThemeProvider>
         <FontSizeProvider>
           <StorageNotification />
+          <PWAInstallPrompt />
           <Suspense fallback={<PageLoader />}>
             <Routes>
             {/* Landing Page - Elevated Learning */}
