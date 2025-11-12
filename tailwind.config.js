@@ -8,6 +8,14 @@ export default {
     './src/**/*.{ts,tsx}',
   ],
   theme: {
+    screens: {
+      'xs': '375px',   // Small phones
+      'sm': '640px',   // Large phones
+      'md': '768px',   // Tablets
+      'lg': '1024px',  // Small laptops
+      'xl': '1280px',  // Desktops
+      '2xl': '1536px', // Large desktops
+    },
     extend: {
       fontFamily: {
         sans: ['Inter var', 'Inter', 'system-ui', 'sans-serif'],

@@ -1,21 +1,34 @@
 import { Routes, Route, Navigate } from 'react-router-dom';
-import Dashboard from '@/components/dashboard/Dashboard';
-import { MockExam } from '@/pages/MockExam';
-import { QuestionPracticePage } from '@/pages/QuestionPracticePage';
-import { CurriculumApp } from '@/components/CurriculumApp';
+import { lazy, Suspense } from 'react';
 import { MainLayout } from '@/components/layout/MainLayout';
 import { ThemeProvider } from '@/contexts/ThemeContext';
 import { FontSizeProvider } from '@/contexts/FontSizeContext';
 import { AuthProvider } from '@/contexts/AuthContext';
-import { ChatInputExample } from '@/components/examples/ChatInputExample';
-import DynamicQuestionDemo from '@/components/examples/DynamicQuestionDemo';
-import { TestExplanationGenerator } from '@/components/examples/TestExplanationGenerator';
-import { ConciseExplanationDemo } from '@/components/examples/ConciseExplanationDemo';
-import { ConceptNodePracticeSection } from '@/components/practice/ConceptNodePracticeSection';
-import { CurriculumLandingPage } from '@/pages/CurriculumLandingPage';
-import { LandingPage } from '@/pages/LandingPage';
 import { StorageNotification } from '@/components/StorageNotification';
 import '@/styles/font-sizes.css';
+
+// Lazy load heavy components for better performance
+const Dashboard = lazy(() => import('@/components/dashboard/Dashboard'));
+const MockExam = lazy(() => import('@/pages/MockExam').then(m => ({ default: m.MockExam })));
+const QuestionPracticePage = lazy(() => import('@/pages/QuestionPracticePage').then(m => ({ default: m.QuestionPracticePage })));
+const CurriculumApp = lazy(() => import('@/components/CurriculumApp').then(m => ({ default: m.CurriculumApp })));
+const LandingPage = lazy(() => import('@/pages/LandingPage').then(m => ({ default: m.LandingPage })));
+const CurriculumLandingPage = lazy(() => import('@/pages/CurriculumLandingPage').then(m => ({ default: m.CurriculumLandingPage })));
+const ChatInputExample = lazy(() => import('@/components/examples/ChatInputExample').then(m => ({ default: m.ChatInputExample })));
+const DynamicQuestionDemo = lazy(() => import('@/components/examples/DynamicQuestionDemo'));
+const TestExplanationGenerator = lazy(() => import('@/components/examples/TestExplanationGenerator').then(m => ({ default: m.TestExplanationGenerator })));
+const ConciseExplanationDemo = lazy(() => import('@/components/examples/ConciseExplanationDemo').then(m => ({ default: m.ConciseExplanationDemo })));
+const ConceptNodePracticeSection = lazy(() => import('@/components/practice/ConceptNodePracticeSection').then(m => ({ default: m.ConceptNodePracticeSection })));
+
+// Loading component
+const PageLoader = () => (
+  <div className="h-screen w-screen flex items-center justify-center bg-stone-50">
+    <div className="text-center">
+      <div className="w-12 h-12 border-4 border-stone-200 border-t-stone-900 rounded-full animate-spin mx-auto mb-4"></div>
+      <p className="text-sm text-stone-600" style={{ fontFamily: "'Manrope', sans-serif" }}>Loading...</p>
+    </div>
+  </div>
+);
 
 // Mock user data removed
 
@@ -25,9 +38,10 @@ function App() {
       <ThemeProvider>
         <FontSizeProvider>
           <StorageNotification />
-          <Routes>
-          {/* Landing Page - Elevated Learning */}
-          <Route path="/" element={<LandingPage />} />
+          <Suspense fallback={<PageLoader />}>
+            <Routes>
+            {/* Landing Page - Elevated Learning */}
+            <Route path="/" element={<LandingPage />} />
           
           {/* Dashboard route */}
           <Route path="/dashboard" element={
@@ -90,6 +104,7 @@ function App() {
           {/* Redirect any routes to home */}
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
+          </Suspense>
         </FontSizeProvider>
       </ThemeProvider>
     </AuthProvider>
