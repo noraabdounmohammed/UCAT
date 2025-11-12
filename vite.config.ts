@@ -21,19 +21,15 @@ export default defineConfig({
         start_url: '/',
         icons: [
           {
-            src: 'pwa-192x192.png',
+            src: "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 192 192'%3E%3Crect fill='%231c1917' width='192' height='192'/%3E%3Ctext x='96' y='130' font-size='100' text-anchor='middle' fill='%23fafaf9' font-family='Arial, sans-serif' font-weight='bold'%3EM%3C/text%3E%3C/svg%3E",
             sizes: '192x192',
-            type: 'image/png'
+            type: 'image/svg+xml',
+            purpose: 'any'
           },
           {
-            src: 'pwa-512x512.png',
+            src: "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'%3E%3Crect fill='%231c1917' width='512' height='512'/%3E%3Ctext x='256' y='350' font-size='280' text-anchor='middle' fill='%23fafaf9' font-family='Arial, sans-serif' font-weight='bold'%3EM%3C/text%3E%3C/svg%3E",
             sizes: '512x512',
-            type: 'image/png'
-          },
-          {
-            src: 'pwa-512x512.png',
-            sizes: '512x512',
-            type: 'image/png',
+            type: 'image/svg+xml',
             purpose: 'any maskable'
           }
         ]
