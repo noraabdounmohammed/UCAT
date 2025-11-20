@@ -229,6 +229,7 @@ export interface ConceptPracticeState {
   generatingQuestionCount: number; // Number of questions being generated for loading screen
   
   // Actions
+  migrateFilterState: () => void;
   loadConcepts: () => Promise<void>;
   updateFilterState: (filterUpdates: Partial<ConceptFilterState>) => void;
   resetFilters: () => void;

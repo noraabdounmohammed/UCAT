@@ -1,9 +1,13 @@
+console.log('🚀 MAIN.TSX LOADED - JavaScript is running!');
+
 import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 import { BrowserRouter } from 'react-router-dom';
 import { AuthProvider } from './contexts/AuthContext';
 import App from './App.tsx';
 import './index.css';
+
+console.log('✅ All imports loaded successfully');
 
 // Check if we're in development mode without Supabase credentials
 const isDevelopmentMode = !import.meta.env.VITE_SUPABASE_URL || !import.meta.env.VITE_SUPABASE_ANON_KEY;
@@ -37,6 +41,9 @@ if (isDevelopmentMode) {
   
   console.log('🔧 Running in offline mode - Supabase completely disabled');
 }
+
+console.log('📦 About to render React app...');
+console.log('📦 Root element exists:', !!document.getElementById('root'));
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>

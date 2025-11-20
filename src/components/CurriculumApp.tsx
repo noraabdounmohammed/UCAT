@@ -28,17 +28,19 @@ export const CurriculumApp: React.FC = () => {
   // Load curriculums from localStorage on mount and handle pending imports
   useEffect(() => {
     const loadCurriculums = async () => {
+      console.log('📚 CurriculumApp: Loading curriculums, user:', user?.email);
+      
       // Check for pending curriculum import from landing page
       const pendingImport = sessionStorage.getItem('pendingCurriculumImport');
       
       if (pendingImport) {
         try {
           const curriculumData = JSON.parse(pendingImport);
-          console.log('🔵 Importing curriculum in background:', curriculumData.name);
+          console.log('📥 CurriculumApp: Importing pending curriculum:', curriculumData.name);
           
-          // Import curriculum
-          const newCurriculumId = await CurriculumPublishingService.importCurriculum(curriculumData);
-          console.log('✅ Import successful, new ID:', newCurriculumId);
+          // Import curriculum with user ID if available
+          const newCurriculumId = await CurriculumPublishingService.importCurriculum(curriculumData, user?.id);
+          console.log('✅ CurriculumApp: Import successful, ID:', newCurriculumId);
           
           // Store the ID to auto-open it
           sessionStorage.setItem('autoOpenCurriculumId', newCurriculumId);
@@ -51,8 +53,32 @@ export const CurriculumApp: React.FC = () => {
         }
       }
       
-      // Load curriculums from localStorage
-      const storedCurriculums = localStorage.getItem('curriculums');
+      // Load curriculums from localStorage using user-specific key if signed in
+      let storedCurriculums: string | null = null;
+      
+      if (user) {
+        // Try user-specific key first
+        const userKey = `user_${user.id}_curriculums`;
+        storedCurriculums = localStorage.getItem(userKey);
+        console.log('📍 CurriculumApp: Checking user-specific key:', userKey, 'found:', !!storedCurriculums);
+        
+        // Migration: Move from old global key to user-specific key
+        if (!storedCurriculums) {
+          const oldGlobalCurriculums = localStorage.getItem('curriculums');
+          if (oldGlobalCurriculums) {
+            console.log('🔄 CurriculumApp: Migrating curriculums to user-specific key');
+            localStorage.setItem(userKey, oldGlobalCurriculums);
+            storedCurriculums = oldGlobalCurriculums;
+          }
+        }
+      }
+      
+      // Fallback to global key if not signed in or no user-specific data
+      if (!storedCurriculums) {
+        console.log('📍 CurriculumApp: Using global key');
+        storedCurriculums = localStorage.getItem('curriculums');
+      }
+      
       if (storedCurriculums) {
         try {
           const parsed = JSON.parse(storedCurriculums);
@@ -60,16 +86,19 @@ export const CurriculumApp: React.FC = () => {
             ...c,
             lastAccessed: new Date(c.lastAccessed)
           }));
+          console.log('✅ CurriculumApp: Loaded', curriculumsWithDates.length, 'curriculums');
           setCurriculums(curriculumsWithDates);
         } catch (error) {
           console.error('Failed to load curriculums from localStorage:', error);
         }
+      } else {
+        console.log('📭 CurriculumApp: No curriculums found');
       }
       setIsLoaded(true);
     };
     
     loadCurriculums();
-  }, []);
+  }, [user]);
 
   // Check sessionStorage for curriculum ID to auto-open (from landing page)
   useEffect(() => {
@@ -81,7 +110,7 @@ export const CurriculumApp: React.FC = () => {
     });
     
     if (!isLoaded || curriculums.length === 0) {
-      console.log('⏳ Waiting for curriculums to load...', { isLoaded, count: curriculums.length });
+
       return;
     }
 
@@ -99,14 +128,14 @@ export const CurriculumApp: React.FC = () => {
     if (autoOpenId && !selectedCurriculum) {
       const curriculum = curriculums.find(c => c.id === autoOpenId);
       if (curriculum) {
-        console.log('🎯 Auto-opening curriculum from landing page:', curriculum.name, curriculum.id);
+
         setSelectedCurriculum(curriculum);
         setCurrentView('curriculum');
         
         // Clear sessionStorage so it doesn't re-trigger
         sessionStorage.removeItem('autoOpenCurriculumId');
       } else {
-        console.log('❌ Curriculum not found in list:', autoOpenId);
+
         // Clear it anyway to prevent infinite retries
         sessionStorage.removeItem('autoOpenCurriculumId');
       }
@@ -116,10 +145,12 @@ export const CurriculumApp: React.FC = () => {
   // Save curriculums to localStorage whenever they change
   useEffect(() => {
     if (isLoaded && curriculums.length > 0) {
-      console.log('CurriculumApp: Saving curriculums to localStorage:', curriculums.length);
-      localStorage.setItem('curriculums', JSON.stringify(curriculums));
+      // Use user-specific key if signed in, otherwise use global key
+      const storageKey = user ? `user_${user.id}_curriculums` : 'curriculums';
+      localStorage.setItem(storageKey, JSON.stringify(curriculums));
+      console.log('💾 CurriculumApp: Saved', curriculums.length, 'curriculums to key:', storageKey);
     }
-  }, [curriculums, isLoaded]);
+  }, [curriculums, isLoaded, user]);
 
   const handleOpenCurriculum = (curriculum: Curriculum) => {
     setSelectedCurriculum(curriculum);
@@ -128,7 +159,8 @@ export const CurriculumApp: React.FC = () => {
 
   const handleBackToCurriculums = () => {
     // Reload curriculums from localStorage when returning to hub
-    const storedCurriculums = localStorage.getItem('curriculums');
+    const storageKey = user ? `user_${user.id}_curriculums` : 'curriculums';
+    const storedCurriculums = localStorage.getItem(storageKey);
     if (storedCurriculums) {
       try {
         const parsed = JSON.parse(storedCurriculums);
@@ -137,7 +169,7 @@ export const CurriculumApp: React.FC = () => {
           lastAccessed: new Date(c.lastAccessed)
         }));
         setCurriculums(curriculumsWithDates);
-        console.log('🔄 Reloaded curriculums from localStorage:', curriculumsWithDates.length);
+        console.log('🔄 CurriculumApp: Reloaded', curriculumsWithDates.length, 'curriculums from key:', storageKey);
       } catch (error) {
         console.error('Failed to reload curriculums:', error);
       }
@@ -157,7 +189,7 @@ export const CurriculumApp: React.FC = () => {
   };
 
   const handleCreateCurriculum = (newCurriculum: Curriculum) => {
-    console.log('CurriculumApp: Creating new curriculum:', newCurriculum);
+
     setCurriculums(prev => [...prev, newCurriculum]);
     
     // Navigate to the new curriculum

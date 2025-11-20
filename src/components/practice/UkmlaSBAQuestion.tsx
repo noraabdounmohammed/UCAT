@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { CheckCircle, XCircle, ChevronRight, Brain, ArrowLeft, ChevronLeft, Sun, Moon, Sparkles, X } from 'lucide-react';
+import { CheckCircle, XCircle, ChevronRight, ArrowLeft, ChevronLeft, Sun, Moon, Sparkles, X } from 'lucide-react';
 import type { QuestionData } from './questionTypes';
 import ReactMarkdown from 'react-markdown';
 import { AIHelper } from './AIHelperClean';
@@ -174,7 +174,10 @@ export const UkmlaSBAQuestion: React.FC<UkmlaSBAQuestionProps> = ({
       <div className="relative w-full max-w-2xl mx-auto my-4 sm:my-6 md:my-8">
         {/* Stacked cards effect - background layers (hidden on mobile for performance) */}
         <div 
-          className="hidden sm:block absolute w-full h-full rounded-[24px] bg-[#2A2A2A] shadow-[0_2px_8px_rgba(0,0,0,0.2)]"
+          className={cn(
+            "hidden sm:block absolute w-full h-full rounded-[24px]",
+            isLightMode ? "bg-zinc-200 shadow-[0_2px_8px_rgba(0,0,0,0.1)]" : "bg-[#2A2A2A] shadow-[0_2px_8px_rgba(0,0,0,0.2)]"
+          )}
           style={{ 
             top: '16px',
             left: '0',
@@ -184,7 +187,10 @@ export const UkmlaSBAQuestion: React.FC<UkmlaSBAQuestionProps> = ({
           }}
         />
         <div 
-          className="hidden sm:block absolute w-full h-full rounded-[24px] bg-[#252525] shadow-[0_3px_10px_rgba(0,0,0,0.25)]"
+          className={cn(
+            "hidden sm:block absolute w-full h-full rounded-[24px]",
+            isLightMode ? "bg-zinc-100 shadow-[0_3px_10px_rgba(0,0,0,0.15)]" : "bg-[#252525] shadow-[0_3px_10px_rgba(0,0,0,0.25)]"
+          )}
           style={{ 
             top: '8px',
             left: '0',
@@ -195,16 +201,30 @@ export const UkmlaSBAQuestion: React.FC<UkmlaSBAQuestionProps> = ({
         />
         
         {/* Main card */}
-        <div className="relative bg-[#1E1E1E] rounded-2xl sm:rounded-[24px] shadow-[0_4px_12px_rgba(0,0,0,0.3)] sm:shadow-[0_6px_20px_rgba(0,0,0,0.35)] overflow-visible" style={{ zIndex: 3 }}>
+        <div className={cn(
+          "relative rounded-2xl sm:rounded-[24px] overflow-visible",
+          isLightMode 
+            ? "bg-white shadow-[0_4px_12px_rgba(0,0,0,0.1)] sm:shadow-[0_6px_20px_rgba(0,0,0,0.15)]" 
+            : "bg-[#1E1E1E] shadow-[0_4px_12px_rgba(0,0,0,0.3)] sm:shadow-[0_6px_20px_rgba(0,0,0,0.35)]"
+        )} style={{ zIndex: 3 }}>
           {/* Gradient overlays for depth */}
-          <div className="absolute inset-0 bg-gradient-to-b from-white/[0.03] to-transparent pointer-events-none rounded-2xl sm:rounded-[24px]" />
-          <div className="absolute inset-0 bg-gradient-to-t from-black/10 to-transparent pointer-events-none rounded-2xl sm:rounded-[24px]" />
+          <div className={cn(
+            "absolute inset-0 bg-gradient-to-b pointer-events-none rounded-2xl sm:rounded-[24px]",
+            isLightMode ? "from-black/[0.02] to-transparent" : "from-white/[0.03] to-transparent"
+          )} />
+          <div className={cn(
+            "absolute inset-0 bg-gradient-to-t pointer-events-none rounded-2xl sm:rounded-[24px]",
+            isLightMode ? "from-black/[0.03] to-transparent" : "from-black/10 to-transparent"
+          )} />
           
           {/* Content */}
           <div className="relative p-4 sm:p-6 md:p-8 pb-safe">
             {/* Question */}
             <div className="mb-5 sm:mb-6 md:mb-8">
-              <div className="text-[14px] sm:text-[15px] md:text-[17px] font-medium leading-[1.5] sm:leading-[1.4] text-white">
+              <div className={cn(
+                "text-[14px] sm:text-[15px] md:text-[17px] font-medium leading-[1.5] sm:leading-[1.4]",
+                isLightMode ? "text-zinc-900" : "text-white"
+              )}>
                 <ReactMarkdown>{questionContent}</ReactMarkdown>
               </div>
             </div>
@@ -215,21 +235,33 @@ export const UkmlaSBAQuestion: React.FC<UkmlaSBAQuestionProps> = ({
                 <div
                   key={option.id}
                   onClick={() => handleOptionSelect(option.id)}
-                  className={`flex items-start p-3 sm:p-3.5 md:p-4 rounded-lg sm:rounded-xl cursor-pointer transition-all duration-200 active:scale-[0.98] ${
+                  className={cn(
+                    "flex items-start p-3 sm:p-3.5 md:p-4 rounded-lg sm:rounded-xl cursor-pointer transition-all duration-200 active:scale-[0.98]",
                     hasSubmitted && option.id === correctAnswerId
                       ? 'bg-emerald-500/20 border-2 border-emerald-500'
                       : hasSubmitted && option.id === selectedOption
                       ? 'bg-rose-500/20 border-2 border-rose-500'
                       : selectedOption === option.id
-                      ? 'bg-white/10 border-2 border-white/30'
-                      : 'bg-white/5 border-2 border-white/10 hover:bg-white/10 hover:border-white/20'
-                  }`}
+                      ? isLightMode ? 'bg-zinc-100 border-2 border-zinc-300' : 'bg-white/10 border-2 border-white/30'
+                      : isLightMode 
+                        ? 'bg-zinc-50 border-2 border-zinc-200 hover:bg-zinc-100 hover:border-zinc-300'
+                        : 'bg-white/5 border-2 border-white/10 hover:bg-white/10 hover:border-white/20'
+                  )}
                 >
-                  <div className="flex-shrink-0 w-7 h-7 sm:w-7 sm:h-7 rounded-full flex items-center justify-center mr-2.5 sm:mr-3 mt-0.5 bg-white/10 border border-white/20">
-                    <span className="text-xs sm:text-sm font-semibold text-white">{option.id}</span>
+                  <div className={cn(
+                    "flex-shrink-0 w-7 h-7 sm:w-7 sm:h-7 rounded-full flex items-center justify-center mr-2.5 sm:mr-3 mt-0.5 border",
+                    isLightMode ? "bg-zinc-200 border-zinc-300" : "bg-white/10 border-white/20"
+                  )}>
+                    <span className={cn(
+                      "text-xs sm:text-sm font-semibold",
+                      isLightMode ? "text-zinc-900" : "text-white"
+                    )}>{option.id}</span>
                   </div>
                   <div className="flex-1 min-w-0">
-                    <div className="text-[13px] sm:text-[14px] md:text-[15px] font-medium leading-[1.4] sm:leading-[1.3] text-white break-words">
+                    <div className={cn(
+                      "text-[13px] sm:text-[14px] md:text-[15px] font-medium leading-[1.4] sm:leading-[1.3] break-words",
+                      isLightMode ? "text-zinc-900" : "text-white"
+                    )}>
                       <ReactMarkdown>{option.text}</ReactMarkdown>
                     </div>
                   </div>
@@ -248,8 +280,14 @@ export const UkmlaSBAQuestion: React.FC<UkmlaSBAQuestionProps> = ({
               <div className="animate-in fade-in slide-in-from-bottom-4 duration-300">
                 {/* Explanation section */}
                 {explanation && (
-                  <div className="mt-4 sm:mt-5 md:mt-6 pt-4 sm:pt-5 md:pt-6 border-t border-white/10">
-                    <div className="text-[13px] sm:text-[14px] md:text-[15px] font-medium leading-[1.5] sm:leading-[1.4] text-white/80">
+                  <div className={cn(
+                    "mt-4 sm:mt-5 md:mt-6 pt-4 sm:pt-5 md:pt-6 border-t",
+                    isLightMode ? "border-zinc-200" : "border-white/10"
+                  )}>
+                    <div className={cn(
+                      "text-[13px] sm:text-[14px] md:text-[15px] font-medium leading-[1.5] sm:leading-[1.4]",
+                      isLightMode ? "text-zinc-700" : "text-white/80"
+                    )}>
                       <ReactMarkdown>{explanation}</ReactMarkdown>
                     </div>
                   </div>
@@ -257,10 +295,18 @@ export const UkmlaSBAQuestion: React.FC<UkmlaSBAQuestionProps> = ({
 
 
                 {/* Next button */}
-                <div className="mt-4 sm:mt-5 md:mt-6 pt-4 sm:pt-5 md:pt-6 border-t border-white/10">
+                <div className={cn(
+                  "mt-4 sm:mt-5 md:mt-6 pt-4 sm:pt-5 md:pt-6 border-t",
+                  isLightMode ? "border-zinc-200" : "border-white/10"
+                )}>
                   <button
                     onClick={onNext}
-                    className="w-full py-3 sm:py-3 md:py-3.5 bg-white/10 hover:bg-white/20 active:bg-white/15 text-white font-semibold rounded-lg sm:rounded-xl transition-all border-2 border-white/20 hover:border-white/30 active:scale-[0.98] flex items-center justify-center gap-2 text-sm sm:text-base touch-manipulation"
+                    className={cn(
+                      "w-full py-3 sm:py-3 md:py-3.5 font-semibold rounded-lg sm:rounded-xl transition-all border-2 active:scale-[0.98] flex items-center justify-center gap-2 text-sm sm:text-base touch-manipulation",
+                      isLightMode
+                        ? "bg-zinc-900 hover:bg-zinc-800 active:bg-zinc-700 text-white border-zinc-900 hover:border-zinc-800"
+                        : "bg-white/10 hover:bg-white/20 active:bg-white/15 text-white border-white/20 hover:border-white/30"
+                    )}
                   >
                     <span>Next Question</span>
                     <ChevronRight className="h-4 w-4 sm:h-5 sm:w-5" />

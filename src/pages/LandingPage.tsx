@@ -285,13 +285,14 @@ export const LandingPage: React.FC = () => {
       <div className="w-full px-8 pt-16 pb-0 flex-shrink-0">
         <div className="max-w-6xl mx-auto w-full text-center">
           <div className="inline-block relative mb-8">
-            <h1 className="font-bold text-stone-800 tracking-tight transition-all duration-700 mb-0" style={{ fontFamily: "'Unbounded', sans-serif", fontWeight: 500, letterSpacing: '-0.02em', fontSize: '3.75rem', lineHeight: '1' }}>
-              Elevated Learning
+            <h1 className="font-bold text-stone-800 tracking-tight transition-all duration-700 mb-0" style={{ fontFamily: "'Unbounded', sans-serif", fontWeight: 500, letterSpacing: '-0.02em', lineHeight: '1.2' }}>
+              <span className="text-[38px] md:text-[60px] whitespace-nowrap">Elevated</span><br />
+              <span className="text-[38px] md:text-[60px] whitespace-nowrap">Exam Prep</span>
             </h1>
             <div className="h-[1px] w-20 bg-stone-400 mx-auto mt-6"></div>
           </div>
           <p className="text-xl md:text-2xl text-stone-600 tracking-normal transition-all duration-700" style={{ fontFamily: "'Manrope', sans-serif", fontWeight: 300 }}>
-            {displayCards[currentIndex]?.title || 'Medical Education'}
+            for the <span className="font-semibold text-stone-800">{displayCards[currentIndex]?.title || 'Medical Education'}</span> exam
           </p>
         </div>
       </div>
@@ -390,7 +391,7 @@ export const LandingPage: React.FC = () => {
 
       {/* Search Bar */}
       <div className="w-full px-8 pt-6 pb-4 flex-shrink-0">
-        <div className="max-w-2xl mx-auto w-full">
+        <div className="max-w-xl mx-auto w-full">
           <div className="relative group">
             <input
               type="text"
@@ -414,14 +415,14 @@ export const LandingPage: React.FC = () => {
 
       {/* Footer */}
       <footer className="w-full px-8 py-4 flex justify-between items-center text-stone-400 text-[10px] uppercase tracking-widest flex-shrink-0 border-t border-stone-300/20 font-['Unbounded']" style={{ fontWeight: 500 }}>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 invisible">
           <div className="w-1 h-1 bg-stone-400 rounded-full"></div>
           <span>Est. 2024</span>
         </div>
-        <div className="hidden md:block font-light">Excellence in Medical Education</div>
+        <div className="hidden md:block font-light invisible">Excellence in Medical Education</div>
         <button 
           onClick={() => navigate('/concept-practice')}
-          className="px-4 py-1.5 bg-stone-800/5 border border-stone-300/30 rounded-full hover:bg-stone-800/10 hover:border-stone-300/50 transition-all text-xs font-light"
+          className="px-4 py-1.5 bg-stone-800/5 border border-stone-300/30 rounded-full hover:bg-stone-800/10 hover:border-stone-300/50 transition-all text-xs font-light invisible"
         >
           Browse All
         </button>

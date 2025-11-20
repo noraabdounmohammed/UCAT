@@ -18,7 +18,7 @@ export default defineConfig({
         display: 'standalone',
         orientation: 'portrait',
         scope: '/',
-        start_url: '/',
+        start_url: '/?v=2',
         icons: [
           {
             src: '/pwa-192x192.png',
@@ -105,7 +105,7 @@ export default defineConfig({
     minify: 'terser',
     terserOptions: {
       compress: {
-        drop_console: true, // Remove console.logs in production
+        drop_console: false, // Keep console.logs for debugging
         drop_debugger: true,
       },
     },

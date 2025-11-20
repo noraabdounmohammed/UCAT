@@ -223,24 +223,62 @@ export const CurriculumHubLoft: React.FC<CurriculumHubLoftProps> = ({
   // Load curriculums from localStorage on mount
   useEffect(() => {
     if (!propCurriculums) {
-      const storedCurriculums = localStorage.getItem('curriculums');
+      console.log('📚 Loading curriculums, user available:', !!user);
+      
+      let storedCurriculums: string | null = null;
+      let storageKey = 'curriculums'; // Default to global key
+      
+      // If user is available, try user-specific key first
+      if (user) {
+        const userKey = `user_${user.id}_curriculums`;
+        storedCurriculums = localStorage.getItem(userKey);
+        storageKey = userKey;
+        console.log('📍 Checking user-specific key:', userKey);
+        
+        // Migration: Move from old global 'curriculums' key to user-specific key
+        if (!storedCurriculums) {
+          const oldGlobalCurriculums = localStorage.getItem('curriculums');
+          if (oldGlobalCurriculums) {
+            console.log('🔄 Migrating curriculums from global key to user-specific key');
+            localStorage.setItem(userKey, oldGlobalCurriculums);
+            storedCurriculums = oldGlobalCurriculums;
+          }
+        }
+      }
+      
+      // Fallback to global key if user-specific doesn't exist
+      if (!storedCurriculums) {
+        console.log('📍 Falling back to global key');
+        storedCurriculums = localStorage.getItem('curriculums');
+        storageKey = 'curriculums';
+      }
+      
+      console.log('📦 Storage key used:', storageKey);
+      console.log('📦 Raw data length:', storedCurriculums?.length || 0);
+      
       if (storedCurriculums) {
         try {
           const parsed = JSON.parse(storedCurriculums);
+          console.log('📦 Parsed curriculums:', parsed.length);
           const curriculumsWithDates = parsed.map((c: any) => ({
             ...c,
             lastAccessed: new Date(c.lastAccessed)
           }));
+          console.log('✅ Loaded', curriculumsWithDates.length, 'curriculums');
           setLocalCurriculums(curriculumsWithDates);
         } catch (error) {
-          console.error('Failed to load curriculums from localStorage:', error);
+          console.error('❌ Failed to parse curriculums from localStorage:', error);
+          console.error('❌ Raw data:', storedCurriculums?.substring(0, 100));
           setLocalCurriculums([]);
         }
+      } else {
+        console.log('📭 No curriculums found in storage');
+        setLocalCurriculums([]);
       }
     }
     setIsLoaded(true);
     loadPublishedCurriculums();
-  }, [propCurriculums]);
+  }, [propCurriculums, user]);
 
   // Load published curriculums to check if current curriculum is published
   const loadPublishedCurriculums = async () => {
@@ -276,10 +314,13 @@ export const CurriculumHubLoft: React.FC<CurriculumHubLoftProps> = ({
 
   // Save curriculums to localStorage
   useEffect(() => {
-    if (isLoaded && !propCurriculums) {
-      localStorage.setItem('curriculums', JSON.stringify(curriculums));
+    if (isLoaded && !propCurriculums && user) {
+      // Use user-specific key to prevent data loss on logout/login
+      const userKey = `user_${user.id}_curriculums`;
+      localStorage.setItem(userKey, JSON.stringify(curriculums));
+      console.log('💾 Saved', curriculums.length, 'curriculums to key:', userKey);
     }
-  }, [curriculums, isLoaded, propCurriculums]);
+  }, [curriculums, isLoaded, propCurriculums, user]);
 
   const handleOpenCurriculum = (curriculum: Curriculum) => {
     if (onOpenCurriculum) {
@@ -495,18 +536,14 @@ export const CurriculumHubLoft: React.FC<CurriculumHubLoftProps> = ({
       <div className="relative px-4 md:px-8 pt-8 md:pt-16 pb-8 md:pb-12 border-b border-black/[0.04]">
         <div className="max-w-6xl mx-auto">
           {/* Title */}
-          <div className="mb-8 md:mb-12">
-            <div className="h-[1px] w-16 md:w-24 bg-stone-300 mb-4 md:mb-6"></div>
-            <h1 className="text-3xl md:text-5xl lg:text-6xl font-medium text-stone-900 mb-3 md:mb-4 tracking-tight" style={{ fontFamily: "'Unbounded', sans-serif", fontWeight: 500 }}>
-              Your Curriculums
+          <div className="mb-6 md:mb-8 text-center md:text-left md:pl-2">
+            <h1 className="text-3xl md:text-5xl lg:text-6xl font-medium text-stone-900 tracking-tight" style={{ fontFamily: "'Unbounded', sans-serif", fontWeight: 500 }}>
+              My Curriculums
             </h1>
-            <p className="text-base md:text-lg lg:text-xl text-stone-600 font-light" style={{ fontFamily: "'Manrope', sans-serif", fontWeight: 300 }}>
-              Curated learning paths
-            </p>
           </div>
 
           {/* Action Bar */}
-          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 md:gap-4">
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 md:gap-4 items-center md:items-stretch">
             {/* Only show Create button for creators */}
             {isCreator && (
               <button
@@ -532,7 +569,7 @@ export const CurriculumHubLoft: React.FC<CurriculumHubLoftProps> = ({
       </div>
 
       {/* Curriculum Gallery */}
-      <div className="relative px-4 md:px-8 pb-12 md:pb-20">
+      <div className="relative px-4 md:px-8 pt-8 md:pt-12 pb-12 md:pb-20">
         <div className="max-w-6xl mx-auto">
           {curriculums.length === 0 ? (
             <div className="text-center py-12 md:py-20 px-4">
@@ -584,23 +621,15 @@ export const CurriculumHubLoft: React.FC<CurriculumHubLoftProps> = ({
                       {/* Image/Visual Area */}
                       <div className="aspect-[3/4] bg-gradient-to-br from-stone-100 to-stone-50 rounded-2xl mb-6 relative overflow-hidden">
                         {curriculum.imageUrl ? (
-                          <>
-                            <img 
-                              src={curriculum.imageUrl} 
-                              alt={curriculum.name}
-                              className="absolute inset-0 w-full h-full object-cover"
-                              onError={(e) => {
-                                // Fallback to default view if image fails to load
-                                e.currentTarget.style.display = 'none';
-                              }}
-                            />
-                            {/* Overlay with concept count */}
-                            <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/20 to-transparent flex items-end justify-start p-6">
-                              <div className="text-5xl font-bold text-white/90" style={{ fontFamily: "'Unbounded', sans-serif" }}>
-                                {actualConceptCount}
-                              </div>
-                            </div>
-                          </>
+                          <img 
+                            src={curriculum.imageUrl} 
+                            alt={curriculum.name}
+                            className="absolute inset-0 w-full h-full object-cover"
+                            onError={(e) => {
+                              // Fallback to default view if image fails to load
+                              e.currentTarget.style.display = 'none';
+                            }}
+                          />
                         ) : (
                           <div className="absolute inset-0 flex items-center justify-center">
                             <div className="text-7xl font-bold text-stone-200" style={{ fontFamily: "'Unbounded', sans-serif" }}>

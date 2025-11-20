@@ -110,7 +110,6 @@ export const PracticeByCategorySelector: React.FC<PracticeByCategorySelectorProp
   return (
     <div className="mb-8 w-full">
       <div className="mb-6">
-        <div className="h-[1px] w-16 bg-stone-300 mb-4"></div>
         <h2 className="text-2xl md:text-3xl font-medium text-stone-900 mb-2 tracking-tight" style={{ fontFamily: "'Unbounded', sans-serif", fontWeight: 500 }}>
           Practice by {category.name}
         </h2>

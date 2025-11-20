@@ -78,7 +78,7 @@ export const CurriculumDashboard: React.FC<CurriculumDashboardProps> = ({
 
   return (
     <div className="flex-1 pb-20 md:pb-4">
-      <div className="max-w-6xl mx-auto px-4 sm:px-6 py-4 md:pt-0">
+      <div className="max-w-6xl mx-auto px-4 sm:px-6 pt-2 pb-4 md:pt-0">
 
         {/* Question Format Selector */}
         <div>

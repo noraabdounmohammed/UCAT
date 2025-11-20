@@ -3,7 +3,6 @@ import { useNavigate } from 'react-router-dom';
 import { CurriculumPublishingService, PublishedCurriculum } from '@/services/curriculumPublishing';
 import { Trash2 } from 'lucide-react';
 import { useUserRole } from '@/hooks/useUserRole';
-import { AuthBar } from '@/components/auth/AuthBar';
 
 interface CardData {
   id: string;
@@ -284,9 +283,17 @@ export const CurriculumLandingPage: React.FC = () => {
         </div>
       )}
 
-      {/* Auth Bar - Floating */}
-      <div className="fixed top-6 right-6 z-40">
-        <AuthBar />
+      {/* Back Button - Floating */}
+      <div className="fixed top-6 left-6 z-40">
+        <button
+          onClick={() => navigate('/concept-practice')}
+          className="p-3 bg-white/60 backdrop-blur-xl border border-black/[0.08] rounded-full hover:bg-white/80 hover:border-black/[0.12] transition-all duration-300 text-stone-600 hover:text-stone-900"
+          title="Back to Curriculum Hub"
+        >
+          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+          </svg>
+        </button>
       </div>
 
       {/* Header */}
@@ -395,14 +402,14 @@ export const CurriculumLandingPage: React.FC = () => {
 
       {/* Footer */}
       <footer className="w-full px-8 py-4 flex justify-between items-center text-stone-400 text-[10px] uppercase tracking-widest flex-shrink-0 border-t border-stone-300/20 font-['Unbounded']" style={{ fontWeight: 500 }}>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 invisible">
           <div className="w-1 h-1 bg-stone-400 rounded-full"></div>
           <span>Est. 2024</span>
         </div>
-        <div className="hidden md:block font-light">Excellence in Medical Education</div>
+        <div className="hidden md:block font-light invisible">Excellence in Medical Education</div>
         <button 
           onClick={() => navigate('/concept-practice')}
-          className="px-4 py-1.5 bg-stone-800/5 border border-stone-300/30 rounded-full hover:bg-stone-800/10 hover:border-stone-300/50 transition-all text-xs font-light"
+          className="px-4 py-1.5 bg-stone-800/5 border border-stone-300/30 rounded-full hover:bg-stone-800/10 hover:border-stone-300/50 transition-all text-xs font-light invisible"
         >
           Browse All
         </button>

@@ -29,9 +29,21 @@ export function PWAInstallPrompt() {
       }
     };
 
+    // Suppress the console warning about preventDefault
+    const originalError = console.error;
+    console.error = (...args) => {
+      if (typeof args[0] === 'string' && args[0].includes('beforeinstallprompt')) {
+        return; // Suppress PWA install prompt warnings
+      }
+      originalError.apply(console, args);
+    };
+
     window.addEventListener('beforeinstallprompt', handler);
 
-    return () => window.removeEventListener('beforeinstallprompt', handler);
+    return () => {
+      window.removeEventListener('beforeinstallprompt', handler);
+      console.error = originalError;
+    };
   }, []);
 
   const handleInstall = async () => {
@@ -73,46 +85,62 @@ export function PWAInstallPrompt() {
   if (!showPrompt || !deferredPrompt) return null;
 
   return (
-    <div className="fixed bottom-4 left-4 right-4 sm:left-auto sm:right-4 sm:max-w-sm z-50 animate-in slide-in-from-bottom duration-300">
-      <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl border border-gray-200 dark:border-gray-700 p-4">
-        <div className="flex items-start gap-3">
-          <div className="flex-shrink-0 w-12 h-12 bg-gradient-to-br from-blue-500 to-purple-600 rounded-xl flex items-center justify-center">
-            <Download className="w-6 h-6 text-white" />
-          </div>
-          
-          <div className="flex-1 min-w-0">
-            <h3 className="text-base font-semibold text-gray-900 dark:text-white mb-1" style={{ fontFamily: "'Unbounded', sans-serif" }}>
-              Install Medicu
-            </h3>
-            <p className="text-sm text-gray-600 dark:text-gray-400 mb-3" style={{ fontFamily: "'Manrope', sans-serif" }}>
-              Add to your home screen for quick access and offline use
-            </p>
-            
-            <div className="flex gap-2">
-              <button
-                onClick={handleInstall}
-                className="flex-1 px-4 py-2 bg-stone-900 hover:bg-stone-800 text-white text-sm font-medium rounded-full transition-colors"
-                style={{ fontFamily: "'Manrope', sans-serif" }}
-              >
-                Install
-              </button>
-              <button
-                onClick={handleDismiss}
-                className="px-4 py-2 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white text-sm font-medium transition-colors"
-                style={{ fontFamily: "'Manrope', sans-serif" }}
-              >
-                Not now
-              </button>
+    <div className="fixed bottom-4 left-4 right-4 sm:left-auto sm:right-4 sm:max-w-md z-[9999] animate-in slide-in-from-bottom duration-300">
+      <div className="relative bg-[#FAFAF9]/95 backdrop-blur-2xl border border-black/[0.04] shadow-2xl overflow-hidden">
+        {/* Subtle texture overlay */}
+        <div className="absolute inset-0 opacity-[0.015]" style={{
+          backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 400 400' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E")`
+        }}></div>
+
+        <div className="relative px-6 py-5">
+          {/* Decorative line */}
+          <div className="h-[1px] w-12 bg-stone-300 mb-4"></div>
+
+          <div className="flex items-start gap-4">
+            <div className="flex-shrink-0 w-12 h-12 bg-stone-900 flex items-center justify-center">
+              <Download className="w-5 h-5 text-white" />
             </div>
+            
+            <div className="flex-1 min-w-0">
+              <h3 
+                className="text-lg font-medium tracking-tight text-stone-900 mb-2" 
+                style={{ fontFamily: "'Unbounded', sans-serif", fontWeight: 500 }}
+              >
+                Install Medicu
+              </h3>
+              <p 
+                className="text-sm text-stone-600 mb-4 leading-relaxed" 
+                style={{ fontFamily: "'Manrope', sans-serif", fontWeight: 300 }}
+              >
+                Add to your home screen for quick access and offline use
+              </p>
+              
+              <div className="flex gap-3">
+                <button
+                  onClick={handleInstall}
+                  className="px-6 py-3 bg-stone-900 hover:bg-stone-800 text-white rounded-full transition-all duration-300 text-[11px] uppercase tracking-widest font-medium"
+                  style={{ fontFamily: "'Unbounded', sans-serif", fontWeight: 500 }}
+                >
+                  Install
+                </button>
+                <button
+                  onClick={handleDismiss}
+                  className="px-6 py-3 bg-white/60 hover:bg-white/80 text-stone-600 hover:text-stone-900 border border-black/[0.06] rounded-full transition-all duration-300 text-[11px] uppercase tracking-widest font-medium"
+                  style={{ fontFamily: "'Unbounded', sans-serif", fontWeight: 500 }}
+                >
+                  Not now
+                </button>
+              </div>
+            </div>
+            
+            <button
+              onClick={handleDismiss}
+              className="flex-shrink-0 p-2 text-stone-400 hover:text-stone-600 transition-colors"
+              aria-label="Close"
+            >
+              <X className="w-4 h-4" />
+            </button>
           </div>
-          
-          <button
-            onClick={handleDismiss}
-            className="flex-shrink-0 p-1 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
-            aria-label="Close"
-          >
-            <X className="w-5 h-5" />
-          </button>
         </div>
       </div>
     </div>

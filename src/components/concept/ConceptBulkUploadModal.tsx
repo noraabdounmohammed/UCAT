@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { useConceptStore } from '@/contexts/ConceptStoreContext';
 import { ConceptNode, FilterCategory } from '@/types/conceptTypes';
 import { Button } from '@/components/ui/button';
@@ -721,10 +721,22 @@ Output only a valid JSON array. No extra text.`;
   };
 
   // Get store functions and curriculum ID at component level
-  const { addConcept, createFilterCategory, curriculumId } = useConceptStore();
+  const store = useConceptStore();
+  const { addConcept, createFilterCategory, curriculumId } = store;
+  
+  // Use ref to track save state without causing re-renders
+  const isSavingRef = useRef(false);
 
   // Function to save concepts to the store with filter categories
-  const saveConcepts = () => {
+  const saveConcepts = async () => {
+    // Prevent multiple simultaneous saves using ref (doesn't cause re-render)
+    if (isSavingRef.current) {
+      console.log('⚠️ Save already in progress, ignoring duplicate call');
+      return;
+    }
+    
+    isSavingRef.current = true;
+    setIsLoading(true);
     console.log('💾 Starting to save concepts:', generatedConcepts);
     console.log('🔑 Curriculum ID from useConceptStore:', curriculumId);
     console.log('🔍 Type of curriculum ID:', typeof curriculumId);
@@ -813,8 +825,8 @@ Output only a valid JSON array. No extra text.`;
       console.log('✅ Filter assignments content:', mergedAssignments);
     }
 
-    // Then save concepts
-    generatedConcepts.forEach(concept => {
+    // Then save concepts (await each one to ensure proper state updates)
+    for (const concept of generatedConcepts) {
       try {
         console.log('🔍 Processing concept:', concept);
         
@@ -826,11 +838,11 @@ Output only a valid JSON array. No extra text.`;
             content: concept.content 
           });
           failed.push(concept);
-          return;
+          continue;
         }
 
-        // Add concept using the store
-        addConcept(concept);
+        // Add concept using the store (await to ensure it completes)
+        await addConcept(concept);
         added.push(concept);
         console.log('✅ Successfully added concept:', concept.title);
         
@@ -838,9 +850,13 @@ Output only a valid JSON array. No extra text.`;
         console.error(`❌ Error adding concept ${concept.concept_id}:`, error);
         failed.push(concept);
       }
-    });
+    }
 
     console.log(`📊 Save results: ${added.length} added, ${skipped.length} skipped, ${failed.length} failed`);
+    
+    // Reset loading and saving states
+    isSavingRef.current = false;
+    setIsLoading(false);
     
     // Update results and switch to results tab
     setResults({ 

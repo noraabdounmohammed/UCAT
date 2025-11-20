@@ -161,6 +161,9 @@ MANDATORY: Generate exactly 5 options. NO clinical scenarios.`;
     `    {"id": "${String.fromCharCode(65 + i)}", "text": "Option ${String.fromCharCode(65 + i)} text"}`
   ).join(',\n');
   
+  // Randomize which option is correct in the example to prevent AI bias
+  const randomCorrectLetter = String.fromCharCode(65 + Math.floor(Math.random() * optionCount));
+  
   const prompt = `
 Generate a single best answer question based on this concept:
 
@@ -179,15 +182,20 @@ Return the response as a JSON object with EXACTLY ${optionCount} options:
   "options": [
 ${optionExamples}
   ],
-  "correct": "A",
-  "explanation": "The correct answer is A because..."
+  "correct": "${randomCorrectLetter}",
+  "explanation": "The correct answer is ${randomCorrectLetter} because..."
 }
+
+CRITICAL: The "correct" field must be ONE of the option IDs (A, B, C, D, or E).
+RANDOMIZE which option is correct - do NOT always make A the correct answer.
+The correct answer should be placed at a RANDOM position in the options array.
 
 MANDATORY REQUIREMENTS:
 - Question must be ONE sentence, direct and simple
 - NO patient scenarios, NO clinical vignettes, NO demographics
 - Provide exactly ${optionCount} options labeled A through ${String.fromCharCode(64 + optionCount)}
 - Each option must be a complete, plausible answer
+- RANDOMIZE the position of the correct answer
 - Do not provide fewer than ${optionCount} options under any circumstances
 `;
 
@@ -288,6 +296,9 @@ MANDATORY: Generate exactly 5 options. If you generate fewer than 5 options, the
     `    {"id": "${String.fromCharCode(65 + i)}", "text": "Option ${String.fromCharCode(65 + i)} text"}`
   ).join(',\n');
   
+  // Randomize which option is correct in the example to prevent AI bias
+  const randomCorrectLetter = String.fromCharCode(65 + Math.floor(Math.random() * optionCount));
+  
   const prompt = `
 Generate a single best answer question based on this concept:
 
@@ -312,13 +323,18 @@ Return the response as a JSON object with EXACTLY ${optionCount} options:
   "options": [
 ${optionExamples}
   ],
-  "correct": "A",
-  "explanation": "The correct answer is A because... Option B is incorrect because... Option C is incorrect because..."
+  "correct": "${randomCorrectLetter}",
+  "explanation": "The correct answer is ${randomCorrectLetter} because... Option B is incorrect because... Option C is incorrect because..."
 }
+
+CRITICAL: The "correct" field must be ONE of the option IDs (A, B, C, D, or E).
+RANDOMIZE which option is correct - do NOT always make A the correct answer.
+The correct answer should be placed at a RANDOM position in the options array.
 
 MANDATORY REQUIREMENTS:
 - Provide exactly ${optionCount} options labeled A through ${String.fromCharCode(64 + optionCount)}
 - Each option must be a complete, clinically plausible answer
+- RANDOMIZE the position of the correct answer
 - Do not provide fewer than ${optionCount} options under any circumstances
 `;
 

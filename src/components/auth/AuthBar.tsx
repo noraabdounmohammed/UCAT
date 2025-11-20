@@ -20,16 +20,16 @@ export const AuthBar: React.FC = () => {
   return (
     <div className="flex items-center gap-2">
       {loading ? (
-        <div className="text-xs text-stone-400" style={{ fontFamily: "'Manrope', sans-serif", fontWeight: 300 }}>Loading...</div>
+        <div className="text-xs text-stone-400 hidden md:block" style={{ fontFamily: "'Manrope', sans-serif", fontWeight: 300 }}>Loading...</div>
       ) : user ? (
         <button
           onClick={() => setShowProfile(true)}
-          className="px-4 py-2 text-xs tracking-wide rounded-full bg-stone-800 text-white hover:bg-stone-900 flex items-center gap-1.5 transition-all"
-          title="View profile"
+          className="p-2 md:px-4 md:py-2 text-xs tracking-wide rounded-full bg-stone-800 text-white hover:bg-stone-900 flex items-center gap-1.5 transition-all"
+          title={user.email?.split('@')[0] || "View profile"}
           style={{ fontFamily: "'Manrope', sans-serif", fontWeight: 400 }}
         >
-          <User className="h-3.5 w-3.5" />
-          {user.email?.split('@')[0]}
+          <User className="h-4 w-4 md:h-3.5 md:w-3.5" />
+          <span className="hidden md:inline">{user.email?.split('@')[0]}</span>
         </button>
       ) : (
         <button

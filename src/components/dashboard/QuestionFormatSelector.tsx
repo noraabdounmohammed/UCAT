@@ -34,17 +34,15 @@ export const QUESTION_FORMATS: QuestionFormat[] = [
 ];
 
 interface QuestionFormatSelectorProps {
-  selectedFormat: string;
+  selectedFormat?: string; // Optional, not currently used
   onFormatChange: (formatId: string) => void;
   onOpenFilters?: (format?: string) => void;
-  concepts: any[];
+  concepts?: any[]; // Optional, not currently used
 }
 
 export const QuestionFormatSelector: React.FC<QuestionFormatSelectorProps> = ({
-  selectedFormat,
   onFormatChange,
-  onOpenFilters,
-  concepts
+  onOpenFilters
 }) => {
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const [showLeftArrow, setShowLeftArrow] = useState(false);
@@ -132,7 +130,6 @@ export const QuestionFormatSelector: React.FC<QuestionFormatSelectorProps> = ({
   return (
     <div className="mb-8 w-full">
       <div className="mb-6">
-        <div className="h-[1px] w-16 bg-stone-300 mb-4"></div>
         <h2 className="text-2xl md:text-3xl font-medium text-stone-900 mb-2 tracking-tight" style={{ fontFamily: "'Unbounded', sans-serif", fontWeight: 500 }}>
           Practice by Format
         </h2>
@@ -215,11 +212,25 @@ export const QuestionFormatSelector: React.FC<QuestionFormatSelectorProps> = ({
                   </div>
                 </div>
 
-                {/* Middle section - Icon with glass effect */}
+                {/* Middle section - Icon/Image with glass effect */}
                 <div className="flex-1 flex items-center justify-center">
-                  <div className="w-24 h-24 sm:w-28 sm:h-28 rounded-full bg-white/40 backdrop-blur-xl border border-white/60 shadow-[0_8px_32px_rgba(0,0,0,0.08)] flex items-center justify-center transition-all duration-700 group-hover:scale-105 group-hover:shadow-[0_10px_40px_rgba(0,0,0,0.10)]">
-                    <Icon className="h-12 w-12 sm:h-14 sm:w-14 text-stone-700 relative z-10" />
-                  </div>
+                  {format.id === 'flashcard' ? (
+                    <img 
+                      src="https://res.cloudinary.com/djycz5wgq/image/upload/v1763134885/Unbenannt-7_h21zyy.png" 
+                      alt="Flashcards"
+                      className="h-28 w-28 sm:h-32 sm:w-32 object-contain relative z-10 transition-all duration-700 group-hover:scale-105"
+                    />
+                  ) : (format.id === 'sba' || format.id === 'ukmla_sba') ? (
+                    <img 
+                      src="https://res.cloudinary.com/djycz5wgq/image/upload/v1763135784/Unbenannt-8_ccq02e.png" 
+                      alt="SBA Questions"
+                      className="h-28 w-28 sm:h-32 sm:w-32 object-contain relative z-10 transition-all duration-700 group-hover:scale-105"
+                    />
+                  ) : (
+                    <div className="w-24 h-24 sm:w-28 sm:h-28 rounded-full bg-white/40 backdrop-blur-xl border border-white/60 shadow-[0_8px_32px_rgba(0,0,0,0.08)] flex items-center justify-center transition-all duration-700 group-hover:scale-105 group-hover:shadow-[0_10px_40px_rgba(0,0,0,0.10)]">
+                      <Icon className="h-12 w-12 sm:h-14 sm:w-14 text-stone-700 relative z-10" />
+                    </div>
+                  )}
                 </div>
               </div>
 

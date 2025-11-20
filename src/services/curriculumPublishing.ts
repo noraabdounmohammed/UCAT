@@ -711,26 +711,83 @@ export class CurriculumPublishingService {
   // Export curriculum data for publishing
   static async exportCurriculum(curriculumId: string): Promise<CurriculumExportData | null> {
     try {
-      // Get curriculum metadata
-      const storedCurriculums = localStorage.getItem('curriculums');
-      if (!storedCurriculums) return null;
+      console.log(`📤 [EXPORT] Starting export for ${curriculumId}...`);
+      const exportStartTime = Date.now();
+      
+      // Get curriculum metadata - try user-specific key first, then global
+      let storedCurriculums = null;
+      
+      // Try to get user ID from Supabase auth with timeout
+      try {
+        console.log('📤 [EXPORT] Attempting to get user session...');
+        const userPromise = supabase.auth.getUser();
+        const timeoutPromise = new Promise((_, reject) => 
+          setTimeout(() => reject(new Error('Auth timeout')), 2000)
+        );
+        
+        const { data: { user } } = await Promise.race([userPromise, timeoutPromise]) as any;
+        console.log(`📤 [EXPORT] Got user session: ${user ? user.id : 'none'}`);
+        
+        if (user) {
+          const userKey = `user_${user.id}_curriculums`;
+          storedCurriculums = localStorage.getItem(userKey);
+          console.log(`📤 [EXPORT] Checked user-specific key: ${userKey}, found: ${!!storedCurriculums}`);
+        }
+      } catch (e) {
+        console.log(`📤 [EXPORT] Auth check failed or timed out: ${e}, searching all localStorage keys`);
+      }
+      
+      // If not found, search for any user-specific curriculum key
+      if (!storedCurriculums) {
+        console.log('📤 [EXPORT] Searching for user-specific curriculum keys...');
+        for (let i = 0; i < localStorage.length; i++) {
+          const key = localStorage.key(i);
+          if (key && key.match(/^user_[a-f0-9-]+_curriculums$/)) {
+            storedCurriculums = localStorage.getItem(key);
+            if (storedCurriculums) {
+              console.log(`📤 [EXPORT] Found curriculums in key: ${key}`);
+              break;
+            }
+          }
+        }
+      }
+      
+      // Final fallback to global key
+      if (!storedCurriculums) {
+        storedCurriculums = localStorage.getItem('curriculums');
+        console.log(`📤 [EXPORT] Checked global key, found: ${!!storedCurriculums}`);
+      }
+      
+      if (!storedCurriculums) {
+        console.error('❌ [EXPORT] No curriculums found in localStorage');
+        return null;
+      }
       
       const curriculums = JSON.parse(storedCurriculums);
       const curriculum = curriculums.find((c: any) => c.id === curriculumId);
-      if (!curriculum) return null;
+      if (!curriculum) {
+        console.error(`❌ [EXPORT] Curriculum ${curriculumId} not found`);
+        return null;
+      }
+      console.log(`✅ [EXPORT] Found curriculum: ${curriculum.name}`);
 
       // Get ALL concepts for this curriculum directly from localStorage
       let concepts: ConceptNode[] = [];
       
-      console.log(`CurriculumPublishing: Exporting all concepts for ${curriculumId}`);
+      console.log(`📦 [EXPORT] Reading concepts from localStorage...`);
+      const conceptsReadStart = Date.now();
       
       // Try to get concepts directly from localStorage first
       const conceptsKey = `${curriculumId}_user_concepts`;
       const storedConcepts = localStorage.getItem(conceptsKey);
       
       if (storedConcepts) {
+        console.log(`📦 [EXPORT] localStorage read took ${Date.now() - conceptsReadStart}ms`);
+        console.log(`📦 [EXPORT] Parsing ${Math.round(storedConcepts.length / 1024)}KB of concept data...`);
+        
+        const parseStart = Date.now();
         const parsedConcepts = JSON.parse(storedConcepts);
-        console.log(`CurriculumPublishing: Found ${parsedConcepts.length} concepts in localStorage`);
+        console.log(`📦 [EXPORT] JSON parse took ${Date.now() - parseStart}ms for ${parsedConcepts.length} concepts`);
         
         // Optimized normalization - only process what's needed
         const defaultMastery = {
@@ -741,6 +798,7 @@ export class CurriculumPublishingService {
           last_practiced: null
         };
         
+        const normalizeStart = Date.now();
         concepts = parsedConcepts.map((c: any) => ({
           concept_id: c.concept_id,
           title: c.title,
@@ -751,11 +809,12 @@ export class CurriculumPublishingService {
           created_at: c.created_at,
           updated_at: c.updated_at
         }));
+        console.log(`📦 [EXPORT] Normalization took ${Date.now() - normalizeStart}ms`);
       } else {
-        console.log(`CurriculumPublishing: No concepts found in localStorage for ${curriculumId}`);
+        console.log(`⚠️ [EXPORT] No concepts found in localStorage for ${curriculumId}`);
       }
       
-      console.log(`CurriculumPublishing: Exporting ${concepts.length} total concepts`);
+      console.log(`✅ [EXPORT] Processed ${concepts.length} concepts in ${Date.now() - exportStartTime}ms`);
 
       // Get custom filters
       const filtersKey = `${curriculumId}_custom_filters`;
@@ -871,15 +930,19 @@ export class CurriculumPublishingService {
       // This ensures re-importing the same curriculum uses the same ID
       const newCurriculumId = `imported-${publishedCurriculum.id}`;
       
+      // Determine which localStorage key to use
+      const storageKey = userId ? `user_${userId}_curriculums` : 'curriculums';
+      console.log(`CurriculumPublishing: Using storage key: ${storageKey}`);
+      
       // Check if this curriculum was already imported
-      const storedCurriculums = localStorage.getItem('curriculums');
+      const storedCurriculums = localStorage.getItem(storageKey);
       const curriculums = storedCurriculums ? JSON.parse(storedCurriculums) : [];
       const existingCurriculum = curriculums.find((c: any) => c.id === newCurriculumId);
       
       if (existingCurriculum) {
         // Update last accessed time
         existingCurriculum.lastAccessed = new Date();
-        localStorage.setItem('curriculums', JSON.stringify(curriculums));
+        localStorage.setItem(storageKey, JSON.stringify(curriculums));
         console.log(`CurriculumPublishing: Curriculum ${newCurriculumId} already exists, updating last accessed`);
         return newCurriculumId;
       }
@@ -906,6 +969,7 @@ export class CurriculumPublishingService {
         description: publishedCurriculum.description,
         category: publishedCurriculum.category,
         color: publishedCurriculum.color,
+        imageUrl: publishedCurriculum.imageUrl, // Include image URL
         conceptCount: publishedCurriculum.conceptCount,
         lastAccessed: new Date(),
         progress: 0,
@@ -914,7 +978,8 @@ export class CurriculumPublishingService {
 
       // Add to curriculums list
       curriculums.push(newCurriculum);
-      localStorage.setItem('curriculums', JSON.stringify(curriculums));
+      localStorage.setItem(storageKey, JSON.stringify(curriculums));
+      console.log(`CurriculumPublishing: Saved curriculum to ${storageKey}`);
 
       // Import concepts
       const conceptsKey = `${newCurriculumId}_user_concepts`;
@@ -960,13 +1025,25 @@ export class CurriculumPublishingService {
       estimatedHours: number;
     }
   ): Promise<boolean> {
+    const startTime = Date.now();
+    console.log('🚀 [PUBLISH START] Beginning curriculum publish process...');
+    
     try {
+      console.log('📤 [STEP 1/4] Exporting curriculum data...');
       const exportData = await this.exportCurriculum(curriculumId);
-      if (!exportData) return false;
+      if (!exportData) {
+        console.error('❌ [STEP 1/4] Export failed - no data returned');
+        return false;
+      }
+      console.log(`✅ [STEP 1/4] Export complete - ${exportData.concepts.length} concepts (${Date.now() - startTime}ms)`);
 
       const newPubId = `pub-${curriculumId}-${Date.now()}`;
+      console.log(`🆔 Generated publish ID: ${newPubId}`);
 
       // Insert metadata into Supabase (public access enabled)
+      console.log('📝 [STEP 2/4] Inserting curriculum metadata...');
+      const metaStartTime = Date.now();
+      
       // Build the insert object, only include image_url if it exists
       const insertData: any = {
         id: newPubId,
@@ -974,7 +1051,7 @@ export class CurriculumPublishingService {
         description: exportData.curriculum.description,
         category: exportData.curriculum.category,
         country: publishData.country || 'International',
-        color: exportData.curriculum.color,
+        color: exportData.curriculum.color || 'blue', // Default to blue if no color
         author: publishData.author,
         version: exportData.version,
         published_at: new Date().toISOString(),
@@ -996,67 +1073,212 @@ export class CurriculumPublishingService {
         insertData.image_url = exportData.curriculum.imageUrl;
       }
       
-      const { error: insertMetaError } = await supabase
+      console.log('🔍 [STEP 2/4] Insert data prepared:', {
+        id: insertData.id,
+        name: insertData.name,
+        concept_count: insertData.concept_count,
+        has_image: !!insertData.image_url
+      });
+      
+      console.log('⏳ [STEP 2/4] Calling Supabase insert...');
+      console.log('📊 [DEBUG] Insert data keys:', Object.keys(insertData));
+      
+      // Test: Try a simple select first to verify connection
+      console.log('🔍 [DEBUG] Testing Supabase connection with simple query...');
+      try {
+        const testStart = Date.now();
+        const { data: testData, error: testError } = await supabase
+          .from('published_curriculums')
+          .select('id')
+          .limit(1);
+        console.log(`✅ [DEBUG] Connection test successful in ${Date.now() - testStart}ms`);
+        if (testError) console.log('⚠️ [DEBUG] Test query error:', testError);
+      } catch (e) {
+        console.error('❌ [DEBUG] Connection test failed:', e);
+      }
+      
+      // Add timeout wrapper with retry logic
+      console.log('⏳ [DEBUG] Starting actual insert...');
+      const insertPromise = supabase
         .from('published_curriculums')
-        .insert([insertData]);
+        .insert([insertData]); // Removed .select() to see if that's causing the hang
+      
+      const timeoutPromise = new Promise((_, reject) => 
+        setTimeout(() => reject(new Error('Insert timeout after 60s - Supabase may be slow or down')), 60000)
+      );
+      
+      let insertResult;
+      try {
+        insertResult = await Promise.race([insertPromise, timeoutPromise]);
+      } catch (timeoutError) {
+        console.error('❌ [STEP 2/4] Timeout waiting for Supabase:', timeoutError);
+        console.error('💡 Supabase unavailable - falling back to localStorage-only publishing');
+        
+        // Fallback: Save to localStorage instead
+        const publishedCurriculum: PublishedCurriculum = {
+          id: newPubId,
+          name: exportData.curriculum.name,
+          description: exportData.curriculum.description,
+          category: exportData.curriculum.category,
+          country: publishData.country || 'International',
+          color: exportData.curriculum.color || 'blue',
+          imageUrl: exportData.curriculum.imageUrl,
+          author: publishData.author,
+          version: exportData.version,
+          publishedAt: new Date(),
+          downloadCount: 0,
+          rating: 5.0,
+          tags: publishData.tags,
+          concepts: exportData.concepts,
+          customFilters: exportData.customFilters,
+          filterCategories: exportData.filterCategories,
+          filterAssignments: exportData.filterAssignments,
+          practiceTemplates: exportData.practiceTemplates,
+          conceptCount: exportData.concepts.length,
+          difficulty: publishData.difficulty,
+          estimatedHours: publishData.estimatedHours
+        };
+        
+        // Save to localStorage
+        const existingPublished = JSON.parse(localStorage.getItem('published_curriculums') || '[]');
+        existingPublished.push(publishedCurriculum);
+        localStorage.setItem('published_curriculums', JSON.stringify(existingPublished));
+        
+        console.log('✅ [FALLBACK] Curriculum saved to localStorage successfully');
+        console.log('⚠️ Note: This curriculum is only available locally until Supabase is accessible');
+        return true;
+      }
+      
+      const { data: insertedData, error: insertMetaError } = insertResult as any;
 
       if (insertMetaError) {
-        console.error('Failed to insert published curriculum metadata:', insertMetaError);
+        console.error('❌ [STEP 2/4] Failed to insert metadata:', insertMetaError);
+        console.error('❌ [STEP 2/4] Error details:', JSON.stringify(insertMetaError, null, 2));
         return false;
       }
+      console.log(`✅ [STEP 2/4] Metadata inserted (${Date.now() - metaStartTime}ms)`);
+      console.log(`⏱️ Progress: ${Math.round((2/4) * 100)}% complete (${Date.now() - startTime}ms elapsed)`);
 
-      // Insert concepts in optimized batches (chunks of 100 for better performance)
+
+      // Insert concepts in controlled parallel batches to avoid overwhelming Supabase
+      console.log('📦 [STEP 3/4] Starting concept upload...');
+      const conceptsStartTime = Date.now();
+      
       if (exportData.concepts.length > 0) {
-        const BATCH_SIZE = 100;
-        const totalBatches = Math.ceil(exportData.concepts.length / BATCH_SIZE);
+        // Adaptive batch sizing based on curriculum size
+        let BATCH_SIZE = 200;
+        let PARALLEL_LIMIT = 3;
         
-        console.log(`📦 Uploading ${exportData.concepts.length} concepts in ${totalBatches} batches...`);
+        // For larger curriculums, use smaller batches to avoid timeouts
+        if (exportData.concepts.length > 500) {
+          BATCH_SIZE = 150;
+          PARALLEL_LIMIT = 2;
+          console.log('📦 [STEP 3/4] Large curriculum detected, using conservative settings (150/batch, 2 parallel)');
+        } else if (exportData.concepts.length > 300) {
+          BATCH_SIZE = 175;
+          PARALLEL_LIMIT = 2;
+          console.log('📦 [STEP 3/4] Medium curriculum detected, using balanced settings (175/batch, 2 parallel)');
+        }
         
+        const batches: any[][] = [];
+        
+        // Split into batches
         for (let i = 0; i < exportData.concepts.length; i += BATCH_SIZE) {
-          const batch = exportData.concepts.slice(i, i + BATCH_SIZE);
-          const batchNum = Math.floor(i / BATCH_SIZE) + 1;
+          batches.push(exportData.concepts.slice(i, i + BATCH_SIZE));
+        }
+        
+        console.log(`📦 [STEP 3/4] Uploading ${exportData.concepts.length} concepts in ${batches.length} batches (max ${PARALLEL_LIMIT} parallel)...`);
+        
+        let completedBatches = 0;
+        const totalBatches = batches.length;
+        
+        // Upload batches with controlled parallelism
+        for (let i = 0; i < batches.length; i += PARALLEL_LIMIT) {
+          const batchGroup = batches.slice(i, i + PARALLEL_LIMIT);
+          const startIndex = i;
+          const groupStartTime = Date.now();
           
-          const conceptRows = batch.map(c => ({
-            curriculum_id: newPubId,
-            concept_id: c.concept_id,
-            title: c.title,
-            content: c.content,
-            prerequisites: c.prerequisites || [],
-            custom_filters: c.custom_filters || [],
-            mastery_data: c.mastery_data || {
-              attempts: 0,
-              correct: 0,
-              incorrect: 0,
-              mastery_level: 0,
-              last_practiced: null
-            }
-          }));
+          console.log(`🔄 [BATCH GROUP ${Math.floor(i / PARALLEL_LIMIT) + 1}] Starting upload of ${batchGroup.length} batches in parallel...`);
+          
+          const uploadPromises = batchGroup.map((batch, groupIndex) => {
+            const batchIndex = startIndex + groupIndex;
+            const batchStartTime = Date.now();
+            
+            const conceptRows = batch.map(c => ({
+              curriculum_id: newPubId,
+              concept_id: c.concept_id,
+              title: c.title,
+              content: c.content,
+              prerequisites: c.prerequisites || [],
+              custom_filters: c.custom_filters || [],
+              mastery_data: c.mastery_data || {
+                attempts: 0,
+                correct: 0,
+                incorrect: 0,
+                mastery_level: 0,
+                last_practiced: null
+              }
+            }));
 
-          const { error: insertConceptsError } = await supabase
-            .from('curriculum_concepts')
-            .insert(conceptRows);
+            console.log(`⬆️ [BATCH ${batchIndex + 1}/${totalBatches}] Uploading ${batch.length} concepts...`);
+            
+            return supabase
+              .from('curriculum_concepts')
+              .insert(conceptRows)
+              .then(({ error }) => {
+                if (error) {
+                  console.error(`❌ [BATCH ${batchIndex + 1}/${totalBatches}] Failed:`, error);
+                  throw error;
+                }
+                completedBatches++;
+                const batchTime = Date.now() - batchStartTime;
+                const progress = Math.round(50 + (completedBatches / totalBatches) * 45); // 50-95%
+                console.log(`✅ [BATCH ${batchIndex + 1}/${totalBatches}] Uploaded successfully (${batchTime}ms)`);
+                console.log(`⏱️ Progress: ${progress}% complete (${completedBatches}/${totalBatches} batches, ${Date.now() - startTime}ms elapsed)`);
+              });
+          });
 
-          if (insertConceptsError) {
-            console.error(`Failed to insert batch ${batchNum}/${totalBatches}:`, insertConceptsError);
+          // Wait for this group to complete before starting next group
+          try {
+            await Promise.all(uploadPromises);
+            const groupTime = Date.now() - groupStartTime;
+            console.log(`✅ [BATCH GROUP ${Math.floor(i / PARALLEL_LIMIT) + 1}] Completed in ${groupTime}ms`);
+          } catch (error) {
+            console.error(`❌ [STEP 3/4] Failed to upload concepts:`, error);
+            console.log('🧹 Cleaning up: deleting metadata...');
             // Best-effort cleanup: delete the metadata row if concept insert fails
             await supabase.from('published_curriculums').delete().eq('id', newPubId);
+            console.log('❌ [PUBLISH FAILED] Total time: ' + (Date.now() - startTime) + 'ms');
             return false;
           }
-          
-          console.log(`✅ Batch ${batchNum}/${totalBatches} uploaded (${batch.length} concepts)`);
         }
+        
+        const conceptsTime = Date.now() - conceptsStartTime;
+        console.log(`✅ [STEP 3/4] All concepts uploaded (${conceptsTime}ms, avg ${Math.round(conceptsTime / totalBatches)}ms per batch)`);
+      } else {
+        console.log('⚠️ [STEP 3/4] No concepts to upload');
       }
+      
+      console.log(`⏱️ Progress: 95% complete (${Date.now() - startTime}ms elapsed)`);
+
 
       // Invalidate cache so new curriculum appears immediately
+      console.log('🗑️ [STEP 4/4] Invalidating cache...');
       try {
         localStorage.removeItem(PUBLISHED_CACHE_KEY);
-        console.log('🗑️ Cache invalidated after publish');
-      } catch {}
+        console.log('✅ [STEP 4/4] Cache invalidated');
+      } catch (cacheError) {
+        console.warn('⚠️ [STEP 4/4] Failed to invalidate cache:', cacheError);
+      }
       
-      console.log('✅ Curriculum published to Expert (Supabase) successfully:', exportData.curriculum.name);
+      const totalTime = Date.now() - startTime;
+      console.log(`⏱️ Progress: 100% complete (${totalTime}ms total)`);
+      console.log(`🎉 [PUBLISH SUCCESS] Curriculum published: "${exportData.curriculum.name}"`);
+      console.log(`📊 Stats: ${exportData.concepts.length} concepts in ${totalTime}ms (avg ${Math.round(totalTime / exportData.concepts.length)}ms per concept)`);
       return true;
     } catch (error) {
-      console.error('Error publishing curriculum:', error);
+      console.error('❌ [PUBLISH ERROR] Unexpected error:', error);
+      console.error('Stack trace:', error instanceof Error ? error.stack : 'No stack trace');
       return false;
     }
   }

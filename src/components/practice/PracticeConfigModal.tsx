@@ -19,7 +19,7 @@ export const PracticeConfigModal: React.FC<PracticeConfigModalProps> = ({
   isOpen,
   onClose,
   onStartPractice,
-  conceptCount,
+  conceptCount: _conceptCount, // Prefix with underscore to indicate intentionally unused
   preselectedFormat,
   preselectedFilter,
   initialConceptIds
@@ -38,7 +38,7 @@ export const PracticeConfigModal: React.FC<PracticeConfigModalProps> = ({
   const [practiceFilterState, setPracticeFilterState] = useState({
     custom_filters: [] as string[],
     mastery_levels: [] as number[],
-    cascading_mode: false // Default to OR mode
+    cascading_mode: true // Default to AND mode (cascading filters)
   });
 
   // State to show sign-in prompt
@@ -58,7 +58,7 @@ export const PracticeConfigModal: React.FC<PracticeConfigModalProps> = ({
       setPracticeFilterState({
         custom_filters: preselectedFilter ? [preselectedFilter] : [],
         mastery_levels: [],
-        cascading_mode: false // Default to OR mode
+        cascading_mode: true // Default to AND mode (cascading filters)
       });
     } else {
       // When modal closes, reset to empty state
@@ -103,7 +103,7 @@ export const PracticeConfigModal: React.FC<PracticeConfigModalProps> = ({
     setPracticeFilterState({
       custom_filters: [],
       mastery_levels: [],
-      cascading_mode: false
+      cascading_mode: true
     });
     onClose();
   };
@@ -113,8 +113,15 @@ export const PracticeConfigModal: React.FC<PracticeConfigModalProps> = ({
   const compatibleFiltersByCategory = React.useMemo(() => {
     const result: Record<string, Set<string>> = {};
     
+    console.log('🔍 PracticeConfigModal - Calculating compatible filters:', {
+      cascadingMode: practiceFilterState.cascading_mode,
+      selectedFilters: practiceFilterState.custom_filters,
+      conceptsCount: concepts.length
+    });
+    
     if (!practiceFilterState.cascading_mode || (practiceFilterState.custom_filters.length === 0 && practiceFilterState.mastery_levels.length === 0) || !concepts.length) {
       // No cascading - all filters are compatible
+
       return result;
     }
 
@@ -536,7 +543,6 @@ export const PracticeConfigModal: React.FC<PracticeConfigModalProps> = ({
       >
         {/* Header */}
         <div className="px-6 md:px-12 py-6 md:py-8 border-b border-black/[0.06]">
-          <div className="h-[1px] w-16 bg-stone-300 mb-4"></div>
           <div className="flex items-start justify-between">
             <div>
               <h2 className="text-2xl md:text-3xl font-medium text-stone-900 mb-2 tracking-tight" style={{ fontFamily: "'Unbounded', sans-serif", fontWeight: 500 }}>
@@ -741,20 +747,28 @@ export const PracticeConfigModal: React.FC<PracticeConfigModalProps> = ({
                         .filter(([_, catId]) => catId === category.id)
                         .map(([filter]) => filter);
 
-                      // In AND mode (cascading), if user already selected one or more filters in this category, only show those selected ones
-                      // In OR mode, always show all filters in the category
+                      // In cascading mode, only show compatible filters (or selected ones)
+                      // In OR mode, show all filters in the category
                       const selectedInThisCategory = practiceFilterState.custom_filters.filter((f: string) => filterAssignments[f] === category.id);
 
                       let categoryFilters = [] as string[];
-                      if (practiceFilterState.cascading_mode && selectedInThisCategory.length > 0) {
-                        // AND mode: only show selected filters in this category
-                        categoryFilters = selectedInThisCategory
-                          .filter(filter => filter.toLowerCase().includes(searchQuery.toLowerCase()))
-                          .sort((a, b) => a.toLowerCase().localeCompare(b.toLowerCase()));
+                      if (practiceFilterState.cascading_mode && practiceFilterState.custom_filters.length > 0) {
+                        // Cascading mode with filters selected
+                        if (selectedInThisCategory.length > 0) {
+                          // If user has already selected filters in THIS category, only show those selected ones
+                          categoryFilters = selectedInThisCategory
+                            .filter(filter => filter.toLowerCase().includes(searchQuery.toLowerCase()))
+                            .sort((a, b) => a.toLowerCase().localeCompare(b.toLowerCase()));
+                        } else {
+                          // If no filters selected in this category yet, show only compatible filters from other categories
+                          categoryFilters = allCategoryFilters
+                            .filter(filter => categoryCompatible && categoryCompatible.has(filter))
+                            .filter(filter => filter.toLowerCase().includes(searchQuery.toLowerCase()))
+                            .sort((a, b) => a.toLowerCase().localeCompare(b.toLowerCase()));
+                        }
                       } else {
-                        // OR mode: show all filters in this category
+                        // OR mode or no filters selected: show all filters in this category
                         categoryFilters = allCategoryFilters
-                          .filter(filter => !categoryCompatible || categoryCompatible.has(filter))
                           .filter(filter => filter.toLowerCase().includes(searchQuery.toLowerCase()))
                           .sort((a, b) => a.toLowerCase().localeCompare(b.toLowerCase()));
                       }

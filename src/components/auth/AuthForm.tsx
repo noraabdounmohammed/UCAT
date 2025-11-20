@@ -247,9 +247,36 @@ export function AuthForm({ onSuccess }: AuthFormProps = {}) {
             
             {/* Password Field */}
             <div className="space-y-2">
-              <label htmlFor="password" className="block text-xs uppercase tracking-widest text-stone-600" style={{ fontFamily: "'Unbounded', sans-serif", fontWeight: 500 }}>
-                Password
-              </label>
+              <div className="flex items-center justify-between">
+                <label htmlFor="password" className="block text-xs uppercase tracking-widest text-stone-600" style={{ fontFamily: "'Unbounded', sans-serif", fontWeight: 500 }}>
+                  Password
+                </label>
+                {mode === 'signin' && (
+                  <button
+                    type="button"
+                    onClick={async () => {
+                      const email = (document.getElementById('email') as HTMLInputElement)?.value;
+                      if (!email) {
+                        alert('Please enter your email address first');
+                        return;
+                      }
+                      try {
+                        const { error } = await supabase.auth.resetPasswordForEmail(email, {
+                          redirectTo: `${window.location.origin}/reset-password`,
+                        });
+                        if (error) throw error;
+                        alert('Password reset email sent! Check your inbox.');
+                      } catch (error: any) {
+                        alert(error.message || 'Failed to send reset email');
+                      }
+                    }}
+                    className="text-xs text-stone-500 hover:text-stone-900 transition-colors"
+                    style={{ fontFamily: "'Manrope', sans-serif", fontWeight: 300 }}
+                  >
+                    Forgot password?
+                  </button>
+                )}
+              </div>
               <input
                 id="password"
                 type="password"

@@ -112,6 +112,7 @@ const CategorizedCustomFilters: React.FC<CategorizedCustomFiltersProps> = ({
   // Calculate compatible filters in cascading mode
   const compatibleFilters = React.useMemo(() => {
     if (!cascadingMode || selectedFilters.length === 0 || !concepts.length) {
+      console.log('🔍 Cascading mode OFF or no filters selected:', { cascadingMode, selectedFiltersCount: selectedFilters.length, conceptsCount: concepts.length });
       return new Set(filterOptions.custom_filters || []);
     }
 
@@ -124,6 +125,14 @@ const CategorizedCustomFilters: React.FC<CategorizedCustomFiltersProps> = ({
     const compatible = new Set<string>();
     conceptsWithSelectedFilters.forEach((concept: any) => {
       concept.custom_filters?.forEach((filter: string) => compatible.add(filter));
+    });
+
+    console.log('🔍 Cascading mode ON - Compatible filters:', {
+      cascadingMode,
+      selectedFilters,
+      conceptsWithSelectedFilters: conceptsWithSelectedFilters.length,
+      compatibleFiltersCount: compatible.size,
+      compatibleFilters: Array.from(compatible)
     });
 
     return compatible;
@@ -234,11 +243,24 @@ const CategorizedCustomFilters: React.FC<CategorizedCustomFiltersProps> = ({
             <div className="space-y-3">
               {filterCategories.map(category => {
                 // Get filters assigned to this category, filtered by compatibility and search query, sorted alphabetically
-                const assignedFilters = (filterOptions.custom_filters?.filter((filterName: string) => 
-                  filterAssignments[filterName] === category.id && 
-                  compatibleFilters.has(filterName) &&
-                  (!searchQuery || filterName.toLowerCase().includes(searchQuery.toLowerCase()))
-                ) || []).sort((a: string, b: string) => a.toLowerCase().localeCompare(b.toLowerCase()));
+                const assignedFilters = (filterOptions.custom_filters?.filter((filterName: string) => {
+                  // Must be assigned to this category
+                  if (filterAssignments[filterName] !== category.id) return false;
+                  
+                  // Must match search query if provided
+                  if (searchQuery && !filterName.toLowerCase().includes(searchQuery.toLowerCase())) return false;
+                  
+                  // In cascading mode, apply compatibility filter
+                  if (cascadingMode && selectedFilters.length > 0) {
+                    // If this filter is already selected, always show it
+                    if (selectedFilters.includes(filterName)) return true;
+                    
+                    // Otherwise, only show if it's compatible (exists on concepts with selected filters)
+                    return compatibleFilters.has(filterName);
+                  }
+                  
+                  return true;
+                }) || []).sort((a: string, b: string) => a.toLowerCase().localeCompare(b.toLowerCase()));
 
                 // Only show categories that have assigned filters or show empty state
                 if (assignedFilters.length === 0) {
@@ -443,25 +465,25 @@ export const ConceptFilterPanel: React.FC<ConceptFilterPanelProps> = ({ activeVi
 
       {/* Filter Hint - Show on both Concepts and Progress pages */}
       {showFilterHint && !filterState.mastery_levels.length && !filterState.custom_filters.length && (
-        <div className="mb-4 p-4 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-xl relative animate-in slide-in-from-top-2 duration-300">
+        <div className="mb-4 p-4 bg-stone-50 dark:bg-stone-900/20 border border-stone-200 dark:border-stone-800 rounded-xl relative animate-in slide-in-from-top-2 duration-300">
           <button
             onClick={() => {
               setShowFilterHint(false);
               localStorage.setItem('hideFilterHint', 'true');
             }}
-            className="absolute top-2 right-2 p-1 hover:bg-blue-100 dark:hover:bg-blue-800 rounded-md transition-colors"
+            className="absolute top-2 right-2 p-1 hover:bg-stone-100 dark:hover:bg-stone-800 rounded-md transition-colors"
           >
-            <X className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+            <X className="h-4 w-4 text-stone-600 dark:text-stone-400" />
           </button>
           <div className="flex items-start gap-3 pr-6">
-            <div className="flex-shrink-0 w-8 h-8 rounded-full bg-blue-500/10 dark:bg-blue-500/20 flex items-center justify-center">
-              <Filter className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+            <div className="flex-shrink-0 w-8 h-8 rounded-full bg-stone-500/10 dark:bg-stone-500/20 flex items-center justify-center">
+              <Filter className="h-4 w-4 text-stone-600 dark:text-stone-400" />
             </div>
             <div className="flex-1">
-              <h4 className="text-sm font-semibold text-blue-900 dark:text-blue-100 mb-1">
+              <h4 className="text-sm font-semibold text-stone-900 dark:text-stone-100 mb-1">
                 {activeView === 'mastery' ? 'Filter Your Progress Data' : 'Filter Your Concepts'}
               </h4>
-              <p className="text-xs text-blue-700 dark:text-blue-300">
+              <p className="text-xs text-stone-700 dark:text-stone-300">
                 {activeView === 'mastery' 
                   ? 'Use these filters below to focus your progress visualizations by mastery level or custom tags.'
                   : 'Use these filters below to find specific concepts by mastery level or custom tags.'}

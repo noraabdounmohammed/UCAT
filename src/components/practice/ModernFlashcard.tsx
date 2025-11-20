@@ -461,7 +461,10 @@ export const ModernFlashcard: React.FC<ModernFlashcardProps> = ({
         <motion.div 
           animate={isExiting ? { scale: 0.97, y: -8 } : { scale: 0.94, y: 16 }}
           transition={{ duration: 0.3 }}
-          className="absolute w-[360px] h-[500px] rounded-[24px] bg-[#2A2A2A] shadow-[0_2px_8px_rgba(0,0,0,0.2)]"
+          className={cn(
+            "absolute w-[360px] h-[500px] rounded-[24px]",
+            isLightMode ? "bg-zinc-200 shadow-[0_2px_8px_rgba(0,0,0,0.1)]" : "bg-[#2A2A2A] shadow-[0_2px_8px_rgba(0,0,0,0.2)]"
+          )}
           style={{ 
             top: '0',
             left: '0',
@@ -473,7 +476,10 @@ export const ModernFlashcard: React.FC<ModernFlashcardProps> = ({
         <motion.div 
           animate={isExiting ? { scale: 1, y: 0 } : { scale: 0.97, y: 8 }}
           transition={{ duration: 0.3 }}
-          className="absolute w-[360px] h-[500px] rounded-[24px] bg-[#252525] shadow-[0_3px_10px_rgba(0,0,0,0.25)]"
+          className={cn(
+            "absolute w-[360px] h-[500px] rounded-[24px]",
+            isLightMode ? "bg-zinc-100 shadow-[0_3px_10px_rgba(0,0,0,0.15)]" : "bg-[#252525] shadow-[0_3px_10px_rgba(0,0,0,0.25)]"
+          )}
           style={{ 
             top: '0',
             left: '0',
@@ -514,14 +520,20 @@ export const ModernFlashcard: React.FC<ModernFlashcardProps> = ({
           }}
           className={cn(
             "relative w-full h-[500px] rounded-[24px] cursor-grab active:cursor-grabbing overflow-hidden touch-none",
-            "bg-[#1E1E1E] shadow-[0_6px_20px_rgba(0,0,0,0.35)]",
+            isLightMode ? "bg-white shadow-[0_6px_20px_rgba(0,0,0,0.15)]" : "bg-[#1E1E1E] shadow-[0_6px_20px_rgba(0,0,0,0.35)]",
             animation
           )}
           onTap={() => { if (!isDragging) handleFlip(); }}
         >
           {/* Gradient overlay for depth */}
-          <div className="absolute inset-0 bg-gradient-to-b from-white/[0.03] to-transparent pointer-events-none rounded-[24px]" />
-          <div className="absolute inset-0 bg-gradient-to-t from-black/10 to-transparent pointer-events-none rounded-[24px]" />
+          <div className={cn(
+            "absolute inset-0 bg-gradient-to-b pointer-events-none rounded-[24px]",
+            isLightMode ? "from-black/[0.02] to-transparent" : "from-white/[0.03] to-transparent"
+          )} />
+          <div className={cn(
+            "absolute inset-0 bg-gradient-to-t pointer-events-none rounded-[24px]",
+            isLightMode ? "from-black/[0.03] to-transparent" : "from-black/10 to-transparent"
+          )} />
           {/* Swipe feedback labels */}
           <motion.div
             className="absolute top-8 right-8 px-4 py-2 rounded-xl bg-emerald-500 text-white font-bold text-lg shadow-lg z-20"
@@ -545,7 +557,10 @@ export const ModernFlashcard: React.FC<ModernFlashcardProps> = ({
             <div className="flex-1 overflow-auto touch-pan-y flex items-center justify-center">
               <div className="text-center">
                 <div 
-                  className="text-[20px] font-medium leading-[1.4] text-white"
+                  className={cn(
+                    "text-[20px] font-medium leading-[1.4]",
+                    isLightMode ? "text-zinc-900" : "text-white"
+                  )}
                   style={{ fontFamily: "'Poppins', 'Roboto', sans-serif" }}
                 >
                   {frontText}
@@ -557,23 +572,35 @@ export const ModernFlashcard: React.FC<ModernFlashcardProps> = ({
                 <motion.div
                   initial={{ opacity: 1 }}
                   animate={{ opacity: interactionCount >= 5 ? 0 : 1 }}
-                  className="inline-flex items-center gap-2 px-3 py-1.5 bg-white/10 backdrop-blur-xl rounded-lg border border-white/20"
+                  className={cn(
+                    "inline-flex items-center gap-2 px-3 py-1.5 backdrop-blur-xl rounded-lg border",
+                    isLightMode ? "bg-black/5 border-black/10" : "bg-white/10 border-white/20"
+                  )}
                 >
-                  <span className="text-[13px] text-white/60">Tap or press</span>
-                  <kbd className="px-1.5 py-0.5 text-[11px] font-mono bg-white/20 rounded border border-white/30 text-white">Space</kbd>
-                  <span className="text-[13px] text-white/60">to flip</span>
+                  <span className={cn("text-[13px]", isLightMode ? "text-zinc-600" : "text-white/60")}>Tap or press</span>
+                  <kbd className={cn(
+                    "px-1.5 py-0.5 text-[11px] font-mono rounded border",
+                    isLightMode ? "bg-black/10 border-black/20 text-zinc-900" : "bg-white/20 border-white/30 text-white"
+                  )}>Space</kbd>
+                  <span className={cn("text-[13px]", isLightMode ? "text-zinc-600" : "text-white/60")}>to flip</span>
                 </motion.div>
                 <motion.div
                   initial={{ opacity: 1 }}
                   animate={{ opacity: interactionCount >= 5 ? 0 : 1 }}
-                  className="flex items-center justify-center gap-4 text-[11px] text-white/50"
+                  className={cn("flex items-center justify-center gap-4 text-[11px]", isLightMode ? "text-zinc-500" : "text-white/50")}
                 >
                   <div className="flex items-center gap-1.5">
-                    <kbd className="px-1.5 py-0.5 font-mono bg-white/10 rounded border border-white/20 text-white/60">←</kbd>
+                    <kbd className={cn(
+                      "px-1.5 py-0.5 font-mono rounded border",
+                      isLightMode ? "bg-black/5 border-black/10 text-zinc-700" : "bg-white/10 border-white/20 text-white/60"
+                    )}>←</kbd>
                     <span>Don't Know</span>
                   </div>
                   <div className="flex items-center gap-1.5">
-                    <kbd className="px-1.5 py-0.5 font-mono bg-white/10 rounded border border-white/20 text-white/60">→</kbd>
+                    <kbd className={cn(
+                      "px-1.5 py-0.5 font-mono rounded border",
+                      isLightMode ? "bg-black/5 border-black/10 text-zinc-700" : "bg-white/10 border-white/20 text-white/60"
+                    )}>→</kbd>
                     <span>Know</span>
                   </div>
                 </motion.div>
@@ -600,7 +627,10 @@ export const ModernFlashcard: React.FC<ModernFlashcardProps> = ({
                   components={{
                     p: ({children}) => (
                       <p 
-                        className="text-[17px] font-medium leading-[1.3] text-white mb-2"
+                        className={cn(
+                          "text-[17px] font-medium leading-[1.3] mb-2",
+                          isLightMode ? "text-zinc-900" : "text-white"
+                        )}
                         style={{ fontFamily: "'Poppins', 'Roboto', sans-serif" }}
                       >
                         {children}
@@ -618,14 +648,20 @@ export const ModernFlashcard: React.FC<ModernFlashcardProps> = ({
                     ),
                     li: ({children}) => (
                       <li 
-                        className="text-[17px] font-medium leading-[1.3] text-white pl-1"
+                        className={cn(
+                          "text-[17px] font-medium leading-[1.3] pl-1",
+                          isLightMode ? "text-zinc-900" : "text-white"
+                        )}
                         style={{ fontFamily: "'Poppins', 'Roboto', sans-serif" }}
                       >
                         {children}
                       </li>
                     ),
                     strong: ({children}) => (
-                      <strong className="font-semibold text-white">
+                      <strong className={cn(
+                        "font-semibold",
+                        isLightMode ? "text-zinc-900" : "text-white"
+                      )}>
                         {children}
                       </strong>
                     ),

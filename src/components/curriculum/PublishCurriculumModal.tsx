@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { X, Upload, Download, Globe } from 'lucide-react';
+import { X, Upload, Download, Globe, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { CurriculumPublishingService } from '@/services/curriculumPublishing';
 
@@ -76,6 +76,33 @@ export const PublishCurriculumModal: React.FC<PublishCurriculumModalProps> = ({
     } finally {
       setExporting(false);
     }
+  };
+
+  const handleClearCache = () => {
+    if (!confirm('This will clear old imported curriculums and cached data to speed up publishing. Your created curriculums will NOT be deleted. Continue?')) {
+      return;
+    }
+
+    let freedSpace = 0;
+    const keysToRemove: string[] = [];
+
+    // Find old imported curriculums and large cache items
+    Object.keys(localStorage).forEach(key => {
+      if (key.startsWith('imported-pub-') || 
+          key.includes('_cache') || 
+          key === 'published_curriculums_cache') {
+        const size = (localStorage[key]?.length || 0) * 2; // UTF-16 = 2 bytes per char
+        freedSpace += size;
+        keysToRemove.push(key);
+      }
+    });
+
+    // Remove them
+    keysToRemove.forEach(key => localStorage.removeItem(key));
+
+    const freedMB = (freedSpace / 1024 / 1024).toFixed(2);
+    alert(`✅ Cache cleared!\n\nFreed ${freedMB}MB of space.\nRemoved ${keysToRemove.length} cached items.\n\nPublishing should be faster now. Try again!`);
+    console.log('🧹 Cleared cache:', keysToRemove);
   };
 
   if (!isOpen) return null;
@@ -161,12 +188,21 @@ export const PublishCurriculumModal: React.FC<PublishCurriculumModalProps> = ({
 
           {step === 'publish' && (
             <div className="space-y-4">
-              <div className="flex items-center mb-4">
+              <div className="flex items-center justify-between mb-4">
                 <button
                   onClick={() => setStep('options')}
                   className="text-blue-600 dark:text-blue-400 hover:underline text-sm"
                 >
                   ← Back to options
+                </button>
+                
+                <button
+                  onClick={handleClearCache}
+                  className="flex items-center gap-2 px-3 py-1.5 text-sm bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-300 rounded-lg hover:bg-orange-200 dark:hover:bg-orange-900/50 transition-colors"
+                  title="Clear cache to speed up publishing"
+                >
+                  <Trash2 className="h-4 w-4" />
+                  Clear Cache
                 </button>
               </div>
 

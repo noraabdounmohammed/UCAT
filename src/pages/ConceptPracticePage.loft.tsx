@@ -6,7 +6,7 @@ import { ApplePracticeSession } from '@/components/practice/ApplePracticeSession
 import { PracticeConfigModal } from '@/components/practice/PracticeConfigModal';
 import { ConceptCreationHub } from '@/components/concept/ConceptCreationHub';
 import { GenerationLoadingScreen } from '@/components/practice/GenerationLoadingScreen';
-import { Plus, ArrowLeft, Sliders, Search, Grid, List, ChevronDown, Folder, ChevronRight, Check, X } from 'lucide-react';
+import { Plus, Sliders, Search, Grid, List, ChevronDown, Folder, ChevronRight, Check, X } from 'lucide-react';
 import { ConceptEditorModal } from '@/components/concept/ConceptEditorModal';
 import { CurriculumDashboard } from '@/components/curriculum/CurriculumDashboard';
 import { ConceptBulkUploadModal } from '@/components/concept/ConceptBulkUploadModal';
@@ -70,6 +70,16 @@ const ConceptPracticePageLoftContent: React.FC<Omit<ConceptPracticePageLoftProps
   const [selectedView, setSelectedView] = useState<ViewType>(initialView);
   // Helper to avoid TypeScript type narrowing issues in conditional blocks
   const currentView: ViewType = selectedView;
+  
+  // Scroll to top when view changes
+  useEffect(() => {
+    // Use setTimeout to ensure DOM has updated before scrolling
+    setTimeout(() => {
+      window.scrollTo(0, 0);
+      document.documentElement.scrollTop = 0;
+      document.body.scrollTop = 0;
+    }, 0);
+  }, [selectedView]);
   const [preselectedFormat, setPreselectedFormat] = useState<string | undefined>(undefined);
   const [preselectedFilter, setPreselectedFilter] = useState<string | undefined>(undefined);
   const [conceptViewMode, setConceptViewMode] = useState<'grid' | 'list' | 'folder'>('grid');
@@ -180,9 +190,10 @@ const ConceptPracticePageLoftContent: React.FC<Omit<ConceptPracticePageLoftProps
     };
   }, []);
 
-  useEffect(() => {
-    loadConcepts();
-  }, [loadConcepts]);
+  // Removed redundant loadConcepts useEffect - concepts are already loaded by ConceptStoreProvider
+  // useEffect(() => {
+  //   loadConcepts();
+  // }, [loadConcepts]);
 
   const handlePracticeComplete = () => {
     endPractice();
@@ -261,19 +272,9 @@ const ConceptPracticePageLoftContent: React.FC<Omit<ConceptPracticePageLoftProps
         <div className="absolute inset-0 opacity-[0.015] pointer-events-none" style={{ backgroundImage: 'url("data:image/svg+xml,%3Csvg width="100" height="100" xmlns="http://www.w3.org/2000/svg"%3E%3Cfilter id="noise"%3E%3CfeTurbulence type="fractalNoise" baseFrequency="0.9" numOctaves="4" /%3E%3C/filter%3E%3Crect width="100" height="100" filter="url(%23noise)" /%3E%3C/svg%3E")' }}></div>
 
         {/* Header */}
-        <div className="relative px-8 pt-12 pb-8 border-b border-black/[0.04]">
+        <div className="relative px-8 pt-4 pb-2">
           <div className="max-w-6xl mx-auto">
-            {/* Breadcrumb */}
-            {onBackToCurriculums && (
-              <button
-                onClick={onBackToCurriculums}
-                className="mb-8 text-[11px] uppercase tracking-widest text-stone-500 hover:text-stone-900 transition-colors inline-flex items-center gap-2"
-                style={{ fontFamily: "'Unbounded', sans-serif", fontWeight: 500 }}
-              >
-                <ArrowLeft className="h-3 w-3" />
-                Back to Curriculums
-              </button>
-            )}
+            {/* Navigation moved to floating bars */}
           </div>
         </div>
 
@@ -343,41 +344,51 @@ const ConceptPracticePageLoftContent: React.FC<Omit<ConceptPracticePageLoftProps
 
         {/* Mobile Bottom Navigation */}
         <div className="md:hidden fixed bottom-0 left-0 right-0 z-50 pb-safe">
-          <div className="bg-white/80 backdrop-blur-2xl border-t border-white/20 shadow-[0_-4px_24px_0_rgba(0,0,0,0.08)] backdrop-saturate-150">
-            <div className="flex items-center justify-around px-4 py-3">
+          <div className="bg-white/90 backdrop-blur-2xl border-t border-black/[0.06]">
+            <div className="flex items-center justify-around px-3 py-1.5">
+              {/* Curriculum Hub */}
+              {onBackToCurriculums && (
+                <button
+                  onClick={onBackToCurriculums}
+                  className="p-2 rounded-full transition-all duration-200 text-stone-600 hover:bg-stone-100 active:scale-95"
+                >
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
+                  </svg>
+                </button>
+              )}
+
+              {/* Practice */}
               <button
                 onClick={() => setSelectedView('dashboard')}
-                className={`flex flex-col items-center gap-1 px-4 py-2 rounded-xl transition-all duration-300 ${
-                  currentView === 'dashboard' ? 'bg-stone-900 text-white' : 'text-stone-600'
+                className={`p-2.5 rounded-full transition-all duration-200 active:scale-95 ${
+                  currentView === 'dashboard' ? 'bg-stone-900 text-white' : 'text-stone-600 hover:bg-stone-100'
                 }`}
               >
                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
                 </svg>
-                <span className="text-[9px] uppercase tracking-wider font-medium" style={{ fontFamily: "'Unbounded', sans-serif" }}>Practice</span>
               </button>
               <button
                 onClick={() => setSelectedView('progress')}
-                className={`flex flex-col items-center gap-1 px-4 py-2 rounded-xl transition-all duration-300 ${
-                  currentView === 'progress' ? 'bg-stone-900 text-white' : 'text-stone-600'
+                className={`p-2.5 rounded-full transition-all duration-200 active:scale-95 ${
+                  currentView === 'progress' ? 'bg-stone-900 text-white' : 'text-stone-600 hover:bg-stone-100'
                 }`}
               >
                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
                 </svg>
-                <span className="text-[9px] uppercase tracking-wider font-medium" style={{ fontFamily: "'Unbounded', sans-serif" }}>Progress</span>
               </button>
               {isCreator && (
                 <button
                   onClick={() => setSelectedView('concepts')}
-                  className={`flex flex-col items-center gap-1 px-4 py-2 rounded-xl transition-all duration-300 ${
-                    currentView === 'concepts' ? 'bg-stone-900 text-white' : 'text-stone-600'
+                  className={`p-2.5 rounded-full transition-all duration-200 active:scale-95 ${
+                    currentView === 'concepts' ? 'bg-stone-900 text-white' : 'text-stone-600 hover:bg-stone-100'
                   }`}
                 >
                   <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
                   </svg>
-                  <span className="text-[9px] uppercase tracking-wider font-medium" style={{ fontFamily: "'Unbounded', sans-serif" }}>Concepts</span>
                 </button>
               )}
             </div>
@@ -388,15 +399,32 @@ const ConceptPracticePageLoftContent: React.FC<Omit<ConceptPracticePageLoftProps
         <div className="hidden md:block fixed left-4 lg:left-6 top-1/2 transform -translate-y-1/2 z-50">
           <div className="bg-white/30 backdrop-blur-2xl rounded-3xl p-3 border border-white/20 shadow-[0_8px_32px_0_rgba(0,0,0,0.12)] backdrop-saturate-150">
             <div className="flex flex-col items-center gap-2">
+              {/* Curriculum Hub */}
+              {onBackToCurriculums && (
+                <>
+                  <button
+                    onClick={onBackToCurriculums}
+                    className="group relative p-4 rounded-2xl transition-all duration-300 text-stone-600 hover:bg-white/40 hover:backdrop-blur-sm"
+                    title="Curriculum Hub"
+                  >
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
+                    </svg>
+                  </button>
+                  <div className="w-8 h-[1px] bg-stone-300/30"></div>
+                </>
+              )}
+
+              {/* Dashboard */}
               <button
                 onClick={() => setSelectedView('dashboard')}
                 className={`group relative p-4 rounded-2xl transition-all duration-300 ${
                   currentView === 'dashboard' ? 'bg-stone-900 text-white shadow-lg' : 'text-stone-600 hover:bg-white/40 hover:backdrop-blur-sm'
                 }`}
-                title="Dashboard"
+                title="Practice Dashboard"
               >
-                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
                 </svg>
               </button>
               <div className="w-8 h-[1px] bg-stone-300/30"></div>
@@ -407,7 +435,7 @@ const ConceptPracticePageLoftContent: React.FC<Omit<ConceptPracticePageLoftProps
                 }`}
                 title="Progress"
               >
-                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
                 </svg>
               </button>
@@ -421,7 +449,7 @@ const ConceptPracticePageLoftContent: React.FC<Omit<ConceptPracticePageLoftProps
                     }`}
                     title="Concepts"
                   >
-                    <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
                     </svg>
                   </button>
@@ -442,66 +470,54 @@ const ConceptPracticePageLoftContent: React.FC<Omit<ConceptPracticePageLoftProps
       {/* Header */}
       <div className="relative px-4 sm:px-6 md:px-8 pt-4 sm:pt-8 md:pt-12 pb-4 sm:pb-6 md:pb-8" style={{ overflow: 'visible' }}>
         <div className="max-w-6xl mx-auto" style={{ overflow: 'visible' }}>
-          {/* Back Button */}
-          {onBackToCurriculums && (
-            <button
-              onClick={onBackToCurriculums}
-              className="mb-6 text-[11px] uppercase tracking-widest text-stone-500 hover:text-stone-900 transition-colors inline-flex items-center gap-2"
-              style={{ fontFamily: "'Unbounded', sans-serif", fontWeight: 500 }}
-            >
-              <ArrowLeft className="h-3 w-3" />
-              Back to Curriculums
-            </button>
-          )}
+          {/* Navigation moved to floating bars */}
           
-          {/* Title Section - Dynamic based on view */}
-          <div className="mb-4 md:mb-0">
-            <div className="h-[1px] w-16 md:w-24 bg-stone-300 mb-4 md:mb-6"></div>
-            <h1 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-medium text-stone-900 mb-2 sm:mb-3 md:mb-4 tracking-tight" style={{ fontFamily: "'Unbounded', sans-serif", fontWeight: 500 }}>
-              {currentView === 'dashboard' ? (
-                (() => {
-                  const hour = new Date().getHours();
-                  let greeting = '';
-                  if (hour < 12) greeting = 'Good morning';
-                  else if (hour < 18) greeting = 'Good afternoon';
-                  else greeting = 'Good evening';
-                  
-                  // Get user's first name from metadata or email
-                  let userName = '';
-                  if (user) {
-                    // Try to get first_name from user metadata (set during sign-up)
-                    if (user.user_metadata?.first_name) {
-                      userName = user.user_metadata.first_name;
-                    } else if (user.user_metadata?.name) {
-                      userName = user.user_metadata.name.split(' ')[0];
-                    } else if (user.email) {
-                      // Extract first part of email before @ 
-                      // If it contains dots, take first part; if too long, truncate
-                      const emailPart = user.email.split('@')[0];
-                      const namePart = emailPart.includes('.') ? emailPart.split('.')[0] : emailPart;
-                      // Capitalize and limit to reasonable length
-                      userName = namePart.charAt(0).toUpperCase() + namePart.slice(1, 15);
+          {/* Title Section - Dynamic based on view - Hidden on Progress page */}
+          {selectedView !== 'progress' && (
+            <div className="mb-4 md:mb-0">
+              <div className="h-[1px] w-16 md:w-24 bg-stone-300 mb-4 md:mb-6"></div>
+              <h1 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-medium text-stone-900 mb-2 sm:mb-3 md:mb-4 tracking-tight" style={{ fontFamily: "'Unbounded', sans-serif", fontWeight: 500 }}>
+                {currentView === 'dashboard' ? (
+                  (() => {
+                    const hour = new Date().getHours();
+                    let greeting = '';
+                    if (hour < 12) greeting = 'Good morning';
+                    else if (hour < 18) greeting = 'Good afternoon';
+                    else greeting = 'Good evening';
+                    
+                    // Get user's first name from metadata or email
+                    let userName = '';
+                    if (user) {
+                      // Try to get first_name from user metadata (set during sign-up)
+                      if (user.user_metadata?.first_name) {
+                        userName = user.user_metadata.first_name;
+                      } else if (user.user_metadata?.name) {
+                        userName = user.user_metadata.name.split(' ')[0];
+                      } else if (user.email) {
+                        // Extract first part of email before @ 
+                        // If it contains dots, take first part; if too long, truncate
+                        const emailPart = user.email.split('@')[0];
+                        const namePart = emailPart.includes('.') ? emailPart.split('.')[0] : emailPart;
+                        // Capitalize and limit to reasonable length
+                        userName = namePart.charAt(0).toUpperCase() + namePart.slice(1, 15);
+                      }
                     }
-                  }
-                  
-                  return userName ? `${greeting}, ${userName}` : greeting;
-                })()
-              ) : selectedView === 'progress' ? (
-                'Your Progress'
-              ) : (
-                'Concept Library'
-              )}
-            </h1>
-            <p className="text-xs sm:text-sm md:text-base lg:text-lg text-stone-600 font-light max-w-2xl md:mb-0" style={{ fontFamily: "'Manrope', sans-serif", fontWeight: 300 }}>
-              {currentView === 'dashboard' ? (
-                <>Ready to continue your journey with <span className="font-medium text-stone-900">{curriculum?.name || curriculumName}</span></>
-              ) : selectedView === 'progress' ? (
-                <>Track your mastery and performance across <span className="font-medium text-stone-900">{curriculum?.name || curriculumName}</span></>
-              ) : (
-                <>Master concepts through evidence-based practice in <span className="font-medium text-stone-900">{curriculum?.name || curriculumName}</span></>
-              )}
-            </p>
-          </div>
+                    
+                    return userName ? `${greeting}, ${userName}` : greeting;
+                  })()
+                ) : (
+                  'Concept Library'
+                )}
+              </h1>
+              <p className="text-xs sm:text-sm md:text-base lg:text-lg text-stone-600 font-light max-w-2xl md:mb-0" style={{ fontFamily: "'Manrope', sans-serif", fontWeight: 300 }}>
+                {currentView === 'dashboard' ? (
+                  <>Ready to continue your journey with <span className="font-medium text-stone-900">{curriculum?.name || curriculumName}</span></>
+                ) : (
+                  <>Master concepts through evidence-based practice in <span className="font-medium text-stone-900">{curriculum?.name || curriculumName}</span></>
+                )}
+              </p>
+            </div>
+          )}
 
           {/* Removed tabs - now using floating bottom bar */}
 
@@ -1282,16 +1298,6 @@ const ConceptPracticePageLoftContent: React.FC<Omit<ConceptPracticePageLoftProps
                 }}
                 selectedCategory={'all'}
               />
-
-              <div className="mt-6 md:mt-8">
-                <button
-                  onClick={() => setShowFiltersPanel(false)}
-                  className="w-full px-6 py-3 md:py-4 border border-black/[0.08] rounded-full text-[11px] uppercase tracking-widest text-stone-600 hover:bg-stone-50 transition-colors active:bg-stone-100"
-                  style={{ fontFamily: "'Unbounded', sans-serif", fontWeight: 500 }}
-                >
-                  Close
-                </button>
-              </div>
             </div>
           </div>
         </div>
@@ -1299,58 +1305,61 @@ const ConceptPracticePageLoftContent: React.FC<Omit<ConceptPracticePageLoftProps
 
       {/* Mobile Bottom Navigation - Visible only on small screens */}
       <div className="md:hidden fixed bottom-0 left-0 right-0 z-50 pb-safe">
-        <div className="bg-white/80 backdrop-blur-2xl border-t border-white/20 shadow-[0_-4px_24px_0_rgba(0,0,0,0.08)] backdrop-saturate-150">
-          <div className="flex items-center justify-around px-4 py-3">
+        <div className="bg-white/90 backdrop-blur-2xl border-t border-black/[0.06]">
+          <div className="flex items-center justify-around px-3 py-1.5">
+            {/* Curriculum Hub */}
+            {onBackToCurriculums && (
+              <button
+                onClick={onBackToCurriculums}
+                className="p-2.5 rounded-full transition-all duration-200 text-stone-600 hover:bg-stone-100 active:scale-95"
+              >
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
+                </svg>
+              </button>
+            )}
+
             {/* Practice */}
             <button
               onClick={() => setSelectedView('dashboard')}
-              className={`flex flex-col items-center gap-1 px-4 py-2 rounded-xl transition-all duration-300 ${
+              className={`p-2.5 rounded-full transition-all duration-200 active:scale-95 ${
                 currentView === 'dashboard'
                   ? 'bg-stone-900 text-white'
-                  : 'text-stone-600'
+                  : 'text-stone-600 hover:bg-stone-100'
               }`}
             >
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
+              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
               </svg>
-              <span className="text-[9px] uppercase tracking-wider font-medium" style={{ fontFamily: "'Unbounded', sans-serif" }}>
-                Practice
-              </span>
             </button>
 
             {/* Progress */}
             <button
               onClick={() => setSelectedView('progress')}
-              className={`flex flex-col items-center gap-1 px-4 py-2 rounded-xl transition-all duration-300 ${
+              className={`p-2.5 rounded-full transition-all duration-200 active:scale-95 ${
                 selectedView === 'progress'
                   ? 'bg-stone-900 text-white'
-                  : 'text-stone-600'
+                  : 'text-stone-600 hover:bg-stone-100'
               }`}
             >
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
               </svg>
-              <span className="text-[9px] uppercase tracking-wider font-medium" style={{ fontFamily: "'Unbounded', sans-serif" }}>
-                Progress
-              </span>
             </button>
 
             {/* Concepts - Only show for creators */}
             {isCreator && (
               <button
                 onClick={() => setSelectedView('concepts')}
-                className={`flex flex-col items-center gap-1 px-4 py-2 rounded-xl transition-all duration-300 ${
+                className={`p-2.5 rounded-full transition-all duration-200 active:scale-95 ${
                   selectedView === 'concepts'
                     ? 'bg-stone-900 text-white'
-                    : 'text-stone-600'
+                    : 'text-stone-600 hover:bg-stone-100'
                 }`}
               >
                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
                 </svg>
-                <span className="text-[9px] uppercase tracking-wider font-medium" style={{ fontFamily: "'Unbounded', sans-serif" }}>
-                  Concepts
-                </span>
               </button>
             )}
           </div>
@@ -1362,6 +1371,22 @@ const ConceptPracticePageLoftContent: React.FC<Omit<ConceptPracticePageLoftProps
       <div className="hidden md:block fixed left-4 lg:left-6 top-1/2 transform -translate-y-1/2 z-50">
         <div className="bg-white/30 backdrop-blur-2xl rounded-3xl p-3 border border-white/20 shadow-[0_8px_32px_0_rgba(0,0,0,0.12)] backdrop-saturate-150">
           <div className="flex flex-col items-center gap-2">
+            {/* Curriculum Hub */}
+            {onBackToCurriculums && (
+              <>
+                <button
+                  onClick={onBackToCurriculums}
+                  className="group relative p-4 rounded-2xl transition-all duration-300 text-stone-600 hover:bg-white/40 hover:backdrop-blur-sm"
+                  title="Curriculum Hub"
+                >
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
+                  </svg>
+                </button>
+                <div className="w-8 h-[1px] bg-stone-300/30"></div>
+              </>
+            )}
+
             {/* Dashboard */}
             <button
               onClick={() => setSelectedView('dashboard')}
@@ -1370,10 +1395,10 @@ const ConceptPracticePageLoftContent: React.FC<Omit<ConceptPracticePageLoftProps
                   ? 'bg-stone-900 text-white shadow-lg'
                   : 'text-stone-600 hover:bg-white/40 hover:backdrop-blur-sm'
               }`}
-              title="Dashboard"
+              title="Practice Dashboard"
             >
               <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
               </svg>
             </button>
 
@@ -1410,7 +1435,7 @@ const ConceptPracticePageLoftContent: React.FC<Omit<ConceptPracticePageLoftProps
                   }`}
                   title="Concepts"
                 >
-                  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
                   </svg>
                 </button>

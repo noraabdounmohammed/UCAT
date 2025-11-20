@@ -12,6 +12,7 @@ import {
 } from '@/types/conceptTypes';
 import { generateQuestionWithConfig } from '@/services/aiQuestionGenerator';
 import { StorageManager } from '@/utils/storageManager';
+import { supabase } from '@/lib/supabase';
 
 // Calculate statistics from filtered concepts
 function calculateStats(concepts: ConceptNode[]): ConceptStats {
@@ -115,7 +116,7 @@ export const createConceptStore = (curriculumId: string = 'default') => {
         mastery_levels: [], // Start with no filters selected - show all
         searchQuery: '',
         custom_filters: [], // Will be populated when concepts are loaded
-        cascading_mode: false // Default to OR mode (match ANY selected filter)
+        cascading_mode: true // Default to AND mode (cascading filters - only show related filters)
       },
       filterOptions: {
         mastery_levels: [
@@ -151,36 +152,59 @@ export const createConceptStore = (curriculumId: string = 'default') => {
       currentSessionAnswers: [],
       sessionStartTime: null,
 
-      // Load concepts from JSON file
+      // Migrate old filterState to enable cascading mode by default
+      migrateFilterState: () => {
+        const currentState = get();
+        if (currentState.filterState.cascading_mode === undefined || currentState.filterState.cascading_mode === false) {
+
+          set({ 
+            filterState: { 
+              ...currentState.filterState, 
+              cascading_mode: true 
+            } 
+          });
+        }
+      },
+
+      // Load concepts from localStorage (with optional Supabase sync)
       loadConcepts: async () => {
+        console.log('🚀 loadConcepts called for curriculum:', curriculumId);
+        console.log('📍 Current concepts count before load:', get().concepts.length);
+        
+        // Run migration first
+        get().migrateFilterState();
+        
         set({ isLoading: true });
+        
+        // ALWAYS load from localStorage first for immediate display
+        const userConceptsKey = getCurriculumKey(curriculumId, 'user_concepts');
+        const storedUserConceptsData = localStorage.getItem(userConceptsKey);
+        let userConcepts: any[] = storedUserConceptsData ? JSON.parse(storedUserConceptsData) : [];
+        console.log('📥 Loaded from localStorage:', userConcepts.length, 'concepts');
+        
         try {
-          // Check if this curriculum should start empty or was spec-generated
-          const isEmpty = localStorage.getItem(`${curriculumId}_is_empty`);
-          const isSpecGenerated = localStorage.getItem(`${curriculumId}_spec_generated`);
+          // Try to sync with Supabase in the background (non-blocking)
+          const { data: { user } } = await Promise.race([
+            supabase.auth.getUser(),
+            new Promise<{ data: { user: null } }>((resolve) => 
+              setTimeout(() => {
+                console.log('⏱️ Supabase not available, continuing with localStorage');
+                resolve({ data: { user: null } });
+              }, 1000)
+            )
+          ]);
+          console.log('👤 User status:', user ? 'authenticated' : 'not authenticated');
           
-          // Also check if there are any user concepts - if not, treat as empty
-          const existingUserConcepts = localStorage.getItem(getCurriculumKey(curriculumId, 'user_concepts'));
-          const hasUserConcepts = existingUserConcepts && JSON.parse(existingUserConcepts).length > 0;
-          
-          let concepts: any[] = [];
-          
-          console.log(`ConceptStore: Loading concepts for curriculum ${curriculumId}, isEmpty flag:`, isEmpty, 'specGenerated:', isSpecGenerated, 'hasUserConcepts:', hasUserConcepts);
-          
-          // NEVER load default concepts - all curriculums start empty
-          console.log(`ConceptStore: Never loading default concepts - all curriculums start empty`);
-          
-          if (isSpecGenerated) {
-            console.log('ConceptStore: Spec-generated curriculum - only loading user concepts');
-          } else {
-            console.log('ConceptStore: Starting with empty concepts');
+          if (user && userConcepts.length > 0) {
+            console.log('✅ User authenticated, concepts loaded from localStorage');
+            // TODO: Implement ProgressSyncService for Supabase sync
+            // For now, localStorage is the primary storage
           }
           
-          // Load user concepts from localStorage (curriculum-specific)
-          const storedUserConceptsData = localStorage.getItem(getCurriculumKey(curriculumId, 'user_concepts'));
-          const userConcepts = storedUserConceptsData ? JSON.parse(storedUserConceptsData) : [];
+          // Start with user concepts only (all curriculums start empty)
+          let concepts: any[] = userConcepts;
           
-          // Load deleted concepts list to exclude them (curriculum-specific)
+          // Load deleted concepts list (still from localStorage for now)
           const deletedConceptsStr = localStorage.getItem(getCurriculumKey(curriculumId, 'deleted_concepts'));
           const deletedConceptIds = deletedConceptsStr ? JSON.parse(deletedConceptsStr) : [];
           
@@ -241,86 +265,62 @@ export const createConceptStore = (curriculumId: string = 'default') => {
           
           const allConcepts = [...filteredNormalizedConcepts, ...filteredUserConcepts];
           
-          // Load custom filters (curriculum-specific)
-          const customFiltersKey = getCurriculumKey(curriculumId, 'custom_filters');
-          let storedFilters = localStorage.getItem(customFiltersKey);
+          // Debug: Check concept structure
+          if (allConcepts.length > 0) {
+            console.log('📊 Sample concept structure:', {
+              total: allConcepts.length,
+              firstConcept: allConcepts[0],
+              hasCustomFilters: allConcepts[0]?.custom_filters,
+              customFiltersType: typeof allConcepts[0]?.custom_filters,
+              customFiltersLength: allConcepts[0]?.custom_filters?.length
+            });
+          }
           
-          // Check for legacy custom filters (before curriculum-specific storage)
+          // Batch all localStorage reads for better performance
+          const customFiltersKey = getCurriculumKey(curriculumId, 'custom_filters');
+          const categoriesKey = getCurriculumKey(curriculumId, 'filter_categories');
+          const migrationKey = `${curriculumId}_filter_migrated_v2`;
+          
+          let storedFilters = localStorage.getItem(customFiltersKey);
+          const storedCategories = localStorage.getItem(categoriesKey);
+          const alreadyMigrated = localStorage.getItem(migrationKey);
+          
+          // Check for legacy custom filters migration
           if (!storedFilters) {
-            const legacyFiltersKey = 'custom_filters';
-            const legacyFilters = localStorage.getItem(legacyFiltersKey);
+            const legacyFilters = localStorage.getItem('custom_filters');
             if (legacyFilters) {
-              console.log(`ConceptStore: Found legacy custom filters, migrating to curriculum-specific storage`);
               storedFilters = legacyFilters;
-              // Save to new location
               localStorage.setItem(customFiltersKey, legacyFilters);
-              // Optionally remove legacy (but keep for other curriculums that might need it)
             }
           }
           
           const customFilters = storedFilters ? JSON.parse(storedFilters) : [];
-          console.log(`ConceptStore: Loading custom filters for ${curriculumId}:`);
-          console.log('  - Key:', customFiltersKey);
-          console.log('  - Raw stored data:', storedFilters);
-          console.log('  - Parsed filters:', JSON.stringify(customFilters, null, 2));
-          console.log('  - Count:', customFilters.length);
-          
-          // Also check for any localStorage keys that might contain filters
-          console.log('  - All localStorage keys containing "filter":');
-          for (let i = 0; i < localStorage.length; i++) {
-            const key = localStorage.key(i);
-            if (key && key.includes('filter')) {
-              console.log(`    ${key}: ${localStorage.getItem(key)}`);
-            }
-          }
-          
-          // Load filter categories (curriculum-specific)
-          const categoriesKey = getCurriculumKey(curriculumId, 'filter_categories');
-          const storedCategories = localStorage.getItem(categoriesKey);
           const filterCategories = storedCategories ? JSON.parse(storedCategories) : [];
-          console.log(`ConceptStore: Loading filter categories for ${curriculumId}:`);
-          console.log('  - Key:', categoriesKey);
-          console.log('  - Raw stored data:', storedCategories);
-          console.log('  - Parsed categories:', filterCategories);
-          console.log('  - Count:', filterCategories.length);
-          
           const filterOptions = extractFilterOptions(allConcepts);
           
-          // Debug: Check what concepts we have and their custom filters
-          console.log(`ConceptStore: Loaded ${allConcepts.length} concepts for ${curriculumId}`);
-          console.log('ConceptStore: Sample concepts with custom filters:');
-          allConcepts.slice(0, 3).forEach((concept, index) => {
-            console.log(`  ${index + 1}. ${concept.title}: custom_filters =`, concept.custom_filters);
-          });
-          console.log('ConceptStore: Extracted filter options:');
-          console.log('  - custom_filters:', filterOptions.custom_filters);
-          console.log('  - custom_filters count:', filterOptions.custom_filters.length);
-          
-          // Force migration to new filter defaults (one-time migration)
-          const migrationKey = `${curriculumId}_filter_migrated_v2`;
-          const alreadyMigrated = localStorage.getItem(migrationKey);
-          
+          // Handle filter state migration
           let updatedFilterState;
-          
           if (!alreadyMigrated) {
-            console.log('ConceptStore: Migrating to new filter defaults (show all)');
             updatedFilterState = {
-              mastery_levels: [], // New default: no filters selected = show all
+              mastery_levels: [],
               searchQuery: '',
               custom_filters: []
             };
             localStorage.setItem(migrationKey, 'true');
           } else {
-            // Keep existing filter state for already migrated curriculums
-            const currentFilterState = get().filterState;
-            updatedFilterState = {
-              ...currentFilterState
-              // Keep existing custom filters - don't clear them
-            };
+            updatedFilterState = { ...get().filterState };
           }
           
           const filteredConcepts = filterConcepts(allConcepts, updatedFilterState);
           const stats = calculateStats(filteredConcepts);
+          
+          // Debug: Check stats
+          console.log('📊 Calculated stats:', {
+            total: stats.total,
+            by_mastery: stats.by_mastery,
+            by_custom_filter: stats.by_custom_filter,
+            filterOptionsCount: filterOptions.custom_filters?.length
+          });
           
           set({ 
             concepts: allConcepts,
@@ -333,7 +333,37 @@ export const createConceptStore = (curriculumId: string = 'default') => {
             isLoading: false 
           });
         } catch (error) {
-          console.error('Failed to load concepts:', error);
+          console.error('❌ Failed to load concepts:', error);
+          console.error('Error details:', {
+            message: error instanceof Error ? error.message : 'Unknown error',
+            stack: error instanceof Error ? error.stack : undefined
+          });
+          
+          // Try to load from localStorage as last resort
+          try {
+            console.log('🔄 Attempting emergency localStorage load...');
+            const userConceptsKey = getCurriculumKey(curriculumId, 'user_concepts');
+            const storedUserConceptsData = localStorage.getItem(userConceptsKey);
+            const emergencyConcepts = storedUserConceptsData ? JSON.parse(storedUserConceptsData) : [];
+            console.log('📥 Emergency load found:', emergencyConcepts.length, 'concepts');
+            
+            if (emergencyConcepts.length > 0) {
+              const filterOptions = extractFilterOptions(emergencyConcepts);
+              const stats = calculateStats(emergencyConcepts);
+              
+              set({ 
+                concepts: emergencyConcepts,
+                filteredConcepts: emergencyConcepts,
+                stats,
+                filterOptions,
+                isLoading: false
+              });
+              return;
+            }
+          } catch (emergencyError) {
+            console.error('❌ Emergency load also failed:', emergencyError);
+          }
+          
           set({ isLoading: false });
         }
       },
@@ -372,30 +402,47 @@ export const createConceptStore = (curriculumId: string = 'default') => {
 
 
       // Add new concept
-      addConcept: async (concept: Omit<ConceptNode, 'concept_id' | 'created_at' | 'updated_at'>) => {
+      addConcept: async (concept: Omit<ConceptNode, 'concept_id' | 'created_at' | 'updated_at'> & { concept_id?: string }) => {
+        console.log('🔵 addConcept called with:', concept.title);
+        
         const newConcept: ConceptNode = {
           ...concept,
-          concept_id: concept.concept_id 
-            ? concept.concept_id 
-            : `user_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+          concept_id: concept.concept_id || `user_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
           created_at: new Date(),
           updated_at: new Date()
         };
         
+        console.log('🔵 New concept created with ID:', newConcept.concept_id);
+        
         const currentState = get();
         const updatedConcepts = [...currentState.concepts, newConcept];
         
+        console.log('🔵 Total concepts after adding:', updatedConcepts.length);
+        
         // Check storage before saving
-        const dataSize = JSON.stringify(updatedConcepts).length * 2;
-        await StorageManager.checkBeforeSave(dataSize);
+        try {
+          const dataSize = JSON.stringify(updatedConcepts).length * 2;
+          await StorageManager.checkBeforeSave(dataSize);
+        } catch (error) {
+          console.error('❌ Storage check failed:', error);
+          throw error;
+        }
         
-        // Persist full concept list (curriculum-specific)
-        localStorage.setItem(getCurriculumKey(curriculumId, 'user_concepts'), JSON.stringify(updatedConcepts));
+        // ALWAYS save to localStorage first (primary storage)
+        try {
+          const storageKey = getCurriculumKey(curriculumId, 'user_concepts');
+          localStorage.setItem(storageKey, JSON.stringify(updatedConcepts));
+          console.log('✅ Saved to localStorage:', storageKey, 'Count:', updatedConcepts.length);
+        } catch (error) {
+          console.error('❌ Failed to save to localStorage:', error);
+          throw error;
+        }
         
-        // Only remove the empty flag if this is a manual user action (not during initialization)
-        // We can detect this by checking if we have any user concepts now
+        // Supabase sync disabled for performance - localStorage is primary storage
+        // TODO: Implement batch Supabase sync after bulk operations complete
+        
+        // Only remove the empty flag if this is a manual user action
         if (updatedConcepts.length > 0) {
-          console.log(`ConceptStore: Removing empty flag for ${curriculumId} - user added concept`);
           localStorage.removeItem(`${curriculumId}_is_empty`);
         }
         
@@ -403,12 +450,16 @@ export const createConceptStore = (curriculumId: string = 'default') => {
         const stats = calculateStats(filteredConcepts);
         const filterOptions = extractFilterOptions(updatedConcepts);
         
+        console.log('✅ Concept added successfully. Updating state...');
+        
         set({ 
           concepts: updatedConcepts,
           filteredConcepts,
           stats,
           filterOptions
         });
+        
+        console.log('✅ State updated. New concept count:', updatedConcepts.length);
       },
 
       // Update existing concept
@@ -458,26 +509,26 @@ export const createConceptStore = (curriculumId: string = 'default') => {
           concept.custom_filters?.forEach(filter => allFiltersInUse.add(filter));
         });
         
-        console.log('🔍 Filters still in use by remaining concepts:', Array.from(allFiltersInUse));
+
         
         // Clean up filter assignments - only remove assignments for filters not used by ANY concept
         const assignmentsKey = getCurriculumKey(curriculumId, 'filter_assignments');
         const currentAssignments = JSON.parse(localStorage.getItem(assignmentsKey) || '{}');
         const cleanedAssignments: Record<string, string> = {};
         
-        console.log('📋 Current filter assignments:', currentAssignments);
+
         
         // Keep assignments for filters that are still used by ANY remaining concept
         Object.entries(currentAssignments).forEach(([filter, categoryId]) => {
           if (allFiltersInUse.has(filter)) {
             cleanedAssignments[filter] = categoryId as string;
-            console.log(`✅ Keeping assignment: ${filter} -> ${categoryId}`);
+
           } else {
-            console.log(`🗑️ Removing unused filter assignment: ${filter} -> ${categoryId}`);
+
           }
         });
         
-        console.log('🧹 Cleaned assignments:', cleanedAssignments);
+
         
         // Update assignments if they changed
         if (Object.keys(cleanedAssignments).length !== Object.keys(currentAssignments).length) {
@@ -488,8 +539,8 @@ export const createConceptStore = (curriculumId: string = 'default') => {
         // Get all category IDs that still have filters assigned
         const categoriesWithAssignedFilters = new Set(Object.values(cleanedAssignments));
         
-        console.log('📂 Categories with assigned filters:', Array.from(categoriesWithAssignedFilters));
-        console.log('📂 Current categories:', currentState.filterCategories.map((c: any) => `${c.name} (${c.id})`));
+
+
         
         let updatedCategories = currentState.filterCategories.filter(category => {
           // Keep if ID is referenced OR if slug(name) is referenced in assignments
@@ -499,9 +550,9 @@ export const createConceptStore = (curriculumId: string = 'default') => {
             categoriesWithAssignedFilters.has(slug as any);
 
           if (!hasAssignedFilters) {
-            console.log(`🗑️ Removing category with no assigned filters: ${category.name} (${category.id})`);
+
           } else {
-            console.log(`✅ Keeping category: ${category.name} (${category.id}) - has assigned filters`);
+
           }
 
           return hasAssignedFilters;
@@ -524,10 +575,10 @@ export const createConceptStore = (curriculumId: string = 'default') => {
             description: `Auto-rebuilt category: ${prettyName(String(key))}`,
             created_at: new Date()
           }));
-          console.log('🧱 Rebuilt categories from assignments:', updatedCategories);
+
         }
 
-        console.log('📂 Updated categories:', updatedCategories.map((c: any) => `${c.name} (${c.id})`));
+
 
         // Persist categories so the UI reflects the current state
         const categoriesKey = getCurriculumKey(curriculumId, 'filter_categories');
@@ -548,7 +599,7 @@ export const createConceptStore = (curriculumId: string = 'default') => {
 
       // Clear all concepts and reset curriculum to empty state
       clearAllConcepts: () => {
-        console.log(`ConceptStore: Clearing all concepts for curriculum ${curriculumId}`);
+
         
         // Clear all localStorage data for this curriculum
         localStorage.removeItem(getCurriculumKey(curriculumId, 'user_concepts'));
@@ -745,7 +796,7 @@ export const createConceptStore = (curriculumId: string = 'default') => {
           // Update the actual count being generated
           set({ generatingQuestionCount: conceptsForQuestions.length });
           
-          console.log(`🎯 Practice Session: Generating ${conceptsForQuestions.length} questions from ${conceptsToUse.length} available concepts`);
+
           
           // For mind maps, create a single unified mind map from all concepts
           if (targetFormat === 'mindmap') {
@@ -890,14 +941,14 @@ export const createConceptStore = (curriculumId: string = 'default') => {
         
         // Development logging
         if (process.env.NODE_ENV === 'development') {
-          console.log('🎯 updateMastery called:', { conceptId, isCorrect, sessionAnswers: updatedSessionAnswers.length });
+
         }
         
         // Find the concept first to debug
         const targetConcept = currentState.concepts.find(c => c.concept_id === conceptId);
         if (!targetConcept) {
           console.error('❌ Concept not found for mastery update:', conceptId);
-          console.log('Available concept IDs:', currentState.concepts.map(c => c.concept_id));
+
           return;
         }
         

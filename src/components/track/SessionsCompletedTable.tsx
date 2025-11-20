@@ -5,7 +5,7 @@ export function SessionsCompletedTable({
 }: {
   sessions: { date: string; items: number; accuracy: number; minutes: number; formats?: string[] }[];
 }) {
-  console.log('📊 SessionsCompletedTable received sessions:', sessions);
+
   
   if (sessions.length === 0) {
     return (

@@ -1,4 +1,4 @@
-import React, { createContext, useContext, ReactNode, useMemo } from 'react';
+import React, { createContext, useContext, ReactNode, useMemo, useEffect } from 'react';
 import { createConceptStore } from '@/store/conceptStore';
 
 // Create context for the concept store
@@ -15,12 +15,15 @@ export const ConceptStoreProvider: React.FC<ConceptStoreProviderProps> = ({
 }) => {
   // Memoize store creation to prevent unnecessary re-creation
   const store = useMemo(() => {
-    console.log(`ConceptStoreProvider: Creating store for curriculum ${curriculumId}`);
-    console.log(`ConceptStoreProvider: isEmpty flag before store creation:`, localStorage.getItem(`${curriculumId}_is_empty`));
     const newStore = createConceptStore(curriculumId);
-    console.log(`ConceptStoreProvider: isEmpty flag after store creation:`, localStorage.getItem(`${curriculumId}_is_empty`));
     return newStore;
   }, [curriculumId]);
+  
+  // Load concepts when store is created or curriculum changes
+  useEffect(() => {
+    console.log('🔄 Loading concepts for curriculum:', curriculumId);
+    store.getState().loadConcepts();
+  }, [store, curriculumId]);
   
   return (
     <ConceptStoreContext.Provider value={store}>
