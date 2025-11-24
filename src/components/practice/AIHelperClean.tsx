@@ -315,15 +315,30 @@ export function AIHelper({ question, correctAnswer, selectedAnswer, explanation,
                 <div className={`${message.role === 'user' ? 'max-w-[85%]' : 'max-w-[95%]'}`}>
                   {/* Reply context */}
                   {message.replyTo && (
-                    <div className={`mb-3 px-4 py-3 rounded-xl border-l-2 text-sm ${
-                      message.role === 'user' 
-                        ? 'bg-white/[0.05] border-white/20' 
-                        : 'bg-white/[0.02] border-white/10'
-                    }`} style={{ fontFamily: "'Manrope', sans-serif" }}>
-                      <div className="text-xs font-light mb-1.5 text-white/60 uppercase tracking-wider">
+                    <div
+                      className={`mb-3 px-4 py-3 rounded-xl border-l-2 text-sm ${
+                        message.role === 'user'
+                          ? lightMode
+                            ? 'bg-white border-stone-200'
+                            : 'bg-white/[0.05] border-white/20'
+                          : lightMode
+                            ? 'bg-stone-50 border-stone-200'
+                            : 'bg-white/[0.02] border-white/10'
+                      }`}
+                      style={{ fontFamily: "'Manrope', sans-serif" }}
+                    >
+                      <div
+                        className={`text-xs font-light mb-1.5 uppercase tracking-wider ${
+                          lightMode ? 'text-stone-500' : 'text-white/60'
+                        }`}
+                      >
                         {message.replyTo.role === 'assistant' ? 'AI Assistant' : 'You'}
                       </div>
-                      <div className="text-sm leading-relaxed text-white/70 font-light">
+                      <div
+                        className={`text-sm leading-relaxed font-light ${
+                          lightMode ? 'text-stone-700' : 'text-white/70'
+                        }`}
+                      >
                         {message.replyTo.content.replace(/✓/g, '').replace(/✅/g, '').trim() || 'Message content'}
                       </div>
                     </div>
@@ -331,9 +346,13 @@ export function AIHelper({ question, correctAnswer, selectedAnswer, explanation,
                   {/* Message bubble */}
                   <div 
                     className={`group relative px-5 py-4 rounded-2xl ${
-                      message.role === 'user' 
-                        ? 'bg-white/[0.08] border border-white/[0.12] text-white' 
-                        : 'bg-white/[0.03] border border-white/[0.08] text-white'
+                      message.role === 'user'
+                        ? lightMode
+                          ? 'bg-white border border-black/[0.06] text-stone-900'
+                          : 'bg-white/[0.08] border border-white/[0.12] text-white'
+                        : lightMode
+                          ? 'bg-white border border-black/[0.04] text-stone-900'
+                          : 'bg-white/[0.03] border border-white/[0.08] text-white'
                     }`}
                     style={{ fontFamily: "'Manrope', sans-serif" }}
                   >
@@ -348,17 +367,91 @@ export function AIHelper({ question, correctAnswer, selectedAnswer, explanation,
                         <ReactMarkdown 
                           rehypePlugins={[rehypeRaw]}
                           components={{
-                            p: ({ children }) => <p className="mb-2 last:mb-0 leading-[1.4] text-white">{children}</p>,
-                            h1: ({ children }) => <h1 className="font-bold mb-2 text-white">{children}</h1>,
-                            h2: ({ children }) => <h2 className="font-semibold mb-2 mt-3 first:mt-0 text-white">{children}</h2>,
-                            h3: ({ children }) => <h3 className="font-medium mb-2 mt-2 first:mt-0 text-white">{children}</h3>,
+                            p: ({ children }) => (
+                              <p
+                                className={`mb-2 last:mb-0 leading-[1.4] ${
+                                  lightMode ? 'text-stone-800' : 'text-white'
+                                }`}
+                              >
+                                {children}
+                              </p>
+                            ),
+                            h1: ({ children }) => (
+                              <h1
+                                className={`font-bold mb-2 ${lightMode ? 'text-stone-900' : 'text-white'}`}
+                              >
+                                {children}
+                              </h1>
+                            ),
+                            h2: ({ children }) => (
+                              <h2
+                                className={`font-semibold mb-2 mt-3 first:mt-0 ${
+                                  lightMode ? 'text-stone-900' : 'text-white'
+                                }`}
+                              >
+                                {children}
+                              </h2>
+                            ),
+                            h3: ({ children }) => (
+                              <h3
+                                className={`font-medium mb-2 mt-2 first:mt-0 ${
+                                  lightMode ? 'text-stone-900' : 'text-white'
+                                }`}
+                              >
+                                {children}
+                              </h3>
+                            ),
                             ul: ({ children }) => <ul className="list-disc pl-4 mb-2 space-y-1">{children}</ul>,
                             ol: ({ children }) => <ol className="list-decimal pl-4 mb-2 space-y-1">{children}</ol>,
-                            li: ({ children }) => <li className="leading-[1.4] text-white">{children}</li>,
-                            strong: ({ children }) => <strong className="font-semibold text-white">{children}</strong>,
-                            em: ({ children }) => <em className="italic text-white/90">{children}</em>,
-                            code: ({ children }) => <code className="px-1 py-0.5 rounded text-xs font-mono bg-white/20 text-white">{children}</code>,
-                            blockquote: ({ children }) => <blockquote className="border-l-2 pl-3 py-1 italic my-2 border-white/30 text-white/80">{children}</blockquote>
+                            li: ({ children }) => (
+                              <li
+                                className={`leading-[1.4] ${
+                                  lightMode ? 'text-stone-800' : 'text-white'
+                                }`}
+                              >
+                                {children}
+                              </li>
+                            ),
+                            strong: ({ children }) => (
+                              <strong
+                                className={`font-semibold ${
+                                  lightMode ? 'text-stone-900' : 'text-white'
+                                }`}
+                              >
+                                {children}
+                              </strong>
+                            ),
+                            em: ({ children }) => (
+                              <em
+                                className={`italic ${
+                                  lightMode ? 'text-stone-700' : 'text-white/90'
+                                }`}
+                              >
+                                {children}
+                              </em>
+                            ),
+                            code: ({ children }) => (
+                              <code
+                                className={`px-1 py-0.5 rounded text-xs font-mono ${
+                                  lightMode
+                                    ? 'bg-stone-100 text-stone-900'
+                                    : 'bg-white/20 text-white'
+                                }`}
+                              >
+                                {children}
+                              </code>
+                            ),
+                            blockquote: ({ children }) => (
+                              <blockquote
+                                className={`border-l-2 pl-3 py-1 italic my-2 ${
+                                  lightMode
+                                    ? 'border-stone-300 text-stone-700'
+                                    : 'border-white/30 text-white/80'
+                                }`}
+                              >
+                                {children}
+                              </blockquote>
+                            )
                           }}
                         >
                           {processVideoTags(message.content)}
@@ -380,7 +473,11 @@ export function AIHelper({ question, correctAnswer, selectedAnswer, explanation,
                             }
                           }, 100);
                         }}
-                        className="text-xs text-white/50 px-3 py-1.5 rounded-lg hover:bg-white/[0.05] hover:text-white/80 transition-all font-light"
+                        className={`text-xs px-3 py-1.5 rounded-lg transition-all font-light ${
+                          lightMode
+                            ? 'text-stone-500 hover:bg-black/[0.04] hover:text-stone-800'
+                            : 'text-white/50 hover:bg-white/[0.05] hover:text-white/80'
+                        }`}
                         style={{ fontFamily: "'Manrope', sans-serif" }}
                         title="Reply to this message"
                       >
@@ -469,16 +566,34 @@ export function AIHelper({ question, correctAnswer, selectedAnswer, explanation,
           contained={true}
           lightMode={lightMode}
           replyPreview={replyingTo ? (
-            <div className="p-3 bg-white/5 rounded-t-lg border-b border-white/10">
+            <div
+              className={`p-3 rounded-t-lg border-b ${
+                lightMode
+                  ? 'bg-stone-50 border-stone-200'
+                  : 'bg-white/5 border-white/10'
+              }`}
+            >
               <div className="flex items-start justify-between gap-3">
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 mb-1">
-                    <div className="w-2 h-2 rounded-full bg-white/40"></div>
-                    <span className="text-xs font-medium text-white/70">
+                    <div
+                      className={`w-2 h-2 rounded-full ${
+                        lightMode ? 'bg-stone-400' : 'bg-white/40'
+                      }`}
+                    ></div>
+                    <span
+                      className={`text-xs font-medium ${
+                        lightMode ? 'text-stone-700' : 'text-white/70'
+                      }`}
+                    >
                       {replyingTo.role === 'assistant' ? 'AI Assistant' : 'You'}
                     </span>
                   </div>
-                  <div className="text-sm text-white/80 line-clamp-2 leading-relaxed">
+                  <div
+                    className={`text-sm line-clamp-2 leading-relaxed ${
+                      lightMode ? 'text-stone-700' : 'text-white/80'
+                    }`}
+                  >
                     {replyingTo.content.length > 120 
                       ? replyingTo.content.substring(0, 120) + '...' 
                       : replyingTo.content
@@ -487,10 +602,21 @@ export function AIHelper({ question, correctAnswer, selectedAnswer, explanation,
                 </div>
                 <button
                   onClick={() => setReplyingTo(null)}
-                  className="flex-shrink-0 p-1 rounded-full hover:bg-white/10 transition-colors group"
+                  className={`flex-shrink-0 p-1 rounded-full transition-colors group ${
+                    lightMode ? 'hover:bg-black/[0.05]' : 'hover:bg-white/10'
+                  }`}
                   title="Cancel reply"
                 >
-                  <svg className="w-4 h-4 text-white/60 group-hover:text-white/90" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <svg
+                    className={`w-4 h-4 ${
+                      lightMode
+                        ? 'text-stone-500 group-hover:text-stone-800'
+                        : 'text-white/60 group-hover:text-white/90'
+                    }`}
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                   </svg>
                 </button>

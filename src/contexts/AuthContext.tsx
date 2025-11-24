@@ -25,7 +25,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const timeout = setTimeout(() => {
       console.warn('Auth loading timeout - setting loading to false');
       setLoading(false);
-    }, 5000); // 5 second timeout
+    }, 10000); // 10 second timeout
 
     // Get initial session
     console.log('🔍 Starting auth initialization...');

@@ -20,7 +20,9 @@ export const CurriculumApp: React.FC = () => {
   const { user, loading } = useAuth();
   // Check if we should skip hub and go directly to curriculum
   const autoOpenId = sessionStorage.getItem('autoOpenCurriculumId');
-  const [currentView, setCurrentView] = useState<'hub' | 'curriculum'>(autoOpenId ? 'curriculum' : 'hub');
+  const pendingImport = sessionStorage.getItem('pendingCurriculumImport');
+  // If there's a pending import or autoOpenId, start in curriculum view to avoid showing sign-in
+  const [currentView, setCurrentView] = useState<'hub' | 'curriculum'>((autoOpenId || pendingImport) ? 'curriculum' : 'hub');
   const [selectedCurriculum, setSelectedCurriculum] = useState<Curriculum | null>(null);
   const [curriculums, setCurriculums] = useState<Curriculum[]>([]);
   const [isLoaded, setIsLoaded] = useState(false);
@@ -211,7 +213,7 @@ export const CurriculumApp: React.FC = () => {
         onBackToCurriculums={handleBackToCurriculums}
         curriculum={selectedCurriculum}
         onUpdateCurriculum={handleUpdateCurriculum}
-        initialView={fromLandingPage ? 'dashboard' : undefined}
+        initialView={fromLandingPage ? 'concepts' : undefined}
       />
     );
   }

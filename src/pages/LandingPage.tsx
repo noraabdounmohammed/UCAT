@@ -38,6 +38,17 @@ export const LandingPage: React.FC = () => {
     } else {
       loadPublishedCurriculums();
     }
+
+    // Listen for published curriculum updates
+    const handleRefresh = () => {
+      console.log('📢 LandingPage: Received refresh event, reloading curriculums...');
+      loadPublishedCurriculums(true);
+    };
+    window.addEventListener('published-curriculums-updated', handleRefresh);
+
+    return () => {
+      window.removeEventListener('published-curriculums-updated', handleRefresh);
+    };
   }, []);
 
   const loadPublishedCurriculums = async (suppressLoading: boolean = false) => {

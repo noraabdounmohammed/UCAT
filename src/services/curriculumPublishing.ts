@@ -1,6 +1,6 @@
 import { ConceptNode } from '@/types/conceptTypes';
-import { supabase } from '@/lib/supabase';
 import { StorageManager } from '@/utils/storageManager';
+import { createClient } from '@supabase/supabase-js';
 
 // Local cache key for published curriculums metadata (no concepts)
 const PUBLISHED_CACHE_KEY = 'expert_published_curriculums_cache_v1';
@@ -581,6 +581,19 @@ export class CurriculumPublishingService {
     const cacheMaxAgeMs = options?.cacheMaxAgeMs ?? 5 * 60 * 1000; // 5 minutes
 
     try {
+      // Use a stateless client for reads to avoid any auth/session overhead
+      const supabaseRead = createClient(
+        import.meta.env.VITE_SUPABASE_URL,
+        import.meta.env.VITE_SUPABASE_ANON_KEY,
+        {
+          auth: {
+            persistSession: false,
+            autoRefreshToken: false,
+            detectSessionInUrl: false,
+            storageKey: 'medicu-read-only-v2'
+          }
+        }
+      );
       // Try cache first for instant render
       if (useCache) {
         const cachedStr = localStorage.getItem(PUBLISHED_CACHE_KEY);
@@ -598,7 +611,7 @@ export class CurriculumPublishingService {
       }
 
       // Fetch metadata only (no concepts) from Supabase
-      const { data: curriculums, error } = await supabase
+      const { data: curriculums, error } = await supabaseRead
         .from('published_curriculums')
         .select('id,name,description,category,country,color,image_url,author,version,published_at,download_count,rating,tags,custom_filters,filter_categories,filter_assignments,practice_templates,concept_count,difficulty,estimated_hours,is_locked')
         .order('published_at', { ascending: false });
@@ -678,7 +691,21 @@ export class CurriculumPublishingService {
   // Helper to fetch concepts for a specific published curriculum
   static async getPublishedCurriculumConcepts(curriculumId: string): Promise<ConceptNode[]> {
     try {
-      const { data: concepts, error } = await supabase
+      // Use stateless client to avoid conflicts
+      const supabaseConcepts = createClient(
+        import.meta.env.VITE_SUPABASE_URL,
+        import.meta.env.VITE_SUPABASE_ANON_KEY,
+        {
+          auth: {
+            persistSession: false,
+            autoRefreshToken: false,
+            detectSessionInUrl: false,
+            storageKey: 'medicu-concepts-v2'
+          }
+        }
+      );
+
+      const { data: concepts, error } = await supabaseConcepts
         .from('curriculum_concepts')
         .select('*')
         .eq('curriculum_id', curriculumId);
@@ -720,7 +747,20 @@ export class CurriculumPublishingService {
       // Try to get user ID from Supabase auth with timeout
       try {
         console.log('📤 [EXPORT] Attempting to get user session...');
-        const userPromise = supabase.auth.getUser();
+        // Use stateless client to avoid conflicts
+        const supabaseExport = createClient(
+          import.meta.env.VITE_SUPABASE_URL,
+          import.meta.env.VITE_SUPABASE_ANON_KEY,
+          {
+            auth: {
+              persistSession: false,
+              autoRefreshToken: false,
+              detectSessionInUrl: false,
+              storageKey: 'medicu-export-v2'
+            }
+          }
+        );
+        const userPromise = supabaseExport.auth.getUser();
         const timeoutPromise = new Promise((_, reject) => 
           setTimeout(() => reject(new Error('Auth timeout')), 2000)
         );
@@ -1029,6 +1069,18 @@ export class CurriculumPublishingService {
     console.log('🚀 [PUBLISH START] Beginning curriculum publish process...');
     
     try {
+      const supabaseStateless = createClient(
+        import.meta.env.VITE_SUPABASE_URL,
+        import.meta.env.VITE_SUPABASE_ANON_KEY,
+        {
+          auth: {
+            persistSession: false,
+            autoRefreshToken: false,
+            detectSessionInUrl: false,
+            storageKey: 'medicu-publish-v2'
+          }
+        }
+      );
       console.log('📤 [STEP 1/4] Exporting curriculum data...');
       const exportData = await this.exportCurriculum(curriculumId);
       if (!exportData) {
@@ -1082,26 +1134,13 @@ export class CurriculumPublishingService {
       
       console.log('⏳ [STEP 2/4] Calling Supabase insert...');
       console.log('📊 [DEBUG] Insert data keys:', Object.keys(insertData));
+      console.log('📊 [DEBUG] Concept count:', exportData.concepts.length);
       
-      // Test: Try a simple select first to verify connection
-      console.log('🔍 [DEBUG] Testing Supabase connection with simple query...');
-      try {
-        const testStart = Date.now();
-        const { data: testData, error: testError } = await supabase
-          .from('published_curriculums')
-          .select('id')
-          .limit(1);
-        console.log(`✅ [DEBUG] Connection test successful in ${Date.now() - testStart}ms`);
-        if (testError) console.log('⚠️ [DEBUG] Test query error:', testError);
-      } catch (e) {
-        console.error('❌ [DEBUG] Connection test failed:', e);
-      }
-      
-      // Add timeout wrapper with retry logic
-      console.log('⏳ [DEBUG] Starting actual insert...');
-      const insertPromise = supabase
+      // Direct insert (connection test removed - it was hanging)
+      console.log('🚀 [STEP 2/4] Starting insert directly...');
+      const insertPromise = supabaseStateless
         .from('published_curriculums')
-        .insert([insertData]); // Removed .select() to see if that's causing the hang
+        .insert([insertData]);
       
       const timeoutPromise = new Promise((_, reject) => 
         setTimeout(() => reject(new Error('Insert timeout after 60s - Supabase may be slow or down')), 60000)
@@ -1149,7 +1188,7 @@ export class CurriculumPublishingService {
         return true;
       }
       
-      const { data: insertedData, error: insertMetaError } = insertResult as any;
+      const { error: insertMetaError } = insertResult as any;
 
       if (insertMetaError) {
         console.error('❌ [STEP 2/4] Failed to insert metadata:', insertMetaError);
@@ -1222,7 +1261,7 @@ export class CurriculumPublishingService {
 
             console.log(`⬆️ [BATCH ${batchIndex + 1}/${totalBatches}] Uploading ${batch.length} concepts...`);
             
-            return supabase
+            return supabaseStateless
               .from('curriculum_concepts')
               .insert(conceptRows)
               .then(({ error }) => {
@@ -1247,7 +1286,7 @@ export class CurriculumPublishingService {
             console.error(`❌ [STEP 3/4] Failed to upload concepts:`, error);
             console.log('🧹 Cleaning up: deleting metadata...');
             // Best-effort cleanup: delete the metadata row if concept insert fails
-            await supabase.from('published_curriculums').delete().eq('id', newPubId);
+            await supabaseStateless.from('published_curriculums').delete().eq('id', newPubId);
             console.log('❌ [PUBLISH FAILED] Total time: ' + (Date.now() - startTime) + 'ms');
             return false;
           }
@@ -1267,6 +1306,9 @@ export class CurriculumPublishingService {
       try {
         localStorage.removeItem(PUBLISHED_CACHE_KEY);
         console.log('✅ [STEP 4/4] Cache invalidated');
+        // Dispatch custom event to notify all components to refresh
+        window.dispatchEvent(new CustomEvent('published-curriculums-updated'));
+        console.log('📢 [STEP 4/4] Dispatched refresh event');
       } catch (cacheError) {
         console.warn('⚠️ [STEP 4/4] Failed to invalidate cache:', cacheError);
       }
@@ -1290,7 +1332,20 @@ export class CurriculumPublishingService {
       // If admin (allowlisted), attempt Supabase deletion first (cascades to concepts)
       const allowed = await canPublishToExpert();
       if (allowed) {
-        const { error: delErr, count } = await supabase
+        // Use stateless client to avoid conflicts
+        const supabaseDelete = createClient(
+          import.meta.env.VITE_SUPABASE_URL,
+          import.meta.env.VITE_SUPABASE_ANON_KEY,
+          {
+            auth: {
+              persistSession: false,
+              autoRefreshToken: false,
+              detectSessionInUrl: false,
+              storageKey: 'medicu-delete-v2'
+            }
+          }
+        );
+        const { error: delErr, count } = await supabaseDelete
           .from('published_curriculums')
           .delete({ count: 'exact' })
           .eq('id', curriculumId);
