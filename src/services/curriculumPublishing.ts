@@ -590,6 +590,7 @@ export class CurriculumPublishingService {
             persistSession: false,
             autoRefreshToken: false,
             detectSessionInUrl: false,
+            storage: undefined,
             storageKey: 'medicu-read-only-v2'
           }
         }
@@ -700,6 +701,7 @@ export class CurriculumPublishingService {
             persistSession: false,
             autoRefreshToken: false,
             detectSessionInUrl: false,
+            storage: undefined,
             storageKey: 'medicu-concepts-v2'
           }
         }
@@ -756,6 +758,7 @@ export class CurriculumPublishingService {
               persistSession: false,
               autoRefreshToken: false,
               detectSessionInUrl: false,
+              storage: undefined,
               storageKey: 'medicu-export-v2'
             }
           }
@@ -1077,6 +1080,7 @@ export class CurriculumPublishingService {
             persistSession: false,
             autoRefreshToken: false,
             detectSessionInUrl: false,
+            storage: undefined,
             storageKey: 'medicu-publish-v2'
           }
         }
@@ -1341,6 +1345,7 @@ export class CurriculumPublishingService {
               persistSession: false,
               autoRefreshToken: false,
               detectSessionInUrl: false,
+              storage: undefined,
               storageKey: 'medicu-delete-v2'
             }
           }

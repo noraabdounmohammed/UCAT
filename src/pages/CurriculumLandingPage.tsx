@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { CurriculumPublishingService, PublishedCurriculum } from '@/services/curriculumPublishing';
 import { Trash2 } from 'lucide-react';
 import { useUserRole } from '@/hooks/useUserRole';
+import { useAuth } from '@/contexts/AuthContext';
 
 interface CardData {
   id: string;
@@ -19,6 +20,7 @@ interface CardData {
 export const CurriculumLandingPage: React.FC = () => {
   const navigate = useNavigate();
   const { isCreator } = useUserRole();
+  const { user } = useAuth();
   const [currentIndex, setCurrentIndex] = useState(0);
   const [searchQuery, setSearchQuery] = useState('');
   const [touchStart, setTouchStart] = useState<number | null>(null);
@@ -53,7 +55,9 @@ export const CurriculumLandingPage: React.FC = () => {
   const loadPublishedCurriculums = async (suppressLoading: boolean = false) => {
     if (!suppressLoading) setIsLoading(true);
     try {
-      const published = await CurriculumPublishingService.getPublishedCurriculums();
+      // Always bypass cache here so newly published curriculums show up immediately,
+      // even if another window or profile has a stale cache
+      const published = await CurriculumPublishingService.getPublishedCurriculums({ useCache: false });
       console.log('📚 Loaded published curriculums:', published.length, published);
       setPublishedCurriculums(published);
     } catch (error) {
@@ -242,7 +246,12 @@ export const CurriculumLandingPage: React.FC = () => {
       setIsImporting(true);
       try {
         console.log('🔵 Importing curriculum:', selectedCurriculum.name);
-        const newCurriculumId = await CurriculumPublishingService.importCurriculum(selectedCurriculum);
+        // Pass user ID when available so imported curriculums are saved
+        // under the same user-specific key that CurriculumApp reads from
+        const newCurriculumId = await CurriculumPublishingService.importCurriculum(
+          selectedCurriculum,
+          user?.id
+        );
         console.log('✅ Import successful, new ID:', newCurriculumId);
         
         // Small delay to ensure localStorage is written

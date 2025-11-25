@@ -54,7 +54,9 @@ export const LandingPage: React.FC = () => {
   const loadPublishedCurriculums = async (suppressLoading: boolean = false) => {
     if (!suppressLoading) setIsLoading(true);
     try {
-      const published = await CurriculumPublishingService.getPublishedCurriculums();
+      // Always bypass cache here so newly published curriculums show up immediately
+      // even if this window has a stale cached list
+      const published = await CurriculumPublishingService.getPublishedCurriculums({ useCache: false });
       setPublishedCurriculums(published);
     } catch (error) {
       console.error('Failed to load published curriculums:', error);
