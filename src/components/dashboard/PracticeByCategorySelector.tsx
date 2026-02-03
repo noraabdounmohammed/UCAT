@@ -107,6 +107,13 @@ export const PracticeByCategorySelector: React.FC<PracticeByCategorySelectorProp
     });
   };
 
+  // Ensure filters are displayed in a stable, user-friendly order
+  // This uses a locale-aware, numeric sort so that e.g. "topic-2-*" comes
+  // after "topic-1-*" rather than simple ASCII order.
+  const sortedFilters = [...filters].sort((a, b) =>
+    a.localeCompare(b, undefined, { numeric: true, sensitivity: 'base' })
+  );
+
   return (
     <div className="mb-8 w-full">
       <div className="mb-6">
@@ -151,7 +158,7 @@ export const PracticeByCategorySelector: React.FC<PracticeByCategorySelectorProp
           onMouseLeave={handleMouseLeave}
         >
           <div className="flex gap-4">
-        {filters.map((filter) => {
+        {sortedFilters.map((filter) => {
           // Format filter name for display (capitalize, remove hyphens)
           const displayName = filter.split('-').map(word => 
             word.charAt(0).toUpperCase() + word.slice(1)

@@ -2,13 +2,22 @@
 ALTER TABLE profiles 
 ADD COLUMN IF NOT EXISTS role text DEFAULT 'consumer' CHECK (role IN ('creator', 'consumer'));
 
--- Set noraabdounmohammed@gmail.com as creator
+-- Set creator role for specific users by email
+-- You can add more emails here as needed
 UPDATE profiles 
 SET role = 'creator' 
-WHERE email = 'noraabdounmohammed@gmail.com';
+WHERE email IN (
+  'noraabdounmohammed@gmail.com'
+  -- Add more creator emails here, comma-separated
+);
 
 -- Create index for faster role lookups
 CREATE INDEX IF NOT EXISTS idx_profiles_role ON profiles(role);
 
 -- Add comment
 COMMENT ON COLUMN profiles.role IS 'User role: creator (can create/edit content) or consumer (can only view/practice)';
+
+-- Ensure all existing users have a role (default to consumer)
+UPDATE profiles 
+SET role = 'consumer' 
+WHERE role IS NULL;

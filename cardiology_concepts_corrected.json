@@ -1,0 +1,629 @@
+[
+  {
+    "title": "Clinical Presentation of Acute Coronary Syndrome",
+    "content": "Symptoms of acute coronary syndrome often include chest pain, typically localised to the left side and potentially radiating to the neck or left arm. While central to the diagnosis, this pain may be absent in specific groups, such as elderly patients, females, or those with diabetes, who often present atypically with nausea, sweating, or breathlessness.",
+    "custom_filters": ["Cardiology", "Acute coronary syndromes", "Chest pain", "Breathlessness", "Clinical features"],
+    "filter_categories": [
+      { "name": "Systems", "color": "#3B82F6", "filters": ["Cardiology"] },
+      { "name": "Conditions", "color": "#8B5CF6", "filters": ["Acute coronary syndromes"] },
+      { "name": "Presentations", "color": "#F59E0B", "filters": ["Chest pain", "Breathlessness"] },
+      { "name": "Other", "color": "#10B981", "filters": ["Clinical features"] }
+    ]
+  },
+  {
+    "title": "Initial Medical Management for ACS",
+    "content": "Immediate pharmacological intervention for suspected acute coronary syndrome involves a 300mg dose of aspirin. Supplemental oxygen is only indicated if the patient's oxygen saturation falls below 94%, and sublingual or IV nitrates can be used for pain relief or blood pressure control, provided the patient is not hypotensive.",
+    "custom_filters": ["Cardiology", "Acute coronary syndromes", "Chest pain", "Management"],
+    "filter_categories": [
+      { "name": "Systems", "color": "#3B82F6", "filters": ["Cardiology"] },
+      { "name": "Conditions", "color": "#8B5CF6", "filters": ["Acute coronary syndromes"] },
+      { "name": "Presentations", "color": "#F59E0B", "filters": ["Chest pain"] },
+      { "name": "Other", "color": "#10B981", "filters": ["Management"] }
+    ]
+  },
+  {
+    "title": "ECG Criteria for STEMI Diagnosis",
+    "content": "STEMI is diagnosed when ischaemic symptoms last over 20 minutes and the ECG shows new ST-elevation in two contiguous leads. Thresholds include 1mm elevation in most leads, or specific V2-3 measurements: 2.5mm for men <40, 2mm for men >40, and 1.5mm for women. A new left bundle branch block is also diagnostic.",
+    "custom_filters": ["Cardiology", "Acute coronary syndromes", "Investigations"],
+    "filter_categories": [
+      { "name": "Systems", "color": "#3B82F6", "filters": ["Cardiology"] },
+      { "name": "Conditions", "color": "#8B5CF6", "filters": ["Acute coronary syndromes"] },
+      { "name": "Presentations", "color": "#F59E0B", "filters": [] },
+      { "name": "Other", "color": "#10B981", "filters": ["Investigations"] }
+    ]
+  },
+  {
+    "title": "Selection of Reperfusion Strategy in STEMI",
+    "content": "For patients with STEMI within 12 hours of onset, primary percutaneous coronary intervention (PCI) is the gold standard if it can be performed within 120 minutes of when fibrinolysis was possible. If PCI cannot be delivered within this timeframe, fibrinolysis should be initiated immediately.",
+    "custom_filters": ["Cardiology", "Acute coronary syndromes", "Management"],
+    "filter_categories": [
+      { "name": "Systems", "color": "#3B82F6", "filters": ["Cardiology"] },
+      { "name": "Conditions", "color": "#8B5CF6", "filters": ["Acute coronary syndromes"] },
+      { "name": "Presentations", "color": "#F59E0B", "filters": [] },
+      { "name": "Other", "color": "#10B981", "filters": ["Management"] }
+    ]
+  },
+  {
+    "title": "Dual Antiplatelet Therapy Loading in STEMI",
+    "content": "Before undergoing primary PCI, patients require dual antiplatelet therapy. This usually consists of 300mg aspirin plus a second agent, typically prasugrel. However, if the patient is already on long-term oral anticoagulation, clopidogrel is used instead of prasugrel.",
+    "custom_filters": ["Cardiology", "Acute coronary syndromes", "Management"],
+    "filter_categories": [
+      { "name": "Systems", "color": "#3B82F6", "filters": ["Cardiology"] },
+      { "name": "Conditions", "color": "#8B5CF6", "filters": ["Acute coronary syndromes"] },
+      { "name": "Presentations", "color": "#F59E0B", "filters": [] },
+      { "name": "Other", "color": "#10B981", "filters": ["Management"] }
+    ]
+  },
+  {
+    "title": "Anti-Thrombin Therapy During STEMI Intervention",
+    "content": "During primary PCI for STEMI, patients receive weight-adjusted unfractionated heparin. If the patient is already on anticoagulants, or if a radial access approach is not feasible, bivalirudin may be considered as an alternative anticoagulant during the procedure.",
+    "custom_filters": ["Cardiology", "Acute coronary syndromes", "Management"],
+    "filter_categories": [
+      { "name": "Systems", "color": "#3B82F6", "filters": ["Cardiology"] },
+      { "name": "Conditions", "color": "#8B5CF6", "filters": ["Acute coronary syndromes"] },
+      { "name": "Presentations", "color": "#F59E0B", "filters": [] },
+      { "name": "Other", "color": "#10B981", "filters": ["Management"] }
+    ]
+  },
+  {
+    "title": "Management of STEMI After Fibrinolysis",
+    "content": "Following fibrinolysis for STEMI, an ECG should be performed within 60 to 90 minutes. If there is less than 50% resolution in ST-segment elevation, the patient requires emergency rescue PCI. Even if fibrinolysis is successful, a coronary angiogram is typically performed within 24 hours.",
+    "custom_filters": ["Cardiology", "Acute coronary syndromes", "Management"],
+    "filter_categories": [
+      { "name": "Systems", "color": "#3B82F6", "filters": ["Cardiology"] },
+      { "name": "Conditions", "color": "#8B5CF6", "filters": ["Acute coronary syndromes"] },
+      { "name": "Presentations", "color": "#F59E0B", "filters": [] },
+      { "name": "Other", "color": "#10B981", "filters": ["Management"] }
+    ]
+  },
+  {
+    "title": "GRACE Score and Risk Stratification in NSTEMI",
+    "content": "In cases of NSTEMI or unstable angina, the GRACE score is used to predict the risk of future adverse cardiac events. This score incorporates age, heart rate, systolic blood pressure, creatinine, and cardiac arrest at presentation to guide the timing of invasive interventions.",
+    "custom_filters": ["Cardiology", "Acute coronary syndromes", "Management"],
+    "filter_categories": [
+      { "name": "Systems", "color": "#3B82F6", "filters": ["Cardiology"] },
+      { "name": "Conditions", "color": "#8B5CF6", "filters": ["Acute coronary syndromes"] },
+      { "name": "Presentations", "color": "#F59E0B", "filters": [] },
+      { "name": "Other", "color": "#10B981", "filters": ["Management"] }
+    ]
+  },
+  {
+    "title": "Immediate Invasive Management in High-Risk NSTEMI",
+    "content": "Patients with NSTEMI who are clinically unstable—showing signs of cardiogenic shock, severe pulmonary oedema, or life-threatening arrhythmias—should undergo immediate coronary angiography and potential PCI, regardless of their GRACE score.",
+    "custom_filters": ["Cardiology", "Acute coronary syndromes", "Breathlessness", "Management"],
+    "filter_categories": [
+      { "name": "Systems", "color": "#3B82F6", "filters": ["Cardiology"] },
+      { "name": "Conditions", "color": "#8B5CF6", "filters": ["Acute coronary syndromes"] },
+      { "name": "Presentations", "color": "#F59E0B", "filters": ["Breathlessness"] },
+      { "name": "Other", "color": "#10B981", "filters": ["Management"] }
+    ]
+  },
+  {
+    "title": "Fondaparinux in the Management of NSTEMI",
+    "content": "For patients with NSTEMI or unstable angina who do not require immediate angiography, fondaparinux is the preferred anticoagulant choice. If coronary angiography is planned within 24 hours or if the patient has significant renal impairment, unfractionated heparin is used as an alternative.",
+    "custom_filters": ["Cardiology", "Acute coronary syndromes", "Management"],
+    "filter_categories": [
+      { "name": "Systems", "color": "#3B82F6", "filters": ["Cardiology"] },
+      { "name": "Conditions", "color": "#8B5CF6", "filters": ["Acute coronary syndromes"] },
+      { "name": "Presentations", "color": "#F59E0B", "filters": [] },
+      { "name": "Other", "color": "#10B981", "filters": ["Management"] }
+    ]
+  },
+  {
+    "title": "Pathophysiology of Myocardial Infarction Types",
+    "content": "Myocardial infarction is broadly categorised by its underlying cause. Type 1 is a primary coronary event, such as plaque rupture or dissection. Type 2 is secondary to ischaemia from an imbalance between oxygen supply and demand, often seen in cases of severe anaemia, tachyarrhythmias, or hypotension.",
+    "custom_filters": ["Cardiology", "Acute coronary syndromes", "Pathophysiology"],
+    "filter_categories": [
+      { "name": "Systems", "color": "#3B82F6", "filters": ["Cardiology"] },
+      { "name": "Conditions", "color": "#8B5CF6", "filters": ["Acute coronary syndromes"] },
+      { "name": "Presentations", "color": "#F59E0B", "filters": [] },
+      { "name": "Other", "color": "#10B981", "filters": ["Pathophysiology"] }
+    ]
+  },
+  {
+    "title": "Definition of Unstable Angina",
+    "content": "Unstable angina is defined as myocardial ischaemia at rest or on minimal exertion in the absence of cardiomyocyte necrosis. Clinically, it presents with ischaemic symptoms and potential ECG changes (like ST depression), but unlike NSTEMI, cardiac biomarkers such as troponin remain within the normal range.",
+    "custom_filters": ["Cardiology", "Acute coronary syndromes", "Chest pain", "Definition"],
+    "filter_categories": [
+      { "name": "Systems", "color": "#3B82F6", "filters": ["Cardiology"] },
+      { "name": "Conditions", "color": "#8B5CF6", "filters": ["Acute coronary syndromes"] },
+      { "name": "Presentations", "color": "#F59E0B", "filters": ["Chest pain"] },
+      { "name": "Other", "color": "#10B981", "filters": ["Definition"] }
+    ]
+  },
+  {
+    "title": "Silent Myocardial Infarction in Diabetes",
+    "content": "Diabetes mellitus can lead to autonomic neuropathy, which may mask the typical visceral pain associated with myocardial ischaemia. Consequently, diabetic patients may experience 'silent' infarctions, presenting instead with non-specific symptoms like sudden-onset breathlessness, confusion, or fainting.",
+    "custom_filters": ["Cardiology", "Acute coronary syndromes", "Breathlessness", "Blackouts and faints", "Clinical features"],
+    "filter_categories": [
+      { "name": "Systems", "color": "#3B82F6", "filters": ["Cardiology"] },
+      { "name": "Conditions", "color": "#8B5CF6", "filters": ["Acute coronary syndromes"] },
+      { "name": "Presentations", "color": "#F59E0B", "filters": ["Breathlessness", "Blackouts and faints"] },
+      { "name": "Other", "color": "#10B981", "filters": ["Clinical features"] }
+    ]
+  },
+  {
+    "title": "TIMI Risk Score for ACS",
+    "content": "The TIMI (Thrombolysis in Myocardial Infarction) score is a clinical tool used to estimate mortality and the risk of ischaemic events in patients with unstable angina or NSTEMI. It considers factors such as age ≥65, prior coronary stenosis, ST-segment deviation, and elevated cardiac markers to categorise patients into low, medium, or high risk.",
+    "custom_filters": ["Cardiology", "Acute coronary syndromes", "Management"],
+    "filter_categories": [
+      { "name": "Systems", "color": "#3B82F6", "filters": ["Cardiology"] },
+      { "name": "Conditions", "color": "#8B5CF6", "filters": ["Acute coronary syndromes"] },
+      { "name": "Presentations", "color": "#F59E0B", "filters": [] },
+      { "name": "Other", "color": "#10B981", "filters": ["Management"] }
+    ]
+  },
+  {
+    "title": "Troponin as a Biomarker of Myocardial Injury",
+    "content": "Cardiac troponins (T and I) are highly sensitive and specific markers of myocardial cell death. Levels typically begin to rise 3–4 hours after injury and can remain elevated for up to two weeks. It is important to note that troponin can also be elevated in non-ACS conditions like pulmonary embolism, sepsis, or renal failure.",
+    "custom_filters": ["Cardiology", "Acute coronary syndromes", "Investigations"],
+    "filter_categories": [
+      { "name": "Systems", "color": "#3B82F6", "filters": ["Cardiology"] },
+      { "name": "Conditions", "color": "#8B5CF6", "filters": ["Acute coronary syndromes"] },
+      { "name": "Presentations", "color": "#F59E0B", "filters": [] },
+      { "name": "Other", "color": "#10B981", "filters": ["Investigations"] }
+    ]
+  },
+  {
+    "title": "Prasugrel Contraindications in ACS",
+    "content": "While prasugrel is a potent antiplatelet agent used during primary PCI for STEMI, it is strictly contraindicated in patients with a history of stroke or transient ischaemic attack (TIA). It should also be used with caution in patients over 75 years of age or those with a low body weight (<60kg) due to increased bleeding risk.",
+    "custom_filters": ["Cardiology", "Acute coronary syndromes", "Management"],
+    "filter_categories": [
+      { "name": "Systems", "color": "#3B82F6", "filters": ["Cardiology"] },
+      { "name": "Conditions", "color": "#8B5CF6", "filters": ["Acute coronary syndromes"] },
+      { "name": "Presentations", "color": "#F59E0B", "filters": [] },
+      { "name": "Other", "color": "#10B981", "filters": ["Management"] }
+    ]
+  },
+  {
+    "title": "Use of Glycoprotein IIb/IIIa Inhibitors",
+    "content": "Glycoprotein IIb/IIIa inhibitors, such as abciximab or tirofiban, may be used as adjuncts during PCI in high-risk patients. They prevent platelet aggregation by blocking the final common pathway. These are typically reserved for patients with a high thrombus burden or those undergoing bail-out procedures during intervention.",
+    "custom_filters": ["Cardiology", "Acute coronary syndromes", "Management"],
+    "filter_categories": [
+      { "name": "Systems", "color": "#3B82F6", "filters": ["Cardiology"] },
+      { "name": "Conditions", "color": "#8B5CF6", "filters": ["Acute coronary syndromes"] },
+      { "name": "Presentations", "color": "#F59E0B", "filters": [] },
+      { "name": "Other", "color": "#10B981", "filters": ["Management"] }
+    ]
+  },
+  {
+    "title": "Radial vs Femoral Access for PCI",
+    "content": "In current clinical practice, radial artery access is the preferred route for coronary angiography and PCI. Compared to femoral access, it significantly reduces the risk of major bleeding at the access site and vascular complications, leading to improved patient outcomes and earlier discharge.",
+    "custom_filters": ["Cardiology", "Acute coronary syndromes", "Management"],
+    "filter_categories": [
+      { "name": "Systems", "color": "#3B82F6", "filters": ["Cardiology"] },
+      { "name": "Conditions", "color": "#8B5CF6", "filters": ["Acute coronary syndromes"] },
+      { "name": "Presentations", "color": "#F59E0B", "filters": [] },
+      { "name": "Other", "color": "#10B981", "filters": ["Management"] }
+    ]
+  },
+  {
+    "title": "Management of Cocaine-Induced Chest Pain",
+    "content": "Cocaine use can cause acute chest pain via coronary artery spasm, increased myocardial oxygen demand, and accelerated thrombus formation. Management involves benzodiazepines to reduce sympathetic drive. Beta-blockers should be avoided in the acute phase as they can cause unopposed alpha-adrenergic stimulation, worsening vasospasm.",
+    "custom_filters": ["Cardiology", "Acute coronary syndromes", "Chest pain", "Management"],
+    "filter_categories": [
+      { "name": "Systems", "color": "#3B82F6", "filters": ["Cardiology"] },
+      { "name": "Conditions", "color": "#8B5CF6", "filters": ["Acute coronary syndromes"] },
+      { "name": "Presentations", "color": "#F59E0B", "filters": ["Chest pain"] },
+      { "name": "Other", "color": "#10B981", "filters": ["Management"] }
+    ]
+  },
+  {
+    "title": "Indications for CABG in Acute ACS",
+    "content": "Emergency coronary artery bypass grafting (CABG) is rarely performed in the acute setting of ACS. However, it is indicated for patients with failed PCI, coronary artery rupture, or mechanical complications such as acute ventricular septal defect or papillary muscle rupture where surgical revascularisation is necessary.",
+    "custom_filters": ["Cardiology", "Acute coronary syndromes", "Management"],
+    "filter_categories": [
+      { "name": "Systems", "color": "#3B82F6", "filters": ["Cardiology"] },
+      { "name": "Conditions", "color": "#8B5CF6", "filters": ["Acute coronary syndromes"] },
+      { "name": "Presentations", "color": "#F59E0B", "filters": [] },
+      { "name": "Other", "color": "#10B981", "filters": ["Management"] }
+    ]
+  },
+  {
+    "title": "Role of Echocardiography in Acute ACS",
+    "content": "Echocardiography is a vital bedside tool in the assessment of acute coronary syndrome. It is used to identify regional wall motion abnormalities that correlate with the site of ischaemia, assess left ventricular ejection fraction, and rule out life-threatening mechanical complications such as cardiac tamponade or valve rupture.",
+    "custom_filters": ["Cardiology", "Acute coronary syndromes", "Investigations"],
+    "filter_categories": [
+      { "name": "Systems", "color": "#3B82F6", "filters": ["Cardiology"] },
+      { "name": "Conditions", "color": "#8B5CF6", "filters": ["Acute coronary syndromes"] },
+      { "name": "Presentations", "color": "#F59E0B", "filters": [] },
+      { "name": "Other", "color": "#10B981", "filters": ["Investigations"] }
+    ]
+  },
+  {
+    "title": "Criteria for 'Delayed' Invasive Strategy in NSTEMI",
+    "content": "A delayed invasive strategy (angiography within 72 hours) is recommended for NSTEMI patients who are clinically stable but have a GRACE score >140 or other high-risk features like dynamic ST changes or diabetes. Low-risk patients (GRACE <108) may be managed conservatively with non-invasive ischaemia testing.",
+    "custom_filters": ["Cardiology", "Acute coronary syndromes", "Management"],
+    "filter_categories": [
+      { "name": "Systems", "color": "#3B82F6", "filters": ["Cardiology"] },
+      { "name": "Conditions", "color": "#8B5CF6", "filters": ["Acute coronary syndromes"] },
+      { "name": "Presentations", "color": "#F59E0B", "filters": [] },
+      { "name": "Other", "color": "#10B981", "filters": ["Management"] }
+    ]
+  },
+  {
+    "title": "Lifestyle and Secondary Prevention Following ACS",
+    "content": "Post-ACS patients should be advised to follow a Mediterranean-style diet, rich in vegetables, fruit, and fish, while limiting saturated fats. Smoking cessation is paramount, and regular physical activity—aiming for 20–30 minutes daily to the point of slight breathlessness—is recommended to improve cardiovascular outcomes.",
+    "custom_filters": ["Cardiology", "Acute coronary syndromes", "Management"],
+    "filter_categories": [
+      { "name": "Systems", "color": "#3B82F6", "filters": ["Cardiology"] },
+      { "name": "Conditions", "color": "#8B5CF6", "filters": ["Acute coronary syndromes"] },
+      { "name": "Presentations", "color": "#F59E0B", "filters": [] },
+      { "name": "Other", "color": "#10B981", "filters": ["Management"] }
+    ]
+  },
+  {
+    "title": "Dual Antiplatelet Therapy (DAPT) Duration Post-MI",
+    "content": "Standard secondary prevention involves aspirin indefinitely, combined with a second antiplatelet agent like ticagrelor or clopidogrel. For most patients following a myocardial infarction, this dual therapy is continued for 12 months, though the duration may be adjusted based on individual bleeding and ischaemic risks.",
+    "custom_filters": ["Cardiology", "Acute coronary syndromes", "Management"],
+    "filter_categories": [
+      { "name": "Systems", "color": "#3B82F6", "filters": ["Cardiology"] },
+      { "name": "Conditions", "color": "#8B5CF6", "filters": ["Acute coronary syndromes"] },
+      { "name": "Presentations", "color": "#F59E0B", "filters": [] },
+      { "name": "Other", "color": "#10B981", "filters": ["Management"] }
+    ]
+  },
+  {
+    "title": "Pharmacological Secondary Prevention: ACE Inhibitors",
+    "content": "ACE inhibitors should be initiated as soon as possible for all patients after an ACS, provided there are no contraindications such as significant renal impairment or hyperkalaemia. They are particularly vital for those with left ventricular dysfunction, hypertension, or diabetes to prevent adverse cardiac remodelling.",
+    "custom_filters": ["Cardiology", "Acute coronary syndromes", "Management"],
+    "filter_categories": [
+      { "name": "Systems", "color": "#3B82F6", "filters": ["Cardiology"] },
+      { "name": "Conditions", "color": "#8B5CF6", "filters": ["Acute coronary syndromes"] },
+      { "name": "Presentations", "color": "#F59E0B", "filters": [] },
+      { "name": "Other", "color": "#10B981", "filters": ["Management"] }
+    ]
+  },
+  {
+    "title": "Statin Therapy for Cardiovascular Protection",
+    "content": "Following an ACS event, patients are prescribed high-intensity statins, such as Atorvastatin 80mg, regardless of their baseline cholesterol levels. This therapy aims to achieve a significant reduction in non-HDL cholesterol and provide plaque-stabilising pleiotropic effects.",
+    "custom_filters": ["Cardiology", "Acute coronary syndromes", "Management"],
+    "filter_categories": [
+      { "name": "Systems", "color": "#3B82F6", "filters": ["Cardiology"] },
+      { "name": "Conditions", "color": "#8B5CF6", "filters": ["Acute coronary syndromes"] },
+      { "name": "Presentations", "color": "#F59E0B", "filters": [] },
+      { "name": "Other", "color": "#10B981", "filters": ["Management"] }
+    ]
+  },
+  {
+    "title": "Dressler's Syndrome: Post-MI Pericarditis",
+    "content": "Dressler's syndrome is an immune-mediated pleuropericarditis that typically develops 2–6 weeks after a myocardial infarction. It presents with fever, pleuritic chest pain, and a pericardial rub. Investigations often show a raised ESR and global ST-elevation on ECG, and it is managed primarily with NSAIDs.",
+    "custom_filters": ["Cardiology", "Acute coronary syndromes", "Fever", "Chest pain", "Pain on inspiration", "Aetiology/Risk factors"],
+    "filter_categories": [
+      { "name": "Systems", "color": "#3B82F6", "filters": ["Cardiology"] },
+      { "name": "Conditions", "color": "#8B5CF6", "filters": ["Acute coronary syndromes"] },
+      { "name": "Presentations", "color": "#F59E0B", "filters": ["Fever", "Chest pain", "Pain on inspiration"] },
+      { "name": "Other", "color": "#10B981", "filters": ["Aetiology/Risk factors"] }
+    ]
+  },
+  {
+    "title": "Left Ventricular Aneurysm as a Post-MI Complication",
+    "content": "A left ventricular aneurysm can form after a large transmural MI, usually involving the apex. It is characterised by persistent ST-segment elevation on ECG weeks after the acute event and may lead to heart failure, ventricular arrhythmias, or thrombus formation. Diagnosis is confirmed via echocardiography.",
+    "custom_filters": ["Cardiology", "Acute coronary syndromes", "Cardiac failure", "Complications"],
+    "filter_categories": [
+      { "name": "Systems", "color": "#3B82F6", "filters": ["Cardiology"] },
+      { "name": "Conditions", "color": "#8B5CF6", "filters": ["Acute coronary syndromes"] },
+      { "name": "Presentations", "color": "#F59E0B", "filters": [] },
+      { "name": "Other", "color": "#10B981", "filters": ["Complications"] }
+    ]
+  },
+  {
+    "title": "Ventricular Septal Rupture Following Myocardial Infarction",
+    "content": "Ventricular septal rupture is a rare but lethal complication occurring typically within the first week after an MI. It presents with sudden clinical deterioration, acute breathlessness, and a new, harsh pansystolic murmur at the left sternal border. Urgent surgical repair is usually required.",
+    "custom_filters": ["Cardiology", "Acute coronary syndromes", "Breathlessness", "Heart murmurs", "Complications"],
+    "filter_categories": [
+      { "name": "Systems", "color": "#3B82F6", "filters": ["Cardiology"] },
+      { "name": "Conditions", "color": "#8B5CF6", "filters": ["Acute coronary syndromes"] },
+      { "name": "Presentations", "color": "#F59E0B", "filters": ["Breathlessness", "Heart murmurs"] },
+      { "name": "Other", "color": "#10B981", "filters": ["Complications"] }
+    ]
+  },
+  {
+    "title": "Acute Mitral Regurgitation post-MI",
+    "content": "Acute mitral regurgitation often results from papillary muscle rupture following an inferior MI. It presents with sudden pulmonary oedema and a new pansystolic murmur. Unlike chronic regurgitation, this is a surgical emergency due to the rapid rise in left atrial pressure.",
+    "custom_filters": ["Cardiology", "Acute coronary syndromes", "Breathlessness", "Heart murmurs", "Complications"],
+    "filter_categories": [
+      { "name": "Systems", "color": "#3B82F6", "filters": ["Cardiology"] },
+      { "name": "Conditions", "color": "#8B5CF6", "filters": ["Acute coronary syndromes"] },
+      { "name": "Presentations", "color": "#F59E0B", "filters": ["Breathlessness", "Heart murmurs"] },
+      { "name": "Other", "color": "#10B981", "filters": ["Complications"] }
+    ]
+  },
+  {
+    "title": "Left Ventricular Free Wall Rupture",
+    "content": "This catastrophic complication typically occurs 1–2 weeks after an MI and leads to acute haemopericardium and cardiac tamponade. It is often heralded by sudden electromechanical dissociation (PEA) and is almost always fatal without immediate pericardiocentesis and surgery.",
+    "custom_filters": ["Cardiology", "Acute coronary syndromes", "Cardiorespiratory arrest", "Complications"],
+    "filter_categories": [
+      { "name": "Systems", "color": "#3B82F6", "filters": ["Cardiology"] },
+      { "name": "Conditions", "color": "#8B5CF6", "filters": ["Acute coronary syndromes"] },
+      { "name": "Presentations", "color": "#F59E0B", "filters": ["Cardiorespiratory arrest"] },
+      { "name": "Other", "color": "#10B981", "filters": ["Complications"] }
+    ]
+  },
+  {
+    "title": "Aldosterone Antagonists in Post-MI Management",
+    "content": "Eplerenone or spironolactone should be initiated within 3–14 days of an MI for patients with symptoms of heart failure and a reduced left ventricular ejection fraction (LVEF ≤40%). Renal function and potassium levels must be closely monitored to avoid hyperkalaemia.",
+    "custom_filters": ["Cardiology", "Acute coronary syndromes", "Management"],
+    "filter_categories": [
+      { "name": "Systems", "color": "#3B82F6", "filters": ["Cardiology"] },
+      { "name": "Conditions", "color": "#8B5CF6", "filters": ["Acute coronary syndromes"] },
+      { "name": "Presentations", "color": "#F59E0B", "filters": [] },
+      { "name": "Other", "color": "#10B981", "filters": ["Management"] }
+    ]
+  },
+  {
+    "title": "Beta-Blocker Titration Post-ACS",
+    "content": "Beta-blockers should be offered to all patients following an ACS. They are titrated to the maximum tolerated dose to reduce myocardial oxygen demand and the risk of sudden cardiac death. In patients with heart failure, carvedilol or bisoprolol are the preferred agents.",
+    "custom_filters": ["Cardiology", "Acute coronary syndromes", "Management"],
+    "filter_categories": [
+      { "name": "Systems", "color": "#3B82F6", "filters": ["Cardiology"] },
+      { "name": "Conditions", "color": "#8B5CF6", "filters": ["Acute coronary syndromes"] },
+      { "name": "Presentations", "color": "#F59E0B", "filters": [] },
+      { "name": "Other", "color": "#10B981", "filters": ["Management"] }
+    ]
+  },
+  {
+    "title": "DVLA Advice After Myocardial Infarction",
+    "content": "For group 1 drivers (cars/motorcycles), they can resume driving after 1 week if they had successful urgent PCI and their LVEF is >40%. If no PCI was performed or the LVEF is low, they must wait 4 weeks. They do not need to notify the DVLA unless specific complications arise.",
+    "custom_filters": ["Cardiology", "Acute coronary syndromes", "Driving advice", "Management"],
+    "filter_categories": [
+      { "name": "Systems", "color": "#3B82F6", "filters": ["Cardiology"] },
+      { "name": "Conditions", "color": "#8B5CF6", "filters": ["Acute coronary syndromes"] },
+      { "name": "Presentations", "color": "#F59E0B", "filters": ["Driving advice"] },
+      { "name": "Other", "color": "#10B981", "filters": ["Management"] }
+    ]
+  },
+  {
+    "title": "Sexual Activity and ACS Recovery",
+    "content": "Patients can generally resume sexual activity 4 weeks after an MI, or earlier if they can climb two flights of stairs without symptoms. It is critical to warn patients using nitrates that they must never use PDE5 inhibitors like sildenafil due to the risk of profound hypotension.",
+    "custom_filters": ["Cardiology", "Acute coronary syndromes", "Erectile dysfunction", "Management"],
+    "filter_categories": [
+      { "name": "Systems", "color": "#3B82F6", "filters": ["Cardiology"] },
+      { "name": "Conditions", "color": "#8B5CF6", "filters": ["Acute coronary syndromes"] },
+      { "name": "Presentations", "color": "#F59E0B", "filters": ["Erectile dysfunction"] },
+      { "name": "Other", "color": "#10B981", "filters": ["Management"] }
+    ]
+  },
+  {
+    "title": "Clinical Characteristics of Stable Angina",
+    "content": "Stable angina typically presents as a predictable chest discomfort or pressure triggered by physical exertion or emotional stress. This sensation is usually relieved within minutes by rest or the use of sublingual glyceryl trinitrate (GTN). The pain may radiate to the jaw, neck, or arms and is often described as a heavy or constricting feeling rather than sharp pain.",
+    "custom_filters": ["Cardiology", "Ischaemic heart disease", "Chest pain", "Clinical features"],
+    "filter_categories": [
+      { "name": "Systems", "color": "#3B82F6", "filters": ["Cardiology"] },
+      { "name": "Conditions", "color": "#8B5CF6", "filters": ["Ischaemic heart disease"] },
+      { "name": "Presentations", "color": "#F59E0B", "filters": ["Chest pain"] },
+      { "name": "Other", "color": "#10B981", "filters": ["Clinical features"] }
+    ]
+  },
+  {
+    "title": "Diagnostic Pathway for Suspected Stable Angina",
+    "content": "In patients with suspected stable angina, NICE recommends CT coronary angiography as the first-line diagnostic investigation. If the results are inconclusive or if functional information is required, non-invasive functional imaging such as myocardial perfusion scintigraphy, stress echocardiography, or MRI may be utilised to assess for reversible ischaemia.",
+    "custom_filters": ["Cardiology", "Ischaemic heart disease", "Investigations"],
+    "filter_categories": [
+      { "name": "Systems", "color": "#3B82F6", "filters": ["Cardiology"] },
+      { "name": "Conditions", "color": "#8B5CF6", "filters": ["Ischaemic heart disease"] },
+      { "name": "Presentations", "color": "#F59E0B", "filters": [] },
+      { "name": "Other", "color": "#10B981", "filters": ["Investigations"] }
+    ]
+  },
+  {
+    "title": "First-line Medical Management of Stable Angina",
+    "content": "The primary pharmacological goal in stable angina is symptom relief and cardiovascular protection. All patients should be offered a short-acting nitrate for immediate symptom relief. First-line preventative treatment involves either a beta-blocker or a rate-limiting calcium channel blocker, such as verapamil or diltiazem, to reduce myocardial oxygen demand.",
+    "custom_filters": ["Cardiology", "Ischaemic heart disease", "Chest pain", "Management"],
+    "filter_categories": [
+      { "name": "Systems", "color": "#3B82F6", "filters": ["Cardiology"] },
+      { "name": "Conditions", "color": "#8B5CF6", "filters": ["Ischaemic heart disease"] },
+      { "name": "Presentations", "color": "#F59E0B", "filters": ["Chest pain"] },
+      { "name": "Other", "color": "#10B981", "filters": ["Management"] }
+    ]
+  },
+  {
+    "title": "Secondary Medical Options for Angina Prophylaxis",
+    "content": "If symptoms of angina remain uncontrolled on a single agent, a combination of a beta-blocker and a long-acting dihydropyridine calcium channel blocker (e.g., amlodipine) may be used. Alternative second-line options for those who cannot tolerate these include long-acting nitrates, ivabradine, nicorandil, or ranolazine.",
+    "custom_filters": ["Cardiology", "Ischaemic heart disease", "Management"],
+    "filter_categories": [
+      { "name": "Systems", "color": "#3B82F6", "filters": ["Cardiology"] },
+      { "name": "Conditions", "color": "#8B5CF6", "filters": ["Ischaemic heart disease"] },
+      { "name": "Presentations", "color": "#F59E0B", "filters": [] },
+      { "name": "Other", "color": "#10B981", "filters": ["Management"] }
+    ]
+  },
+  {
+    "title": "Ivabradine Mechanism and Indications",
+    "content": "Ivabradine works by specifically inhibiting the If 'funny' current in the sinoatrial node, thereby reducing the heart rate without affecting myocardial contractility. It is indicated for patients with stable angina who have a normal sinus rhythm but cannot tolerate beta-blockers or remain symptomatic despite their use.",
+    "custom_filters": ["Cardiology", "Ischaemic heart disease", "Management"],
+    "filter_categories": [
+      { "name": "Systems", "color": "#3B82F6", "filters": ["Cardiology"] },
+      { "name": "Conditions", "color": "#8B5CF6", "filters": ["Ischaemic heart disease"] },
+      { "name": "Presentations", "color": "#F59E0B", "filters": [] },
+      { "name": "Other", "color": "#10B981", "filters": ["Management"] }
+    ]
+  },
+  {
+    "title": "Nicorandil and Potential Side Effects",
+    "content": "Nicorandil acts as both a potassium-channel activator and a nitrate, promoting both arterial and venous vasodilation. A significant and specific side effect to monitor for is the development of skin, mucosal, or gastrointestinal ulceration, including perianal ulcers. If these occur, the medication must be discontinued immediately.",
+    "custom_filters": ["Cardiology", "Ischaemic heart disease", "Skin ulcers", "Management"],
+    "filter_categories": [
+      { "name": "Systems", "color": "#3B82F6", "filters": ["Cardiology"] },
+      { "name": "Conditions", "color": "#8B5CF6", "filters": ["Ischaemic heart disease"] },
+      { "name": "Presentations", "color": "#F59E0B", "filters": ["Skin ulcers"] },
+      { "name": "Other", "color": "#10B981", "filters": ["Management"] }
+    ]
+  },
+  {
+    "title": "Indications for CABG over PCI in Ischaemic Heart Disease",
+    "content": "Coronary Artery Bypass Grafting (CABG) is generally preferred over Percutaneous Coronary Intervention (PCI) for patients with complex multi-vessel disease or significant left main stem stenosis, particularly in those with diabetes. PCI is typically favoured for patients with less complex anatomy or those at high surgical risk.",
+    "custom_filters": ["Cardiology", "Ischaemic heart disease", "Management"],
+    "filter_categories": [
+      { "name": "Systems", "color": "#3B82F6", "filters": ["Cardiology"] },
+      { "name": "Conditions", "color": "#8B5CF6", "filters": ["Ischaemic heart disease"] },
+      { "name": "Presentations", "color": "#F59E0B", "filters": [] },
+      { "name": "Other", "color": "#10B981", "filters": ["Management"] }
+    ]
+  },
+  {
+    "title": "Aspirin and Statin Therapy in Stable Ischaemic Heart Disease",
+    "content": "To reduce the risk of future cardiovascular events, all patients with stable ischaemic heart disease should be prescribed 75mg of aspirin daily for its antiplatelet effects. Additionally, a high-intensity statin (such as Atorvastatin 80mg) is indicated to lower cholesterol and stabilise atherosclerotic plaques.",
+    "custom_filters": ["Cardiology", "Ischaemic heart disease", "Management"],
+    "filter_categories": [
+      { "name": "Systems", "color": "#3B82F6", "filters": ["Cardiology"] },
+      { "name": "Conditions", "color": "#8B5CF6", "filters": ["Ischaemic heart disease"] },
+      { "name": "Presentations", "color": "#F59E0B", "filters": [] },
+      { "name": "Other", "color": "#10B981", "filters": ["Management"] }
+    ]
+  },
+  {
+    "title": "Definition of Prinzmetal (Variant) Angina",
+    "content": "Prinzmetal angina is a form of chest pain caused by coronary artery vasospasm rather than atherosclerotic narrowing. It typically occurs at rest and is associated with transient ST-segment elevation on ECG. Calcium channel blockers are the mainstay of treatment, while beta-blockers should be avoided as they may exacerbate vasospasm.",
+    "custom_filters": ["Cardiology", "Ischaemic heart disease", "Chest pain", "Definition"],
+    "filter_categories": [
+      { "name": "Systems", "color": "#3B82F6", "filters": ["Cardiology"] },
+      { "name": "Conditions", "color": "#8B5CF6", "filters": ["Ischaemic heart disease"] },
+      { "name": "Presentations", "color": "#F59E0B", "filters": ["Chest pain"] },
+      { "name": "Other", "color": "#10B981", "filters": ["Definition"] }
+    ]
+  },
+  {
+    "title": "Clinical Diagnosis of Chronic Heart Failure",
+    "content": "Chronic heart failure presents with a triad of breathlessness, fatigue, and fluid retention, often manifesting as peripheral oedema. Clinical signs may include a displaced apex beat, an audible third heart sound, and raised jugular venous pressure. Determining the underlying cause, such as hypertension or ischaemic heart disease, is essential for management.",
+    "custom_filters": ["Cardiology", "Cardiac failure", "Breathlessness", "Peripheral oedema and ankle swelling", "Clinical features"],
+    "filter_categories": [
+      { "name": "Systems", "color": "#3B82F6", "filters": ["Cardiology"] },
+      { "name": "Conditions", "color": "#8B5CF6", "filters": ["Cardiac failure"] },
+      { "name": "Presentations", "color": "#F59E0B", "filters": ["Breathlessness", "Peripheral oedema and ankle swelling"] },
+      { "name": "Other", "color": "#10B981", "filters": ["Clinical features"] }
+    ]
+  },
+  {
+    "title": "NT-proBNP as a Diagnostic Tool in Heart Failure",
+    "content": "For patients with suspected heart failure, the first-line investigation is measuring N-terminal pro-B-type natriuretic peptide (NT-proBNP) levels. High levels indicate significant myocardial stretch. If NT-proBNP is raised (>400 pg/ml), a specialist assessment and transthoracic echocardiography are required within 6 weeks; if extremely high (>2,000 pg/ml), this must occur within 2 weeks.",
+    "custom_filters": ["Cardiology", "Cardiac failure", "Investigations"],
+    "filter_categories": [
+      { "name": "Systems", "color": "#3B82F6", "filters": ["Cardiology"] },
+      { "name": "Conditions", "color": "#8B5CF6", "filters": ["Cardiac failure"] },
+      { "name": "Presentations", "color": "#F59E0B", "filters": [] },
+      { "name": "Other", "color": "#10B981", "filters": ["Investigations"] }
+    ]
+  },
+  {
+    "title": "First-line Medical Therapy for Heart Failure with Reduced Ejection Fraction",
+    "content": "The foundational treatment for heart failure with reduced ejection fraction (HFrEF) involves a combination of an ACE inhibitor (or ARB) and a beta-blocker. These should be started at low doses and titrated upwards. Diuretics, such as furosemide, are used concurrently to manage symptoms of fluid overload but do not provide a survival benefit.",
+    "custom_filters": ["Cardiology", "Cardiac failure", "Management"],
+    "filter_categories": [
+      { "name": "Systems", "color": "#3B82F6", "filters": ["Cardiology"] },
+      { "name": "Conditions", "color": "#8B5CF6", "filters": ["Cardiac failure"] },
+      { "name": "Presentations", "color": "#F59E0B", "filters": [] },
+      { "name": "Other", "color": "#10B981", "filters": ["Management"] }
+    ]
+  },
+  {
+    "title": "Escalation of Heart Failure Therapy: MRA and SGLT2 Inhibitors",
+    "content": "If a patient remains symptomatic despite first-line ACE inhibitor and beta-blocker therapy, a mineralocorticoid receptor antagonist (MRA) such as spironolactone should be added. Current NICE guidelines also recommend SGLT2 inhibitors (e.g., dapagliflozin) for all patients with HFrEF to reduce hospitalisations and mortality.",
+    "custom_filters": ["Cardiology", "Cardiac failure", "Management"],
+    "filter_categories": [
+      { "name": "Systems", "color": "#3B82F6", "filters": ["Cardiology"] },
+      { "name": "Conditions", "color": "#8B5CF6", "filters": ["Cardiac failure"] },
+      { "name": "Presentations", "color": "#F59E0B", "filters": [] },
+      { "name": "Other", "color": "#10B981", "filters": ["Management"] }
+    ]
+  },
+  {
+    "title": "Management of Acute Pulmonary Oedema",
+    "content": "Acute pulmonary oedema is a medical emergency requiring rapid intervention with the 'LMNOP' approach: Loop diuretics (IV furosemide), Morphine (and anti-emetics), Nitrates (if hypertensive), Oxygen (if hypoxic), and Position (sitting upright). If these measures fail, non-invasive ventilation (CPAP) may be required.",
+    "custom_filters": ["Cardiology", "Cardiac failure", "Breathlessness", "Management"],
+    "filter_categories": [
+      { "name": "Systems", "color": "#3B82F6", "filters": ["Cardiology"] },
+      { "name": "Conditions", "color": "#8B5CF6", "filters": ["Cardiac failure"] },
+      { "name": "Presentations", "color": "#F59E0B", "filters": ["Breathlessness"] },
+      { "name": "Other", "color": "#10B981", "filters": ["Management"] }
+    ]
+  },
+  {
+    "title": "New York Heart Association (NYHA) Classification",
+    "content": "The NYHA scale categorises heart failure severity based on symptoms during physical activity. Class I indicates no limitations; Class II involves mild symptoms during ordinary activity; Class III reflects marked limitation with comfort only at rest; and Class IV represents an inability to carry out any physical activity without discomfort.",
+    "custom_filters": ["Cardiology", "Cardiac failure", "Breathlessness", "Clinical features"],
+    "filter_categories": [
+      { "name": "Systems", "color": "#3B82F6", "filters": ["Cardiology"] },
+      { "name": "Conditions", "color": "#8B5CF6", "filters": ["Cardiac failure"] },
+      { "name": "Presentations", "color": "#F59E0B", "filters": ["Breathlessness"] },
+      { "name": "Other", "color": "#10B981", "filters": ["Clinical features"] }
+    ]
+  },
+  {
+    "title": "Mechanism and Role of Neprilysin Inhibitors (ARNI)",
+    "content": "Sacubitril-valsartan (an ARNI) is used in heart failure to replace ACE inhibitors in patients who remain symptomatic with a low LVEF. It works by inhibiting neprilysin, thereby increasing the levels of beneficial natriuretic peptides. A 48-hour washout period is mandatory when switching from an ACE inhibitor to prevent angioedema.",
+    "custom_filters": ["Cardiology", "Cardiac failure", "Management"],
+    "filter_categories": [
+      { "name": "Systems", "color": "#3B82F6", "filters": ["Cardiology"] },
+      { "name": "Conditions", "color": "#8B5CF6", "filters": ["Cardiac failure"] },
+      { "name": "Presentations", "color": "#F59E0B", "filters": [] },
+      { "name": "Other", "color": "#10B981", "filters": ["Management"] }
+    ]
+  },
+  {
+    "title": "Classification and Causes of Pulmonary Hypertension",
+    "content": "Pulmonary hypertension is defined by a mean pulmonary arterial pressure ≥20 mmHg. It is classified into five groups: Group 1 (Pulmonary arterial hypertension), Group 2 (due to left heart disease), Group 3 (due to lung disease/hypoxia), Group 4 (Chronic thromboembolic), and Group 5 (miscellaneous/multifactorial).",
+    "custom_filters": ["Cardiology", "Pulmonary hypertension", "Breathlessness", "Aetiology/Risk factors"],
+    "filter_categories": [
+      { "name": "Systems", "color": "#3B82F6", "filters": ["Cardiology"] },
+      { "name": "Conditions", "color": "#8B5CF6", "filters": ["Pulmonary hypertension"] },
+      { "name": "Presentations", "color": "#F59E0B", "filters": ["Breathlessness"] },
+      { "name": "Other", "color": "#10B981", "filters": ["Aetiology/Risk factors"] }
+    ]
+  },
+  {
+    "title": "Specific Treatments for Group 1 Pulmonary Arterial Hypertension",
+    "content": "Management of Group 1 PAH involves specialist medications that target vasoactive pathways. These include endothelin receptor antagonists (e.g., bosentan), phosphodiesterase-5 inhibitors (e.g., sildenafil), and prostacyclin analogues (e.g., epoprostenol). These therapies aim to reduce pulmonary vascular resistance and improve exercise capacity.",
+    "custom_filters": ["Cardiology", "Pulmonary hypertension", "Management"],
+    "filter_categories": [
+      { "name": "Systems", "color": "#3B82F6", "filters": ["Cardiology"] },
+      { "name": "Conditions", "color": "#8B5CF6", "filters": ["Pulmonary hypertension"] },
+      { "name": "Presentations", "color": "#F59E0B", "filters": [] },
+      { "name": "Other", "color": "#10B981", "filters": ["Management"] }
+    ]
+  },
+  {
+    "title": "Diagnosis and Clinical Features of Atrial Fibrillation",
+    "content": "Atrial fibrillation (AF) is characterized by an irregularly irregular pulse and the absence of P waves on an ECG, replaced by rapid, chaotic fibrillatory waves. Patients may be asymptomatic or present with palpitations, breathlessness, or dizziness. It is a major risk factor for embolic stroke, necessitating careful stroke risk assessment.",
+    "custom_filters": ["Cardiology", "Arrhythmias", "Palpitations", "Breathlessness", "Dizziness", "Clinical features"],
+    "filter_categories": [
+      { "name": "Systems", "color": "#3B82F6", "filters": ["Cardiology"] },
+      { "name": "Conditions", "color": "#8B5CF6", "filters": ["Arrhythmias"] },
+      { "name": "Presentations", "color": "#F59E0B", "filters": ["Palpitations", "Breathlessness", "Dizziness"] },
+      { "name": "Other", "color": "#10B981", "filters": ["Clinical features"] }
+    ]
+  },
+  {
+    "title": "Stroke Risk Stratification in Atrial Fibrillation: CHA2DS2-VASc",
+    "content": "The CHA2DS2-VASc score is used to determine the need for anticoagulation in patients with atrial fibrillation. It awards points for Congestive heart failure, Hypertension, Age (≥75 years = 2 points), Diabetes, Stroke/TIA history (2 points), Vascular disease, Age (65–74 years), and Sex category (female). Anticoagulation is typically recommended for men with a score of 1 or more and women with a score of 2 or more.",
+    "custom_filters": ["Cardiology", "Arrhythmias", "Management"],
+    "filter_categories": [
+      { "name": "Systems", "color": "#3B82F6", "filters": ["Cardiology"] },
+      { "name": "Conditions", "color": "#8B5CF6", "filters": ["Arrhythmias"] },
+      { "name": "Presentations", "color": "#F59E0B", "filters": [] },
+      { "name": "Other", "color": "#10B981", "filters": ["Management"] }
+    ]
+  },
+  {
+    "title": "Rate vs Rhythm Control Strategies in Atrial Fibrillation",
+    "content": "Rate control is the standard first-line approach for most AF patients, often using beta-blockers or rate-limiting calcium channel blockers. Rhythm control (cardioversion or anti-arrhythmics like amiodarone) is preferred if there is a reversible cause, heart failure exacerbated by AF, new-onset AF (<48 hours), or if the patient remains symptomatic despite adequate rate control.",
+    "custom_filters": ["Cardiology", "Arrhythmias", "Management"],
+    "filter_categories": [
+      { "name": "Systems", "color": "#3B82F6", "filters": ["Cardiology"] },
+      { "name": "Conditions", "color": "#8B5CF6", "filters": ["Arrhythmias"] },
+      { "name": "Presentations", "color": "#F59E0B", "filters": [] },
+      { "name": "Other", "color": "#10B981", "filters": ["Management"] }
+    ]
+  },
+  {
+    "title": "Indications for Permanent Pacemaker Insertion",
+    "content": "A permanent pacemaker is primarily indicated for symptomatic bradycardia where no reversible cause is found. Specific ECG indications include Mobitz Type II second-degree heart block, third-degree (complete) heart block, and symptomatic SSS (Sick Sinus Syndrome). The choice between single and dual-chamber pacing depends on the presence of atrial activity.",
+    "custom_filters": ["Cardiology", "Arrhythmias", "Blackouts and faints", "Management"],
+    "filter_categories": [
+      { "name": "Systems", "color": "#3B82F6", "filters": ["Cardiology"] },
+      { "name": "Conditions", "color": "#8B5CF6", "filters": ["Arrhythmias"] },
+      { "name": "Presentations", "color": "#F59E0B", "filters": ["Blackouts and faints"] },
+      { "name": "Other", "color": "#10B981", "filters": ["Management"] }
+    ]
+  }
+]
