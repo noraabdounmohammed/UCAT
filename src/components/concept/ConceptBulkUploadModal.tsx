@@ -107,12 +107,95 @@ export const ConceptBulkUploadModal: React.FC<ConceptBulkUploadModalProps> = ({
     setError(null);
 
     try {
-      const parsedData = JSON.parse(jsonInput);
-
-      // Validate that it's an array
-      if (!Array.isArray(parsedData)) {
-        throw new Error('JSON must be an array of concept objects');
+      let allParsedData: any[] = [];
+      
+      // Handle multiple concatenated JSON arrays (batches)
+      const trimmedInput = jsonInput.trim();
+      
+      // Try to find multiple JSON arrays by looking for ']' followed by '['
+      const arrayPattern = /\]\s*\[/g;
+      
+      if (arrayPattern.test(trimmedInput)) {
+        console.log('🔍 Detected multiple JSON batches, extracting...');
+        
+        // Find all complete JSON arrays using a more robust approach
+        const batches: string[] = [];
+        let depth = 0;
+        let currentBatch = '';
+        let inString = false;
+        let escapeNext = false;
+        
+        for (let i = 0; i < trimmedInput.length; i++) {
+          const char = trimmedInput[i];
+          currentBatch += char;
+          
+          // Handle escape sequences
+          if (escapeNext) {
+            escapeNext = false;
+            continue;
+          }
+          
+          if (char === '\\') {
+            escapeNext = true;
+            continue;
+          }
+          
+          // Track if we're inside a string
+          if (char === '"') {
+            inString = !inString;
+            continue;
+          }
+          
+          // Only count brackets outside of strings
+          if (!inString) {
+            if (char === '[') {
+              depth++;
+            } else if (char === ']') {
+              depth--;
+              
+              // When we close a top-level array, save it as a batch
+              if (depth === 0) {
+                batches.push(currentBatch.trim());
+                currentBatch = '';
+              }
+            }
+          }
+        }
+        
+        console.log(`📦 Found ${batches.length} batches`);
+        
+        // Parse each batch
+        for (let i = 0; i < batches.length; i++) {
+          try {
+            console.log(`🔍 Parsing batch ${i + 1}...`);
+            const batchData = JSON.parse(batches[i]);
+            if (Array.isArray(batchData)) {
+              allParsedData = allParsedData.concat(batchData);
+              console.log(`✅ Parsed batch ${i + 1}: ${batchData.length} concepts`);
+            } else {
+              console.warn(`⚠️ Batch ${i + 1} is not an array, skipping`);
+            }
+          } catch (batchError) {
+            console.error(`❌ Failed to parse batch ${i + 1}:`, batchError);
+            console.error('Batch preview:', batches[i].substring(0, 300) + '...');
+            throw new Error(`Failed to parse batch ${i + 1}: ${batchError instanceof Error ? batchError.message : 'Unknown error'}`);
+          }
+        }
+        
+        console.log(`✅ Total concepts from all batches: ${allParsedData.length}`);
+      } else {
+        // Single JSON array - parse normally
+        console.log('🔍 Parsing single JSON array...');
+        allParsedData = JSON.parse(trimmedInput);
+        
+        // Validate that it's an array
+        if (!Array.isArray(allParsedData)) {
+          throw new Error('JSON must be an array of concept objects');
+        }
+        console.log(`✅ Parsed single array: ${allParsedData.length} concepts`);
       }
+      
+      const parsedData = allParsedData;
 
       // Collect all filter categories from all concepts
       const allCategories = new Map<string, FilterCategory>();

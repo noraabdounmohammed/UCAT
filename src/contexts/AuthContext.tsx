@@ -41,11 +41,20 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         // Fetch user role from profiles table
         if (session?.user) {
           try {
-            const { data: profile, error } = await supabase
+            console.log('🔍 Fetching user role for:', session.user.email);
+            
+            // Add timeout to prevent hanging
+            const rolePromise = supabase
               .from('profiles')
               .select('role')
               .eq('id', session.user.id)
               .single();
+            
+            const timeoutPromise = new Promise<{ data: null; error: any }>((resolve) => 
+              setTimeout(() => resolve({ data: null, error: { message: 'Role fetch timeout' } }), 3000)
+            );
+            
+            const { data: profile, error } = await Promise.race([rolePromise, timeoutPromise]);
             
             if (error) {
               console.error('❌ Error fetching user role:', error);
@@ -54,44 +63,20 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
                 console.warn('⚠️ Role column missing in profiles table. Please run migration.');
               }
               
-              // Hardcode creator role for specific email as fallback
-              if (session.user.email === 'noraabdounmohammed@gmail.com') {
-                console.log('✅ Hardcoded creator role for:', session.user.email);
-                setUserRole('creator');
-              } else {
-                setUserRole('consumer');
-              }
+              // Default to consumer if role fetch fails
+              console.log('⚠️ Defaulting to consumer role due to error');
+              setUserRole('consumer');
             } else {
-              // Check email FIRST before using database role
-              if (session.user.email === 'noraabdounmohammed@gmail.com') {
-                console.log('✅ Creator email detected, forcing creator role');
-                setUserRole('creator');
-                
-                // Update database if role is wrong (fire and forget)
-                if (profile?.role !== 'creator') {
-                  console.log('⚠️ Fixing role in database');
-                  void supabase
-                    .from('profiles')
-                    .update({ role: 'creator' })
-                    .eq('id', session.user.id)
-                    .then(() => console.log('✅ Updated role in database'));
-                }
-              } else {
-                // For other users, use database role or default to consumer
-                const role = (profile?.role as UserRole) || 'consumer';
-                console.log('✅ User role loaded:', role, 'for', session.user.email);
-                setUserRole(role);
-              }
+              // Use database role - trust what's in the profiles table
+              const role = (profile?.role as UserRole) || 'consumer';
+              console.log('✅ User role loaded from database:', role, 'for', session.user.email);
+              setUserRole(role);
             }
           } catch (error) {
             console.error('❌ Exception fetching user role:', error);
-            // Hardcode creator role for specific email as fallback
-            if (session.user.email === 'noraabdounmohammed@gmail.com') {
-              console.log('✅ Hardcoded creator role for:', session.user.email);
-              setUserRole('creator');
-            } else {
-              setUserRole('consumer');
-            }
+            // Default to consumer if role fetch fails
+            console.log('⚠️ Defaulting to consumer role due to exception');
+            setUserRole('consumer');
           }
         } else {
           setUserRole(null);
@@ -116,52 +101,45 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       // Fetch user role from profiles table
       if (session?.user) {
         try {
-          const { data: profile, error } = await supabase
+          console.log('🔍 Fetching user role on auth change for:', session.user.email);
+          
+          // Add timeout to prevent hanging
+          const rolePromise = supabase
             .from('profiles')
             .select('role')
             .eq('id', session.user.id)
             .single();
           
+          const timeoutPromise = new Promise<{ data: null; error: any }>((resolve) => 
+            setTimeout(() => resolve({ data: null, error: { message: 'Role fetch timeout' } }), 3000)
+          );
+          
+          const { data: profile, error } = await Promise.race([rolePromise, timeoutPromise]);
+          
           if (error) {
             console.error('❌ Error fetching user role on auth change:', error);
             
-            // Hardcode creator role for specific email as fallback
-            if (session.user.email === 'noraabdounmohammed@gmail.com') {
-              console.log('✅ Hardcoded creator role for:', session.user.email);
-              setUserRole('creator');
-            } else {
+            // Keep existing role if fetch fails - don't reset to consumer
+            console.log('⚠️ Keeping existing role due to fetch error. Current role:', userRole);
+            // Only default to consumer if we don't have a role yet
+            if (userRole === null) {
+              console.log('⚠️ No existing role, defaulting to consumer');
               setUserRole('consumer');
             }
           } else {
-            // Check email FIRST before using database role
-            if (session.user.email === 'noraabdounmohammed@gmail.com') {
-              console.log('✅ Creator email detected on auth change, forcing creator role');
-              setUserRole('creator');
-              
-              // Update database if role is wrong (fire and forget)
-              if (profile?.role !== 'creator') {
-                console.log('⚠️ Fixing role in database on auth change');
-                void supabase
-                  .from('profiles')
-                  .update({ role: 'creator' })
-                  .eq('id', session.user.id)
-                  .then(() => console.log('✅ Updated role in database'));
-              }
-            } else {
-              // For other users, use database role or default to consumer
-              const role = (profile?.role as UserRole) || 'consumer';
-              console.log('✅ User role updated:', role, 'for', session.user.email);
-              setUserRole(role);
-            }
+            // Use database role - trust what's in the profiles table
+            const role = (profile?.role as UserRole) || 'consumer';
+            console.log('✅ User role updated from database:', role, 'for', session.user.email);
+            setUserRole(role);
           }
         } catch (error) {
           console.error('❌ Exception fetching user role on auth change:', error);
           
-          // Hardcode creator role for specific email as fallback
-          if (session.user.email === 'noraabdounmohammed@gmail.com') {
-            console.log('✅ Hardcoded creator role for:', session.user.email);
-            setUserRole('creator');
-          } else {
+          // Keep existing role if fetch fails - don't reset to consumer
+          console.log('⚠️ Keeping existing role due to exception. Current role:', userRole);
+          // Only default to consumer if we don't have a role yet
+          if (userRole === null) {
+            console.log('⚠️ No existing role, defaulting to consumer');
             setUserRole('consumer');
           }
         }
