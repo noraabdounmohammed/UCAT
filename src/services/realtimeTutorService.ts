@@ -38,6 +38,7 @@ export class RealtimeTutorService {
   private mediaRecorder: MediaRecorder | null = null;
   private audioQueue: ArrayBuffer[] = [];
   private isPlaying = false;
+  private currentSource: AudioBufferSourceNode | null = null;
   private isConnected = false;
   private isSpeaking = false;
   private callbacks: RealtimeTutorCallbacks | null = null;
@@ -340,32 +341,14 @@ Start by greeting them warmly and asking what they'd like to focus on today.`;
         break;
 
       case 'response.done':
-        // Response complete - extract content if present
-        console.log('🎤 Response done:', message.response);
+        // Response complete - just log, text already handled by audio_transcript.done
+        console.log('🎤 Response done:', message.response?.status);
         
         // Check for failed response
         if (message.response?.status === 'failed') {
           const errorDetails = message.response.status_details?.error;
           console.error('🎤 Response failed:', errorDetails);
           this.callbacks?.onError(errorDetails?.message || 'Response failed');
-          break;
-        }
-        
-        if (message.response?.output) {
-          for (const item of message.response.output) {
-            if (item.content) {
-              for (const content of item.content) {
-                if (content.type === 'text' && content.text) {
-                  console.log('🎤 Extracted text from response.done:', content.text);
-                  this.callbacks?.onTranscript(content.text, true, false);
-                }
-                if (content.type === 'audio' && content.transcript) {
-                  console.log('🎤 Extracted transcript from response.done:', content.transcript);
-                  this.callbacks?.onTranscript(content.transcript, true, false);
-                }
-              }
-            }
-          }
         }
         break;
 
@@ -421,7 +404,11 @@ Start by greeting them warmly and asking what they'd like to focus on today.`;
     const source = this.audioContext.createBufferSource();
     source.buffer = audioBuffer;
     source.connect(this.audioContext.destination);
-    source.onended = () => this.playNextChunk();
+    source.onended = () => {
+      this.currentSource = null;
+      this.playNextChunk();
+    };
+    this.currentSource = source;
     source.start();
   }
 
@@ -460,7 +447,20 @@ Start by greeting them warmly and asking what they'd like to focus on today.`;
   interrupt(): void {
     if (!this.ws || !this.isConnected) return;
 
+    // Cancel the API response
     this.ws.send(JSON.stringify({ type: 'response.cancel' }));
+    
+    // Stop current audio playback immediately
+    if (this.currentSource) {
+      try {
+        this.currentSource.stop();
+      } catch (e) {
+        // Source may already be stopped
+      }
+      this.currentSource = null;
+    }
+    
+    // Clear the audio queue
     this.audioQueue = [];
     this.isPlaying = false;
   }
