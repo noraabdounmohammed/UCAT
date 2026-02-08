@@ -11,6 +11,7 @@ import {
   Loader2
 } from 'lucide-react';
 import { RealtimeTutorService, TutorContext, ConceptProgress } from '../../services/realtimeTutorService';
+import { InworldRealtimeService } from '../../services/inworldRealtimeService';
 
 interface Message {
   id: string;
@@ -25,6 +26,7 @@ interface AITutorProps {
   concepts: ConceptProgress[];
   curriculumName: string;
   lightMode?: boolean;
+  provider?: 'openai' | 'inworld'; // Allow switching providers
 }
 
 export const AITutor: React.FC<AITutorProps> = ({
@@ -32,7 +34,7 @@ export const AITutor: React.FC<AITutorProps> = ({
   onClose,
   concepts,
   curriculumName,
-  lightMode = false
+  provider = 'openai' // Default to OpenAI, can switch to 'inworld'
 }) => {
   const [isConnected, setIsConnected] = useState(false);
   const [isConnecting, setIsConnecting] = useState(false);
@@ -46,7 +48,8 @@ export const AITutor: React.FC<AITutorProps> = ({
   const [textInput, setTextInput] = useState('');
   const [showTextInput, setShowTextInput] = useState(false);
   
-  const tutorServiceRef = useRef<RealtimeTutorService | null>(null);
+  // Use either OpenAI or Inworld service
+  const tutorServiceRef = useRef<RealtimeTutorService | InworldRealtimeService | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   // Calculate progress stats
@@ -92,9 +95,19 @@ export const AITutor: React.FC<AITutorProps> = ({
   }, [concepts, curriculumName, isConnected, totalConcepts, masteredCount, developingCount, unseenCount]);
 
   const handleConnect = useCallback(async () => {
-    const apiKey = import.meta.env.VITE_OPENAI_REALTIME_API_KEY;
+    // Check which provider to use - prefer Inworld if configured, fallback to OpenAI
+    const inworldApiKey = import.meta.env.VITE_INWORLD_API_KEY;
+    const inworldApiSecret = import.meta.env.VITE_INWORLD_API_SECRET;
+    const openaiApiKey = import.meta.env.VITE_OPENAI_REALTIME_API_KEY;
     
-    if (!apiKey) {
+    const useInworld = provider === 'inworld' || (inworldApiKey && inworldApiSecret);
+    
+    if (useInworld && (!inworldApiKey || !inworldApiSecret)) {
+      setError('Inworld API credentials not configured. Add VITE_INWORLD_API_KEY and VITE_INWORLD_API_SECRET to your .env file.');
+      return;
+    }
+    
+    if (!useInworld && !openaiApiKey) {
       setError('OpenAI Realtime API key not configured. Add VITE_OPENAI_REALTIME_API_KEY to your .env file.');
       return;
     }
@@ -103,7 +116,10 @@ export const AITutor: React.FC<AITutorProps> = ({
     setError(null);
 
     try {
-      const service = new RealtimeTutorService();
+      // Create the appropriate service
+      const service = useInworld 
+        ? new InworldRealtimeService() 
+        : new RealtimeTutorService();
       
       // Set context before connecting
       const context: TutorContext = {
@@ -123,7 +139,8 @@ export const AITutor: React.FC<AITutorProps> = ({
       };
       service.setContext(context);
 
-      await service.connect(apiKey, {
+      // Define callbacks
+      const callbacks = {
         onConnected: () => {
           setIsConnected(true);
           setIsConnecting(false);
@@ -137,14 +154,13 @@ export const AITutor: React.FC<AITutorProps> = ({
         },
         onSpeechEnded: () => {
           setIsSpeaking(false);
-          // Don't add message here - let onTranscript handle it when transcription is complete
         },
-        onTranscript: (text, isFinal, isUser) => {
+        onTranscript: (text: string, isFinal: boolean, isUser: boolean) => {
           if (isUser) {
             if (isFinal) {
               setMessages(prev => [...prev, {
                 id: `msg-${Date.now()}`,
-                role: 'user',
+                role: 'user' as const,
                 content: text,
                 timestamp: new Date()
               }]);
@@ -156,7 +172,7 @@ export const AITutor: React.FC<AITutorProps> = ({
             if (isFinal) {
               setMessages(prev => [...prev, {
                 id: `msg-${Date.now()}`,
-                role: 'assistant',
+                role: 'assistant' as const,
                 content: text,
                 timestamp: new Date()
               }]);
@@ -166,21 +182,28 @@ export const AITutor: React.FC<AITutorProps> = ({
             }
           }
         },
-        onError: (err) => {
+        onError: (err: string) => {
           setError(err);
           setIsConnecting(false);
         },
-        onAudioLevel: (level) => {
+        onAudioLevel: (level: number) => {
           setAudioLevel(level);
         }
-      });
+      };
+
+      // Connect with appropriate credentials
+      if (useInworld) {
+        await (service as InworldRealtimeService).connect(inworldApiKey!, callbacks, inworldApiSecret);
+      } else {
+        await (service as RealtimeTutorService).connect(openaiApiKey!, callbacks);
+      }
 
       tutorServiceRef.current = service;
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to connect');
       setIsConnecting(false);
     }
-  }, [concepts, curriculumName, totalConcepts, masteredCount, developingCount, unseenCount, currentTranscript]);
+  }, [concepts, curriculumName, totalConcepts, masteredCount, developingCount, unseenCount, provider]);
 
   const handleDisconnect = useCallback(() => {
     if (tutorServiceRef.current) {
