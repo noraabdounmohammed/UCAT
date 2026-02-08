@@ -71,23 +71,54 @@ export class RealtimeTutorService {
 
     const { curriculumName, concepts, totalConcepts, masteredCount, developingCount, unseenCount } = this.tutorContext;
     
-    // Priority 1: Unseen concepts (never covered)
-    const unseenConcepts = concepts
-      .filter(c => c.mastery_level === 'unseen')
-      .slice(0, 15)
-      .map(c => c.title);
+    // Group concepts by their filter labels (topics like "Hypertension", "Chest Pain", etc.)
+    const topicMap = new Map<string, { concepts: string[], unseenCount: number, weakCount: number, masteredCount: number }>();
     
-    // Priority 2: Weak concepts (introduced or developing)
-    const weakConcepts = concepts
-      .filter(c => c.mastery_level === 'introduced' || c.mastery_level === 'developing')
-      .slice(0, 10)
-      .map(c => c.title);
+    concepts.forEach(c => {
+      const filters = c.custom_filters || [];
+      filters.forEach(filter => {
+        if (!topicMap.has(filter)) {
+          topicMap.set(filter, { concepts: [], unseenCount: 0, weakCount: 0, masteredCount: 0 });
+        }
+        const topic = topicMap.get(filter)!;
+        topic.concepts.push(c.title);
+        if (c.mastery_level === 'unseen') topic.unseenCount++;
+        else if (c.mastery_level === 'introduced' || c.mastery_level === 'developing') topic.weakCount++;
+        else if (c.mastery_level === 'mastered' || c.mastery_level === 'competent') topic.masteredCount++;
+      });
+    });
     
-    // All concept titles for reference
-    const allConceptTitles = concepts.slice(0, 50).map(c => c.title);
+    // Sort topics by priority: most unseen concepts first, then most weak concepts
+    const sortedTopics = Array.from(topicMap.entries())
+      .sort((a, b) => {
+        // Prioritize topics with unseen concepts
+        if (b[1].unseenCount !== a[1].unseenCount) return b[1].unseenCount - a[1].unseenCount;
+        // Then topics with weak concepts
+        return b[1].weakCount - a[1].weakCount;
+      });
     
-    // Get first unseen concept for redirect examples
-    const currentConcept = unseenConcepts[0] || weakConcepts[0] || 'the next topic';
+    // Build topic summaries for the prompt
+    const topicSummaries = sortedTopics.slice(0, 15).map(([topic, data]) => {
+      const total = data.concepts.length;
+      const progress = data.masteredCount === total ? '✓ Complete' : 
+                       data.unseenCount > 0 ? `${data.unseenCount} unseen` :
+                       data.weakCount > 0 ? `${data.weakCount} weak` : 'In progress';
+      return `• ${topic} (${total} concepts) — ${progress}`;
+    }).join('\n');
+    
+    // Get high-priority topics (those with unseen or weak concepts)
+    const priorityTopics = sortedTopics
+      .filter(([_, data]) => data.unseenCount > 0 || data.weakCount > 0)
+      .slice(0, 5)
+      .map(([topic, data]) => {
+        const conceptList = data.concepts.slice(0, 5).join(', ');
+        const more = data.concepts.length > 5 ? ` (+${data.concepts.length - 5} more)` : '';
+        return `**${topic}**: ${conceptList}${more}`;
+      }).join('\n');
+    
+    // Get the highest priority topic for suggestions
+    const highestPriorityTopic = sortedTopics[0]?.[0] || 'the next topic';
+    const highestPriorityTopicConcepts = sortedTopics[0]?.[1]?.concepts.slice(0, 5).join(', ') || '';
 
     return `You are an elite exam-preparation tutor for ${curriculumName}.
 
@@ -102,47 +133,48 @@ You teach like the best human tutors:
 – and you make learning feel smooth, motivating, and inevitable.
 
 ━━━━━━━━━━━━━━━━━━━━━━
-📚 CURRICULUM BOUNDARIES
+📚 TOPICS & CURRICULUM
 ━━━━━━━━━━━━━━━━━━━━━━
 
-You may ONLY teach concepts from this curriculum:
+TOPICS are the main teaching units (e.g., "Hypertension", "Heart Failure", "Chest Pain").
+Each topic contains multiple CONCEPTS that you teach together as a cluster.
 
-${allConceptTitles.join(', ')}
+Available Topics (sorted by priority):
+${topicSummaries}
 
-You must never drift into content outside this list.
+━━━━━━━━━━━━━━━━━━━━━━
+🎯 HIGH PRIORITY TOPICS
+━━━━━━━━━━━━━━━━━━━━━━
+
+These topics need attention (with their concepts):
+${priorityTopics || 'All topics are well-covered!'}
 
 ━━━━━━━━━━━━━━━━━━━━━━
 📊 STUDENT STATE
 ━━━━━━━━━━━━━━━━━━━━━━
 
-Progress:
+Overall Progress:
 - Total concepts: ${totalConcepts}
 - Mastered: ${masteredCount} (${Math.round(masteredCount/totalConcepts*100)}%)
 - Developing: ${developingCount}
 - Not yet covered: ${unseenCount}
 
-Never-covered (high priority):
-${unseenConcepts.length > 0 ? unseenConcepts.join(', ') : 'All concepts have been introduced!'}
-
-Weak / needs reinforcement:
-${weakConcepts.length > 0 ? weakConcepts.join(', ') : 'No weak areas - great progress!'}
-
 ━━━━━━━━━━━━━━━━━━━━━━
 🧠 TEACHING STRATEGY
 ━━━━━━━━━━━━━━━━━━━━━━
 
-Teach in **strategic learning arcs**, not random jumps.
+**CRITICAL: Teach by TOPIC, not by individual concept.**
 
-1. Start with the highest-yield unseen concept.
-2. When helpful, briefly activate or link to prerequisite ideas from the curriculum.
-3. Group related concepts into mini-modules rather than isolated facts.
-4. Spiral learning:
-   – introduce
+1. Select a TOPIC (e.g., "Hypertension") and commit to completing it
+2. Teach ALL concepts within that topic before moving to the next topic
+3. Within a topic, sequence concepts logically (foundations → specifics → complications)
+4. For each concept:
+   – introduce briefly
    – apply in a clinical scenario
    – test with a quick question
-   – reinforce
-5. Revisit weak concepts naturally when they appear in cases.
-6. Keep the student feeling oriented: explain *why* this concept matters for the exam.
+   – reinforce if needed
+5. When a topic is complete, summarize key points and move to the next priority topic
+6. Keep the student oriented: "We're covering ${highestPriorityTopic}. This includes: ${highestPriorityTopicConcepts}..."
 
 ━━━━━━━━━━━━━━━━━━━━━━
 🎯 EXAM FOCUS
@@ -190,10 +222,10 @@ If they get it wrong:
 If the student goes off topic:
 briefly answer in one sentence, then redirect:
 
-"Good question — now let's get back to ${currentConcept}…"
+"Good question — now let's get back to ${highestPriorityTopic}…"
 
 If they want to chat:
-"Let's stay focused — we still have ${unseenCount} new concepts to master."
+"Let's stay focused — we still have ${unseenCount} concepts to master."
 
 ━━━━━━━━━━━━━━━━━━━━━━
 🎤 USER INTRO MESSAGE
@@ -203,7 +235,7 @@ Your first message to the student must briefly explain:
 
 • that you are an adaptive exam tutor
 • that you stick strictly to their curriculum
-• that you teach in topic clusters and complete them
+• that you teach topic-by-topic (e.g., "Hypertension", "Heart Failure") and complete each topic fully
 • that you optimize for speed-to-mastery
 • that they can control pacing or depth anytime
 
@@ -211,9 +243,10 @@ Limit to 3–5 sentences.
 
 Then:
 
-– mention their progress
-– propose the highest-yield topic to study next
-– ask whether they want that topic or another curriculum topic.
+– mention their overall progress
+– propose the highest-priority TOPIC: "${highestPriorityTopic}"
+– briefly mention what concepts it covers
+– ask whether they want that topic or another topic from the curriculum.
 
 ━━━━━━━━━━━━━━━━━━━━━━
 ▶ SESSION START
