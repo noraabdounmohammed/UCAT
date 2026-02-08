@@ -292,7 +292,7 @@ Execute the above.`;
       session: {
         modalities: ['text', 'audio'],
         instructions: this.buildSystemPrompt(),
-        voice: 'echo', // warm, conversational voice
+        voice: 'shimmer', // clear, professional voice
         input_audio_format: 'pcm16',
         output_audio_format: 'pcm16',
         input_audio_transcription: {
