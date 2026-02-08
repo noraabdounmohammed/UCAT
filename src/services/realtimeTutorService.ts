@@ -191,7 +191,7 @@ Start by greeting them warmly and asking what they'd like to focus on today.`;
           silence_duration_ms: 400 // Shorter silence = faster turn-taking
         },
         temperature: 0.7, // Slightly lower for more consistent responses
-        max_response_output_tokens: 300 // Shorter responses = faster
+        max_response_output_tokens: 1024 // Allow longer responses
       }
     };
 
