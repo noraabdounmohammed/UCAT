@@ -6,7 +6,8 @@ import { ApplePracticeSession } from '@/components/practice/ApplePracticeSession
 import { PracticeConfigModal } from '@/components/practice/PracticeConfigModal';
 import { ConceptCreationHub } from '@/components/concept/ConceptCreationHub';
 import { GenerationLoadingScreen } from '@/components/practice/GenerationLoadingScreen';
-import { Plus, Sliders, Search, Grid, List, ChevronDown, Folder, ChevronRight, Check, X } from 'lucide-react';
+import { Plus, Sliders, Search, Grid, List, ChevronDown, Folder, ChevronRight, Check, X, Brain, Mic } from 'lucide-react';
+import { AITutor } from '@/components/practice/AITutor';
 import { ConceptEditorModal } from '@/components/concept/ConceptEditorModal';
 import { CurriculumDashboard } from '@/components/curriculum/CurriculumDashboard';
 import { ConceptBulkUploadModal } from '@/components/concept/ConceptBulkUploadModal';
@@ -94,6 +95,7 @@ const ConceptPracticePageLoftContent: React.FC<Omit<ConceptPracticePageLoftProps
   const [showAuthPrompt, setShowAuthPrompt] = useState(false);
   const [pendingPracticeConfig, setPendingPracticeConfig] = useState<any>(null);
   const [pendingFilteredConcepts, setPendingFilteredConcepts] = useState<any[]>([]);
+  const [showAITutor, setShowAITutor] = useState(false);
 
   // Redirect consumers away from concepts view
   useEffect(() => {
@@ -391,6 +393,15 @@ const ConceptPracticePageLoftContent: React.FC<Omit<ConceptPracticePageLoftProps
                   </svg>
                 </button>
               )}
+              
+              {/* AI Tutor */}
+              <button
+                onClick={() => setShowAITutor(true)}
+                className="p-2.5 rounded-full transition-all duration-200 active:scale-95 bg-stone-900 text-white shadow-lg"
+                title="AI Tutor"
+              >
+                <Mic className="w-5 h-5" />
+              </button>
             </div>
           </div>
         </div>
@@ -455,9 +466,47 @@ const ConceptPracticePageLoftContent: React.FC<Omit<ConceptPracticePageLoftProps
                   </button>
                 </>
               )}
+              
+              {/* AI Tutor */}
+              <div className="w-8 h-[1px] bg-stone-300/30"></div>
+              <button
+                onClick={() => setShowAITutor(true)}
+                className="group relative p-4 rounded-2xl transition-all duration-300 bg-stone-900 text-white shadow-lg hover:shadow-xl hover:scale-105"
+                title="AI Tutor - Real-time Voice Conversation"
+              >
+                <Mic className="w-5 h-5" />
+              </button>
             </div>
           </div>
         </div>
+        
+        {/* AI Tutor Modal */}
+        <AITutor
+          isOpen={showAITutor}
+          onClose={() => setShowAITutor(false)}
+          concepts={filteredConcepts.map(c => {
+            // Map numeric mastery level to string
+            const masteryMap: Record<number, 'unseen' | 'introduced' | 'developing' | 'competent' | 'mastered'> = {
+              0: 'unseen',
+              1: 'introduced', 
+              2: 'developing',
+              3: 'competent',
+              4: 'mastered'
+            };
+            const level = typeof c.mastery_data?.mastery_level === 'number' 
+              ? masteryMap[c.mastery_data.mastery_level] || 'unseen'
+              : (c.mastery_data?.mastery_level as any) || 'unseen';
+            
+            return {
+              concept_id: c.concept_id,
+              title: c.title,
+              mastery_level: level,
+              times_practiced: (c.mastery_data as any)?.times_practiced || (c.mastery_data as any)?.correct_count || 0,
+              custom_filters: c.custom_filters
+            };
+          })}
+          curriculumName={curriculumName}
+        />
       </div>
     );
   }
