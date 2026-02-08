@@ -502,7 +502,8 @@ const ConceptPracticePageLoftContent: React.FC<Omit<ConceptPracticePageLoftProps
               title: c.title,
               mastery_level: level,
               times_practiced: (c.mastery_data as any)?.times_practiced || (c.mastery_data as any)?.correct_count || 0,
-              custom_filters: c.custom_filters
+              custom_filters: c.custom_filters,
+              filter_categories: (c as any).filter_categories
             };
           })}
           curriculumName={curriculumName}
