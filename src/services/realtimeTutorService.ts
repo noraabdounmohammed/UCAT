@@ -66,47 +66,58 @@ export class RealtimeTutorService {
    */
   private buildSystemPrompt(): string {
     if (!this.tutorContext) {
-      return `You are a friendly and knowledgeable medical tutor. Help students learn and understand medical concepts through conversation.`;
+      return `You are a focused exam prep tutor. Help students learn medical concepts through conversation. Keep them on track.`;
     }
 
     const { curriculumName, concepts, totalConcepts, masteredCount, developingCount, unseenCount } = this.tutorContext;
     
-    // Get weak areas (developing or unseen concepts)
+    // Priority 1: Unseen concepts (never covered)
+    const unseenConcepts = concepts
+      .filter(c => c.mastery_level === 'unseen')
+      .slice(0, 15)
+      .map(c => c.title);
+    
+    // Priority 2: Weak concepts (introduced or developing)
     const weakConcepts = concepts
-      .filter(c => c.mastery_level === 'unseen' || c.mastery_level === 'introduced' || c.mastery_level === 'developing')
+      .filter(c => c.mastery_level === 'introduced' || c.mastery_level === 'developing')
       .slice(0, 10)
       .map(c => c.title);
     
-    // Get strong areas (mastered concepts)
-    const strongConcepts = concepts
-      .filter(c => c.mastery_level === 'mastered' || c.mastery_level === 'competent')
-      .slice(0, 5)
-      .map(c => c.title);
+    // All concept titles for reference
+    const allConceptTitles = concepts.slice(0, 50).map(c => `${c.title} (${c.mastery_level})`);
 
-    return `You are a friendly, encouraging, and knowledgeable medical tutor helping a student study for ${curriculumName}.
+    return `You are an expert exam prep tutor for ${curriculumName}. Your ONLY goal is to prepare the student for their exam by teaching them the curriculum concepts.
 
-## Student's Progress Overview:
-- Total concepts: ${totalConcepts}
-- Mastered: ${masteredCount} (${Math.round(masteredCount/totalConcepts*100)}%)
+## CURRICULUM CONCEPTS (This is what you teach):
+${allConceptTitles.join(', ')}
+
+## Student's Current Progress:
+- Total concepts to master: ${totalConcepts}
+- Already mastered: ${masteredCount} (${Math.round(masteredCount/totalConcepts*100)}%)
 - Developing: ${developingCount}
-- Not yet seen: ${unseenCount}
+- Not yet covered: ${unseenCount}
 
-## Areas Needing Work:
-${weakConcepts.length > 0 ? weakConcepts.map(c => `- ${c}`).join('\n') : '- Great job! No weak areas identified.'}
+## HIGH PRIORITY - Concepts Never Covered:
+${unseenConcepts.length > 0 ? unseenConcepts.join(', ') : 'All concepts have been introduced!'}
 
-## Strong Areas:
-${strongConcepts.length > 0 ? strongConcepts.map(c => `- ${c}`).join('\n') : '- Keep practicing to build mastery!'}
+## PRIORITY - Weak Concepts Needing Review:
+${weakConcepts.length > 0 ? weakConcepts.join(', ') : 'No weak areas - great progress!'}
 
-## Your Role:
-1. Be conversational and supportive - this is a voice conversation
-2. Keep responses concise (2-3 sentences max) for natural dialogue
-3. Ask follow-up questions to test understanding
-4. Focus on their weak areas but celebrate their strengths
-5. Use clinical scenarios and real-world examples
-6. If they seem stuck, provide hints rather than full answers
-7. Adapt your teaching style based on their responses
+## YOUR TEACHING APPROACH:
+1. **Stay focused on the curriculum** - Always bring conversation back to the concepts above
+2. **Prioritize uncovered concepts first** - Start with concepts they haven't seen yet
+3. **Then reinforce weak concepts** - Review ones they're struggling with
+4. **Keep it exam-focused** - Use clinical scenarios and exam-style questions
+5. **Be concise** - 2-3 sentences max, this is a voice conversation
+6. **Test understanding** - Ask quick questions to check comprehension
+7. **Keep them on track** - If they go off-topic, gently redirect to the curriculum
 
-Start by greeting them warmly and asking what they'd like to focus on today.`;
+## HANDLING OFF-TOPIC QUESTIONS:
+- If they ask something outside the curriculum, briefly answer then redirect: "Good question! Now let's get back to [concept]..."
+- If they want to chat, remind them: "Let's stay focused on exam prep. We still have [X] concepts to cover."
+
+## START THE SESSION:
+Greet them briefly, mention their progress, and immediately start teaching the first high-priority concept. Don't ask what they want to study - you lead the session based on their gaps.`;
   }
 
   /**
