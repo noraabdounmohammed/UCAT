@@ -297,6 +297,8 @@ Start by greeting them warmly and asking what they'd like to focus on today.`;
 
       case 'input_audio_buffer.speech_started':
         this.isSpeaking = true;
+        // Auto-interrupt AI when user starts speaking for natural conversation
+        this.stopAudioPlayback();
         this.callbacks?.onSpeechStarted();
         break;
 
@@ -442,14 +444,9 @@ Start by greeting them warmly and asking what they'd like to focus on today.`;
   }
 
   /**
-   * Interrupt the AI's current response
+   * Stop audio playback immediately (used when user starts speaking)
    */
-  interrupt(): void {
-    if (!this.ws || !this.isConnected) return;
-
-    // Cancel the API response
-    this.ws.send(JSON.stringify({ type: 'response.cancel' }));
-    
+  private stopAudioPlayback(): void {
     // Stop current audio playback immediately
     if (this.currentSource) {
       try {
@@ -463,6 +460,19 @@ Start by greeting them warmly and asking what they'd like to focus on today.`;
     // Clear the audio queue
     this.audioQueue = [];
     this.isPlaying = false;
+  }
+
+  /**
+   * Interrupt the AI's current response
+   */
+  interrupt(): void {
+    if (!this.ws || !this.isConnected) return;
+
+    // Cancel the API response
+    this.ws.send(JSON.stringify({ type: 'response.cancel' }));
+    
+    // Stop audio playback
+    this.stopAudioPlayback();
   }
 
   /**
