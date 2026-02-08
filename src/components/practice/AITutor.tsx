@@ -225,33 +225,21 @@ export const AITutor: React.FC<AITutorProps> = ({
         {/* Subtle texture overlay */}
         <div className="absolute inset-0 opacity-[0.02] pointer-events-none" style={{ backgroundImage: 'url("data:image/svg+xml,%3Csvg width=\"100\" height=\"100\" xmlns=\"http://www.w3.org/2000/svg\"%3E%3Cfilter id=\"noise\"%3E%3CfeTurbulence type=\"fractalNoise\" baseFrequency=\"0.9\" numOctaves=\"4\" /%3E%3C/filter%3E%3Crect width=\"100\" height=\"100\" filter=\"url(%23noise)\" /%3E%3C/svg%3E")' }}></div>
         
-        {/* Header */}
-        <div className="relative px-6 pt-6 pb-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <div className="h-[1px] w-8 bg-stone-300 mb-3"></div>
-              <h2 className="text-xl font-medium text-stone-900 tracking-tight" style={{ fontFamily: "'Unbounded', sans-serif" }}>
-                AI Tutor
-              </h2>
-              <p className="text-xs text-stone-500 mt-1" style={{ fontFamily: "'Manrope', sans-serif" }}>
-                Real-time voice conversation
-              </p>
-            </div>
-            
-            <div className="flex items-center gap-3">
-              {isConnected && (
-                <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-emerald-50 border border-emerald-100">
-                  <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></div>
-                  <span className="text-xs text-emerald-600 font-medium" style={{ fontFamily: "'Manrope', sans-serif" }}>Live</span>
-                </div>
-              )}
-              <button
-                onClick={onClose}
-                className="p-2 rounded-xl hover:bg-stone-100 text-stone-400 hover:text-stone-600 transition-colors"
-              >
-                <X className="h-5 w-5" />
-              </button>
-            </div>
+        {/* Header - Minimal */}
+        <div className="relative px-4 pt-4 pb-2">
+          <div className="flex items-center justify-end gap-3">
+            {isConnected && (
+              <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-emerald-50 border border-emerald-100">
+                <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></div>
+                <span className="text-xs text-emerald-600 font-medium" style={{ fontFamily: "'Manrope', sans-serif" }}>Live</span>
+              </div>
+            )}
+            <button
+              onClick={onClose}
+              className="p-2 rounded-xl hover:bg-stone-100 text-stone-400 hover:text-stone-600 transition-colors"
+            >
+              <X className="h-5 w-5" />
+            </button>
           </div>
         </div>
 

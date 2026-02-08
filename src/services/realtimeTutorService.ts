@@ -85,22 +85,40 @@ export class RealtimeTutorService {
     // Categories that represent actual topics to teach
     const topicCategories = ['Conditions', 'Presentations'];
     
+    // System-level filters to ALWAYS exclude (not topics)
+    // Include curriculum name and common non-topic filters
+    const systemFilters = new Set([
+      curriculumName, // Exclude the curriculum name itself
+      'Cardiology', 'Respiratory', 'Neurology', 'Gastroenterology', 'Nephrology', 'Endocrinology', // Systems
+      'Management', 'Investigations', 'Clinical features', 'Pathophysiology', 'Aetiology', 'Epidemiology', 'Prognosis', // Concept types
+      'Diagnosis', 'Treatment', 'Prevention', 'Complications', 'Risk factors' // More concept types
+    ]);
+    
     concepts.forEach(c => {
       // Get topics from filter_categories if available
       const categories = c.filter_categories || [];
       const topicFilters: string[] = [];
       
       categories.forEach(cat => {
+        // Only use Conditions and Presentations as topics
         if (topicCategories.includes(cat.name) && cat.filters) {
           topicFilters.push(...cat.filters);
         }
       });
       
-      // If no filter_categories, fall back to custom_filters but exclude common system-level filters
-      const systemFilters = ['Cardiology', 'Management', 'Investigations', 'Clinical features', 'Pathophysiology', 'Aetiology', 'Epidemiology', 'Prognosis'];
-      const filters = topicFilters.length > 0 ? topicFilters : (c.custom_filters || []).filter(f => !systemFilters.includes(f));
+      // If no filter_categories available, fall back to custom_filters but exclude system-level filters
+      let filters: string[];
+      if (topicFilters.length > 0) {
+        filters = topicFilters;
+      } else {
+        // Fallback: use custom_filters but exclude system-level ones
+        filters = (c.custom_filters || []).filter(f => !systemFilters.has(f));
+      }
       
       filters.forEach(filter => {
+        // Double-check: skip any system-level filters that slipped through
+        if (systemFilters.has(filter)) return;
+        
         if (!topicMap.has(filter)) {
           topicMap.set(filter, { concepts: [], unseenCount: 0, weakCount: 0, masteredCount: 0 });
         }
