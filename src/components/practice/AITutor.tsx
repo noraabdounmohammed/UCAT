@@ -2,14 +2,10 @@ import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { 
   Mic, 
   MicOff, 
-  Phone, 
   PhoneOff, 
   Volume2, 
   VolumeX,
   MessageSquare,
-  Sparkles,
-  Brain,
-  TrendingUp,
   X,
   Send,
   Loader2
@@ -139,16 +135,7 @@ export const AITutor: React.FC<AITutorProps> = ({
         },
         onSpeechEnded: () => {
           setIsSpeaking(false);
-          // Finalize user transcript as message
-          if (currentTranscript.trim()) {
-            setMessages(prev => [...prev, {
-              id: `msg-${Date.now()}`,
-              role: 'user',
-              content: currentTranscript.trim(),
-              timestamp: new Date()
-            }]);
-            setCurrentTranscript('');
-          }
+          // Don't add message here - let onTranscript handle it when transcription is complete
         },
         onTranscript: (text, isFinal, isUser) => {
           if (isUser) {

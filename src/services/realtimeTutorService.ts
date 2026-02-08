@@ -178,20 +178,20 @@ Start by greeting them warmly and asking what they'd like to focus on today.`;
       session: {
         modalities: ['text', 'audio'],
         instructions: this.buildSystemPrompt(),
-        voice: 'alloy', // Options: alloy, echo, fable, onyx, nova, shimmer
+        voice: 'shimmer', // shimmer is clearer and more natural
         input_audio_format: 'pcm16',
         output_audio_format: 'pcm16',
         input_audio_transcription: {
-          model: 'whisper-1'
+          model: 'gpt-4o-transcribe' // Better accuracy than whisper-1
         },
         turn_detection: {
           type: 'server_vad',
-          threshold: 0.5,
-          prefix_padding_ms: 300,
-          silence_duration_ms: 500
+          threshold: 0.6, // Higher threshold = less false triggers
+          prefix_padding_ms: 200, // Reduced for faster response
+          silence_duration_ms: 400 // Shorter silence = faster turn-taking
         },
-        temperature: 0.8,
-        max_response_output_tokens: 500
+        temperature: 0.7, // Slightly lower for more consistent responses
+        max_response_output_tokens: 300 // Shorter responses = faster
       }
     };
 
