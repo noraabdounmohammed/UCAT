@@ -199,6 +199,26 @@ Start by greeting them warmly and asking what they'd like to focus on today.`;
     
     // Start audio streaming
     this.startAudioCapture();
+    
+    // Trigger AI to start the conversation with a greeting
+    setTimeout(() => {
+      this.triggerGreeting();
+    }, 500);
+  }
+
+  /**
+   * Trigger the AI to start the conversation
+   */
+  private triggerGreeting(): void {
+    if (!this.ws || !this.isConnected) return;
+    
+    // Send a response.create to make the AI greet first
+    this.ws.send(JSON.stringify({
+      type: 'response.create',
+      response: {
+        modalities: ['text', 'audio']
+      }
+    }));
   }
 
   /**
