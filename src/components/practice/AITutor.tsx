@@ -79,7 +79,8 @@ export const AITutor: React.FC<AITutorProps> = ({
           title: c.title,
           mastery_level: c.mastery_level,
           times_practiced: c.times_practiced,
-          custom_filters: c.custom_filters
+          custom_filters: c.custom_filters,
+          filter_categories: (c as any).filter_categories
         })),
         totalConcepts,
         masteredCount,
@@ -112,7 +113,8 @@ export const AITutor: React.FC<AITutorProps> = ({
           title: c.title,
           mastery_level: c.mastery_level,
           times_practiced: c.times_practiced,
-          custom_filters: c.custom_filters
+          custom_filters: c.custom_filters,
+          filter_categories: (c as any).filter_categories
         })),
         totalConcepts,
         masteredCount,

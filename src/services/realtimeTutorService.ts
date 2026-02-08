@@ -3,6 +3,12 @@
  * Provides real-time voice conversation with access to concepts and progress
  */
 
+export interface FilterCategory {
+  name: string;
+  color: string;
+  filters: string[];
+}
+
 export interface ConceptProgress {
   concept_id: string;
   title: string;
@@ -10,6 +16,7 @@ export interface ConceptProgress {
   times_practiced: number;
   last_practiced?: Date;
   custom_filters?: string[];
+  filter_categories?: FilterCategory[];
 }
 
 export interface TutorContext {
@@ -71,11 +78,28 @@ export class RealtimeTutorService {
 
     const { curriculumName, concepts, totalConcepts, masteredCount, developingCount, unseenCount } = this.tutorContext;
     
-    // Group concepts by their filter labels (topics like "Hypertension", "Chest Pain", etc.)
+    // Extract topics from Conditions and Presentations filter categories only
+    // NOT from Systems (curriculum name) or Other (concept types like Management, Investigations)
     const topicMap = new Map<string, { concepts: string[], unseenCount: number, weakCount: number, masteredCount: number }>();
     
+    // Categories that represent actual topics to teach
+    const topicCategories = ['Conditions', 'Presentations'];
+    
     concepts.forEach(c => {
-      const filters = c.custom_filters || [];
+      // Get topics from filter_categories if available
+      const categories = c.filter_categories || [];
+      const topicFilters: string[] = [];
+      
+      categories.forEach(cat => {
+        if (topicCategories.includes(cat.name) && cat.filters) {
+          topicFilters.push(...cat.filters);
+        }
+      });
+      
+      // If no filter_categories, fall back to custom_filters but exclude common system-level filters
+      const systemFilters = ['Cardiology', 'Management', 'Investigations', 'Clinical features', 'Pathophysiology', 'Aetiology', 'Epidemiology', 'Prognosis'];
+      const filters = topicFilters.length > 0 ? topicFilters : (c.custom_filters || []).filter(f => !systemFilters.includes(f));
+      
       filters.forEach(filter => {
         if (!topicMap.has(filter)) {
           topicMap.set(filter, { concepts: [], unseenCount: 0, weakCount: 0, masteredCount: 0 });
