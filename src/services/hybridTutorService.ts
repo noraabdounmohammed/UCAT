@@ -136,19 +136,9 @@ Start by greeting the student, mentioning their progress, and suggesting to work
     this.callbacks = callbacks;
 
     try {
-      // Get Inworld credentials for TTS
-      const sessionResponse = await fetch('/.netlify/functions/inworld-session', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-      });
-
-      if (sessionResponse.ok) {
-        const sessionData = await sessionResponse.json();
-        this.inworldAuthToken = sessionData.credentials;
-        console.log('🔊 Inworld TTS ready');
-      } else {
-        console.warn('Inworld TTS not available, will use browser TTS');
-      }
+      // Check if Inworld TTS proxy is available
+      this.inworldAuthToken = 'proxy'; // We'll use the Netlify proxy
+      console.log('🔊 Inworld TTS will use server proxy');
 
       // Setup speech recognition handlers
       if (this.speechRecognition) {
@@ -294,10 +284,10 @@ Start by greeting the student, mentioning their progress, and suggesting to work
   private async speakWithInworld(text: string): Promise<void> {
     const cleanText = this.sanitizeForTTS(text);
     
-    const response = await fetch('https://api.inworld.ai/tts/v1/voice:stream', {
+    // Use our Netlify proxy to avoid CORS and keep credentials server-side
+    const response = await fetch('/.netlify/functions/inworld-tts', {
       method: 'POST',
       headers: {
-        'Authorization': `Basic ${this.inworldAuthToken}`,
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
