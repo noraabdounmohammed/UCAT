@@ -291,24 +291,36 @@ Execute the above.`;
         } 
       });
 
-      // Create Basic auth token
-      const authToken = btoa(`${apiKey}:${this.apiSecret}`);
+      // Get session token from our server-side function
+      console.log('🔑 Getting Inworld session token...');
+      const sessionResponse = await fetch('/.netlify/functions/inworld-session', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+      });
 
-      // Connect to Inworld Realtime API via WebSocket
-      // Inworld uses OpenAI-compatible endpoint with auth in query param
-      const wsUrl = `wss://api.inworld.ai/api/v1/realtime/session?key=${authToken}`;
+      if (!sessionResponse.ok) {
+        const errorData = await sessionResponse.json();
+        throw new Error(errorData.error || 'Failed to get session token');
+      }
+
+      const sessionData = await sessionResponse.json();
+      console.log('🎫 Session token received:', sessionData.sessionId);
+
+      // Connect to Inworld Realtime API via WebSocket with session token
+      const wsUrl = sessionData.wsUrl || 'wss://api.inworld.ai/v1/session/stream';
+      const fullWsUrl = `${wsUrl}?session_id=${sessionData.sessionId}`;
       
-      this.ws = new WebSocket(wsUrl);
+      this.ws = new WebSocket(fullWsUrl);
 
       this.ws.onopen = () => {
         console.log('🎤 Inworld Realtime API connected');
         this.isConnected = true;
         
-        // Send authentication message
-        if (this.ws) {
+        // Send session authentication with token
+        if (this.ws && sessionData.token) {
           this.ws.send(JSON.stringify({
-            type: 'auth',
-            authorization: `Basic ${authToken}`
+            type: 'session.auth',
+            token: sessionData.token
           }));
         }
         
