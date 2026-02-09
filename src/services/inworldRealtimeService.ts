@@ -295,13 +295,10 @@ Execute the above.`;
       const authToken = btoa(`${apiKey}:${this.apiSecret}`);
 
       // Connect to Inworld Realtime API via WebSocket
-      // Inworld uses OpenAI-compatible endpoint
-      const wsUrl = `wss://api.inworld.ai/api/v1/realtime/session`;
+      // Inworld uses OpenAI-compatible endpoint with auth in query param
+      const wsUrl = `wss://api.inworld.ai/api/v1/realtime/session?key=${authToken}`;
       
-      this.ws = new WebSocket(wsUrl, {
-        // Note: Browser WebSocket doesn't support custom headers
-        // We'll send auth in the first message
-      } as any);
+      this.ws = new WebSocket(wsUrl);
 
       this.ws.onopen = () => {
         console.log('🎤 Inworld Realtime API connected');
