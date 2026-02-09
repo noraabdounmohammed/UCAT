@@ -23,8 +23,8 @@ const handler: Handler = async (event) => {
   }
 
   try {
-    const apiKey = process.env.INWORLD_API_KEY;
-    const apiSecret = process.env.INWORLD_API_SECRET;
+    const apiKey = process.env.VITE_INWORLD_API_KEY;
+    const apiSecret = process.env.VITE_INWORLD_API_SECRET;
 
     if (!apiKey || !apiSecret) {
       return {
