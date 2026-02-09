@@ -307,11 +307,10 @@ Execute the above.`;
       console.log('🎫 Credentials received, connecting to WebSocket...');
 
       // Connect to Inworld Realtime API via WebSocket
-      // Use subprotocol to pass auth (browsers support this)
-      const wsUrl = sessionData.wsUrl;
+      // Pass credentials in URL query parameter (Inworld accepts this)
+      const wsUrl = `${sessionData.wsUrl}?authorization=Basic%20${encodeURIComponent(sessionData.credentials)}`;
       
-      // Try connecting with auth in subprotocol
-      this.ws = new WebSocket(wsUrl, [`realtime`, `openai-insecure-api-key.${sessionData.credentials}`]);
+      this.ws = new WebSocket(wsUrl);
 
       this.ws.onopen = () => {
         console.log('🎤 Inworld Realtime API connected');
