@@ -23,30 +23,25 @@ const handler: Handler = async (event) => {
   }
 
   try {
+    // Inworld TTS uses a single API key that's already base64-encoded
+    // See: https://docs.inworld.ai/docs/quickstart-tts
     const apiKey = process.env.VITE_INWORLD_API_KEY;
-    const apiSecret = process.env.VITE_INWORLD_API_SECRET;
 
-    if (!apiKey || !apiSecret) {
+    if (!apiKey) {
       return {
         statusCode: 500,
         headers,
-        body: JSON.stringify({ error: 'Inworld credentials not configured' }),
+        body: JSON.stringify({ error: 'Inworld API key not configured' }),
       };
     }
 
-    // Create Basic auth credentials (base64 encoded key:secret)
-    const credentials = Buffer.from(`${apiKey}:${apiSecret}`).toString('base64');
-
-    // Return the credentials for the client to use
-    // Inworld Realtime API uses WebSocket with Basic auth
-    // The client will connect to wss://api.inworld.ai/api/v1/realtime/session
-    // and pass auth via the Sec-WebSocket-Protocol header (subprotocol)
+    // Return the API key for TTS usage
+    // The key should already be base64-encoded from Inworld portal
     return {
       statusCode: 200,
       headers,
       body: JSON.stringify({
-        credentials: credentials,
-        wsUrl: 'wss://api.inworld.ai/api/v1/realtime/session',
+        credentials: apiKey,
       }),
     };
   } catch (error) {

@@ -11,7 +11,7 @@ import {
   Loader2
 } from 'lucide-react';
 import { RealtimeTutorService, TutorContext, ConceptProgress } from '../../services/realtimeTutorService';
-import { InworldRealtimeService } from '../../services/inworldRealtimeService';
+import { HybridTutorService } from '../../services/hybridTutorService';
 
 interface Message {
   id: string;
@@ -48,8 +48,8 @@ export const AITutor: React.FC<AITutorProps> = ({
   const [textInput, setTextInput] = useState('');
   const [showTextInput, setShowTextInput] = useState(false);
   
-  // Use either OpenAI or Inworld service
-  const tutorServiceRef = useRef<RealtimeTutorService | InworldRealtimeService | null>(null);
+  // Use either OpenAI Realtime or Hybrid (Inworld TTS + Browser STT) service
+  const tutorServiceRef = useRef<RealtimeTutorService | HybridTutorService | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   // Calculate progress stats
@@ -95,19 +95,15 @@ export const AITutor: React.FC<AITutorProps> = ({
   }, [concepts, curriculumName, isConnected, totalConcepts, masteredCount, developingCount, unseenCount]);
 
   const handleConnect = useCallback(async () => {
-    // Check which provider to use - prefer Inworld if configured, fallback to OpenAI
+    // Check which provider to use - prefer Inworld/Hybrid if configured, fallback to OpenAI
     const inworldApiKey = import.meta.env.VITE_INWORLD_API_KEY;
     const inworldApiSecret = import.meta.env.VITE_INWORLD_API_SECRET;
     const openaiApiKey = import.meta.env.VITE_OPENAI_REALTIME_API_KEY;
     
-    const useInworld = provider === 'inworld' || (inworldApiKey && inworldApiSecret);
+    // Use hybrid (Inworld TTS + Browser STT) if Inworld credentials exist
+    const useHybrid = provider === 'inworld' || (inworldApiKey && inworldApiSecret);
     
-    if (useInworld && (!inworldApiKey || !inworldApiSecret)) {
-      setError('Inworld API credentials not configured. Add VITE_INWORLD_API_KEY and VITE_INWORLD_API_SECRET to your .env file.');
-      return;
-    }
-    
-    if (!useInworld && !openaiApiKey) {
+    if (!useHybrid && !openaiApiKey) {
       setError('OpenAI Realtime API key not configured. Add VITE_OPENAI_REALTIME_API_KEY to your .env file.');
       return;
     }
@@ -117,8 +113,9 @@ export const AITutor: React.FC<AITutorProps> = ({
 
     try {
       // Create the appropriate service
-      const service = useInworld 
-        ? new InworldRealtimeService() 
+      // Hybrid uses Inworld TTS + Browser STT + OpenAI Chat (cheaper than Realtime)
+      const service = useHybrid 
+        ? new HybridTutorService() 
         : new RealtimeTutorService();
       
       // Set context before connecting
@@ -191,9 +188,9 @@ export const AITutor: React.FC<AITutorProps> = ({
         }
       };
 
-      // Connect with appropriate credentials
-      if (useInworld) {
-        await (service as InworldRealtimeService).connect(inworldApiKey!, callbacks, inworldApiSecret);
+      // Connect with appropriate method
+      if (useHybrid) {
+        await (service as HybridTutorService).connect(callbacks);
       } else {
         await (service as RealtimeTutorService).connect(openaiApiKey!, callbacks);
       }
