@@ -177,10 +177,33 @@ Start by greeting the student, mentioning their progress, and suggesting to work
       this.isConnected = true;
       this.callbacks?.onConnected();
 
-      // Start with AI greeting
-      await this.generateAndSpeak("Hello! I'm your AI tutor. Let me check your progress and we'll get started.");
+      // Generate initial AI greeting using the system prompt context
+      try {
+        const greetingResponse = await fetch('/.netlify/functions/ai-generate', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            messages: this.conversationHistory,
+            model: 'deepseek-chat',
+            max_tokens: 150,
+            temperature: 0.7,
+          }),
+        });
+
+        if (greetingResponse.ok) {
+          const greetingData = await greetingResponse.json();
+          const greeting = greetingData.choices?.[0]?.message?.content || "Hello! I'm your AI tutor. Let's get started!";
+          this.conversationHistory.push({ role: 'assistant', content: greeting });
+          await this.generateAndSpeak(greeting);
+        } else {
+          await this.generateAndSpeak("Hello! I'm your AI tutor. Let's get started!");
+        }
+      } catch (e) {
+        console.warn('Failed to generate greeting, using default:', e);
+        await this.generateAndSpeak("Hello! I'm your AI tutor. Let's get started!");
+      }
       
-      // Start listening
+      // Start listening for user speech
       this.startListening();
 
     } catch (error) {
@@ -224,24 +247,27 @@ Start by greeting the student, mentioning their progress, and suggesting to work
     this.stopListening();
 
     try {
-      // Call OpenAI Chat API via our function
+      // Call DeepSeek Chat API via our Netlify function
       const response = await fetch('/.netlify/functions/ai-generate', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          type: 'chat',
           messages: this.conversationHistory,
-          model: 'gpt-4o-mini', // Cheaper model
+          model: 'deepseek-chat',
           max_tokens: 200, // Keep responses short for voice
+          temperature: 0.7,
         }),
       });
 
       if (!response.ok) {
+        const errData = await response.json().catch(() => ({}));
+        console.error('AI generate error:', errData);
         throw new Error('Failed to get AI response');
       }
 
       const data = await response.json();
-      const aiResponse = data.content || data.message || '';
+      // DeepSeek returns standard OpenAI format
+      const aiResponse = data.choices?.[0]?.message?.content || data.content || '';
 
       // Add to history
       this.conversationHistory.push({ role: 'assistant', content: aiResponse });
