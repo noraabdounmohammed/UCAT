@@ -34,46 +34,19 @@ const handler: Handler = async (event) => {
       };
     }
 
-    // Create Basic auth credentials
+    // Create Basic auth credentials (base64 encoded key:secret)
     const credentials = Buffer.from(`${apiKey}:${apiSecret}`).toString('base64');
 
-    // Request a session token from Inworld
-    const response = await fetch('https://api.inworld.ai/v1/session/open', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Basic ${credentials}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        // Session configuration
-        capabilities: {
-          audio: true,
-          text: true,
-          emotions: true,
-          interruptions: true,
-        },
-      }),
-    });
-
-    if (!response.ok) {
-      const errorText = await response.text();
-      console.error('Inworld session error:', errorText);
-      return {
-        statusCode: response.status,
-        headers,
-        body: JSON.stringify({ error: `Inworld API error: ${response.status}` }),
-      };
-    }
-
-    const sessionData = await response.json();
-
+    // Return the credentials for the client to use
+    // Inworld Realtime API uses WebSocket with Basic auth
+    // The client will connect to wss://api.inworld.ai/api/v1/realtime/session
+    // and pass auth via the Sec-WebSocket-Protocol header (subprotocol)
     return {
       statusCode: 200,
       headers,
       body: JSON.stringify({
-        sessionId: sessionData.sessionId || sessionData.session_id,
-        token: sessionData.token || sessionData.accessToken,
-        wsUrl: sessionData.wsUrl || 'wss://api.inworld.ai/v1/session/stream',
+        credentials: credentials,
+        wsUrl: 'wss://api.inworld.ai/api/v1/realtime/session',
       }),
     };
   } catch (error) {

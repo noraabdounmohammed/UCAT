@@ -291,8 +291,8 @@ Execute the above.`;
         } 
       });
 
-      // Get session token from our server-side function
-      console.log('🔑 Getting Inworld session token...');
+      // Get credentials from our server-side function
+      console.log('🔑 Getting Inworld credentials...');
       const sessionResponse = await fetch('/.netlify/functions/inworld-session', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -300,29 +300,22 @@ Execute the above.`;
 
       if (!sessionResponse.ok) {
         const errorData = await sessionResponse.json();
-        throw new Error(errorData.error || 'Failed to get session token');
+        throw new Error(errorData.error || 'Failed to get credentials');
       }
 
       const sessionData = await sessionResponse.json();
-      console.log('🎫 Session token received:', sessionData.sessionId);
+      console.log('🎫 Credentials received, connecting to WebSocket...');
 
-      // Connect to Inworld Realtime API via WebSocket with session token
-      const wsUrl = sessionData.wsUrl || 'wss://api.inworld.ai/v1/session/stream';
-      const fullWsUrl = `${wsUrl}?session_id=${sessionData.sessionId}`;
+      // Connect to Inworld Realtime API via WebSocket
+      // Use subprotocol to pass auth (browsers support this)
+      const wsUrl = sessionData.wsUrl;
       
-      this.ws = new WebSocket(fullWsUrl);
+      // Try connecting with auth in subprotocol
+      this.ws = new WebSocket(wsUrl, [`realtime`, `openai-insecure-api-key.${sessionData.credentials}`]);
 
       this.ws.onopen = () => {
         console.log('🎤 Inworld Realtime API connected');
         this.isConnected = true;
-        
-        // Send session authentication with token
-        if (this.ws && sessionData.token) {
-          this.ws.send(JSON.stringify({
-            type: 'session.auth',
-            token: sessionData.token
-          }));
-        }
         
         this.initializeSession();
         this.callbacks?.onConnected();
