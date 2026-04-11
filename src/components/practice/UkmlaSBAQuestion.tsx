@@ -5,6 +5,7 @@ import ReactMarkdown from 'react-markdown';
 import { AIHelper } from './AIHelperClean';
 import { motion } from 'framer-motion';
 import { cn } from '@/lib/utils';
+import { SessionProgressDropdown, SessionAnswer } from './SessionProgressDropdown';
 
 interface UkmlaSBAQuestionProps {
   question: QuestionData;
@@ -15,6 +16,8 @@ interface UkmlaSBAQuestionProps {
   currentIndex?: number;
   totalQuestions?: number;
   title?: string;
+  sessionAnswers?: SessionAnswer[];
+  onJumpTo?: (index: number) => void;
 }
 
 export const UkmlaSBAQuestion: React.FC<UkmlaSBAQuestionProps> = ({
@@ -25,7 +28,9 @@ export const UkmlaSBAQuestion: React.FC<UkmlaSBAQuestionProps> = ({
   onExit,
   currentIndex = 0,
   totalQuestions = 0,
-  title = "UKMLA SBA"
+  title = "UKMLA SBA",
+  sessionAnswers,
+  onJumpTo
 }) => {
   const [selectedOption, setSelectedOption] = useState<string | null>(null);
   const [hasSubmitted, setHasSubmitted] = useState(false);
@@ -114,11 +119,19 @@ export const UkmlaSBAQuestion: React.FC<UkmlaSBAQuestionProps> = ({
         >
           <ArrowLeft className={`h-5 w-5 ${isLightMode ? 'text-zinc-700' : 'text-white/70'}`} />
         </button>
-        <div className="flex-1 text-center">
+        <div className="flex-1 flex flex-col items-center gap-1">
           <h1 className={`text-lg font-semibold ${isLightMode ? 'text-zinc-900' : 'text-white'}`}>{title}</h1>
-          {totalQuestions > 0 && (
+          {totalQuestions > 0 && sessionAnswers ? (
+            <SessionProgressDropdown
+              answers={sessionAnswers}
+              total={totalQuestions}
+              currentIndex={currentIndex}
+              isLightMode={isLightMode}
+              onJumpTo={onJumpTo}
+            />
+          ) : totalQuestions > 0 ? (
             <p className={`text-sm ${isLightMode ? 'text-zinc-500' : 'text-white/60'}`}>{currentIndex + 1} / {totalQuestions}</p>
-          )}
+          ) : null}
         </div>
         <div className="flex items-center gap-2">
           {/* Dark/Light Mode Toggle */}
@@ -278,6 +291,21 @@ export const UkmlaSBAQuestion: React.FC<UkmlaSBAQuestionProps> = ({
             {/* Feedback section - normal flow */}
             {hasSubmitted && (
               <div className="animate-in fade-in slide-in-from-bottom-4 duration-300">
+                {/* Concept label */}
+                {question.title && (
+                  <div className="mt-4 sm:mt-5 flex items-center gap-2">
+                    <span className={cn(
+                      "inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold tracking-wide",
+                      isLightMode
+                        ? "bg-indigo-50 text-indigo-700 border border-indigo-200"
+                        : "bg-indigo-500/15 text-indigo-300 border border-indigo-500/30"
+                    )}>
+                      <span className="opacity-70">📚</span>
+                      {question.title}
+                    </span>
+                  </div>
+                )}
+
                 {/* Explanation section */}
                 {explanation && (
                   <div className={cn(

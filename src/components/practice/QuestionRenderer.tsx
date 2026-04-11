@@ -5,6 +5,7 @@ import { UkmlaSBAQuestion } from './UkmlaSBAQuestion';
 import { EMQQuestion } from './EMQQuestion';
 import { TrueFalseQuestion } from './TrueFalseQuestion';
 import { RankingQuestion } from './RankingQuestion';
+import { SessionAnswer } from './SessionProgressDropdown';
 
 interface QuestionRendererProps {
   question: QuestionData;
@@ -16,6 +17,8 @@ interface QuestionRendererProps {
   currentIndex?: number;
   totalCards?: number;
   title?: string;
+  sessionAnswers?: SessionAnswer[];
+  onJumpTo?: (index: number) => void;
 }
 
 export const QuestionRenderer: React.FC<QuestionRendererProps> = ({
@@ -27,7 +30,9 @@ export const QuestionRenderer: React.FC<QuestionRendererProps> = ({
   onExit,
   currentIndex,
   totalCards,
-  title
+  title,
+  sessionAnswers,
+  onJumpTo
 }) => {
   // Debug logging for mind map rendering
   if (format === 'mindmap' && process.env.NODE_ENV === 'development') {
@@ -68,6 +73,8 @@ export const QuestionRenderer: React.FC<QuestionRendererProps> = ({
           currentIndex={currentIndex}
           totalQuestions={totalCards}
           title={title || "UKMLA SBA"}
+          sessionAnswers={sessionAnswers}
+          onJumpTo={onJumpTo}
         />
       );
     
@@ -127,6 +134,8 @@ export const QuestionRenderer: React.FC<QuestionRendererProps> = ({
           currentIndex={currentIndex}
           totalQuestions={totalCards}
           title={title || "UKMLA SBA"}
+          sessionAnswers={sessionAnswers}
+          onJumpTo={onJumpTo}
         />
       );
   }
