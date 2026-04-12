@@ -305,7 +305,7 @@ export const LandingPage: React.FC = () => {
             <div className="h-[1px] w-20 bg-stone-400 mx-auto mt-6"></div>
           </div>
           <p className="text-xl md:text-2xl text-stone-600 tracking-normal transition-all duration-700" style={{ fontFamily: "'Manrope', sans-serif", fontWeight: 300 }}>
-            for the <span className="font-semibold text-stone-800">{displayCards[currentIndex]?.title || 'Medical Education'}</span> exam
+            for the <span className="font-semibold text-stone-800">{displayCards[currentIndex]?.title || 'Medical Education'}</span>
           </p>
         </div>
       </div>
