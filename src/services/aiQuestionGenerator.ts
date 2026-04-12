@@ -439,62 +439,33 @@ function generateTemplateQuestion(concept: ConceptNode, requestedOptionCount: nu
 
 // Generate flashcard using AI
 export async function generateFlashcardWithAI(concept: ConceptNode, customFlashcardPrompt?: string): Promise<GeneratedQuestion> {
-  const defaultPrompt = `Create a flashcard with:
-1. A concise, focused question for the front that tests understanding of the key concept
-2. A CONCISE answer for the back with 2-4 key points (keep each point brief - max 1-2 sentences)
-3. Make it clear, accurate, and easy to review
-4. IMPORTANT: Keep the total answer length SHORT - it should fit on screen without scrolling
-5. DO NOT add "Clinical Relevance", "Clinical Application", "Medical Context", or similar sections
-6. DO NOT add information about why something is medically important unless explicitly in the content
-7. Stick to factual, educational content only - no clinical commentary
+  const defaultPrompt = `You are an expert educator creating a retrieval-practice flashcard grounded in evidence-based learning science.
 
-CRITICAL FORMATTING REQUIREMENTS - YOU MUST FOLLOW THESE EXACTLY:
+LEARNING SCIENCE PRINCIPLES (apply all of these):
+1. ONE FACT PER CARD — the front tests exactly ONE thing. Never bundle multiple facts into one question.
+2. FORCE ACTIVE RETRIEVAL — the front must be a minimal cue that makes the learner generate the answer from memory. Avoid passive list prompts ("List the features of..."). Prefer questions that demand a specific answer.
+3. MINIMAL BACK — the back is the SHORTEST complete answer. Maximum 3 bullet points. No padding, no restating the question.
+4. ELABORATIVE INTERROGATION where possible — "Why does X happen?" and "What distinguishes X from Y?" produce stronger retention than "What is X?"
+5. CHOOSE THE QUESTION TYPE that best matches the content:
+   - Specific number/threshold → test the exact value ("At what threshold is X defined?")
+   - Stepwise treatment or management → use a clinical vignette: "A patient with [symptoms]. What is the first-line treatment?"
+   - Diagnosis → "What distinguishes X from Y?" or "What ECG/lab finding confirms X?"
+   - Mechanism/pathophysiology → "Why does X cause Y?" or "How does X lead to Y?"
+   - Drug/intervention → "What is the mechanism of action of X?" or "What is the first-line agent for X?"
+   - Classification/definition → "How is X defined?" (only when the definition itself is the testable unit)
 
-1. **Use Markdown Lists with Line Breaks:**
-   - For bullet points, use this format:
-     - First point
-     - Second point
-     - Third point
-   
-   - For numbered lists, use this format:
-     1. First point
-     2. Second point
-     3. Third point
+CLINICAL VIGNETTE FORMAT (use for management and diagnosis concepts):
+- Front: "A [brief patient description] presents with [1-2 key symptoms from content]. What is the [diagnosis / first-line treatment / next step]?"
+- Back: Direct answer + 1-2 supporting facts that explain why
 
-2. **Each List Item MUST Be on a Separate Line:**
-   - ✅ CORRECT:
-     **Key Points:**
-     - Point one
-     - Point two
-     - Point three
-   
-   - ❌ WRONG (DO NOT DO THIS):
-     **Key Points:** • Point one • Point two • Point three
+CONTENT RULE: Use ONLY information explicitly stated in the concept content. Do not infer. Do not add context not present.
 
-3. **Use Bold Text for Section Headers:**
-   - Use **Bold Text** for section titles
-   - Follow each bold header with a line break before the list
+FORMATTING (mandatory):
+- Back bullets: "- point text" each on its own line
+- Bold key terms: **term**
+- Blank line between sections
+- NEVER write lists inline (e.g. • point1 • point2 is wrong)`;
 
-4. **Add Blank Lines Between Sections:**
-   - Always add a blank line between different sections
-   - This creates proper paragraph spacing
-
-EXAMPLE OF PERFECT FORMATTING:
-
-**Definition:**
-- A prokaryotic cell is a simple cell without a nucleus
-- Found in bacteria and archaea
-
-**Key Characteristics:**
-- No membrane-bound organelles
-- DNA is located in the nucleoid region
-- Typically smaller than eukaryotic cells
-
-**Comparison:**
-Prokaryotic cells (0.1-5.0 μm) are much smaller than eukaryotic cells (10-100 μm).
-
-NEVER WRITE LISTS IN PARAGRAPH FORM. Each bullet or number point MUST be on its own line.`;
-  
   // Debug logging for development
   if (process.env.NODE_ENV === 'development') {
     console.log('🎯 Flashcard Generation:', {
@@ -502,48 +473,27 @@ NEVER WRITE LISTS IN PARAGRAPH FORM. Each bullet or number point MUST be on its 
       usingDefault: !customFlashcardPrompt
     });
   }
-  
+
   const userInstructions = customFlashcardPrompt || defaultPrompt;
-  
+
   const prompt = `
 ${userInstructions}
-
-CRITICAL CONSTRAINTS:
-1. CONTENT SCOPE: The flashcard question MUST be directly answerable using ONLY the information in the "Content" field below
-   - DO NOT ask questions requiring knowledge beyond what's explicitly stated
-   - DO NOT infer or add information not present in the concept content
-   - DO NOT add explanations about WHY unless the content explains WHY
-   - If the content only states facts, test recall of those specific facts
-
-2. FORMATTING REQUIREMENTS (MANDATORY):
-   - Use bullet points with proper markdown: "- Point text"
-   - Use bold headers: "**Header:**"
-   - Add blank lines between sections
-   - NEVER write lists in paragraph form
-   
-   Example format:
-   **Size Range:**
-   - Prokaryotic cells: 0.1-5.0 micrometers
-   - Eukaryotic cells: 10-100 micrometers
-   
-   **Comparison:**
-   Prokaryotic cells are much smaller than eukaryotic cells.
 
 Concept Information:
 Title: ${concept.title}
 Content: ${concept.content}
-Custom Filters: ${concept.custom_filters?.join(', ') || 'N/A'}
+Tags: ${concept.custom_filters?.join(', ') || 'N/A'}
 
-Return as JSON:
+Return ONLY valid JSON — no extra text:
 {
-  "front": "Question text for the front of the flashcard",
-  "back": "Answer with bullet points on separate lines, bold headers, and blank lines between sections"
+  "front": "Single focused question that forces active retrieval",
+  "back": "Shortest complete answer — max 3 bullet points, bold key terms, proper markdown"
 }
 `;
 
   try {
-    // Use a generic system prompt for flashcards to avoid medical bias
-    const systemPrompt = 'You are an educational content expert. Generate accurate, well-structured flashcards using proper markdown formatting (bullet points, bold headers, blank lines). Use ONLY the information provided in the concept content - do not add inferred information. ALWAYS respond with valid JSON only.';
+    // System prompt: reinforce retrieval-practice pedagogy and strict JSON output
+    const systemPrompt = 'You are an expert medical educator specialising in retrieval-practice and spaced-repetition learning design. Your flashcards test one atomic fact per card, use active-retrieval question stems (not passive list prompts), and keep answers minimal so learners must generate rather than recognise. Use ONLY the concept content provided — never infer. ALWAYS respond with valid JSON only.';
     const aiResponse = await callOpenAI(prompt, systemPrompt);
     
     // Ensure concept_id is valid
