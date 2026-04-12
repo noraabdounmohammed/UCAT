@@ -6,7 +6,7 @@ import { cn } from '@/lib/utils';
 import './apple-question-styles.css';
 import { QuestionData } from './questionTypes';
 import { SessionReviewScreen } from './SessionReviewScreen';
-import { SessionAnswer } from './SessionProgressDropdown';
+import { SessionAnswer, SessionProgressDropdown } from './SessionProgressDropdown';
 
 interface PracticeSessionProps {
   questions: QuestionData[];
@@ -280,21 +280,29 @@ export function ApplePracticeSession({
             </div>
           </div>
           
-          {/* Right: Navigation Controls */}
-          <div className="flex items-center gap-1">
+          {/* Right: Progress pill + Navigation Controls */}
+          <div className="flex items-center gap-2">
+            {sessionAnswers.length > 0 && (
+              <SessionProgressDropdown
+                answers={sessionAnswers}
+                total={activeQuestions.length}
+                currentIndex={currentIndex}
+                isLightMode={true}
+              />
+            )}
             <button
               onClick={handlePreviousQuestion}
               disabled={currentIndex === 0}
               className={`flex items-center justify-center w-8 h-8 rounded-full transition-all group ${
-                currentIndex === 0 
-                  ? 'text-zinc-300 dark:text-zinc-600 cursor-not-allowed' 
+                currentIndex === 0
+                  ? 'text-zinc-300 dark:text-zinc-600 cursor-not-allowed'
                   : 'text-zinc-600 dark:text-zinc-400 hover:bg-black/5 dark:hover:bg-white/5 active:scale-95'
               }`}
               title="Previous (← or H)"
             >
               <ChevronLeft className="h-5 w-5" />
             </button>
-            
+
             <button
               onClick={handleNextQuestion}
               className="flex items-center justify-center w-8 h-8 rounded-full text-zinc-600 dark:text-zinc-400 hover:bg-black/5 dark:hover:bg-white/5 transition-all active:scale-95 group"
@@ -315,6 +323,18 @@ export function ApplePracticeSession({
           </div>
         </div>
       </header>
+      )}
+
+      {/* Floating progress pill for flashcard/SBA (no header) */}
+      {(questionContent.format === 'flashcard' || questionContent.format === 'sba' || questionContent.format === 'ukmla_sba') && sessionAnswers.length > 0 && (
+        <div className="fixed top-4 right-4 z-20">
+          <SessionProgressDropdown
+            answers={sessionAnswers}
+            total={activeQuestions.length}
+            currentIndex={currentIndex}
+            isLightMode={false}
+          />
+        </div>
       )}
 
       {/* Main content */}
