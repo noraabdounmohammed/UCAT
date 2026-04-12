@@ -29,7 +29,7 @@ async function callOpenAI(prompt: string, systemPrompt?: string): Promise<any> {
     throw new Error('OpenAI API key not configured');
   }
 
-  const defaultSystemPrompt = 'You are a medical education expert. Generate clinically accurate, challenging questions that test understanding rather than memorization. ALWAYS respond with valid JSON only.';
+  const defaultSystemPrompt = 'You are a senior medical examiner writing questions for the UK Medical Licensing Assessment (UKMLA) Applied Knowledge Test. Your questions exactly mirror official MLA AKT past-paper style: concise boxed vignette with relevant demographics and investigations, a focused single lead-in question outside the box, and exactly 5 clinically plausible A–E options. UK spellings and drug names only. ALWAYS respond with valid JSON only.';
 
   try {
     const response = await fetch('https://api.deepseek.com/v1/chat/completions', {
@@ -51,7 +51,7 @@ async function callOpenAI(prompt: string, systemPrompt?: string): Promise<any> {
           }
         ],
         temperature: 0.7,
-        max_tokens: 800
+        max_tokens: 1200
       })
     });
 
@@ -251,17 +251,63 @@ function generateSimpleSBATemplate(concept: ConceptNode, optionCount: number = 5
 
 // Generate UKMLA question using AI
 export async function generateUKMLAQuestionWithAI(concept: ConceptNode, customPrompt?: string): Promise<GeneratedQuestion> {
-  const defaultInstructions = `You are creating a UKMLA exam question. UKMLA questions ALWAYS have exactly 5 options.
+  const defaultInstructions = `You are creating a UKMLA / MLA Applied Knowledge Test (AKT) Single Best Answer question. Mirror the exact format of official MLA AKT past papers.
 
-Create a question with:
-1. A realistic clinical vignette (2-3 sentences) with patient demographics, presentation, and relevant history
-2. A clear question stem (e.g., "What is the most appropriate next step?" or "What is the most likely diagnosis?")
-3. FIVE options labeled A, B, C, D, E (not 3, not 4, exactly 5)
-4. All options must be plausible and clinically relevant
-5. The correct answer should test understanding of the key concept
-6. Include a detailed explanation
+═══ VIGNETTE STRUCTURE (the "vignette" field) ═══
+Write a boxed clinical vignette containing ALL of the following elements in this order:
+1. Demographics: age + gender (e.g. "A 58-year-old woman")
+2. Presenting complaint + duration (e.g. "presents with a 3-day history of...")
+3. Relevant past medical history and current medications (if clinically pertinent)
+4. Pertinent positive AND negative findings on examination
+5. Investigations (if relevant) — format as a tab-aligned table:
 
-MANDATORY: Generate exactly 5 options. If you generate fewer than 5 options, the question will be rejected.`;
+   Investigation    Result    (Reference range)
+
+   Example:
+   Haemoglobin      98 g/L    (115–165 g/L)
+   MCV              72 fL     (80–100 fL)
+   Serum ferritin   6 µg/L    (15–300 µg/L)
+
+VIGNETTE RULES:
+- Every detail must be diagnostically relevant — NO padding or irrelevant filler
+- Include only findings that help distinguish the correct diagnosis/management from the distractors
+- Use UK spellings and UK drug names (e.g. paracetamol not acetaminophen, adrenaline not epinephrine)
+- Demographics must always be present (age + gender)
+
+═══ LEAD-IN QUESTION (the "question" field) ═══
+A single, focused question that sits OUTSIDE the vignette box. Use one of these exact phrasings (choose the most appropriate):
+- "What is the most likely diagnosis?"
+- "What is the most appropriate initial management?"
+- "What is the most appropriate next investigation?"
+- "What investigation is most likely to confirm the diagnosis?"
+- "Which drug should be added to this patient's treatment?"
+- "Which drug should be stopped?"
+- "Which nerve / artery / structure is most likely to be damaged?"
+- "What is the most likely underlying mechanism?"
+- "What is the most likely causative organism?"
+- "What is the most appropriate referral?"
+
+═══ OPTIONS (the "options" field) ═══
+- Exactly 5 options (A–E), single best answer
+- All options must be clinically plausible — no obviously wrong distractors
+- Options for diagnosis questions: list conditions, not explanations
+- Options for management questions: list specific treatments/doses/routes
+- Alphabetical order is preferred but not mandatory
+- No option should be "None of the above" or "All of the above"
+
+═══ QUESTION VARIETY ═══
+Vary question type based on the concept. Acceptable types:
+- Diagnosis (most likely diagnosis given findings)
+- Investigation (confirm diagnosis or next test)
+- Management (first-line, add, stop, refer)
+- Mechanism / pathophysiology (why does X cause Y?)
+- Anatomy (which structure is damaged?)
+- Pharmacology (mechanism of action, side-effect, interaction)
+
+═══ EXPLANATION ═══
+Explain why the correct answer is right in 2–3 sentences, then briefly state why each distractor is wrong (one sentence each).
+
+MANDATORY: Exactly 5 options. If fewer are generated, the question will be rejected.`;
 
   const instructions = customPrompt || defaultInstructions;
   
