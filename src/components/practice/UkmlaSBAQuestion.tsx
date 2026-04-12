@@ -291,18 +291,32 @@ export const UkmlaSBAQuestion: React.FC<UkmlaSBAQuestionProps> = ({
             {/* Feedback section - normal flow */}
             {hasSubmitted && (
               <div className="animate-in fade-in slide-in-from-bottom-4 duration-300">
-                {/* Concept label */}
-                {question.title && (
-                  <div className="mt-4 sm:mt-5 flex items-center gap-2">
-                    <span className={cn(
-                      "inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold tracking-wide",
-                      isLightMode
-                        ? "bg-indigo-50 text-indigo-700 border border-indigo-200"
-                        : "bg-indigo-500/15 text-indigo-300 border border-indigo-500/30"
-                    )}>
-                      <span className="opacity-70">📚</span>
-                      {question.title}
-                    </span>
+                {/* Concept / topic label */}
+                {(question.title || (question as any).topic || (question as any).microSkill) && (
+                  <div className="mt-4 sm:mt-5 flex flex-wrap items-center gap-2">
+                    {/* Primary concept or topic */}
+                    {(question.title || (question as any).topic) && (
+                      <span className={cn(
+                        "inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold tracking-wide",
+                        isLightMode
+                          ? "bg-indigo-50 text-indigo-700 border border-indigo-200"
+                          : "bg-indigo-500/15 text-indigo-300 border border-indigo-500/30"
+                      )}>
+                        <span className="opacity-70">📚</span>
+                        {question.title || (question as any).topic}
+                      </span>
+                    )}
+                    {/* Secondary micro-skill tag */}
+                    {(question as any).microSkill && (question as any).microSkill !== question.title && (question as any).microSkill !== (question as any).topic && (
+                      <span className={cn(
+                        "inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium tracking-wide",
+                        isLightMode
+                          ? "bg-zinc-100 text-zinc-600 border border-zinc-200"
+                          : "bg-white/8 text-white/50 border border-white/10"
+                      )}>
+                        {(question as any).microSkill}
+                      </span>
+                    )}
                   </div>
                 )}
 
