@@ -191,6 +191,14 @@ export function ApplePracticeSession({
     const incorrectIndices = sessionAnswers.filter(a => !a.isCorrect).map(a => a.questionIndex);
     const incorrectQuestions = incorrectIndices.map(i => activeQuestions[i]).filter(Boolean);
     if (incorrectQuestions.length === 0) return;
+
+    // Clear sessionStorage answers for every incorrect question so they load fresh
+    incorrectQuestions.forEach(q => {
+      if (!q) return;
+      const key = `sba_answer_${q.id || q.question?.substring(0, 50)}`;
+      sessionStorage.removeItem(key);
+    });
+
     setActiveQuestions(incorrectQuestions);
     questionsRef.current = incorrectQuestions;
     setSessionAnswers([]);
