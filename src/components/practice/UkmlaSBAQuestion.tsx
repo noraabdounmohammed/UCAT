@@ -238,7 +238,30 @@ export const UkmlaSBAQuestion: React.FC<UkmlaSBAQuestionProps> = ({
                 "text-[14px] sm:text-[15px] md:text-[17px] font-medium leading-[1.5] sm:leading-[1.4]",
                 isLightMode ? "text-zinc-900" : "text-white"
               )}>
-                <ReactMarkdown>{questionContent}</ReactMarkdown>
+                <ReactMarkdown
+                  components={{
+                    p: ({ children }) => (
+                      <p className="mb-3 last:mb-0">{children}</p>
+                    ),
+                    pre: ({ children }) => (
+                      <pre className={cn(
+                        "my-3 p-3 rounded-lg text-[12px] sm:text-[13px] font-mono leading-relaxed overflow-x-auto whitespace-pre",
+                        isLightMode ? "bg-zinc-100 text-zinc-800" : "bg-white/5 text-white/80"
+                      )}>{children}</pre>
+                    ),
+                    code: ({ children, className }) => {
+                      const isBlock = !!className;
+                      return isBlock ? (
+                        <code className="font-mono">{children}</code>
+                      ) : (
+                        <code className={cn(
+                          "px-1 py-0.5 rounded text-[12px] font-mono",
+                          isLightMode ? "bg-zinc-100 text-zinc-800" : "bg-white/10 text-white/80"
+                        )}>{children}</code>
+                      );
+                    },
+                  }}
+                >{questionContent}</ReactMarkdown>
               </div>
             </div>
 
@@ -330,7 +353,13 @@ export const UkmlaSBAQuestion: React.FC<UkmlaSBAQuestionProps> = ({
                       "text-[13px] sm:text-[14px] md:text-[15px] font-medium leading-[1.5] sm:leading-[1.4]",
                       isLightMode ? "text-zinc-700" : "text-white/80"
                     )}>
-                      <ReactMarkdown>{explanation}</ReactMarkdown>
+                      <ReactMarkdown
+                        components={{
+                          p: ({ children }) => (
+                            <p className="mb-2.5 last:mb-0">{children}</p>
+                          ),
+                        }}
+                      >{explanation}</ReactMarkdown>
                     </div>
                   </div>
                 )}
