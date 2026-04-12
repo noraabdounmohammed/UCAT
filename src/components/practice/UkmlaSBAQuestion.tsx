@@ -100,62 +100,9 @@ export const UkmlaSBAQuestion: React.FC<UkmlaSBAQuestionProps> = ({
 
   // Answer is submitted immediately when an option is clicked
 
-  // Parse distractor annotations from explanation text
-  // Matches: "Option X is incorrect because [reason]." or "X is wrong/incorrect: [reason]."
-  const parseDistractorAnnotations = (text: string): Record<string, string> => {
-    const annotations: Record<string, string> = {};
-    const pattern = /\b([A-E])\b[^A-Z\n]*?(?:is\s+)?(?:incorrect|wrong|not\s+correct|not\s+the\s+correct)[^:.\n]*[:–\-]?\s*([^.\n]{10,}[.]?)/gi;
-    let match;
-    while ((match = pattern.exec(text)) !== null) {
-      const letter = match[1].toUpperCase();
-      if (!annotations[letter]) {
-        annotations[letter] = match[2].trim().replace(/\.$/, '');
-      }
-    }
-    return annotations;
-  };
-
-  // Extract a punchy key takeaway from explanation (first substantive sentence/paragraph)
-  const getKeyTakeaway = (text: string): { takeaway: string; rest: string } => {
-    const firstPara = text.split('\n\n')[0].trim();
-    if (firstPara.length >= 20 && firstPara.length <= 220) {
-      return { takeaway: firstPara, rest: text.slice(text.indexOf(firstPara) + firstPara.length).trim() };
-    }
-    const sentenceMatch = firstPara.match(/^.{20,}?[.!?]/);
-    if (sentenceMatch && sentenceMatch[0].length <= 220) {
-      return { takeaway: sentenceMatch[0].trim(), rest: text.slice(sentenceMatch[0].length).trim() };
-    }
-    return { takeaway: '', rest: text };
-  };
-
-  // Split vignette from lead-in question for richer display
-  const clinicalVignette = (question as any).clinical_vignette as string | undefined;
-  const fullContent = question.question_stem || question.question || '';
+  // Format question content
+  const questionContent = question.question || question.question_stem || '';
   const explanation = question.explanation || question.worked_solution || '';
-
-  let vignetteText: string;
-  let leadInText: string | null = null;
-
-  if (clinicalVignette) {
-    // AI-generated with separate vignette field
-    vignetteText = clinicalVignette;
-    leadInText = question.question || null;
-  } else {
-    // Try to detect vignette / lead-in split from combined content
-    const parts = fullContent.split('\n\n');
-    if (parts.length >= 2) {
-      const lastPart = parts[parts.length - 1].trim();
-      const looksLikeLeadIn = lastPart.endsWith('?') && lastPart.length < 160;
-      if (looksLikeLeadIn) {
-        vignetteText = parts.slice(0, -1).join('\n\n');
-        leadInText = lastPart;
-      } else {
-        vignetteText = fullContent;
-      }
-    } else {
-      vignetteText = fullContent;
-    }
-  }
 
   return (
     <div className={`fixed inset-0 flex flex-col overflow-hidden ${isLightMode ? 'bg-zinc-50' : 'bg-[#0A0A0A]'}`}>
@@ -285,261 +232,108 @@ export const UkmlaSBAQuestion: React.FC<UkmlaSBAQuestionProps> = ({
           
           {/* Content */}
           <div className="relative p-4 sm:p-6 md:p-8 pb-safe">
-            {/* Question: Vignette Box + Lead-in */}
-            <div className="mb-5 sm:mb-6 md:mb-8 space-y-4">
-              {/* Clinical vignette box */}
+            {/* Question */}
+            <div className="mb-5 sm:mb-6 md:mb-8">
               <div className={cn(
-                "rounded-xl border-l-[3px] px-4 py-3.5",
-                isLightMode
-                  ? "bg-slate-50 border border-slate-200 border-l-indigo-400"
-                  : "bg-white/[0.04] border border-white/[0.08] border-l-indigo-400/60"
+                "text-[14px] sm:text-[15px] md:text-[17px] font-medium leading-[1.5] sm:leading-[1.4]",
+                isLightMode ? "text-zinc-900" : "text-white"
               )}>
-                {/* Label */}
-                <p className={cn(
-                  "text-[10px] font-semibold uppercase tracking-[0.12em] mb-2.5",
-                  isLightMode ? "text-slate-400" : "text-white/30"
-                )}>Clinical Vignette</p>
-                {/* Vignette text */}
-                <div className={cn(
-                  "text-[13px] sm:text-[14px] md:text-[15px] leading-[1.65]",
-                  isLightMode ? "text-zinc-700" : "text-white/75"
-                )}>
-                  <ReactMarkdown
-                    components={{
-                      p: ({ children }) => <p className="mb-2.5 last:mb-0">{children}</p>,
-                      pre: ({ children }) => (
-                        <pre className={cn(
-                          "mt-2 mb-1 text-[11px] sm:text-[12px] font-mono leading-relaxed overflow-x-auto whitespace-pre",
-                          isLightMode ? "text-zinc-600" : "text-white/60"
-                        )}>{children}</pre>
-                      ),
-                      code: ({ children }) => (
-                        <code className="font-mono text-[11px] sm:text-[12px]">{children}</code>
-                      ),
-                    }}
-                  >{vignetteText}</ReactMarkdown>
-                </div>
+                <ReactMarkdown>{questionContent}</ReactMarkdown>
               </div>
-
-              {/* Lead-in question (outside the box) */}
-              {leadInText && (
-                <p className={cn(
-                  "text-[15px] sm:text-[16px] md:text-[18px] font-semibold leading-[1.4]",
-                  isLightMode ? "text-zinc-900" : "text-white"
-                )}>
-                  {leadInText}
-                </p>
-              )}
             </div>
 
             {/* Options */}
-            {(() => {
-              const distractorNotes = hasSubmitted ? parseDistractorAnnotations(explanation) : {};
-              return (
-                <div className="space-y-2 sm:space-y-2.5">
-                  {options.map((option: { id: string; text: string }) => {
-                    const isCorrect = option.id === correctAnswerId;
-                    const isSelected = option.id === selectedOption;
-                    const isNeutral = hasSubmitted && !isCorrect && !isSelected;
-                    const note = distractorNotes[option.id];
-                    return (
-                      <div
-                        key={option.id}
-                        onClick={() => handleOptionSelect(option.id)}
-                        className={cn(
-                          "flex items-start p-3 sm:p-3.5 rounded-lg sm:rounded-xl transition-all duration-200",
-                          hasSubmitted ? "cursor-default" : "cursor-pointer active:scale-[0.98]",
-                          isNeutral ? "opacity-40" : "",
-                          hasSubmitted && isCorrect
-                            ? isLightMode
-                              ? 'bg-emerald-50 border-2 border-emerald-400'
-                              : 'bg-emerald-500/15 border-2 border-emerald-500/60'
-                            : hasSubmitted && isSelected
-                            ? isLightMode
-                              ? 'bg-rose-50 border-2 border-rose-400'
-                              : 'bg-rose-500/15 border-2 border-rose-500/60'
-                            : !hasSubmitted && isSelected
-                            ? isLightMode ? 'bg-zinc-100 border-2 border-zinc-300' : 'bg-white/10 border-2 border-white/30'
-                            : isLightMode
-                              ? 'bg-zinc-50 border-2 border-zinc-200 hover:bg-zinc-100 hover:border-zinc-300'
-                              : 'bg-white/5 border-2 border-white/10 hover:bg-white/10 hover:border-white/20'
-                        )}
-                      >
-                        {/* Letter badge — turns green/red on submission */}
-                        <div className={cn(
-                          "flex-shrink-0 w-7 h-7 rounded-full flex items-center justify-center mr-3 mt-0.5 border transition-colors duration-200",
-                          hasSubmitted && isCorrect
-                            ? "bg-emerald-500 border-emerald-500"
-                            : hasSubmitted && isSelected
-                            ? "bg-rose-500 border-rose-500"
-                            : isLightMode ? "bg-zinc-200 border-zinc-300" : "bg-white/10 border-white/20"
-                        )}>
-                          <span className={cn(
-                            "text-xs sm:text-sm font-bold",
-                            (hasSubmitted && (isCorrect || isSelected)) ? "text-white"
-                              : isLightMode ? "text-zinc-900" : "text-white"
-                          )}>{option.id}</span>
-                        </div>
-
-                        {/* Option text + optional distractor note */}
-                        <div className="flex-1 min-w-0">
-                          <div className={cn(
-                            "text-[13px] sm:text-[14px] md:text-[15px] font-medium leading-[1.4] break-words",
-                            hasSubmitted && isCorrect
-                              ? isLightMode ? "text-emerald-800" : "text-emerald-200"
-                              : hasSubmitted && isSelected
-                              ? isLightMode ? "text-rose-800" : "text-rose-200"
-                              : isLightMode ? "text-zinc-900" : "text-white"
-                          )}>
-                            <ReactMarkdown>{option.text}</ReactMarkdown>
-                          </div>
-                          {/* Distractor annotation (shown after submission for wrong options) */}
-                          {hasSubmitted && !isCorrect && note && (
-                            <p className={cn(
-                              "mt-1 text-[11px] sm:text-[12px] leading-[1.4] italic",
-                              isLightMode ? "text-zinc-500" : "text-white/40"
-                            )}>{note}</p>
-                          )}
-                        </div>
-
-                        {/* Outcome icon */}
-                        {hasSubmitted && isCorrect && (
-                          <CheckCircle className={cn("h-4 w-4 sm:h-5 sm:w-5 ml-2 flex-shrink-0 mt-0.5", isLightMode ? "text-emerald-600" : "text-emerald-400")} />
-                        )}
-                        {hasSubmitted && isSelected && !isCorrect && (
-                          <XCircle className={cn("h-4 w-4 sm:h-5 sm:w-5 ml-2 flex-shrink-0 mt-0.5", isLightMode ? "text-rose-600" : "text-rose-400")} />
-                        )}
-                      </div>
-                    );
-                  })}
+            <div className="space-y-2.5 sm:space-y-3">
+              {options.map((option: { id: string; text: string }) => (
+                <div
+                  key={option.id}
+                  onClick={() => handleOptionSelect(option.id)}
+                  className={cn(
+                    "flex items-start p-3 sm:p-3.5 md:p-4 rounded-lg sm:rounded-xl cursor-pointer transition-all duration-200 active:scale-[0.98]",
+                    hasSubmitted && option.id === correctAnswerId
+                      ? 'bg-emerald-500/20 border-2 border-emerald-500'
+                      : hasSubmitted && option.id === selectedOption
+                      ? 'bg-rose-500/20 border-2 border-rose-500'
+                      : selectedOption === option.id
+                      ? isLightMode ? 'bg-zinc-100 border-2 border-zinc-300' : 'bg-white/10 border-2 border-white/30'
+                      : isLightMode 
+                        ? 'bg-zinc-50 border-2 border-zinc-200 hover:bg-zinc-100 hover:border-zinc-300'
+                        : 'bg-white/5 border-2 border-white/10 hover:bg-white/10 hover:border-white/20'
+                  )}
+                >
+                  <div className={cn(
+                    "flex-shrink-0 w-7 h-7 sm:w-7 sm:h-7 rounded-full flex items-center justify-center mr-2.5 sm:mr-3 mt-0.5 border",
+                    isLightMode ? "bg-zinc-200 border-zinc-300" : "bg-white/10 border-white/20"
+                  )}>
+                    <span className={cn(
+                      "text-xs sm:text-sm font-semibold",
+                      isLightMode ? "text-zinc-900" : "text-white"
+                    )}>{option.id}</span>
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <div className={cn(
+                      "text-[13px] sm:text-[14px] md:text-[15px] font-medium leading-[1.4] sm:leading-[1.3] break-words",
+                      isLightMode ? "text-zinc-900" : "text-white"
+                    )}>
+                      <ReactMarkdown>{option.text}</ReactMarkdown>
+                    </div>
+                  </div>
+                  {hasSubmitted && option.id === correctAnswerId && (
+                    <CheckCircle className="h-4 w-4 sm:h-5 sm:w-5 text-emerald-400 ml-2 flex-shrink-0" />
+                  )}
+                  {hasSubmitted && option.id === selectedOption && option.id !== correctAnswerId && (
+                    <XCircle className="h-4 w-4 sm:h-5 sm:w-5 text-rose-400 ml-2 flex-shrink-0" />
+                  )}
                 </div>
-              );
-            })()}
+              ))}
+            </div>
 
             {/* Feedback section - normal flow */}
             {hasSubmitted && (
               <div className="animate-in fade-in slide-in-from-bottom-4 duration-300">
-
-                {/* Result banner */}
-                <div className={cn(
-                  "mt-5 flex items-center gap-2.5 px-4 py-3 rounded-xl",
-                  selectedOption === correctAnswerId
-                    ? isLightMode
-                      ? "bg-emerald-50 border border-emerald-200"
-                      : "bg-emerald-500/10 border border-emerald-500/25"
-                    : isLightMode
-                      ? "bg-rose-50 border border-rose-200"
-                      : "bg-rose-500/10 border border-rose-500/25"
-                )}>
-                  {selectedOption === correctAnswerId
-                    ? <CheckCircle className={cn("h-5 w-5 flex-shrink-0", isLightMode ? "text-emerald-600" : "text-emerald-400")} />
-                    : <XCircle className={cn("h-5 w-5 flex-shrink-0", isLightMode ? "text-rose-600" : "text-rose-400")} />
-                  }
-                  <div>
-                    <p className={cn(
-                      "text-sm font-semibold",
-                      selectedOption === correctAnswerId
-                        ? isLightMode ? "text-emerald-700" : "text-emerald-300"
-                        : isLightMode ? "text-rose-700" : "text-rose-300"
-                    )}>
-                      {selectedOption === correctAnswerId ? "Correct" : "Incorrect"}
-                    </p>
-                    {selectedOption !== correctAnswerId && (
-                      <p className={cn(
-                        "text-xs mt-0.5",
-                        isLightMode ? "text-rose-600/70" : "text-rose-300/60"
-                      )}>
-                        The correct answer was <span className="font-semibold">{correctAnswerId}</span>
-                      </p>
-                    )}
-                  </div>
-                </div>
-
-                {/* Concept tested section */}
+                {/* Concept / topic label */}
                 {(question.title || (question as any).topic || (question as any).microSkill) && (
-                  <div className={cn(
-                    "mt-4 rounded-xl px-4 py-3",
-                    isLightMode ? "bg-indigo-50/60 border border-indigo-100" : "bg-indigo-500/8 border border-indigo-500/15"
-                  )}>
-                    <p className={cn(
-                      "text-[10px] font-semibold uppercase tracking-[0.12em] mb-2",
-                      isLightMode ? "text-indigo-400" : "text-indigo-400/70"
-                    )}>Concept tested</p>
-                    <div className="flex flex-wrap gap-2">
-                      {(question.title || (question as any).topic) && (
-                        <span className={cn(
-                          "inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold",
-                          isLightMode
-                            ? "bg-indigo-100 text-indigo-800"
-                            : "bg-indigo-500/20 text-indigo-200"
-                        )}>
-                          {question.title || (question as any).topic}
-                        </span>
-                      )}
-                      {(question as any).microSkill &&
-                        (question as any).microSkill !== question.title &&
-                        (question as any).microSkill !== (question as any).topic && (
-                        <span className={cn(
-                          "inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium",
-                          isLightMode
-                            ? "bg-zinc-200/80 text-zinc-600"
-                            : "bg-white/10 text-white/50"
-                        )}>
-                          {(question as any).microSkill}
-                        </span>
-                      )}
-                    </div>
+                  <div className="mt-4 sm:mt-5 flex flex-wrap items-center gap-2">
+                    {/* Primary concept or topic */}
+                    {(question.title || (question as any).topic) && (
+                      <span className={cn(
+                        "inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold tracking-wide",
+                        isLightMode
+                          ? "bg-indigo-50 text-indigo-700 border border-indigo-200"
+                          : "bg-indigo-500/15 text-indigo-300 border border-indigo-500/30"
+                      )}>
+                        <span className="opacity-70">📚</span>
+                        {question.title || (question as any).topic}
+                      </span>
+                    )}
+                    {/* Secondary micro-skill tag */}
+                    {(question as any).microSkill && (question as any).microSkill !== question.title && (question as any).microSkill !== (question as any).topic && (
+                      <span className={cn(
+                        "inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium tracking-wide",
+                        isLightMode
+                          ? "bg-zinc-100 text-zinc-600 border border-zinc-200"
+                          : "bg-white/8 text-white/50 border border-white/10"
+                      )}>
+                        {(question as any).microSkill}
+                      </span>
+                    )}
                   </div>
                 )}
 
                 {/* Explanation section */}
-                {explanation && (() => {
-                  const { takeaway, rest } = getKeyTakeaway(explanation);
-                  return (
+                {explanation && (
+                  <div className={cn(
+                    "mt-4 sm:mt-5 md:mt-6 pt-4 sm:pt-5 md:pt-6 border-t",
+                    isLightMode ? "border-zinc-200" : "border-white/10"
+                  )}>
                     <div className={cn(
-                      "mt-4 pt-4 border-t",
-                      isLightMode ? "border-zinc-200" : "border-white/10"
+                      "text-[13px] sm:text-[14px] md:text-[15px] font-medium leading-[1.5] sm:leading-[1.4]",
+                      isLightMode ? "text-zinc-700" : "text-white/80"
                     )}>
-                      {/* Section heading */}
-                      <p className={cn(
-                        "text-[10px] font-semibold uppercase tracking-[0.12em] mb-3",
-                        isLightMode ? "text-zinc-400" : "text-white/30"
-                      )}>
-                        Why {correctAnswerId} is correct
-                      </p>
-
-                      {/* Key takeaway callout */}
-                      {takeaway && (
-                        <div className={cn(
-                          "rounded-xl p-3.5 flex gap-3 mb-3",
-                          isLightMode
-                            ? "bg-amber-50 border border-amber-200"
-                            : "bg-amber-500/10 border border-amber-500/20"
-                        )}>
-                          <span className="text-base leading-none flex-shrink-0 mt-0.5">💡</span>
-                          <p className={cn(
-                            "text-[13px] sm:text-[14px] font-medium leading-[1.55]",
-                            isLightMode ? "text-amber-900" : "text-amber-200/85"
-                          )}>{takeaway}</p>
-                        </div>
-                      )}
-
-                      {/* Remaining explanation */}
-                      {rest && (
-                        <div className={cn(
-                          "text-[12px] sm:text-[13px] leading-[1.65]",
-                          isLightMode ? "text-zinc-500" : "text-white/50"
-                        )}>
-                          <ReactMarkdown
-                            components={{
-                              p: ({ children }) => <p className="mb-2 last:mb-0">{children}</p>,
-                            }}
-                          >{rest}</ReactMarkdown>
-                        </div>
-                      )}
+                      <ReactMarkdown>{explanation}</ReactMarkdown>
                     </div>
-                  );
-                })()}
+                  </div>
+                )}
 
 
                 {/* Next button */}
