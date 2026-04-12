@@ -6,8 +6,7 @@ import { ApplePracticeSession } from '@/components/practice/ApplePracticeSession
 import { PracticeConfigModal } from '@/components/practice/PracticeConfigModal';
 import { ConceptCreationHub } from '@/components/concept/ConceptCreationHub';
 import { GenerationLoadingScreen } from '@/components/practice/GenerationLoadingScreen';
-import { Plus, Sliders, Search, Grid, List, ChevronDown, Folder, ChevronRight, Check, X, Brain, Mic } from 'lucide-react';
-import { AITutor } from '@/components/practice/AITutor';
+import { Plus, Sliders, Search, Grid, List, ChevronDown, Folder, ChevronRight, Check, X, Brain } from 'lucide-react';
 import { ConceptEditorModal } from '@/components/concept/ConceptEditorModal';
 import { CurriculumDashboard } from '@/components/curriculum/CurriculumDashboard';
 import { ConceptBulkUploadModal } from '@/components/concept/ConceptBulkUploadModal';
@@ -59,7 +58,8 @@ const ConceptPracticePageLoftContent: React.FC<Omit<ConceptPracticePageLoftProps
     updateMastery,
     generatingQuestionCount,
     setPracticeSelection,
-    practiceSelection
+    practiceSelection,
+    practiceError
   } = useConceptStore();
   
   const [showPracticeConfig, setShowPracticeConfig] = useState(false);
@@ -95,7 +95,6 @@ const ConceptPracticePageLoftContent: React.FC<Omit<ConceptPracticePageLoftProps
   const [showAuthPrompt, setShowAuthPrompt] = useState(false);
   const [pendingPracticeConfig, setPendingPracticeConfig] = useState<any>(null);
   const [pendingFilteredConcepts, setPendingFilteredConcepts] = useState<any[]>([]);
-  const [showAITutor, setShowAITutor] = useState(false);
 
   // Redirect consumers away from concepts view
   useEffect(() => {
@@ -270,6 +269,13 @@ const ConceptPracticePageLoftContent: React.FC<Omit<ConceptPracticePageLoftProps
   if (selectedView === 'dashboard') {
     return (
       <div className="min-h-screen bg-[#FAFAF9] relative -mb-16">
+        {/* Practice error banner */}
+        {practiceError && (
+          <div className="fixed top-4 left-1/2 -translate-x-1/2 z-50 bg-red-50 border border-red-200 text-red-800 px-6 py-3 rounded-xl shadow-lg flex items-center gap-3 max-w-md">
+            <span className="text-sm font-medium">{practiceError}</span>
+            <button onClick={() => { /* clear by starting fresh */ }} className="text-red-400 hover:text-red-600 ml-2 text-lg leading-none">&times;</button>
+          </div>
+        )}
         {/* Subtle texture overlay */}
         <div className="absolute inset-0 opacity-[0.015] pointer-events-none" style={{ backgroundImage: 'url("data:image/svg+xml,%3Csvg width="100" height="100" xmlns="http://www.w3.org/2000/svg"%3E%3Cfilter id="noise"%3E%3CfeTurbulence type="fractalNoise" baseFrequency="0.9" numOctaves="4" /%3E%3C/filter%3E%3Crect width="100" height="100" filter="url(%23noise)" /%3E%3C/svg%3E")' }}></div>
 
@@ -304,6 +310,8 @@ const ConceptPracticePageLoftContent: React.FC<Omit<ConceptPracticePageLoftProps
               setPreselectedFilter(undefined);
             }}
             onStartPractice={(config) => {
+              console.log('🚀 onStartPractice called with config:', config);
+              console.log('🚀 filteredConcepts count:', filteredConcepts.length, 'displayedConcepts:', displayedConcepts.length, 'practiceSelection:', practiceSelection);
               startPractice(config);
               setShowPracticeConfig(false);
               setPreselectedFormat(undefined);
@@ -394,14 +402,6 @@ const ConceptPracticePageLoftContent: React.FC<Omit<ConceptPracticePageLoftProps
                 </button>
               )}
               
-              {/* AI Tutor */}
-              <button
-                onClick={() => setShowAITutor(true)}
-                className="p-2.5 rounded-full transition-all duration-200 active:scale-95 bg-stone-900 text-white shadow-lg"
-                title="AI Tutor"
-              >
-                <Mic className="w-5 h-5" />
-              </button>
             </div>
           </div>
         </div>
@@ -467,47 +467,10 @@ const ConceptPracticePageLoftContent: React.FC<Omit<ConceptPracticePageLoftProps
                 </>
               )}
               
-              {/* AI Tutor */}
-              <div className="w-8 h-[1px] bg-stone-300/30"></div>
-              <button
-                onClick={() => setShowAITutor(true)}
-                className="group relative p-4 rounded-2xl transition-all duration-300 bg-stone-900 text-white shadow-lg hover:shadow-xl hover:scale-105"
-                title="AI Tutor - Real-time Voice Conversation"
-              >
-                <Mic className="w-5 h-5" />
-              </button>
             </div>
           </div>
         </div>
         
-        {/* AI Tutor Modal */}
-        <AITutor
-          isOpen={showAITutor}
-          onClose={() => setShowAITutor(false)}
-          concepts={filteredConcepts.map(c => {
-            // Map numeric mastery level to string
-            const masteryMap: Record<number, 'unseen' | 'introduced' | 'developing' | 'competent' | 'mastered'> = {
-              0: 'unseen',
-              1: 'introduced', 
-              2: 'developing',
-              3: 'competent',
-              4: 'mastered'
-            };
-            const level = typeof c.mastery_data?.mastery_level === 'number' 
-              ? masteryMap[c.mastery_data.mastery_level] || 'unseen'
-              : (c.mastery_data?.mastery_level as any) || 'unseen';
-            
-            return {
-              concept_id: c.concept_id,
-              title: c.title,
-              mastery_level: level,
-              times_practiced: (c.mastery_data as any)?.times_practiced || (c.mastery_data as any)?.correct_count || 0,
-              custom_filters: c.custom_filters,
-              filter_categories: (c as any).filter_categories
-            };
-          })}
-          curriculumName={curriculumName}
-        />
       </div>
     );
   }
@@ -1504,7 +1467,7 @@ export const ConceptPracticePageLoft: React.FC<ConceptPracticePageLoftProps> = (
   ...props
 }) => {
   const id = curriculumId || props.curriculum?.id || 'default';
-  
+
   return (
     <ConceptStoreProvider curriculumId={id}>
       <ConceptPracticePageLoftContent {...props} />

@@ -200,22 +200,23 @@ export const CurriculumApp: React.FC = () => {
   };
 
   if (currentView === 'curriculum' && selectedCurriculum) {
-    // Check if we came from landing page (for showcase/new users)
-    const fromLandingPage = sessionStorage.getItem('fromLandingPage') === 'true';
-    
-    // Clear the flag after reading it
-    if (fromLandingPage) {
-      sessionStorage.removeItem('fromLandingPage');
-    }
-    
+    // Clear the fromLandingPage flag if present
+    sessionStorage.removeItem('fromLandingPage');
+
     return (
       <ConceptPracticePageLoft
         onBackToCurriculums={handleBackToCurriculums}
         curriculum={selectedCurriculum}
         onUpdateCurriculum={handleUpdateCurriculum}
-        initialView={fromLandingPage ? 'concepts' : undefined}
+        initialView='dashboard'
       />
     );
+  }
+
+  // If we're expecting to auto-open a curriculum but it hasn't loaded yet,
+  // show a blank screen to avoid flashing the hub or sign-in screen
+  if (currentView === 'curriculum' && !selectedCurriculum) {
+    return <div className="h-screen w-screen bg-[#FAFAF9]" />;
   }
 
   // Show auth loading state

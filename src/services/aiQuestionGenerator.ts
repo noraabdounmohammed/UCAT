@@ -12,11 +12,11 @@ interface GeneratedQuestion {
   }>;
   correct_answer: string;
   explanation: string;
-  format: 'ukmla_sba' | 'sba' | 'flashcard' | 'emq' | 'true_false' | 'ranking' | 'custom';
+  format: 'ukmla_sba' | 'sba' | 'flashcard' | 'emq' | 'true_false' | 'ranking';
 }
 
 // Call OpenAI API to generate questions
-async function callOpenAI(prompt: string, systemPrompt?: string, options?: { temperature?: number; max_tokens?: number }): Promise<any> {
+async function callOpenAI(prompt: string, systemPrompt?: string): Promise<any> {
   const apiKey = import.meta.env.VITE_OPENAI_API_KEY;
   
   // Development logging
@@ -50,8 +50,8 @@ async function callOpenAI(prompt: string, systemPrompt?: string, options?: { tem
             content: prompt
           }
         ],
-        temperature: options?.temperature ?? 0.7,
-        max_tokens: options?.max_tokens ?? 800
+        temperature: 0.7,
+        max_tokens: 800
       })
     });
 
@@ -214,7 +214,6 @@ MANDATORY REQUIREMENTS:
     return {
       id: `ai-${conceptId}-${Date.now()}`,
       concept_id: conceptId,
-      title: concept.title,
       question_stem: aiResponse.question,
       question: aiResponse.question,
       options: aiResponse.options,
@@ -252,48 +251,97 @@ function generateSimpleSBATemplate(concept: ConceptNode, optionCount: number = 5
 
 // Generate UKMLA question using AI
 export async function generateUKMLAQuestionWithAI(concept: ConceptNode, customPrompt?: string): Promise<GeneratedQuestion> {
-  const ukmlaSysPrompt = 'You are an experienced UKMLA/UK Foundation Programme examiner writing high-quality single best answer questions. You write in the style of the GMC UKMLA blueprint. Use UK English, NHS clinical context, UK drug names (e.g. paracetamol not acetaminophen), and reference NICE guidelines where relevant. Your questions should reflect real clinical decision-making at the level of a final-year UK medical student. ALWAYS respond with valid JSON only.';
+  const defaultInstructions = `You are creating a UKMLA exam question. UKMLA questions ALWAYS have exactly 5 options.
 
+Create a question with:
+1. A realistic clinical vignette (2-3 sentences) with patient demographics, presentation, and relevant history
+2. A clear question stem (e.g., "What is the most appropriate next step?" or "What is the most likely diagnosis?")
+3. FIVE options labeled A, B, C, D, E (not 3, not 4, exactly 5)
+4. All options must be plausible and clinically relevant
+5. The correct answer should test understanding of the key concept
+6. Include a detailed explanation
+
+MANDATORY: Generate exactly 5 options. If you generate fewer than 5 options, the question will be rejected.`;
+
+  const instructions = customPrompt || defaultInstructions;
+  
+  // Determine number of options from instructions
+  let optionCount = 5; // default for UKMLA
+  
+  // Look for explicit option count specifications
+  const optionMatches = [
+    { pattern: /\b(?:exactly\s+)?two\s+options?|\b2\s+options?/i, count: 2 },
+    { pattern: /\b(?:exactly\s+)?three\s+options?|\b3\s+options?/i, count: 3 },
+    { pattern: /\b(?:exactly\s+)?four\s+options?|\b4\s+options?/i, count: 4 },
+    { pattern: /\b(?:exactly\s+)?five\s+options?|\b5\s+options?/i, count: 5 },
+    { pattern: /\b(?:exactly\s+)?six\s+options?|\b6\s+options?/i, count: 6 },
+    { pattern: /\b(?:exactly\s+)?seven\s+options?|\b7\s+options?/i, count: 7 },
+    { pattern: /\b(?:exactly\s+)?eight\s+options?|\b8\s+options?/i, count: 8 }
+  ];
+  
+  // Find the last (most specific) match in the instructions
+  for (const match of optionMatches) {
+    if (match.pattern.test(instructions)) {
+      optionCount = match.count;
+    }
+  }
+  
+  // Development logging
+  if (process.env.NODE_ENV === 'development') {
+    console.log('🎯 Detected option count:', optionCount, 'from instructions');
+  }
+  
+  // Generate option examples for the JSON template
+  const optionExamples = Array.from({length: optionCount}, (_, i) => 
+    `    {"id": "${String.fromCharCode(65 + i)}", "text": "Option ${String.fromCharCode(65 + i)} text"}`
+  ).join(',\n');
+  
   // Randomize which option is correct in the example to prevent AI bias
-  const randomCorrectLetter = String.fromCharCode(65 + Math.floor(Math.random() * 5));
+  const randomCorrectLetter = String.fromCharCode(65 + Math.floor(Math.random() * optionCount));
+  
+  const prompt = `
+Generate a single best answer question based on this concept:
 
-  const prompt = customPrompt || `Generate a UKMLA-style single best answer question based on the following concept. The concept is your anchor topic — draw on standard medical knowledge to build a realistic clinical scenario around it.
+Title: ${concept.title}
+Content: ${concept.content}
+Custom Filters: ${concept.custom_filters?.join(', ') || 'N/A'}
+Prerequisites: ${concept.prerequisites?.join(', ') || 'None'}
 
-Concept Title: ${concept.title}
-Concept Content: ${concept.content}
+CRITICAL CONSTRAINT:
+- The question MUST be directly answerable using ONLY the information provided in the "Content" field above
+- DO NOT ask questions that require knowledge beyond what's explicitly stated in the content
+- DO NOT infer or add information not present in the concept content
+- If the content only states facts, create a question that tests recall or application of those specific facts
+- The scenario and options should relate to the content provided, but the correct answer must be determinable from the content alone
 
-Requirements:
-- Write a realistic UK NHS clinical vignette (2-4 sentences): include patient age, sex, presenting complaint, relevant history, examination findings, and one key investigation result where appropriate
-- Write a clear question stem using one of these formats: 'What is the most likely diagnosis?', 'What is the most appropriate initial management?', 'What is the most appropriate next investigation?', 'What complication has occurred?'
-- Write EXACTLY 5 options (A-E), all plausible and clinically relevant — no obviously wrong answers
-- The correct answer should test clinical reasoning, not just recall
-- Write a detailed explanation using the EXACT markdown structure below — this is displayed as bullet points to medical students
+${instructions}
 
-Return ONLY valid JSON in this format:
+Return the response as a JSON object with EXACTLY ${optionCount} options:
 {
-  "vignette": "Clinical scenario here...",
-  "question": "What is the most appropriate...?",
+  "vignette": "The clinical scenario...",
+  "question": "What is the most appropriate...",
   "options": [
-    {"id": "A", "text": "..."},
-    {"id": "B", "text": "..."},
-    {"id": "C", "text": "..."},
-    {"id": "D", "text": "..."},
-    {"id": "E", "text": "..."}
+${optionExamples}
   ],
   "correct": "${randomCorrectLetter}",
-  "explanation": "**✅ ${randomCorrectLetter} is correct** — [1-2 sentences explaining why, referencing mechanism/guideline/clinical reasoning]\\n\\n**Why the others are wrong:**\\n- **A —** [reason this is wrong, 1 sentence]\\n- **B —** [reason this is wrong, 1 sentence]\\n- **C —** [reason this is wrong, 1 sentence]\\n- **D —** [reason this is wrong, 1 sentence]\\n- **E —** [reason this is wrong, 1 sentence]"
+  "explanation": "The correct answer is ${randomCorrectLetter} because... Option B is incorrect because... Option C is incorrect because..."
 }
 
-RULES:
-- Skip the correct option in the "Why the others are wrong" list
-- Each wrong option: one punchy sentence — what's wrong with it clinically
-- RANDOMIZE which option (A-E) is correct. Do NOT always make A or B the correct answer.`;
+CRITICAL: The "correct" field must be ONE of the option IDs (A, B, C, D, or E).
+RANDOMIZE which option is correct - do NOT always make A the correct answer.
+The correct answer should be placed at a RANDOM position in the options array.
+
+MANDATORY REQUIREMENTS:
+- Provide exactly ${optionCount} options labeled A through ${String.fromCharCode(64 + optionCount)}
+- Each option must be a complete, clinically plausible answer
+- RANDOMIZE the position of the correct answer
+- Do not provide fewer than ${optionCount} options under any circumstances
+`;
 
   try {
-    const aiResponse = await callOpenAI(prompt, ukmlaSysPrompt, { temperature: 0.3, max_tokens: 1500 });
+    const aiResponse = await callOpenAI(prompt);
     
     // Validate that AI generated the correct number of options
-    const optionCount = 5;
     if (!aiResponse.options || aiResponse.options.length !== optionCount) {
       console.warn(`⚠️ AI generated ${aiResponse.options?.length || 0} options, expected ${optionCount}. Falling back to template.`);
       throw new Error(`AI generated wrong number of options: ${aiResponse.options?.length || 0} instead of ${optionCount}`);
@@ -310,7 +358,6 @@ RULES:
     const generatedQuestion = {
       id: `ai-${conceptId}-${Date.now()}`,
       concept_id: conceptId,
-      title: concept.title,           // concept title shown in feedback
       question_stem: fullQuestion,
       clinical_vignette: aiResponse.vignette,
       question: aiResponse.question,
@@ -339,7 +386,7 @@ RULES:
       hasApiKey: !!import.meta.env.VITE_OPENAI_API_KEY
     });
     // Fallback to template-based generation if AI fails
-    return generateTemplateQuestion(concept, 5);
+    return generateTemplateQuestion(concept, optionCount);
   }
 }
 
@@ -533,7 +580,6 @@ Return as JSON:
     return {
       id: `flash-${conceptId}-${Date.now()}`,
       concept_id: conceptId,
-      title: concept.title,
       question_stem: aiResponse.front,
       options: [],
       correct_answer: '',
@@ -701,10 +747,9 @@ Create a scenario and 5 options that test understanding of ${concept.title}. Bas
 // Configuration interface to prevent missing parameters
 interface QuestionGenerationConfig {
   concept: ConceptNode;
-  format: 'ukmla_sba' | 'sba' | 'flashcard' | 'emq' | 'true_false' | 'ranking' | 'custom';
+  format: 'ukmla_sba' | 'sba' | 'flashcard' | 'emq' | 'true_false' | 'ranking';
   customPrompt?: string;
   customFlashcardPrompt?: string;
-  customFormatPrompt?: string;
 }
 
 // Type-safe wrapper function to prevent parameter issues
@@ -713,86 +758,27 @@ export async function generateQuestionWithConfig(config: QuestionGenerationConfi
     config.concept,
     config.format,
     config.customPrompt,
-    config.customFlashcardPrompt,
-    config.customFormatPrompt
+    config.customFlashcardPrompt
   );
-}
-
-// Generate custom format question using user's own prompt
-async function generateCustomFormatWithAI(concept: ConceptNode, customFormatPrompt: string): Promise<GeneratedQuestion> {
-  const prompt = `
-You are generating educational content based on a user's custom instructions.
-
-Concept to cover:
-Title: ${concept.title}
-Content: ${concept.content}
-Custom Filters: ${concept.custom_filters?.join(', ') || 'N/A'}
-Prerequisites: ${concept.prerequisites?.join(', ') || 'None'}
-
-User's custom format instructions:
-${customFormatPrompt}
-
-IMPORTANT: You must return a JSON object with this structure:
-{
-  "question": "The main question, prompt, or scenario text based on the user's instructions",
-  "explanation": "A comprehensive answer, explanation, or response that fulfills the user's requested format"
-}
-
-The "question" field should contain the prompt/scenario/task.
-The "explanation" field should contain the full answer/response/content.
-Both fields support markdown formatting.
-`;
-
-  try {
-    const aiResponse = await callOpenAI(prompt);
-    const conceptId = concept.concept_id || `concept-${Date.now()}`;
-
-    return {
-      id: `ai-custom-${conceptId}-${Date.now()}`,
-      concept_id: conceptId,
-      question_stem: aiResponse.question || concept.title,
-      question: aiResponse.question || concept.title,
-      options: [],
-      correct_answer: '',
-      explanation: aiResponse.explanation || 'No explanation generated',
-      format: 'custom' as const
-    };
-  } catch (error) {
-    console.error('Error generating custom format:', error);
-    return {
-      id: `fallback-custom-${concept.concept_id}-${Date.now()}`,
-      concept_id: concept.concept_id,
-      question_stem: concept.title,
-      question: concept.title,
-      options: [],
-      correct_answer: '',
-      explanation: concept.content || 'No content available',
-      format: 'custom' as const
-    };
-  }
 }
 
 // Main export - generates questions with AI
 export async function generateQuestionFromConcept(
   concept: ConceptNode,
-  format: 'ukmla_sba' | 'sba' | 'flashcard' | 'emq' | 'true_false' | 'ranking' | 'custom' = 'ukmla_sba',
+  format: 'ukmla_sba' | 'sba' | 'flashcard' | 'emq' | 'true_false' | 'ranking' = 'ukmla_sba',
   customPrompt?: string,
-  customFlashcardPrompt?: string,
-  customFormatPrompt?: string
+  customFlashcardPrompt?: string
 ): Promise<GeneratedQuestion> {
   // Development logging
   if (process.env.NODE_ENV === 'development') {
     console.log('🔧 Question Generation:', {
       format,
       hasUKMLAPrompt: !!customPrompt,
-      hasFlashcardPrompt: !!customFlashcardPrompt,
-      hasCustomFormatPrompt: !!customFormatPrompt
+      hasFlashcardPrompt: !!customFlashcardPrompt
     });
   }
   
-  if (format === 'custom' && customFormatPrompt) {
-    return generateCustomFormatWithAI(concept, customFormatPrompt);
-  } else if (format === 'flashcard') {
+  if (format === 'flashcard') {
     return generateFlashcardWithAI(concept, customFlashcardPrompt);
   } else if (format === 'sba') {
     return generateSBAQuestionWithAI(concept, customPrompt);

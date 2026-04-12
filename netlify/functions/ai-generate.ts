@@ -1,7 +1,4 @@
 import { Handler } from '@netlify/functions';
-import { createClient } from '@supabase/supabase-js';
-
-const FREE_DAILY_LIMIT = 20;
 
 const handler: Handler = async (event) => {
   // Only allow POST requests
@@ -13,42 +10,7 @@ const handler: Handler = async (event) => {
   }
 
   try {
-    const { messages, model = 'deepseek-chat', temperature = 0.7, max_tokens = 4000, supabaseUserId, dailyCount } = JSON.parse(event.body || '{}');
-
-    // ── Subscription gate ──────────────────────────────────────────────────────
-    // If a supabaseUserId is provided, check their subscription server-side.
-    // dailyCount is sent from the client (localStorage) as a hint, but we
-    // verify premium status from the database so it can't be spoofed.
-    if (supabaseUserId) {
-      try {
-        const supabase = createClient(
-          process.env.VITE_SUPABASE_URL!,
-          process.env.SUPABASE_SERVICE_ROLE_KEY!
-        );
-        const { data: profile } = await supabase
-          .from('profiles')
-          .select('is_premium')
-          .eq('id', supabaseUserId)
-          .single();
-
-        const isPremium = profile?.is_premium === true;
-
-        if (!isPremium && typeof dailyCount === 'number' && dailyCount >= FREE_DAILY_LIMIT) {
-          return {
-            statusCode: 402,
-            body: JSON.stringify({
-              error: 'daily_limit_reached',
-              message: `Free plan limit of ${FREE_DAILY_LIMIT} questions/day reached. Upgrade to continue.`,
-              upgradeUrl: '/pricing',
-            }),
-          };
-        }
-      } catch (subErr) {
-        // Non-fatal: if subscription check fails, allow the request through
-        console.warn('Subscription check failed, allowing request:', subErr);
-      }
-    }
-    // ──────────────────────────────────────────────────────────────────────────
+    const { messages, model = 'deepseek-chat', temperature = 0.7, max_tokens = 4000 } = JSON.parse(event.body || '{}');
 
     if (!messages || !Array.isArray(messages)) {
       return {

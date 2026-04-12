@@ -4,8 +4,7 @@ import rehypeRaw from 'rehype-raw';
 import { generateAIResponseStream, QuestionContext } from '../../services/openai';
 import { ChatInput } from '../ui/ChatInput';
 import { processVideoTags } from '../../utils/videoEmbedder';
-import { Lightbulb, Stethoscope, List, AlertTriangle, BookOpen, Mic, MessageSquare, Volume2, VolumeX } from 'lucide-react';
-import { InworldService, VoiceMessage } from '../../services/inworldService';
+import { Lightbulb, Stethoscope, List, AlertTriangle, BookOpen, MessageSquare } from 'lucide-react';
 import '../../styles/markdown-styles.css';
 import './apple-fixed-input.css';
 import './whatsapp-reply-styles.css';
@@ -79,32 +78,6 @@ export function AIHelper({ question, correctAnswer, selectedAnswer, explanation,
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const abortControllerRef = useRef<AbortController | null>(null);
   
-  // Voice mode states - persist in localStorage
-  const [voiceMode, setVoiceModeState] = useState(() => {
-    const stored = localStorage.getItem('ai-helper-voice-mode');
-    const initialValue = stored === 'true';
-    console.log('🎤 Initial voice mode from localStorage:', initialValue, 'stored value:', stored);
-    return initialValue;
-  });
-  
-  // Wrapper to persist voice mode changes
-  const setVoiceMode = (value: boolean) => {
-    console.log('🎤 Setting voice mode to:', value);
-    setVoiceModeState(value);
-    localStorage.setItem('ai-helper-voice-mode', String(value));
-  };
-  
-  // Debug: Log voiceMode whenever it changes
-  useEffect(() => {
-    console.log('🎤 Voice mode state changed to:', voiceMode);
-  }, [voiceMode]);
-
-  const [isConnecting, setIsConnecting] = useState(false);
-  const [voiceError, setVoiceError] = useState<string | null>(null);
-  const [isMuted, setIsMuted] = useState(false);
-  const [isListening, setIsListening] = useState(false);
-  const [currentTranscript, setCurrentTranscript] = useState('');
-  const inworldServiceRef = useRef<InworldService | null>(null);
 
   // Load messages from localStorage when storageKey changes (new question)
   useEffect(() => {
@@ -150,142 +123,10 @@ export function AIHelper({ question, correctAnswer, selectedAnswer, explanation,
     }
   }, [messages, isTyping]);
 
-  // Initialize Inworld voice service when voice mode is enabled
-  useEffect(() => {
-    if (voiceMode && !inworldServiceRef.current) {
-      initializeVoiceService();
-    }
-    
-    return () => {
-      // Cleanup on unmount
-      if (inworldServiceRef.current) {
-        inworldServiceRef.current.disconnect();
-        inworldServiceRef.current = null;
-      }
-    };
-  }, [voiceMode]);
-
-  // Initialize voice service
-  const initializeVoiceService = async () => {
-    console.log('🎤 Initializing voice service...');
-    setIsConnecting(true);
-    setVoiceError(null);
-
-    try {
-      // Get Inworld credentials from environment variables
-      const apiKey = import.meta.env.VITE_INWORLD_API_KEY;
-      const apiSecret = import.meta.env.VITE_INWORLD_API_SECRET;
-
-      console.log('🔑 Credentials check:', { 
-        hasApiKey: !!apiKey, 
-        hasApiSecret: !!apiSecret 
-      });
-
-      if (!apiKey || !apiSecret) {
-        throw new Error('Inworld credentials not configured. Please add VITE_INWORLD_API_KEY and VITE_INWORLD_API_SECRET to your .env file.');
-      }
-
-      const service = new InworldService();
-      console.log('✅ InworldService instance created');
-      
-      // Set up callbacks
-      service.onMessage((voiceMessage: VoiceMessage) => {
-        const chatMessage: ChatMessage = {
-          role: voiceMessage.isUser ? 'user' : 'assistant',
-          content: voiceMessage.text,
-          id: `msg-${voiceMessage.timestamp.getTime()}-${Math.random().toString(36).substr(2, 9)}`
-        };
-        setMessages(prev => [...prev, chatMessage]);
-      });
-
-      service.onConnectionChange((connected) => {
-        setIsConnecting(!connected);
-        if (!connected) {
-          setVoiceError('Disconnected from voice service');
-        }
-      });
-
-      service.onError((error) => {
-        setVoiceError(error);
-        console.error('Voice service error:', error);
-      });
-      
-      // Set up speech recognition callbacks
-      service.onTranscript((transcript, isFinal) => {
-        setCurrentTranscript(transcript);
-        if (isFinal && transcript.trim()) {
-          // Auto-send the message when speech is finalized
-          handleSendMessage(transcript.trim());
-          setCurrentTranscript('');
-        }
-      });
-      
-      service.onListeningChange((listening) => {
-        setIsListening(listening);
-      });
-
-      // Initialize TTS service
-      await service.initialize({
-        apiKey,
-        apiSecret
-      });
-
-      inworldServiceRef.current = service;
-      setIsConnecting(false);
-    } catch (error) {
-      console.error('Failed to initialize voice service:', error);
-      setVoiceError(error instanceof Error ? error.message : 'Failed to initialize voice service');
-      setIsConnecting(false);
-      setVoiceMode(false); // Disable voice mode on error
-    }
-  };
-
-  // Toggle voice mode
-  const handleToggleVoiceMode = () => {
-    if (voiceMode && inworldServiceRef.current) {
-      inworldServiceRef.current.disconnect();
-      inworldServiceRef.current = null;
-    }
-    setVoiceMode(!voiceMode);
-    setVoiceError(null);
-  };
-
-  // Start/stop listening for speech
-  const handleMicToggle = () => {
-    if (!inworldServiceRef.current) return;
-
-    if (isListening) {
-      inworldServiceRef.current.stopListening();
-    } else {
-      inworldServiceRef.current.startListening();
-    }
-  };
-  
-  // Auto-start listening after AI finishes speaking (for real-time convo)
-  const handleSpeakingComplete = () => {
-    const isVoiceModeActive = localStorage.getItem('ai-helper-voice-mode') === 'true';
-    if (isVoiceModeActive && inworldServiceRef.current && !isMuted) {
-      // Small delay before starting to listen again
-      setTimeout(() => {
-        if (inworldServiceRef.current && !inworldServiceRef.current.getIsSpeaking()) {
-          inworldServiceRef.current.startListening();
-        }
-      }, 500);
-    }
-  };
 
   const handleSendMessage = useCallback(async (text: string) => {
     if (!text.trim()) return;
 
-    // Stop any currently playing audio when sending a new message
-    if (inworldServiceRef.current) {
-      inworldServiceRef.current.stopSpeaking();
-    }
-
-    // Voice mode note: We still use the normal DeepSeek flow below
-    // The TTS will speak the response after it's generated
-
-    // Standard text mode
     const userMessage: ChatMessage = { 
       role: 'user', 
       content: text,
@@ -333,34 +174,12 @@ export function AIHelper({ question, correctAnswer, selectedAnswer, explanation,
 [Note: This is a follow-up question to a previous response]`;
       }
 
-      // Start TTS as soon as we have enough content (first ~100 chars)
-      let ttsStarted = false;
-      const startTTSEarly = async (content: string) => {
-        const isVoiceModeActive = localStorage.getItem('ai-helper-voice-mode') === 'true';
-        if (ttsStarted || !isVoiceModeActive || !inworldServiceRef.current || isMuted) return;
-        
-        ttsStarted = true;
-        try {
-          console.log('🔊 Starting TTS early with:', content.substring(0, 50) + '...');
-          await inworldServiceRef.current.speakText(content);
-          handleSpeakingComplete();
-        } catch (e) {
-          console.error('TTS error:', e);
-        }
-      };
-
       await generateAIResponseStream(
         fullPrompt, 
         context,
         (token: string) => {
           if (!abortControllerRef.current?.signal.aborted) {
             streamedContent += token;
-            
-            // Start TTS early once we have enough content (~200 chars)
-            if (!ttsStarted && streamedContent.length > 200) {
-              startTTSEarly(streamedContent);
-            }
-            
             setMessages(prev => {
               const newMessages = [...prev];
               const lastMessage = newMessages[newMessages.length - 1];
@@ -378,12 +197,6 @@ export function AIHelper({ question, correctAnswer, selectedAnswer, explanation,
         abortControllerRef.current.signal
       );
 
-      // If TTS hasn't started yet (short response), start it now
-      const isVoiceModeActive = localStorage.getItem('ai-helper-voice-mode') === 'true';
-      if (isVoiceModeActive && inworldServiceRef.current && !isMuted && streamedContent && !ttsStarted) {
-        startTTSEarly(streamedContent);
-      }
-      
     } catch (error: unknown) {
       if (error instanceof Error) {
         if (error.name === 'AbortError' || error.message === 'Request aborted') {
@@ -421,82 +234,12 @@ export function AIHelper({ question, correctAnswer, selectedAnswer, explanation,
 
   return (
     <div className={`flex flex-col h-full ${lightMode ? 'bg-stone-50' : 'bg-[#1a1a1a]'}`}>
-      {/* Voice Mode Header */}
-      <div className={`flex items-center justify-between px-4 md:px-6 py-3 border-b ${
+      {/* Header */}
+      <div className={`flex items-center gap-2 px-4 md:px-6 py-3 border-b ${
         lightMode ? 'border-black/[0.06]' : 'border-white/[0.08]'
       }`}>
-        <div className="flex items-center gap-3">
-          <button
-            onClick={handleToggleVoiceMode}
-            className={`flex items-center gap-2 px-4 py-2 rounded-xl transition-all active:scale-95 ${
-              voiceMode
-                ? lightMode
-                  ? 'bg-blue-500 text-white hover:bg-blue-600 shadow-sm'
-                  : 'bg-blue-500 text-white hover:bg-blue-600 shadow-sm'
-                : lightMode
-                  ? 'bg-black/[0.04] text-stone-600 hover:bg-black/[0.08]'
-                  : 'bg-white/[0.05] text-white/60 hover:bg-white/[0.08]'
-            }`}
-            title={voiceMode ? 'Switch to text mode' : 'Switch to voice mode'}
-          >
-            {voiceMode ? (
-              <>
-                <Mic className="h-4 w-4" />
-                <span className="text-sm font-medium hidden sm:inline">Voice</span>
-              </>
-            ) : (
-              <>
-                <MessageSquare className="h-4 w-4" />
-                <span className="text-sm font-medium hidden sm:inline">Text</span>
-              </>
-            )}
-          </button>
-          
-          {voiceMode && (
-            <div className="flex items-center gap-2">
-              {isConnecting && (
-                <div className="flex items-center gap-1.5">
-                  <div className="w-2 h-2 rounded-full bg-yellow-500 animate-pulse"></div>
-                  <span className={`text-xs ${lightMode ? 'text-stone-500' : 'text-white/50'}`}>
-                    Connecting...
-                  </span>
-                </div>
-              )}
-              {voiceError && (
-                <div className="flex items-center gap-1.5">
-                  <div className="w-2 h-2 rounded-full bg-red-500"></div>
-                  <span className="text-xs text-red-500 max-w-[100px] truncate">
-                    {voiceError}
-                  </span>
-                </div>
-              )}
-              {!isConnecting && !voiceError && inworldServiceRef.current && (
-                <div className="flex items-center gap-1.5">
-                  <div className="w-2 h-2 rounded-full bg-green-500"></div>
-                  <span className={`text-xs hidden sm:inline ${lightMode ? 'text-green-600' : 'text-green-400'}`}>
-                    Connected
-                  </span>
-                </div>
-              )}
-            </div>
-          )}
-        </div>
-        
-        {voiceMode && inworldServiceRef.current && (
-          <button
-            onClick={() => setIsMuted(!isMuted)}
-            className={`p-3 rounded-xl transition-all active:scale-95 ${
-              isMuted
-                ? 'bg-red-500/10 text-red-500'
-                : lightMode
-                  ? 'hover:bg-black/[0.04] text-stone-600'
-                  : 'hover:bg-white/[0.05] text-white/60'
-            }`}
-            title={isMuted ? 'Unmute' : 'Mute'}
-          >
-            {isMuted ? <VolumeX className="h-5 w-5" /> : <Volume2 className="h-5 w-5" />}
-          </button>
-        )}
+        <MessageSquare className={`h-4 w-4 ${lightMode ? 'text-stone-500' : 'text-white/50'}`} />
+        <span className={`text-sm font-medium ${lightMode ? 'text-stone-600' : 'text-white/60'}`}>AI Helper</span>
       </div>
 
       {/* Messages Container */}
@@ -823,72 +566,13 @@ export function AIHelper({ question, correctAnswer, selectedAnswer, explanation,
 
       {/* Input Area */}
       <div className="flex-shrink-0">
-        {voiceMode && inworldServiceRef.current && (
-          <div className={`flex flex-col gap-3 px-4 py-4 border-t ${
-            lightMode ? 'border-black/[0.06] bg-gradient-to-b from-stone-50 to-stone-100' : 'border-white/[0.08] bg-gradient-to-b from-[#1a1a1a] to-[#141414]'
-          }`}>
-            {/* Transcript display */}
-            {currentTranscript && (
-              <div className={`text-base px-4 py-3 rounded-xl ${
-                lightMode ? 'bg-blue-50 text-blue-700 border border-blue-100' : 'bg-blue-900/30 text-blue-300 border border-blue-800/30'
-              }`}>
-                <span className="opacity-60">"</span>{currentTranscript}<span className="opacity-60">"</span>
-              </div>
-            )}
-            
-            {/* Large centered mic button for mobile */}
-            <div className="flex flex-col items-center gap-3">
-              <button
-                onClick={handleMicToggle}
-                className={`flex items-center justify-center w-16 h-16 sm:w-14 sm:h-14 rounded-full transition-all transform active:scale-95 shadow-lg ${
-                  isListening
-                    ? 'bg-red-500 text-white animate-pulse shadow-red-500/30'
-                    : lightMode
-                      ? 'bg-blue-500 text-white hover:bg-blue-600 shadow-blue-500/20 hover:shadow-blue-500/30'
-                      : 'bg-blue-500 text-white hover:bg-blue-600 shadow-blue-500/20 hover:shadow-blue-500/30'
-                }`}
-                title={isListening ? 'Tap to stop' : 'Tap to speak'}
-              >
-                <Mic className={`${isListening ? 'h-7 w-7' : 'h-6 w-6'}`} />
-              </button>
-              
-              <span className={`text-sm font-medium ${
-                isListening 
-                  ? (lightMode ? 'text-red-600' : 'text-red-400')
-                  : (lightMode ? 'text-stone-600' : 'text-white/60')
-              }`}>
-                {isListening ? 'Listening... tap to stop' : 'Tap to speak'}
-              </span>
-              
-              {/* Visual audio indicator when listening */}
-              {isListening && (
-                <div className="flex items-center gap-1">
-                  <div className={`w-1 h-3 rounded-full animate-pulse ${lightMode ? 'bg-red-400' : 'bg-red-500'}`} style={{animationDelay: '0ms'}}></div>
-                  <div className={`w-1 h-5 rounded-full animate-pulse ${lightMode ? 'bg-red-400' : 'bg-red-500'}`} style={{animationDelay: '150ms'}}></div>
-                  <div className={`w-1 h-4 rounded-full animate-pulse ${lightMode ? 'bg-red-400' : 'bg-red-500'}`} style={{animationDelay: '300ms'}}></div>
-                  <div className={`w-1 h-6 rounded-full animate-pulse ${lightMode ? 'bg-red-400' : 'bg-red-500'}`} style={{animationDelay: '450ms'}}></div>
-                  <div className={`w-1 h-3 rounded-full animate-pulse ${lightMode ? 'bg-red-400' : 'bg-red-500'}`} style={{animationDelay: '600ms'}}></div>
-                </div>
-              )}
-            </div>
-            
-            {/* Divider with "or" text */}
-            <div className="flex items-center gap-3">
-              <div className={`flex-1 h-px ${lightMode ? 'bg-stone-200' : 'bg-white/10'}`}></div>
-              <span className={`text-xs ${lightMode ? 'text-stone-400' : 'text-white/30'}`}>or type below</span>
-              <div className={`flex-1 h-px ${lightMode ? 'bg-stone-200' : 'bg-white/10'}`}></div>
-            </div>
-          </div>
-        )}
         <ChatInput
           onSend={handleSendMessage}
           disabled={false}
           placeholder={
-            voiceMode 
-              ? "Type or use voice button above..." 
-              : replyingTo 
-                ? `Reply to ${replyingTo.role === 'assistant' ? 'AI Assistant' : 'your message'}...` 
-                : "Ask about this question..."
+            replyingTo
+              ? `Reply to ${replyingTo.role === 'assistant' ? 'AI Assistant' : 'your message'}...`
+              : "Ask about this question..."
           }
           maxRows={4}
           onStop={handleStopGeneration}
