@@ -100,9 +100,34 @@ export const UkmlaSBAQuestion: React.FC<UkmlaSBAQuestionProps> = ({
 
   // Answer is submitted immediately when an option is clicked
 
-  // Format question content
-  const questionContent = question.question || question.question_stem || '';
+  // Split vignette from lead-in question for richer display
+  const clinicalVignette = (question as any).clinical_vignette as string | undefined;
+  const fullContent = question.question_stem || question.question || '';
   const explanation = question.explanation || question.worked_solution || '';
+
+  let vignetteText: string;
+  let leadInText: string | null = null;
+
+  if (clinicalVignette) {
+    // AI-generated with separate vignette field
+    vignetteText = clinicalVignette;
+    leadInText = question.question || null;
+  } else {
+    // Try to detect vignette / lead-in split from combined content
+    const parts = fullContent.split('\n\n');
+    if (parts.length >= 2) {
+      const lastPart = parts[parts.length - 1].trim();
+      const looksLikeLeadIn = lastPart.endsWith('?') && lastPart.length < 160;
+      if (looksLikeLeadIn) {
+        vignetteText = parts.slice(0, -1).join('\n\n');
+        leadInText = lastPart;
+      } else {
+        vignetteText = fullContent;
+      }
+    } else {
+      vignetteText = fullContent;
+    }
+  }
 
   return (
     <div className={`fixed inset-0 flex flex-col overflow-hidden ${isLightMode ? 'bg-zinc-50' : 'bg-[#0A0A0A]'}`}>
@@ -232,37 +257,51 @@ export const UkmlaSBAQuestion: React.FC<UkmlaSBAQuestionProps> = ({
           
           {/* Content */}
           <div className="relative p-4 sm:p-6 md:p-8 pb-safe">
-            {/* Question */}
-            <div className="mb-5 sm:mb-6 md:mb-8">
+            {/* Question: Vignette Box + Lead-in */}
+            <div className="mb-5 sm:mb-6 md:mb-8 space-y-4">
+              {/* Clinical vignette box */}
               <div className={cn(
-                "text-[14px] sm:text-[15px] md:text-[17px] font-medium leading-[1.5] sm:leading-[1.4]",
-                isLightMode ? "text-zinc-900" : "text-white"
+                "rounded-xl border-l-[3px] px-4 py-3.5",
+                isLightMode
+                  ? "bg-slate-50 border border-slate-200 border-l-indigo-400"
+                  : "bg-white/[0.04] border border-white/[0.08] border-l-indigo-400/60"
               )}>
-                <ReactMarkdown
-                  components={{
-                    p: ({ children }) => (
-                      <p className="mb-3 last:mb-0">{children}</p>
-                    ),
-                    pre: ({ children }) => (
-                      <pre className={cn(
-                        "my-3 p-3 rounded-lg text-[12px] sm:text-[13px] font-mono leading-relaxed overflow-x-auto whitespace-pre",
-                        isLightMode ? "bg-zinc-100 text-zinc-800" : "bg-white/5 text-white/80"
-                      )}>{children}</pre>
-                    ),
-                    code: ({ children, className }) => {
-                      const isBlock = !!className;
-                      return isBlock ? (
-                        <code className="font-mono">{children}</code>
-                      ) : (
-                        <code className={cn(
-                          "px-1 py-0.5 rounded text-[12px] font-mono",
-                          isLightMode ? "bg-zinc-100 text-zinc-800" : "bg-white/10 text-white/80"
-                        )}>{children}</code>
-                      );
-                    },
-                  }}
-                >{questionContent}</ReactMarkdown>
+                {/* Label */}
+                <p className={cn(
+                  "text-[10px] font-semibold uppercase tracking-[0.12em] mb-2.5",
+                  isLightMode ? "text-slate-400" : "text-white/30"
+                )}>Clinical Vignette</p>
+                {/* Vignette text */}
+                <div className={cn(
+                  "text-[13px] sm:text-[14px] md:text-[15px] leading-[1.65]",
+                  isLightMode ? "text-zinc-700" : "text-white/75"
+                )}>
+                  <ReactMarkdown
+                    components={{
+                      p: ({ children }) => <p className="mb-2.5 last:mb-0">{children}</p>,
+                      pre: ({ children }) => (
+                        <pre className={cn(
+                          "mt-2 mb-1 text-[11px] sm:text-[12px] font-mono leading-relaxed overflow-x-auto whitespace-pre",
+                          isLightMode ? "text-zinc-600" : "text-white/60"
+                        )}>{children}</pre>
+                      ),
+                      code: ({ children }) => (
+                        <code className="font-mono text-[11px] sm:text-[12px]">{children}</code>
+                      ),
+                    }}
+                  >{vignetteText}</ReactMarkdown>
+                </div>
               </div>
+
+              {/* Lead-in question (outside the box) */}
+              {leadInText && (
+                <p className={cn(
+                  "text-[15px] sm:text-[16px] md:text-[18px] font-semibold leading-[1.4]",
+                  isLightMode ? "text-zinc-900" : "text-white"
+                )}>
+                  {leadInText}
+                </p>
+              )}
             </div>
 
             {/* Options */}
@@ -314,10 +353,45 @@ export const UkmlaSBAQuestion: React.FC<UkmlaSBAQuestionProps> = ({
             {/* Feedback section - normal flow */}
             {hasSubmitted && (
               <div className="animate-in fade-in slide-in-from-bottom-4 duration-300">
-                {/* Concept / topic label */}
+
+                {/* Result banner */}
+                <div className={cn(
+                  "mt-5 flex items-center gap-2.5 px-4 py-3 rounded-xl",
+                  selectedOption === correctAnswerId
+                    ? isLightMode
+                      ? "bg-emerald-50 border border-emerald-200"
+                      : "bg-emerald-500/10 border border-emerald-500/25"
+                    : isLightMode
+                      ? "bg-rose-50 border border-rose-200"
+                      : "bg-rose-500/10 border border-rose-500/25"
+                )}>
+                  {selectedOption === correctAnswerId
+                    ? <CheckCircle className={cn("h-5 w-5 flex-shrink-0", isLightMode ? "text-emerald-600" : "text-emerald-400")} />
+                    : <XCircle className={cn("h-5 w-5 flex-shrink-0", isLightMode ? "text-rose-600" : "text-rose-400")} />
+                  }
+                  <div>
+                    <p className={cn(
+                      "text-sm font-semibold",
+                      selectedOption === correctAnswerId
+                        ? isLightMode ? "text-emerald-700" : "text-emerald-300"
+                        : isLightMode ? "text-rose-700" : "text-rose-300"
+                    )}>
+                      {selectedOption === correctAnswerId ? "Correct" : "Incorrect"}
+                    </p>
+                    {selectedOption !== correctAnswerId && (
+                      <p className={cn(
+                        "text-xs mt-0.5",
+                        isLightMode ? "text-rose-600/70" : "text-rose-300/60"
+                      )}>
+                        The correct answer was <span className="font-semibold">{correctAnswerId}</span>
+                      </p>
+                    )}
+                  </div>
+                </div>
+
+                {/* Concept / topic chips */}
                 {(question.title || (question as any).topic || (question as any).microSkill) && (
-                  <div className="mt-4 sm:mt-5 flex flex-wrap items-center gap-2">
-                    {/* Primary concept or topic */}
+                  <div className="mt-3 flex flex-wrap items-center gap-2">
                     {(question.title || (question as any).topic) && (
                       <span className={cn(
                         "inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold tracking-wide",
@@ -329,7 +403,6 @@ export const UkmlaSBAQuestion: React.FC<UkmlaSBAQuestionProps> = ({
                         {question.title || (question as any).topic}
                       </span>
                     )}
-                    {/* Secondary micro-skill tag */}
                     {(question as any).microSkill && (question as any).microSkill !== question.title && (question as any).microSkill !== (question as any).topic && (
                       <span className={cn(
                         "inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium tracking-wide",
@@ -346,12 +419,17 @@ export const UkmlaSBAQuestion: React.FC<UkmlaSBAQuestionProps> = ({
                 {/* Explanation section */}
                 {explanation && (
                   <div className={cn(
-                    "mt-4 sm:mt-5 md:mt-6 pt-4 sm:pt-5 md:pt-6 border-t",
+                    "mt-4 sm:mt-5 pt-4 sm:pt-5 border-t",
                     isLightMode ? "border-zinc-200" : "border-white/10"
                   )}>
+                    {/* Section label */}
+                    <p className={cn(
+                      "text-[10px] font-semibold uppercase tracking-[0.12em] mb-3",
+                      isLightMode ? "text-zinc-400" : "text-white/30"
+                    )}>Explanation</p>
                     <div className={cn(
-                      "text-[13px] sm:text-[14px] md:text-[15px] font-medium leading-[1.5] sm:leading-[1.4]",
-                      isLightMode ? "text-zinc-700" : "text-white/80"
+                      "text-[13px] sm:text-[14px] leading-[1.65]",
+                      isLightMode ? "text-zinc-700" : "text-white/75"
                     )}>
                       <ReactMarkdown
                         components={{
