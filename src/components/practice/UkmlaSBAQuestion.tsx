@@ -252,7 +252,11 @@ export const UkmlaSBAQuestion: React.FC<UkmlaSBAQuestionProps> = ({
                 "text-[14px] sm:text-[15px] md:text-[17px] font-medium leading-[1.5] sm:leading-[1.4]",
                 isLightMode ? "text-zinc-900" : "text-white"
               )}>
-                <ReactMarkdown>{questionContent}</ReactMarkdown>
+                <ReactMarkdown
+                  components={{
+                    p: ({ children }) => <p className="mb-3 last:mb-0">{children}</p>,
+                  }}
+                >{questionContent}</ReactMarkdown>
               </div>
             </div>
 
