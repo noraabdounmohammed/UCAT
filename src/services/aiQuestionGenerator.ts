@@ -256,17 +256,35 @@ function generateSimpleSBATemplate(concept: ConceptNode, optionCount: number = 5
 
 // Generate UKMLA question using AI
 export async function generateUKMLAQuestionWithAI(concept: ConceptNode, customPrompt?: string): Promise<GeneratedQuestion> {
-  const defaultInstructions = `You are creating a UKMLA exam question. UKMLA questions ALWAYS have exactly 5 options.
+  const defaultInstructions = `You are writing a UK Medical Licensing Assessment (MLA) Applied Knowledge Test question. Mirror the exact style of official MLA AKT past papers.
 
-Create a question with:
-1. A realistic clinical vignette (2-3 sentences) with patient demographics, presentation, and relevant history
-2. A clear question stem (e.g., "What is the most appropriate next step?" or "What is the most likely diagnosis?")
-3. FIVE options labeled A, B, C, D, E (not 3, not 4, exactly 5)
-4. All options must be plausible and clinically relevant
-5. The correct answer should test understanding of the key concept
-6. Include a detailed explanation
+VIGNETTE (the "vignette" field):
+- Always start with age + gender (e.g. "A 34-year-old woman")
+- Include: presenting complaint + duration, relevant PMH and medications, key positive and negative examination findings
+- Add investigations with values if relevant (e.g. "Hb 78 g/L (115–165), MCV 68 fL (80–100)")
+- Every detail must be diagnostically relevant — no filler
 
-MANDATORY: Generate exactly 5 options. If you generate fewer than 5 options, the question will be rejected.`;
+LEAD-IN QUESTION (the "question" field):
+- One short, direct sentence outside the vignette
+- Use ONLY these phrasings:
+  "What is the most likely diagnosis?"
+  "What is the most appropriate initial management?"
+  "What is the most appropriate next investigation?"
+  "Which drug should be added?"
+  "Which drug should be stopped?"
+  "What is the most likely causative organism?"
+  "Which structure is most likely damaged?"
+  "What is the most likely underlying mechanism?"
+
+OPTIONS — strict rules:
+- Exactly 5 options (A–E)
+- Each option is a SHORT TERM or BRIEF PHRASE only — NOT a sentence
+- Good examples: "Ascites", "IV co-amoxiclav", "Urgent CT abdomen", "Metformin", "Femoral nerve"
+- BAD examples: "Ascites, which is caused by fluid in the peritoneal cavity" — never explain inside the option
+- All 5 options must be clinically plausible near-misses (no obviously wrong answers)
+- Vary question type: diagnosis, management, investigation, mechanism, pharmacology, anatomy
+
+MANDATORY: Exactly 5 options. If you generate fewer, the question will be rejected.`;
 
   const instructions = customPrompt || defaultInstructions;
   
