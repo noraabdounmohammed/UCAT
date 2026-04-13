@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { CheckCircle, XCircle, ChevronRight, ArrowLeft, ChevronLeft, Sun, Moon, Sparkles, X } from 'lucide-react';
+import { CheckCircle, XCircle, ChevronRight, ArrowLeft, ChevronLeft, Sun, Moon, Sparkles, X, ChevronDown } from 'lucide-react';
 import type { QuestionData } from './questionTypes';
 import ReactMarkdown from 'react-markdown';
 import { AIHelper } from './AIHelperClean';
@@ -36,6 +36,7 @@ export const UkmlaSBAQuestion: React.FC<UkmlaSBAQuestionProps> = ({
   const [hasSubmitted, setHasSubmitted] = useState(false);
   const [showAIHelper, setShowAIHelper] = useState(false);
   const [isLightMode, setIsLightMode] = useState(false);
+  const [showFullExplanation, setShowFullExplanation] = useState(false);
   
   // Store answer states in sessionStorage for persistence across navigation
   const getStorageKey = () => `sba_answer_${question.id || question.question?.substring(0, 50)}`;
@@ -62,8 +63,9 @@ export const UkmlaSBAQuestion: React.FC<UkmlaSBAQuestionProps> = ({
       setHasSubmitted(false);
     }
     
-    // Always reset AI Helper when changing questions
+    // Always reset AI Helper and explanation toggle when changing questions
     setShowAIHelper(false);
+    setShowFullExplanation(false);
   }, [question.id, question.question, question.question_stem]);
   
   // Process options to ensure they're in the right format
@@ -117,6 +119,8 @@ export const UkmlaSBAQuestion: React.FC<UkmlaSBAQuestionProps> = ({
   // Format question content
   const questionContent = question.question || question.question_stem || '';
   const explanation = sanitiseExplanation(question.explanation || question.worked_solution || '');
+  const keyFact = sanitiseExplanation((question as any).key_fact || '');
+  const isCorrect = hasSubmitted && selectedOption === correctAnswerId;
 
   return (
     <div className={`fixed inset-0 flex flex-col overflow-hidden ${isLightMode ? 'bg-zinc-50' : 'bg-[#0A0A0A]'}`}>
@@ -308,26 +312,44 @@ export const UkmlaSBAQuestion: React.FC<UkmlaSBAQuestionProps> = ({
 
             {/* Feedback section - normal flow */}
             {hasSubmitted && (
-              <div className="animate-in fade-in slide-in-from-bottom-4 duration-300">
-                {/* Concept / topic label */}
-                {(question.title || (question as any).topic || (question as any).microSkill) && (
-                  <div className="mt-4 sm:mt-5 flex flex-wrap items-center gap-2">
-                    {/* Primary concept or topic */}
+              <div className="animate-in fade-in slide-in-from-bottom-4 duration-300 mt-4 sm:mt-5 space-y-3">
+
+                {/* Compact summary box */}
+                <div className={cn(
+                  "rounded-xl border px-4 py-3 space-y-2",
+                  isCorrect
+                    ? isLightMode
+                      ? "bg-emerald-50 border-emerald-200"
+                      : "bg-emerald-500/10 border-emerald-500/25"
+                    : isLightMode
+                      ? "bg-rose-50 border-rose-200"
+                      : "bg-rose-500/10 border-rose-500/25"
+                )}>
+                  {/* Result line + concept chip */}
+                  <div className="flex flex-wrap items-center gap-2">
+                    <span className={cn(
+                      "text-xs font-bold uppercase tracking-widest",
+                      isCorrect
+                        ? isLightMode ? "text-emerald-700" : "text-emerald-400"
+                        : isLightMode ? "text-rose-700" : "text-rose-400"
+                    )}>
+                      {isCorrect ? "✓ Correct" : "✗ Incorrect"}
+                    </span>
+
                     {(question.title || (question as any).topic) && (
                       <span className={cn(
-                        "inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold tracking-wide",
+                        "inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-semibold tracking-wide",
                         isLightMode
                           ? "bg-indigo-50 text-indigo-700 border border-indigo-200"
                           : "bg-indigo-500/15 text-indigo-300 border border-indigo-500/30"
                       )}>
-                        <span className="opacity-70">📚</span>
-                        {question.title || (question as any).topic}
+                        📚 {question.title || (question as any).topic}
                       </span>
                     )}
-                    {/* Secondary micro-skill tag */}
+
                     {(question as any).microSkill && (question as any).microSkill !== question.title && (question as any).microSkill !== (question as any).topic && (
                       <span className={cn(
-                        "inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium tracking-wide",
+                        "inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-medium",
                         isLightMode
                           ? "bg-zinc-100 text-zinc-600 border border-zinc-200"
                           : "bg-white/8 text-white/50 border border-white/10"
@@ -336,27 +358,53 @@ export const UkmlaSBAQuestion: React.FC<UkmlaSBAQuestionProps> = ({
                       </span>
                     )}
                   </div>
+
+                  {/* Key fact */}
+                  {keyFact && (
+                    <p className={cn(
+                      "text-[13px] sm:text-[14px] leading-snug font-medium",
+                      isLightMode ? "text-zinc-800" : "text-white/90"
+                    )}>
+                      {keyFact}
+                    </p>
+                  )}
+                </div>
+
+                {/* Toggle for full explanation */}
+                {explanation && (
+                  <button
+                    onClick={() => setShowFullExplanation(v => !v)}
+                    className={cn(
+                      "flex items-center gap-1.5 text-[12px] sm:text-[13px] font-medium transition-colors",
+                      isLightMode ? "text-zinc-500 hover:text-zinc-700" : "text-white/40 hover:text-white/70"
+                    )}
+                  >
+                    <ChevronDown className={cn(
+                      "h-3.5 w-3.5 transition-transform duration-200",
+                      showFullExplanation ? "rotate-180" : ""
+                    )} />
+                    {showFullExplanation ? "Hide explanation" : "Show full explanation"}
+                  </button>
                 )}
 
-                {/* Explanation section */}
-                {explanation && (
+                {/* Full explanation (collapsible) */}
+                {showFullExplanation && explanation && (
                   <div className={cn(
-                    "mt-4 sm:mt-5 md:mt-6 pt-4 sm:pt-5 md:pt-6 border-t",
+                    "pt-3 border-t",
                     isLightMode ? "border-zinc-200" : "border-white/10"
                   )}>
                     <div className={cn(
-                      "text-[13px] sm:text-[14px] md:text-[15px] font-medium leading-[1.5] sm:leading-[1.4]",
-                      isLightMode ? "text-zinc-700" : "text-white/80"
+                      "text-[13px] sm:text-[14px] md:text-[15px] leading-[1.6]",
+                      isLightMode ? "text-zinc-700" : "text-white/75"
                     )}>
-                      <ReactMarkdown>{explanation}</ReactMarkdown>
+                      <ReactMarkdown components={{ p: ({ children }) => <p className="mb-3 last:mb-0">{children}</p> }}>{explanation}</ReactMarkdown>
                     </div>
                   </div>
                 )}
 
-
                 {/* Next button */}
                 <div className={cn(
-                  "mt-4 sm:mt-5 md:mt-6 pt-4 sm:pt-5 md:pt-6 border-t",
+                  "pt-3 sm:pt-4 border-t",
                   isLightMode ? "border-zinc-200" : "border-white/10"
                 )}>
                   <button

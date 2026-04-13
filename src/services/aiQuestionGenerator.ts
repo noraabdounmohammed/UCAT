@@ -261,8 +261,10 @@ export async function generateUKMLAQuestionWithAI(concept: ConceptNode, customPr
 VIGNETTE (the "vignette" field):
 - Always start with age + gender (e.g. "A 34-year-old woman")
 - Include: presenting complaint + duration, relevant PMH and medications, key positive and negative examination findings
-- Add investigations with values if relevant (e.g. "Hb 78 g/L (115–165), MCV 68 fL (80–100)")
 - Every detail must be diagnostically relevant — no filler
+- REFERENCE RANGES — mandatory rule: every numerical value in the vignette MUST be followed immediately by its reference range in parentheses. No exceptions.
+  Examples: "Hb 78 g/L (115–165 g/L)", "fasting glucose 6.5 mmol/L (3.9–5.5 mmol/L)", "BP 168/96 mmHg", "Na⁺ 128 mmol/L (135–145 mmol/L)", "TSH 0.1 mU/L (0.4–4.0 mU/L)"
+  Vitals like blood pressure do not need a range, but all blood test results and diagnostic thresholds do.
 
 LEAD-IN QUESTION (the "question" field):
 - One short, direct sentence outside the vignette
@@ -347,12 +349,18 @@ Return the response as a JSON object with EXACTLY ${optionCount} options:
 ${optionExamples}
   ],
   "correct": "${randomCorrectLetter}",
+  "key_fact": "One sentence — the single most important fact a student must remember from this question.",
   "explanation": "The correct answer is ${randomCorrectLetter} because [clinical reason]. Option B is incorrect because [clinical reason]. Option C is incorrect because [clinical reason]. Option D is incorrect because [clinical reason]. Option E is incorrect because [clinical reason]."
 }
 
 CRITICAL: The "correct" field must be ONE of the option IDs (A, B, C, D, or E).
 RANDOMIZE which option is correct - do NOT always make A the correct answer.
 The correct answer should be placed at a RANDOM position in the options array.
+
+KEY_FACT rules:
+- One sentence only. The single most important clinical fact this question tests.
+- Written as a standalone fact, not "The answer is X" — e.g. "A fasting glucose of 6.1–6.9 mmol/L defines impaired fasting glucose (IFG)."
+- Must be memorable and skimmable — this is shown prominently to users who don't read the full explanation.
 
 EXPLANATION — mandatory rules:
 - Write purely from clinical knowledge, as if explaining to a student after sitting an exam.
@@ -391,6 +399,7 @@ MANDATORY REQUIREMENTS:
       question: aiResponse.question,
       options: aiResponse.options,
       correct_answer: aiResponse.correct,
+      key_fact: aiResponse.key_fact || '',
       explanation: aiResponse.explanation,
       format: 'ukmla_sba' as const
     };
