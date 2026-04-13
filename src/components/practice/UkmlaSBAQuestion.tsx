@@ -137,8 +137,9 @@ export const UkmlaSBAQuestion: React.FC<UkmlaSBAQuestionProps> = ({
         >
           <ArrowLeft className={`h-5 w-5 ${isLightMode ? 'text-zinc-700' : 'text-white/70'}`} />
         </button>
-        <div className="flex-1 flex flex-col items-center gap-1">
-          <h1 className={`text-lg font-semibold ${isLightMode ? 'text-zinc-900' : 'text-white'}`}>{title}</h1>
+
+        {/* Center: progress pill (replaces static title) */}
+        <div className="flex-1 flex justify-center">
           {totalQuestions > 0 && sessionAnswers ? (
             <SessionProgressDropdown
               answers={sessionAnswers}
@@ -148,9 +149,12 @@ export const UkmlaSBAQuestion: React.FC<UkmlaSBAQuestionProps> = ({
               onJumpTo={onJumpTo}
             />
           ) : totalQuestions > 0 ? (
-            <p className={`text-sm ${isLightMode ? 'text-zinc-500' : 'text-white/60'}`}>{currentIndex + 1} / {totalQuestions}</p>
+            <span className={`text-sm font-medium tabular-nums ${isLightMode ? 'text-zinc-500' : 'text-white/50'}`}>
+              {currentIndex + 1} / {totalQuestions}
+            </span>
           ) : null}
         </div>
+
         <div className="flex items-center gap-2">
           {/* Dark/Light Mode Toggle */}
           <button
