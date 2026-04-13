@@ -183,12 +183,17 @@ Return the response as a JSON object with EXACTLY ${optionCount} options:
 ${optionExamples}
   ],
   "correct": "${randomCorrectLetter}",
-  "explanation": "The correct answer is ${randomCorrectLetter} because..."
+  "explanation": "The correct answer is ${randomCorrectLetter} because [clear factual reason]. The other options are incorrect because [brief reasoning for each]."
 }
 
 CRITICAL: The "correct" field must be ONE of the option IDs (A, B, C, D, or E).
 RANDOMIZE which option is correct - do NOT always make A the correct answer.
 The correct answer should be placed at a RANDOM position in the options array.
+
+EXPLANATION RULES:
+- Write as standalone teaching — as if explaining to a student after an exam.
+- NEVER say "based on the content", "the concept states", "as provided", or any phrase revealing this is AI-generated from a source document.
+- Use real factual reasoning only.
 
 MANDATORY REQUIREMENTS:
 - Question must be ONE sentence, direct and simple
@@ -370,12 +375,18 @@ Return the response as a JSON object with EXACTLY ${optionCount} options:
 ${optionExamples}
   ],
   "correct": "${randomCorrectLetter}",
-  "explanation": "The correct answer is ${randomCorrectLetter} because... Option B is incorrect because... Option C is incorrect because..."
+  "explanation": "The correct answer is ${randomCorrectLetter} because [clinical reasoning — e.g. this presentation of X with Y findings is classic for Z]. Option B is incorrect because [specific clinical reason]. Option C is incorrect because [specific clinical reason]. Option D is incorrect because [specific clinical reason]. Option E is incorrect because [specific clinical reason]."
 }
 
 CRITICAL: The "correct" field must be ONE of the option IDs (A, B, C, D, or E).
 RANDOMIZE which option is correct - do NOT always make A the correct answer.
 The correct answer should be placed at a RANDOM position in the options array.
+
+EXPLANATION RULES — strictly enforced:
+- Write as standalone clinical teaching. A student reading it should feel they are reading a textbook or a post-exam debrief.
+- NEVER reference "the concept", "the content", "the provided information", "based on the content above", "as stated", "according to the content", or any phrase that reveals this is AI-generated from a source document.
+- Explain WHY each option is right or wrong using real clinical reasoning (pathophysiology, pharmacology, guidelines, anatomy — whatever applies).
+- Every option (A through ${String.fromCharCode(64 + optionCount)}) must have its own sentence explaining why it is correct or incorrect.
 
 MANDATORY REQUIREMENTS:
 - Provide exactly ${optionCount} options labeled A through ${String.fromCharCode(64 + optionCount)}

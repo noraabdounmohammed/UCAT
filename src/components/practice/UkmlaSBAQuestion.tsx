@@ -100,9 +100,24 @@ export const UkmlaSBAQuestion: React.FC<UkmlaSBAQuestionProps> = ({
 
   // Answer is submitted immediately when an option is clicked
 
+  // Strip any backend-leaking phrases from explanation text before showing to users
+  const sanitiseExplanation = (text: string): string => {
+    return text
+      .replace(/[Bb]ased on (the )?(concept )?content[^,.]*[,.]?\s*/g, '')
+      .replace(/[Aa]ccording to (the )?(concept )?content[^,.]*[,.]?\s*/g, '')
+      .replace(/[Aa]s (stated|mentioned|described|provided|outlined|given) in (the )?(concept )?content[^,.]*[,.]?\s*/g, '')
+      .replace(/[Tt]he (concept )?content (states?|says?|mentions?|describes?|indicates?)[^.]*\.\s*/g, '')
+      .replace(/[Bb]ased on (the )?(provided|given) (information|material|concept)[^,.]*[,.]?\s*/g, '')
+      .replace(/[Ff]rom (the )?(concept )?content[^,.]*[,.]?\s*/g, '')
+      .replace(/[Aa]s per (the )?(concept )?content[^,.]*[,.]?\s*/g, '')
+      .replace(/\s{2,}/g, ' ')
+      .trim();
+  };
+
   // Format question content
   const questionContent = question.question || question.question_stem || '';
-  const explanation = question.explanation || question.worked_solution || '';
+  const rawExplanation = question.explanation || question.worked_solution || '';
+  const explanation = sanitiseExplanation(rawExplanation);
 
   return (
     <div className={`fixed inset-0 flex flex-col overflow-hidden ${isLightMode ? 'bg-zinc-50' : 'bg-[#0A0A0A]'}`}>
@@ -291,10 +306,38 @@ export const UkmlaSBAQuestion: React.FC<UkmlaSBAQuestionProps> = ({
             {/* Feedback section - normal flow */}
             {hasSubmitted && (
               <div className="animate-in fade-in slide-in-from-bottom-4 duration-300">
-                {/* Concept / topic label */}
+
+                {/* Result indicator */}
+                <div className={cn(
+                  "mt-5 flex items-center gap-3 px-4 py-3 rounded-xl",
+                  selectedOption === correctAnswerId
+                    ? isLightMode ? "bg-emerald-50 border border-emerald-200" : "bg-emerald-500/10 border border-emerald-500/25"
+                    : isLightMode ? "bg-rose-50 border border-rose-200" : "bg-rose-500/10 border border-rose-500/25"
+                )}>
+                  {selectedOption === correctAnswerId
+                    ? <CheckCircle className={cn("h-5 w-5 flex-shrink-0", isLightMode ? "text-emerald-600" : "text-emerald-400")} />
+                    : <XCircle className={cn("h-5 w-5 flex-shrink-0", isLightMode ? "text-rose-600" : "text-rose-400")} />
+                  }
+                  <div>
+                    <p className={cn(
+                      "text-sm font-semibold leading-tight",
+                      selectedOption === correctAnswerId
+                        ? isLightMode ? "text-emerald-700" : "text-emerald-300"
+                        : isLightMode ? "text-rose-700" : "text-rose-300"
+                    )}>
+                      {selectedOption === correctAnswerId ? "Correct" : "Incorrect"}
+                    </p>
+                    {selectedOption !== correctAnswerId && (
+                      <p className={cn("text-xs mt-0.5", isLightMode ? "text-rose-600/70" : "text-rose-300/60")}>
+                        The correct answer was <span className="font-semibold">{correctAnswerId}</span>
+                      </p>
+                    )}
+                  </div>
+                </div>
+
+                {/* Concept / topic chips */}
                 {(question.title || (question as any).topic || (question as any).microSkill) && (
-                  <div className="mt-4 sm:mt-5 flex flex-wrap items-center gap-2">
-                    {/* Primary concept or topic */}
+                  <div className="mt-3 flex flex-wrap items-center gap-2">
                     {(question.title || (question as any).topic) && (
                       <span className={cn(
                         "inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold tracking-wide",
@@ -306,7 +349,6 @@ export const UkmlaSBAQuestion: React.FC<UkmlaSBAQuestionProps> = ({
                         {question.title || (question as any).topic}
                       </span>
                     )}
-                    {/* Secondary micro-skill tag */}
                     {(question as any).microSkill && (question as any).microSkill !== question.title && (question as any).microSkill !== (question as any).topic && (
                       <span className={cn(
                         "inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium tracking-wide",
@@ -323,14 +365,18 @@ export const UkmlaSBAQuestion: React.FC<UkmlaSBAQuestionProps> = ({
                 {/* Explanation section */}
                 {explanation && (
                   <div className={cn(
-                    "mt-4 sm:mt-5 md:mt-6 pt-4 sm:pt-5 md:pt-6 border-t",
+                    "mt-4 sm:mt-5 pt-4 sm:pt-5 border-t",
                     isLightMode ? "border-zinc-200" : "border-white/10"
                   )}>
                     <div className={cn(
-                      "text-[13px] sm:text-[14px] md:text-[15px] font-medium leading-[1.5] sm:leading-[1.4]",
+                      "text-[13px] sm:text-[14px] md:text-[15px] leading-[1.65]",
                       isLightMode ? "text-zinc-700" : "text-white/80"
                     )}>
-                      <ReactMarkdown>{explanation}</ReactMarkdown>
+                      <ReactMarkdown
+                        components={{
+                          p: ({ children }) => <p className="mb-3 last:mb-0">{children}</p>,
+                        }}
+                      >{explanation}</ReactMarkdown>
                     </div>
                   </div>
                 )}
