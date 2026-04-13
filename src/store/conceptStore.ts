@@ -759,9 +759,11 @@ export const createConceptStore = (curriculumId: string = 'default') => {
             conceptsToUseLength: conceptsToUse.length
           });
           
+          // Shuffle so every session draws a different random sample from the filtered pool
+          const shuffled = [...conceptsToUse].sort(() => Math.random() - 0.5);
           // Use the specified number of concepts, up to what's available (hard cap: 40 per session)
           const MAX_SESSION_SIZE = 40;
-          const conceptsForQuestions = conceptsToUse.slice(0, Math.min(questionCount, conceptsToUse.length, MAX_SESSION_SIZE));
+          const conceptsForQuestions = shuffled.slice(0, Math.min(questionCount, shuffled.length, MAX_SESSION_SIZE));
           
           // Update the actual count being generated
           set({ generatingQuestionCount: conceptsForQuestions.length });
