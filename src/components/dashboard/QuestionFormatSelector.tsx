@@ -1,5 +1,5 @@
 import React, { useRef, useState, useEffect } from 'react';
-import { BookOpen, CheckSquare, ChevronLeft, ChevronRight } from 'lucide-react';
+import { BookOpen, ClipboardList, Stethoscope, ChevronLeft, ChevronRight } from 'lucide-react';
 
 export interface QuestionFormat {
   id: string;
@@ -7,6 +7,14 @@ export interface QuestionFormat {
   description: string;
   icon: React.ComponentType<{ className?: string }>;
   color: string;
+  pastel: {
+    cardBg: string;
+    cardBorder: string;
+    iconBg: string;
+    iconColor: string;
+    accent: string;
+    text: string;
+  };
 }
 
 export const QUESTION_FORMATS: QuestionFormat[] = [
@@ -15,22 +23,46 @@ export const QUESTION_FORMATS: QuestionFormat[] = [
     name: 'Flashcards',
     description: 'Quick review flip cards',
     icon: BookOpen,
-    color: 'from-blue-500 to-blue-600'
+    color: 'from-violet-400 to-purple-400',
+    pastel: {
+      cardBg: 'from-violet-50 via-purple-50 to-violet-100',
+      cardBorder: 'border-violet-200/70',
+      iconBg: 'bg-violet-100',
+      iconColor: 'text-violet-500',
+      accent: 'bg-violet-300/30',
+      text: 'text-violet-900',
+    }
   },
   {
     id: 'sba',
     name: 'Quick SBA',
-    description: 'Concise SBA Questions',
-    icon: CheckSquare,
-    color: 'from-emerald-500 to-emerald-600'
+    description: 'Concise SBA questions',
+    icon: ClipboardList,
+    color: 'from-sky-400 to-cyan-400',
+    pastel: {
+      cardBg: 'from-sky-50 via-cyan-50 to-sky-100',
+      cardBorder: 'border-sky-200/70',
+      iconBg: 'bg-sky-100',
+      iconColor: 'text-sky-500',
+      accent: 'bg-sky-300/30',
+      text: 'text-sky-900',
+    }
   },
   {
     id: 'ukmla_sba',
     name: 'UKMLA SBA',
     description: 'Clinical case scenarios',
-    icon: CheckSquare,
-    color: 'from-pink-500 to-pink-600'
-  }
+    icon: Stethoscope,
+    color: 'from-rose-400 to-pink-400',
+    pastel: {
+      cardBg: 'from-rose-50 via-pink-50 to-rose-100',
+      cardBorder: 'border-rose-200/70',
+      iconBg: 'bg-rose-100',
+      iconColor: 'text-rose-500',
+      accent: 'bg-rose-300/30',
+      text: 'text-rose-900',
+    }
+  },
 ];
 
 interface QuestionFormatSelectorProps {
@@ -183,59 +215,29 @@ export const QuestionFormatSelector: React.FC<QuestionFormatSelectorProps> = ({
                   onOpenFilters(format.id);
                 }
               }}
-              className="group relative flex-shrink-0 w-[280px] rounded-2xl overflow-hidden transition-all duration-700 ease-out shadow-[0_4px_24px_rgba(0,0,0,0.06)] hover:shadow-[0_12px_40px_rgba(0,0,0,0.1)]"
-              style={{ 
-                height: '240px'
-              }}
+              className={`group relative flex-shrink-0 w-[240px] rounded-2xl overflow-hidden border transition-all duration-300 ease-out bg-gradient-to-br ${format.pastel.cardBg} ${format.pastel.cardBorder} shadow-[0_2px_12px_rgba(0,0,0,0.06)] hover:shadow-[0_8px_32px_rgba(0,0,0,0.10)] hover:-translate-y-0.5`}
+              style={{ height: '220px' }}
             >
-              {/* Glassmorphism base - frosted glass effect */}
-              <div className="absolute inset-0 bg-white/60 backdrop-blur-2xl"></div>
-              
-              {/* Noise texture for loft aesthetic */}
-              <div className="absolute inset-0 opacity-[0.015]" style={{
-                backgroundImage: 'url("data:image/svg+xml,%3Csvg viewBox=\'0 0 400 400\' xmlns=\'http://www.w3.org/2000/svg\'%3E%3Cfilter id=\'noiseFilter\'%3E%3CfeTurbulence type=\'fractalNoise\' baseFrequency=\'0.9\' numOctaves=\'4\' /%3E%3C/filter%3E%3Crect width=\'100%25\' height=\'100%25\' filter=\'url(%23noiseFilter)\' /%3E%3C/svg%3E")',
-                backgroundSize: '200px 200px'
-              }}></div>
+              {/* Subtle top accent bar */}
+              <div className={`absolute top-0 left-0 right-0 h-1 bg-gradient-to-r ${format.color} opacity-60`} />
 
-              {/* Content container */}
-              <div className="relative z-10 h-full flex flex-col p-5 sm:p-6">
-                {/* Top section - Title with icon */}
-                <div className="flex flex-col items-center mb-4">
-                  <h3 className="text-lg sm:text-xl font-light text-stone-900 mb-2 tracking-tight text-center" style={{ fontFamily: "'Unbounded', sans-serif", fontWeight: 300, letterSpacing: '-0.01em' }}>
+              {/* Content */}
+              <div className="relative h-full flex flex-col items-center justify-center gap-5 p-6">
+                {/* Icon circle */}
+                <div className={`w-16 h-16 rounded-2xl ${format.pastel.iconBg} flex items-center justify-center transition-transform duration-300 group-hover:scale-110 shadow-sm`}>
+                  <Icon className={`h-8 w-8 ${format.pastel.iconColor}`} />
+                </div>
+
+                {/* Text */}
+                <div className="text-center">
+                  <h3 className={`text-base font-semibold ${format.pastel.text} mb-1`} style={{ fontFamily: "'Unbounded', sans-serif", fontWeight: 600, letterSpacing: '-0.01em' }}>
                     {format.name}
                   </h3>
-                  <div className="flex items-start gap-1.5 text-stone-600 text-xs">
-                    <Icon className="h-3 w-3 flex-shrink-0 mt-0.5" />
-                    <span style={{ fontFamily: "'Manrope', sans-serif", fontWeight: 400 }}>
-                      {format.description}
-                    </span>
-                  </div>
-                </div>
-
-                {/* Middle section - Icon/Image with glass effect */}
-                <div className="flex-1 flex items-center justify-center">
-                  {format.id === 'flashcard' ? (
-                    <img 
-                      src="https://res.cloudinary.com/djycz5wgq/image/upload/v1763134885/Unbenannt-7_h21zyy.png" 
-                      alt="Flashcards"
-                      className="h-28 w-28 sm:h-32 sm:w-32 object-contain relative z-10 transition-all duration-700 group-hover:scale-105"
-                    />
-                  ) : (format.id === 'sba' || format.id === 'ukmla_sba') ? (
-                    <img 
-                      src="https://res.cloudinary.com/djycz5wgq/image/upload/v1763135784/Unbenannt-8_ccq02e.png" 
-                      alt="SBA Questions"
-                      className="h-28 w-28 sm:h-32 sm:w-32 object-contain relative z-10 transition-all duration-700 group-hover:scale-105"
-                    />
-                  ) : (
-                    <div className="w-24 h-24 sm:w-28 sm:h-28 rounded-full bg-white/40 backdrop-blur-xl border border-white/60 shadow-[0_8px_32px_rgba(0,0,0,0.08)] flex items-center justify-center transition-all duration-700 group-hover:scale-105 group-hover:shadow-[0_10px_40px_rgba(0,0,0,0.10)]">
-                      <Icon className="h-12 w-12 sm:h-14 sm:w-14 text-stone-700 relative z-10" />
-                    </div>
-                  )}
+                  <p className="text-xs text-stone-500 font-light" style={{ fontFamily: "'Manrope', sans-serif" }}>
+                    {format.description}
+                  </p>
                 </div>
               </div>
-
-              {/* Bottom shine effect */}
-              <div className="absolute bottom-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-white/40 to-transparent"></div>
             </button>
           );
         })}
@@ -244,4 +246,4 @@ export const QuestionFormatSelector: React.FC<QuestionFormatSelectorProps> = ({
       </div>
     </div>
   );
-};
+}
