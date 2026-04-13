@@ -11,10 +11,10 @@
     "test-insert": "node test-simple-insert.js"
   },
   "dependencies": {
-    "@supabase/supabase-js": "^2.39.0",
+    "@supabase/supabase-js": "^2.103.0",
     "chalk": "^5.3.0",
     "commander": "^11.1.0",
-    "dotenv": "^16.3.1",
+    "dotenv": "^16.6.1",
     "ts-node": "^10.9.2",
     "zod": "^3.22.4"
   },

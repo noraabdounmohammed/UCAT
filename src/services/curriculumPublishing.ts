@@ -707,17 +707,36 @@ export class CurriculumPublishingService {
         }
       );
 
-      const { data: concepts, error } = await supabaseConcepts
-        .from('curriculum_concepts')
-        .select('*')
-        .eq('curriculum_id', curriculumId);
+      // Supabase defaults to 1000 rows max per request — paginate to get all concepts
+      const PAGE_SIZE = 1000;
+      let allConcepts: any[] = [];
+      let from = 0;
+      let hasMore = true;
 
-      if (error) {
-        console.error(`Error fetching concepts for ${curriculumId}:`, error);
-        return [];
+      while (hasMore) {
+        const { data: batch, error } = await supabaseConcepts
+          .from('curriculum_concepts')
+          .select('*')
+          .eq('curriculum_id', curriculumId)
+          .range(from, from + PAGE_SIZE - 1);
+
+        if (error) {
+          console.error(`Error fetching concepts for ${curriculumId} (offset ${from}):`, error);
+          break;
+        }
+
+        if (batch && batch.length > 0) {
+          allConcepts = allConcepts.concat(batch);
+          from += batch.length;
+          hasMore = batch.length === PAGE_SIZE;
+        } else {
+          hasMore = false;
+        }
       }
 
-      return (concepts || []).map((c: any) => ({
+      console.log(`Fetched ${allConcepts.length} concepts for ${curriculumId}`);
+
+      return allConcepts.map((c: any) => ({
         concept_id: c.concept_id,
         title: c.title,
         content: c.content,
@@ -997,14 +1016,9 @@ export class CurriculumPublishingService {
       }
       console.log(`CurriculumPublishing: Importing ${conceptsToImport.length} concepts for ${newCurriculumId}`);
 
-      // Estimate size and check storage before importing
-      const estimatedSize = JSON.stringify(conceptsToImport).length * 2; // UTF-16 encoding
-      const canSave = await StorageManager.checkBeforeSave(estimatedSize);
-      
-      if (!canSave) {
-        throw new Error('Unable to free enough storage space for import');
-      }
-      
+      // Clear stale published curriculums cache so fresh data is fetched
+      try { localStorage.removeItem(PUBLISHED_CACHE_KEY); } catch {}
+
       // Create curriculum metadata
       const newCurriculum = {
         id: newCurriculumId,
@@ -1024,9 +1038,31 @@ export class CurriculumPublishingService {
       localStorage.setItem(storageKey, JSON.stringify(curriculums));
       console.log(`CurriculumPublishing: Saved curriculum to ${storageKey}`);
 
-      // Import concepts
+      // Import concepts — strip per-concept filter_categories to save ~40% storage
+      // (filter_categories are already stored at curriculum level via filter_assignments)
+      const slimConcepts = conceptsToImport.map(c => ({
+        concept_id: c.concept_id,
+        title: c.title,
+        content: c.content,
+        custom_filters: c.custom_filters || [],
+        prerequisites: c.prerequisites || [],
+        mastery_data: c.mastery_data || { attempts: 0, correct: 0, incorrect: 0, mastery_level: 0, last_practiced: null }
+      }));
       const conceptsKey = `${newCurriculumId}_user_concepts`;
-      localStorage.setItem(conceptsKey, JSON.stringify(conceptsToImport));
+      try {
+        localStorage.setItem(conceptsKey, JSON.stringify(slimConcepts));
+      } catch (storageError) {
+        console.error('CurriculumPublishing: localStorage quota exceeded for concepts, trying smaller payload');
+        // Last resort: strip content to bare minimum
+        const minimalConcepts = slimConcepts.map(c => ({
+          concept_id: c.concept_id,
+          title: c.title,
+          content: c.content,
+          custom_filters: c.custom_filters,
+          mastery_data: c.mastery_data
+        }));
+        localStorage.setItem(conceptsKey, JSON.stringify(minimalConcepts));
+      }
 
       // Import custom filters
       const filtersKey = `${newCurriculumId}_custom_filters`;

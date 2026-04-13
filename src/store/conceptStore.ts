@@ -201,38 +201,12 @@ export const createConceptStore = (curriculumId: string = 'default') => {
             // For now, localStorage is the primary storage
           }
           
-          // Start with user concepts only (all curriculums start empty)
-          let concepts: any[] = userConcepts;
-          
           // Load deleted concepts list (still from localStorage for now)
           const deletedConceptsStr = localStorage.getItem(getCurriculumKey(curriculumId, 'deleted_concepts'));
           const deletedConceptIds = deletedConceptsStr ? JSON.parse(deletedConceptsStr) : [];
           
           // Ensure all concepts have required properties
-          const normalizedConcepts = concepts.map((concept: any) => {
-            const masteryData = concept.mastery_data || {
-              attempts: 0,
-              correct: 0,
-              incorrect: 0,
-              mastery_level: 0,
-              last_practiced: null
-            };
-            
-            // Normalize mastery level to 0-2 range (convert old 5-level system to 3-level)
-            if (masteryData.mastery_level > 2) {
-              masteryData.mastery_level = 0; // Reset to unseen if using old system
-            }
-            
-            return {
-              ...concept,
-              content: concept.content || concept.description || concept.knowledge || 'No content available',
-              custom_filters: concept.custom_filters || concept.tags || [],
-              prerequisites: concept.prerequisites || [],
-              mastery_data: masteryData
-            };
-          });
-          
-          const normalizedUserConcepts = userConcepts.map((concept: any) => {
+          const normalizedConcepts = userConcepts.map((concept: any) => {
             const masteryData = concept.mastery_data || {
               attempts: 0,
               correct: 0,
@@ -256,14 +230,9 @@ export const createConceptStore = (curriculumId: string = 'default') => {
           });
           
           // Filter out deleted concepts
-          const filteredNormalizedConcepts = normalizedConcepts.filter(
+          const allConcepts = normalizedConcepts.filter(
             (concept: any) => !deletedConceptIds.includes(concept.concept_id)
           );
-          const filteredUserConcepts = normalizedUserConcepts.filter(
-            (concept: any) => !deletedConceptIds.includes(concept.concept_id)
-          );
-          
-          const allConcepts = [...filteredNormalizedConcepts, ...filteredUserConcepts];
           
           // Debug: Check concept structure
           if (allConcepts.length > 0) {
