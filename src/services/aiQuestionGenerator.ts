@@ -183,12 +183,17 @@ Return the response as a JSON object with EXACTLY ${optionCount} options:
 ${optionExamples}
   ],
   "correct": "${randomCorrectLetter}",
-  "explanation": "The correct answer is ${randomCorrectLetter} because..."
+  "explanation": "The correct answer is ${randomCorrectLetter} because [factual reason]. The other options are incorrect: B because [reason], C because [reason], D because [reason], E because [reason]."
 }
 
 CRITICAL: The "correct" field must be ONE of the option IDs (A, B, C, D, or E).
 RANDOMIZE which option is correct - do NOT always make A the correct answer.
 The correct answer should be placed at a RANDOM position in the options array.
+
+EXPLANATION — mandatory rules:
+- Write from clinical/factual knowledge only, like a textbook explanation.
+- NEVER say "the content states", "the content says", "the content explicitly states", "as per the content", "based on the content", "as stated", "as provided", or any phrase referencing a source document.
+- State facts directly.
 
 MANDATORY REQUIREMENTS:
 - Question must be ONE sentence, direct and simple
@@ -324,12 +329,17 @@ Return the response as a JSON object with EXACTLY ${optionCount} options:
 ${optionExamples}
   ],
   "correct": "${randomCorrectLetter}",
-  "explanation": "The correct answer is ${randomCorrectLetter} because... Option B is incorrect because... Option C is incorrect because..."
+  "explanation": "The correct answer is ${randomCorrectLetter} because [clinical reason]. Option B is incorrect because [clinical reason]. Option C is incorrect because [clinical reason]. Option D is incorrect because [clinical reason]. Option E is incorrect because [clinical reason]."
 }
 
 CRITICAL: The "correct" field must be ONE of the option IDs (A, B, C, D, or E).
 RANDOMIZE which option is correct - do NOT always make A the correct answer.
 The correct answer should be placed at a RANDOM position in the options array.
+
+EXPLANATION — mandatory rules:
+- Write purely from clinical knowledge, as if explaining to a student after sitting an exam.
+- NEVER quote or reference the source material. NEVER say "the content states", "the content says", "the content explicitly states", "as per the content", "based on the content", "as stated", "as provided", "according to the content", or any similar phrase.
+- If you find yourself wanting to cite the source, just state the clinical fact directly instead.
 
 MANDATORY REQUIREMENTS:
 - Provide exactly ${optionCount} options labeled A through ${String.fromCharCode(64 + optionCount)}

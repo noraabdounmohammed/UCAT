@@ -100,9 +100,23 @@ export const UkmlaSBAQuestion: React.FC<UkmlaSBAQuestionProps> = ({
 
   // Answer is submitted immediately when an option is clicked
 
+  // Strip any phrases that leak the AI/backend source before showing to users
+  const sanitiseExplanation = (text: string): string => text
+    .replace(/[Tt]he content explicitly states? that ['"]/g, '')
+    .replace(/['"]\s*\.\s*(?=Option|The correct)/g, '. ')
+    .replace(/[Tt]he content (explicitly )?(states?|says?|mentions?|indicates?|notes?)[^.]*\.\s*/g, '')
+    .replace(/[Bb]ased on (the )?(concept |provided )?content[^,.]*[,.]?\s*/g, '')
+    .replace(/[Aa]ccording to (the )?(concept |provided )?content[^,.]*[,.]?\s*/g, '')
+    .replace(/[Aa]s (stated|mentioned|described|provided|outlined|given) in (the )?(concept |provided )?content[^,.]*[,.]?\s*/g, '')
+    .replace(/[Ff]rom (the )?(concept )?content[^,.]*[,.]?\s*/g, '')
+    .replace(/[Aa]s per (the )?(concept )?content[^,.]*[,.]?\s*/g, '')
+    .replace(/[Bb]ased on (the )?(provided|given) (information|material|concept)[^,.]*[,.]?\s*/g, '')
+    .replace(/\s{2,}/g, ' ')
+    .trim();
+
   // Format question content
   const questionContent = question.question || question.question_stem || '';
-  const explanation = question.explanation || question.worked_solution || '';
+  const explanation = sanitiseExplanation(question.explanation || question.worked_solution || '');
 
   return (
     <div className={`fixed inset-0 flex flex-col overflow-hidden ${isLightMode ? 'bg-zinc-50' : 'bg-[#0A0A0A]'}`}>
