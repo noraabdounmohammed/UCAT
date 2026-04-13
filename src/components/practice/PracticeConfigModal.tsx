@@ -400,7 +400,7 @@ export const PracticeConfigModal: React.FC<PracticeConfigModalProps> = ({
   const getFormatDisplayName = (format: QuestionFormat) => {
     switch (format) {
       case 'sba': return 'Quick SBA';
-      case 'ukmla_sba': return 'Clinical SBA';
+      case 'ukmla_sba': return 'UKMLA SBA';
       case 'mcq': return 'Multiple Choice';
       case 'emq': return 'Extended Matching';
       case 'true_false': return 'True/False';

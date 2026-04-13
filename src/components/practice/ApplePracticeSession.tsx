@@ -223,7 +223,7 @@ export function ApplePracticeSession({
     setShowExitConfirmation(false);
   };
 
-  // Ensure full-viewport dark background for SBA/Clinical SBA and Flashcards
+  // Ensure full-viewport dark background for SBA/UKMLA SBA and Flashcards
   // This prevents any white strip at the bottom by overriding body/html background.
   useEffect(() => {
     if (questionContent.format === 'flashcard' || questionContent.format === 'sba' || questionContent.format === 'ukmla_sba') {

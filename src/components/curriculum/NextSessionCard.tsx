@@ -219,7 +219,7 @@ export const NextSessionCard: React.FC<NextSessionCardProps> = ({
       case 'sba':
         return `${conceptCount} SBAs`;
       case 'ukmla_sba':
-        return `${conceptCount} Clinical SBAs`;
+        return `${conceptCount} UKMLA SBAs`;
       default:
         return `${conceptCount} Items`;
     }

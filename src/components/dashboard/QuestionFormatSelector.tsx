@@ -26,7 +26,7 @@ export const QUESTION_FORMATS: QuestionFormat[] = [
   },
   {
     id: 'ukmla_sba',
-    name: 'Clinical SBA',
+    name: 'UKMLA SBA',
     description: 'Clinical case scenarios',
     icon: CheckSquare,
     color: 'from-pink-500 to-pink-600'
