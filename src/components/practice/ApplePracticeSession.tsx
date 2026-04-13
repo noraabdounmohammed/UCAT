@@ -333,8 +333,8 @@ export function ApplePracticeSession({
       </header>
       )}
 
-      {/* Floating progress pill for flashcard/SBA (no header) */}
-      {(questionContent.format === 'flashcard' || questionContent.format === 'sba' || questionContent.format === 'ukmla_sba') && sessionAnswers.length > 0 && (
+      {/* Floating progress pill for flashcard/SBA (no header) — ukmla_sba excluded as it has its own built-in header */}
+      {(questionContent.format === 'flashcard' || questionContent.format === 'sba') && sessionAnswers.length > 0 && (
         <div className="fixed top-4 right-4 z-20">
           <SessionProgressDropdown
             answers={sessionAnswers}
