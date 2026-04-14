@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { X, Filter, Search, BookOpen, CheckSquare } from 'lucide-react';
+import { X, Filter, Search, ArrowUpRight } from 'lucide-react';
+import { QUESTION_FORMATS } from '@/components/dashboard/QuestionFormatSelector';
 import { useConceptStore } from '@/contexts/ConceptStoreContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/lib/supabase';
@@ -373,9 +374,9 @@ export const PracticeConfigModal: React.FC<PracticeConfigModalProps> = ({
     // Persist the exact selection to the store so downstream startPractice uses it
     setPracticeSelection(selectedIds);
 
+    const MAX_QUESTIONS_PER_SESSION = 40;
     const config = {
       target_formats: selectedFormat ? [selectedFormat] : undefined,
-      const MAX_QUESTIONS_PER_SESSION = 40;
       question_count: Math.min(selectedIds.length, MAX_QUESTIONS_PER_SESSION),
       custom_prompt: finalPrompt,
       custom_flashcard_prompt: finalFlashcardPrompt
@@ -569,63 +570,51 @@ export const PracticeConfigModal: React.FC<PracticeConfigModalProps> = ({
         <div className="px-6 md:px-12 py-6 md:py-8 overflow-y-auto flex-1">
             
             {!preselectedFormat && (
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
+            <div className="grid grid-cols-3 gap-3 mb-8">
               {activeFormats.map(format => {
-                const isComingSoon = false; // All activeFormats are available
+                const fmt = QUESTION_FORMATS.find(f => f.id === format);
+                const Icon = fmt?.icon;
+                const isSelected = selectedFormat === format;
+                const bg = isSelected ? '#1C1917' : (fmt?.bg ?? '#F7F4F0');
+                const fg = isSelected ? '#FFFFFF' : (fmt?.fg ?? '#1C1917');
                 return (
                   <button
                     key={format}
-                    onClick={() => !isComingSoon && handleFormatToggle(format)}
-                    disabled={isComingSoon}
-                    className={`relative p-6 rounded-2xl transition-all text-left border ${
-                      isComingSoon
-                        ? 'bg-stone-100 border-stone-200 cursor-not-allowed opacity-60'
-                        : selectedFormat === format 
-                        ? 'bg-stone-900 text-white shadow-2xl border-stone-900'
-                        : 'bg-white/60 backdrop-blur-xl border-black/[0.06] hover:border-black/[0.12] hover:shadow-md'
-                    }`}
+                    onClick={() => handleFormatToggle(format)}
+                    className="group relative rounded-2xl overflow-hidden transition-all duration-200 ease-out hover:scale-[1.02] text-left"
+                    style={{ height: '160px', backgroundColor: bg }}
                   >
-                  <div className="flex flex-col gap-4 items-center text-center">
-                    <div className="flex items-center justify-center">
-                      {format === 'flashcard' ? (
-                        <div className="w-16 h-16 rounded-full bg-stone-100 flex items-center justify-center">
-                          <BookOpen className="h-7 w-7 text-stone-700" strokeWidth={2} />
-                        </div>
-                      ) : (format === 'sba' || format === 'ukmla_sba') ? (
-                        <div className="w-16 h-16 rounded-full bg-stone-100 flex items-center justify-center">
-                          <CheckSquare className="h-7 w-7 text-stone-700" strokeWidth={2} />
-                        </div>
-                      ) : (
-                        <div className="w-16 h-16 rounded-full bg-stone-100 flex items-center justify-center">
-                          <CheckSquare className="h-7 w-7 text-stone-700" strokeWidth={2} />
-                        </div>
-                      )}
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center justify-center mb-2">
-                        <span className={`text-base font-medium tracking-tight ${selectedFormat === format ? 'text-white' : 'text-stone-900'}`} style={{ fontFamily: "'Unbounded', sans-serif", fontWeight: 500 }}>
-                          {getFormatDisplayName(format)}
-                        </span>
+                    <div className="h-full flex flex-col justify-between p-4">
+                      {/* Top row */}
+                      <div className="flex items-start justify-between">
+                        {Icon && (
+                          <Icon
+                            className="h-4 w-4"
+                            style={{ color: fg, opacity: isSelected ? 0.6 : 0.4 }}
+                          />
+                        )}
+                        <ArrowUpRight
+                          className="h-3.5 w-3.5 opacity-0 group-hover:opacity-40 transition-opacity duration-200"
+                          style={{ color: fg }}
+                        />
                       </div>
-                      {isComingSoon && (
-                        <div className="flex justify-center mb-2">
-                          <span className="px-2.5 py-1 bg-amber-50 text-amber-700 text-[10px] uppercase tracking-widest rounded-full" style={{ fontFamily: "'Unbounded', sans-serif", fontWeight: 500 }}>
-                            Soon
-                          </span>
-                        </div>
-                      )}
-                      <p className={`text-xs font-light leading-relaxed ${selectedFormat === format ? 'text-white/70' : 'text-stone-500'}`} style={{ fontFamily: "'Manrope', sans-serif" }}>
-                        {format === 'flashcard' && 'Quick review cards for efficient memorization'}
-                        {format === 'sba' && 'Concise SBA Questions'}
-                        {format === 'ukmla_sba' && 'Clinical scenarios with detailed explanations'}
-                        {format === 'emq' && 'Match multiple scenarios to a list of options'}
-                        {format === 'true_false' && 'Evaluate multiple statements as true or false'}
-                        {format === 'ranking' && 'Order steps or prioritize management options'}
-                        {format === 'mindmap' && 'Visual concept maps showing relationships and connections'}
-                      </p>
+                      {/* Bottom text */}
+                      <div>
+                        <p
+                          className="text-[10px] uppercase tracking-[0.12em] mb-1.5"
+                          style={{ fontFamily: "'Manrope', sans-serif", color: fg, opacity: isSelected ? 0.6 : 0.4 }}
+                        >
+                          {fmt?.description ?? ''}
+                        </p>
+                        <h3
+                          className="text-[13px] leading-tight"
+                          style={{ fontFamily: "'Unbounded', sans-serif", fontWeight: 400, letterSpacing: '-0.02em', color: fg }}
+                        >
+                          {getFormatDisplayName(format)}
+                        </h3>
+                      </div>
                     </div>
-                  </div>
-                </button>
+                  </button>
                 );
               })}
             </div>
@@ -991,3 +980,4 @@ export const PracticeConfigModal: React.FC<PracticeConfigModalProps> = ({
     </div>
   );
 };
+ 
