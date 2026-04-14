@@ -48,8 +48,6 @@ export const PracticeConfigModal: React.FC<PracticeConfigModalProps> = ({
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [isAuthenticating, setIsAuthenticating] = useState(false);
-  const [termsAccepted, setTermsAccepted] = useState(false);
-  const [termsError, setTermsError] = useState(false);
   const [authError, setAuthError] = useState<string | null>(null);
 
   // Initialize practice filter state when modal opens - always reset to fresh state
@@ -335,32 +333,11 @@ export const PracticeConfigModal: React.FC<PracticeConfigModalProps> = ({
         });
         if (error) throw error;
       } else {
-        if (!termsAccepted) {
-          setTermsError(true);
-          setIsAuthenticating(false);
-          return;
-        }
-        setTermsError(false);
-        const { error, data: authData } = await supabase.auth.signUp({
+        const { error } = await supabase.auth.signUp({
           email,
           password,
-          options: {
-            emailRedirectTo: window.location.origin,
-            data: {
-              marketing_consent: true,
-            }
-          }
         });
         if (error) throw error;
-        if (authData.user) {
-          await supabase.from('profiles').insert({
-            id: authData.user.id,
-            email: authData.user.email,
-            role: 'consumer',
-            marketing_consent: true,
-            marketing_consent_at: new Date().toISOString()
-          });
-        }
       }
       // Auth context will update and trigger the useEffect above
     } catch (error: any) {
@@ -396,9 +373,9 @@ export const PracticeConfigModal: React.FC<PracticeConfigModalProps> = ({
     // Persist the exact selection to the store so downstream startPractice uses it
     setPracticeSelection(selectedIds);
 
-    const MAX_QUESTIONS_PER_SESSION = 40;
     const config = {
       target_formats: selectedFormat ? [selectedFormat] : undefined,
+      const MAX_QUESTIONS_PER_SESSION = 40;
       question_count: Math.min(selectedIds.length, MAX_QUESTIONS_PER_SESSION),
       custom_prompt: finalPrompt,
       custom_flashcard_prompt: finalFlashcardPrompt
@@ -502,27 +479,6 @@ export const PracticeConfigModal: React.FC<PracticeConfigModalProps> = ({
                 placeholder="••••••••"
               />
             </div>
-
-            {authMode === 'signup' && (
-              <div className="space-y-3">
-                <label className="flex items-start gap-3 cursor-pointer">
-                  <input
-                    type="checkbox"
-                    checked={termsAccepted}
-                    onChange={(e) => { setTermsAccepted(e.target.checked); setTermsError(false); }}
-                    className="mt-0.5 w-4 h-4 rounded border-stone-300 text-stone-900 focus:ring-stone-500 accent-stone-900"
-                  />
-                  <span className="text-xs text-stone-600 leading-relaxed" style={{ fontFamily: "'Manrope', sans-serif", fontWeight: 300 }}>
-                    I agree to the <a href="/terms" target="_blank" className="underline hover:text-stone-900">Terms of Service</a>, <a href="/privacy" target="_blank" className="underline hover:text-stone-900">Privacy Policy</a>, and to receive updates and promotions via email. You can unsubscribe at any time.
-                  </span>
-                </label>
-                {termsError && (
-                  <p className="text-sm text-red-600 ml-7" style={{ fontFamily: "'Manrope', sans-serif" }}>
-                    You must accept the Terms of Service to continue
-                  </p>
-                )}
-              </div>
-            )}
 
             {authError && (
               <div className="p-3 rounded-xl bg-red-50 border border-red-200">
@@ -983,4 +939,55 @@ export const PracticeConfigModal: React.FC<PracticeConfigModalProps> = ({
                       className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-stone-100 hover:bg-stone-200 rounded-full text-xs text-stone-900 transition-colors"
                       style={{ fontFamily: "'Manrope', sans-serif", fontWeight: 400 }}
                     >
-                      {levelName}
+                      {levelName}
+                      <X className="h-3 w-3" />
+                    </button>
+                  );
+                })}
+                {practiceFilterState.custom_filters.map((filter: string) => (
+                  <button
+                    key={filter}
+                    onClick={() => {
+                      setPracticeFilterState({
+                        ...practiceFilterState,
+                        custom_filters: practiceFilterState.custom_filters.filter((f: string) => f !== filter)
+                      });
+                    }}
+                    className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-stone-100 hover:bg-stone-200 rounded-full text-xs text-stone-900 transition-colors"
+                    style={{ fontFamily: "'Manrope', sans-serif", fontWeight: 400 }}
+                  >
+                    {filter}
+                    <X className="h-3 w-3" />
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+          
+          {/* Start Practice Button */}
+          <div className="px-6 md:px-12 py-6">
+            <button
+              onClick={selectedFormat ? handleStartPractice : undefined}
+              disabled={!selectedFormat}
+              className={`w-full px-8 py-4 rounded-full text-[11px] uppercase tracking-widest transition-all duration-300 ${
+                selectedFormat
+                  ? 'bg-stone-900 text-white hover:bg-stone-800 shadow-lg'
+                  : 'bg-stone-200 text-stone-400 cursor-not-allowed'
+              }`}
+              style={{ fontFamily: "'Unbounded', sans-serif", fontWeight: 500 }}
+            >
+              <div className="flex items-center justify-center gap-2">
+                <span>Start Practice</span>
+                {selectedFormat && (
+                  <span className="opacity-60">
+                    ({filteredPracticeConcepts.length})
+                  </span>
+                )}
+              </div>
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
