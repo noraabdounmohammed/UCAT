@@ -1,67 +1,39 @@
 import React, { useRef, useState, useEffect } from 'react';
-import { BookOpen, ClipboardList, Stethoscope, ChevronLeft, ChevronRight } from 'lucide-react';
+import { BookOpen, ClipboardList, Stethoscope, ChevronLeft, ChevronRight, ArrowUpRight } from 'lucide-react';
 
 export interface QuestionFormat {
   id: string;
   name: string;
   description: string;
   icon: React.ComponentType<{ className?: string }>;
-  color: string;
-  pastel: {
-    cardBg: string;
-    cardBorder: string;
-    iconBg: string;
-    iconColor: string;
-    accent: string;
-    text: string;
-  };
+  bg: string;
+  fg: string;
 }
 
 export const QUESTION_FORMATS: QuestionFormat[] = [
   {
     id: 'flashcard',
     name: 'Flashcards',
-    description: 'Quick review flip cards',
+    description: 'Active recall',
     icon: BookOpen,
-    color: 'from-violet-400 to-purple-400',
-    pastel: {
-      cardBg: 'from-violet-50 via-purple-50 to-violet-100',
-      cardBorder: 'border-violet-200/70',
-      iconBg: 'bg-violet-100',
-      iconColor: 'text-violet-500',
-      accent: 'bg-violet-300/30',
-      text: 'text-violet-900',
-    }
+    bg: '#F7F4F0',
+    fg: '#1C1917',
   },
   {
     id: 'sba',
     name: 'Quick SBA',
-    description: 'Concise SBA questions',
+    description: 'Single best answer',
     icon: ClipboardList,
-    color: 'from-sky-400 to-cyan-400',
-    pastel: {
-      cardBg: 'from-sky-50 via-cyan-50 to-sky-100',
-      cardBorder: 'border-sky-200/70',
-      iconBg: 'bg-sky-100',
-      iconColor: 'text-sky-500',
-      accent: 'bg-sky-300/30',
-      text: 'text-sky-900',
-    }
+    bg: '#EFF3F6',
+    fg: '#0C1A2E',
   },
   {
     id: 'ukmla_sba',
     name: 'UKMLA SBA',
-    description: 'Clinical case scenarios',
+    description: 'Clinical vignettes',
     icon: Stethoscope,
-    color: 'from-rose-400 to-pink-400',
-    pastel: {
-      cardBg: 'from-rose-50 via-pink-50 to-rose-100',
-      cardBorder: 'border-rose-200/70',
-      iconBg: 'bg-rose-100',
-      iconColor: 'text-rose-500',
-      accent: 'bg-rose-300/30',
-      text: 'text-rose-900',
-    }
+    bg: '#F0F5F2',
+    fg: '#0D1F18',
   },
 ];
 
@@ -205,37 +177,44 @@ export const QuestionFormatSelector: React.FC<QuestionFormatSelectorProps> = ({
           <div className="flex gap-4">
         {QUESTION_FORMATS.map((format) => {
           const Icon = format.icon;
-          
           return (
             <button
               key={format.id}
               onClick={() => {
                 onFormatChange(format.id);
-                if (onOpenFilters) {
-                  onOpenFilters(format.id);
-                }
+                if (onOpenFilters) onOpenFilters(format.id);
               }}
-              className={`group relative flex-shrink-0 w-[240px] rounded-2xl overflow-hidden border transition-all duration-300 ease-out bg-gradient-to-br ${format.pastel.cardBg} ${format.pastel.cardBorder} shadow-[0_2px_12px_rgba(0,0,0,0.06)] hover:shadow-[0_8px_32px_rgba(0,0,0,0.10)] hover:-translate-y-0.5`}
-              style={{ height: '220px' }}
+              className="group relative flex-shrink-0 w-[200px] rounded-2xl overflow-hidden transition-all duration-200 ease-out hover:scale-[1.02]"
+              style={{ height: '200px', backgroundColor: format.bg }}
             >
-              {/* Subtle top accent bar */}
-              <div className={`absolute top-0 left-0 right-0 h-1 bg-gradient-to-r ${format.color} opacity-60`} />
-
-              {/* Content */}
-              <div className="relative h-full flex flex-col items-center justify-center gap-5 p-6">
-                {/* Icon circle */}
-                <div className={`w-16 h-16 rounded-2xl ${format.pastel.iconBg} flex items-center justify-center transition-transform duration-300 group-hover:scale-110 shadow-sm`}>
-                  <Icon className={`h-8 w-8 ${format.pastel.iconColor}`} />
+              {/* Content: icon top-left, text bottom-left, arrow top-right */}
+              <div className="h-full flex flex-col justify-between p-5">
+                {/* Top row */}
+                <div className="flex items-start justify-between">
+                  <Icon
+                    className="h-5 w-5 opacity-40"
+                    style={{ color: format.fg }}
+                  />
+                  <ArrowUpRight
+                    className="h-4 w-4 opacity-0 group-hover:opacity-40 transition-opacity duration-200"
+                    style={{ color: format.fg }}
+                  />
                 </div>
 
-                {/* Text */}
-                <div className="text-center">
-                  <h3 className={`text-base font-semibold ${format.pastel.text} mb-1`} style={{ fontFamily: "'Unbounded', sans-serif", fontWeight: 600, letterSpacing: '-0.01em' }}>
-                    {format.name}
-                  </h3>
-                  <p className="text-xs text-stone-500 font-light" style={{ fontFamily: "'Manrope', sans-serif" }}>
+                {/* Bottom text */}
+                <div>
+                  <p
+                    className="text-[11px] uppercase tracking-[0.12em] mb-2 opacity-40"
+                    style={{ fontFamily: "'Manrope', sans-serif", color: format.fg }}
+                  >
                     {format.description}
                   </p>
+                  <h3
+                    className="text-[17px] leading-tight"
+                    style={{ fontFamily: "'Unbounded', sans-serif", fontWeight: 400, letterSpacing: '-0.02em', color: format.fg }}
+                  >
+                    {format.name}
+                  </h3>
                 </div>
               </div>
             </button>
