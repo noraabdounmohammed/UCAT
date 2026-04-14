@@ -1,5 +1,5 @@
 import React, { useRef, useState, useEffect } from 'react';
-import { Tag, ChevronLeft, ChevronRight } from 'lucide-react';
+import { ChevronLeft, ChevronRight, ArrowUpRight } from 'lucide-react';
 import type { FilterCategory } from '@/types/conceptTypes';
 
 interface PracticeByCategorySelectorProps {
@@ -27,9 +27,6 @@ export const PracticeByCategorySelector: React.FC<PracticeByCategorySelectorProp
   if (!filters || filters.length === 0) {
     return null;
   }
-
-  // Parse color gradient from stored color, default to stone if not set
-  const colorClass = category.color || 'from-stone-500 to-stone-600';
 
   // Check scroll position to show/hide arrows
   const checkScroll = () => {
@@ -187,70 +184,50 @@ export const PracticeByCategorySelector: React.FC<PracticeByCategorySelectorProp
             <button
               key={filter}
               onClick={() => onFilterClick(filter)}
-              className="group relative flex-shrink-0 w-[280px] rounded-2xl overflow-hidden transition-all duration-700 ease-out shadow-[0_4px_24px_rgba(0,0,0,0.06)] hover:shadow-[0_12px_40px_rgba(0,0,0,0.1)]"
-              style={{ 
-                height: '240px'
-              }}
+              className="group relative flex-shrink-0 w-[200px] rounded-2xl overflow-hidden transition-all duration-200 ease-out hover:scale-[1.02]"
+              style={{ height: '200px', backgroundColor: '#F7F4F0' }}
             >
-              {/* Progress bar background - fills from bottom to top */}
-              <div className="absolute inset-0 bg-stone-50"></div>
-              
-              {/* Green bar for mastered concepts - fills from bottom */}
-              <div 
-                className="absolute left-0 right-0 bottom-0"
-                style={{ 
-                  height: `${masteredPercent}%`,
-                  backgroundColor: '#86EFAC',
-                  opacity: 0.6
-                }}
-              ></div>
-              
-              {/* Red bar for incorrect concepts - stacked above green */}
-              <div 
-                className="absolute left-0 right-0"
-                style={{ 
-                  bottom: `${masteredPercent}%`,
-                  height: `${incorrectPercent}%`,
-                  backgroundColor: '#FCA5A5',
-                  opacity: 0.6
-                }}
-              ></div>
-              
-              {/* Frosted glass overlay on top */}
-              <div className="absolute inset-0 bg-white/40 backdrop-blur-xl"></div>
-              
-              {/* Noise texture for loft aesthetic */}
-              <div className="absolute inset-0 opacity-[0.015]" style={{
-                backgroundImage: 'url("data:image/svg+xml,%3Csvg viewBox=\'0 0 400 400\' xmlns=\'http://www.w3.org/2000/svg\'%3E%3Cfilter id=\'noiseFilter\'%3E%3CfeTurbulence type=\'fractalNoise\' baseFrequency=\'0.9\' numOctaves=\'4\' /%3E%3C/filter%3E%3Crect width=\'100%25\' height=\'100%25\' filter=\'url(%23noiseFilter)\' /%3E%3C/svg%3E")',
-                backgroundSize: '200px 200px'
-              }}></div>
-
-              {/* Content container */}
-              <div className="relative z-10 h-full flex flex-col p-5 sm:p-6">
-                {/* Top section - Title with icon */}
-                <div className="flex flex-col items-center mb-4">
-                  <h3 className="text-lg sm:text-xl font-light text-stone-900 mb-2 tracking-tight text-center" style={{ fontFamily: "'Unbounded', sans-serif", fontWeight: 300, letterSpacing: '-0.01em' }}>
-                    {displayName}
-                  </h3>
-                  <div className="flex items-center gap-1.5 text-stone-600 text-xs">
-                    <Tag className="h-3 w-3" />
-                    <span style={{ fontFamily: "'Manrope', sans-serif", fontWeight: 400 }}>
-                      {totalConcepts} concepts · {Math.round(masteredPercent)}% mastered
-                    </span>
-                  </div>
+              {/* Content */}
+              <div className="h-full flex flex-col justify-between p-5">
+                {/* Top row: concept count left, arrow right */}
+                <div className="flex items-start justify-between">
+                  <span
+                    className="text-[11px] uppercase tracking-[0.12em] opacity-40"
+                    style={{ fontFamily: "'Manrope', sans-serif", color: '#1C1917' }}
+                  >
+                    {totalConcepts} concepts
+                  </span>
+                  <ArrowUpRight
+                    className="h-4 w-4 opacity-0 group-hover:opacity-40 transition-opacity duration-200"
+                    style={{ color: '#1C1917' }}
+                  />
                 </div>
 
-                {/* Middle section - Icon with glass effect */}
-                <div className="flex-1 flex items-center justify-center overflow-visible">
-                  <div className="w-24 h-24 sm:w-28 sm:h-28 rounded-full bg-white/40 backdrop-blur-xl border border-white/60 shadow-[0_8px_32px_rgba(0,0,0,0.08)] flex items-center justify-center transition-all duration-700 group-hover:scale-105 group-hover:shadow-[0_10px_40px_rgba(0,0,0,0.10)] overflow-visible">
-                    <div className={`absolute inset-0 rounded-full bg-gradient-to-br ${colorClass} opacity-10`}></div>
-                    <Tag className="h-12 w-12 sm:h-14 sm:w-14 text-stone-700 relative z-10" />
+                {/* Bottom: mastery % large + title */}
+                <div>
+                  {totalConcepts > 0 && (
+                    <p
+                      className="text-[28px] font-light leading-none mb-3 opacity-20"
+                      style={{ fontFamily: "'Unbounded', sans-serif", color: '#1C1917' }}
+                    >
+                      {Math.round(masteredPercent)}%
+                    </p>
+                  )}
+                  <h3
+                    className="text-[15px] leading-tight mb-3"
+                    style={{ fontFamily: "'Unbounded', sans-serif", fontWeight: 400, letterSpacing: '-0.02em', color: '#1C1917' }}
+                  >
+                    {displayName}
+                  </h3>
+                  {/* Thin progress bar */}
+                  <div className="h-[2px] w-full rounded-full overflow-hidden" style={{ backgroundColor: 'rgba(28,25,23,0.1)' }}>
+                    <div className="h-full flex">
+                      <div style={{ width: `${masteredPercent}%`, backgroundColor: '#6EE7B7' }} />
+                      <div style={{ width: `${incorrectPercent}%`, backgroundColor: '#FCA5A5' }} />
+                    </div>
                   </div>
                 </div>
               </div>
-
-              {/* Bottom shine effect */}
-              <div className="absolute bottom-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-white/40 to-transparent"></div>
             </button>
           );
         })}
