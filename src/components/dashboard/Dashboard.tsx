@@ -89,17 +89,19 @@ const Dashboard: React.FC = () => {
         </h1>
       </div>
 
-      {/* ── FORMAT + CATEGORY TILES ──────────────────────── */}
-      <div className="space-y-8">
-        <QuestionFormatSelector
-          selectedFormat={selectedFormat}
-          onFormatChange={handleFormatChange}
-        />
+      {/* ── FORMAT TILES ─────────────────────────────────── */}
+      <QuestionFormatSelector
+        selectedFormat={selectedFormat}
+        onFormatChange={handleFormatChange}
+      />
 
-        <PracticeSection
-          onPracticeStart={handlePracticeStart}
-        />
-      </div>
+      {/* ── DIVIDER ──────────────────────────────────────── */}
+      <div style={{ height: '0.5px', backgroundColor: '#E4DDD4', margin: '0 0 28px' }} />
+
+      {/* ── CATEGORY TILES ───────────────────────────────── */}
+      <PracticeSection
+        onPracticeStart={handlePracticeStart}
+      />
     </div>
   );
 };

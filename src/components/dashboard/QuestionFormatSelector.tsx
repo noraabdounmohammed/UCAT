@@ -37,6 +37,13 @@ export const QUESTION_FORMATS: QuestionFormat[] = [
   },
 ];
 
+// Thin border per format card — one shade darker than the bg
+const FORMAT_BORDERS: Record<string, string> = {
+  flashcard: '#DEB8A8',
+  sba:       '#D8C0AE',
+  ukmla_sba: '#D0C0B0',
+};
+
 interface QuestionFormatSelectorProps {
   selectedFormat?: string; // Optional, not currently used
   onFormatChange: (formatId: string) => void;
@@ -133,13 +140,19 @@ export const QuestionFormatSelector: React.FC<QuestionFormatSelectorProps> = ({
 
   return (
     <div className="mb-8 w-full">
-      <div className="mb-6">
-        <h2 className="text-2xl md:text-3xl font-medium text-stone-900 mb-2 tracking-tight" style={{ fontFamily: "'Unbounded', sans-serif", fontWeight: 500 }}>
-          Practice by Format
+      {/* Section header — matches "By System" / "By Condition" editorial style */}
+      <div className="flex items-baseline justify-between mb-3">
+        <h2
+          style={{
+            fontFamily: "'Unbounded', sans-serif",
+            fontWeight: 300,
+            fontSize: '20px',
+            letterSpacing: '-0.02em',
+            color: '#1C1814',
+          }}
+        >
+          By <em style={{ fontStyle: 'italic' }}>Format</em>
         </h2>
-        <p className="text-sm md:text-base text-stone-500 font-light" style={{ fontFamily: "'Manrope', sans-serif", fontWeight: 300 }}>
-          Choose your preferred learning style
-        </p>
       </div>
 
       {/* Horizontal scrollable container with drag support */}
@@ -155,15 +168,12 @@ export const QuestionFormatSelector: React.FC<QuestionFormatSelectorProps> = ({
           </button>
         )}
 
-        {/* Right scroll arrow */}
+        {/* Right-edge fade — parchment-matched */}
         {showRightArrow && (
-          <button
-            onClick={() => scroll('right')}
-            className="absolute right-0 top-1/2 -translate-y-1/2 z-10 w-10 h-10 rounded-full bg-white/90 backdrop-blur-xl border border-black/[0.06] shadow-lg flex items-center justify-center hover:bg-white transition-all opacity-0 md:opacity-100"
-            aria-label="Scroll right"
-          >
-            <ChevronRight className="h-5 w-5 text-stone-700" />
-          </button>
+          <div
+            className="absolute right-0 top-0 bottom-0 w-16 z-10 pointer-events-none"
+            style={{ background: 'linear-gradient(to right, transparent, #F4EFE8)' }}
+          />
         )}
 
         <div 
@@ -176,7 +186,6 @@ export const QuestionFormatSelector: React.FC<QuestionFormatSelectorProps> = ({
         >
           <div className="flex gap-4">
         {QUESTION_FORMATS.map((format) => {
-          const Icon = format.icon;
           return (
             <button
               key={format.id}
@@ -184,37 +193,63 @@ export const QuestionFormatSelector: React.FC<QuestionFormatSelectorProps> = ({
                 onFormatChange(format.id);
                 if (onOpenFilters) onOpenFilters(format.id);
               }}
-              className="group relative flex-shrink-0 w-[170px] rounded-2xl overflow-hidden transition-all duration-200 active:scale-[0.98]"
-              style={{ backgroundColor: format.bg }}
+              className="group flex-shrink-0 rounded-[20px] transition-all duration-150 active:scale-[0.98]"
+              style={{
+                minWidth: '162px',
+                backgroundColor: format.bg,
+                border: `0.5px solid ${FORMAT_BORDERS[format.id] || '#D8C8B8'}`,
+              }}
             >
-              <div className="flex flex-col p-5 gap-0" style={{ minHeight: '185px' }}>
+              <div className="flex flex-col" style={{ padding: '18px 17px 16px', minHeight: '185px' }}>
                 {/* Eyebrow */}
                 <p
-                  className="text-[10px] uppercase tracking-[0.09em] mb-7"
-                  style={{ fontFamily: "'Manrope', sans-serif", fontWeight: 400, color: format.fg, opacity: 0.6 }}
+                  style={{
+                    fontFamily: "'Manrope', sans-serif",
+                    fontSize: '10px',
+                    fontWeight: 300,
+                    letterSpacing: '0.09em',
+                    textTransform: 'uppercase',
+                    color: format.fg,
+                    opacity: 0.6,
+                    marginBottom: '16px',
+                  }}
                 >
                   {format.description}
                 </p>
 
                 {/* Name */}
                 <h3
-                  className="text-[20px] leading-[1.1] flex-1"
-                  style={{ fontFamily: "'Unbounded', sans-serif", fontWeight: 300, letterSpacing: '-0.02em', color: format.fg }}
+                  style={{
+                    fontFamily: "'Unbounded', sans-serif",
+                    fontWeight: 300,
+                    fontSize: '22px',
+                    lineHeight: 1.1,
+                    letterSpacing: '-0.02em',
+                    color: format.fg,
+                    flex: 1,
+                    marginBottom: '16px',
+                  }}
                 >
                   {format.name}
                 </h3>
 
-                {/* Begin button */}
-                <div
-                  className="mt-4 inline-flex items-center gap-1 text-[11px] font-medium px-3 py-1.5 rounded-full w-fit transition-opacity duration-150"
+                {/* Begin pill */}
+                <span
                   style={{
                     fontFamily: "'Manrope', sans-serif",
+                    fontSize: '11px',
+                    fontWeight: 500,
+                    padding: '5px 12px',
+                    borderRadius: '999px',
                     backgroundColor: `${format.fg}18`,
                     color: format.fg,
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    width: 'fit-content',
                   }}
                 >
                   Begin →
-                </div>
+                </span>
               </div>
             </button>
           );

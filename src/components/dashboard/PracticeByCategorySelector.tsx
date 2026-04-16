@@ -110,13 +110,18 @@ export const PracticeByCategorySelector: React.FC<PracticeByCategorySelectorProp
 
   return (
     <div className="mb-6 w-full">
-      {/* Section header */}
-      <div className="mb-3">
+      {/* Section header — "By System" / "By Condition" etc. */}
+      <div className="flex items-baseline justify-between mb-3 pb-0">
         <h2
-          className="text-xl font-light tracking-tight"
-          style={{ fontFamily: "'Unbounded', sans-serif", fontWeight: 300, color: '#1C1814' }}
+          style={{
+            fontFamily: "'Unbounded', sans-serif",
+            fontWeight: 300,
+            fontSize: '20px',
+            letterSpacing: '-0.02em',
+            color: '#1C1814',
+          }}
         >
-          By <em style={{ fontStyle: 'italic', fontWeight: 300 }}>{category.name}</em>
+          By <em style={{ fontStyle: 'italic' }}>{category.name}</em>
         </h2>
       </div>
 
@@ -126,18 +131,19 @@ export const PracticeByCategorySelector: React.FC<PracticeByCategorySelectorProp
         {showLeftArrow && (
           <button
             onClick={() => scroll('left')}
-            className="absolute left-0 top-1/2 -translate-y-1/2 z-10 w-9 h-9 rounded-full bg-white border border-black/[0.06] shadow flex items-center justify-center hover:bg-stone-50 transition-all opacity-0 md:opacity-100"
+            className="absolute left-0 top-1/2 -translate-y-1/2 z-10 w-9 h-9 rounded-full border border-black/[0.06] shadow flex items-center justify-center hover:opacity-80 transition-all opacity-0 md:opacity-100"
+            style={{ backgroundColor: '#FBF8F4' }}
             aria-label="Scroll left"
           >
-            <ChevronLeft className="h-4 w-4 text-stone-600" />
+            <ChevronLeft className="h-4 w-4" style={{ color: '#6A5A4A' }} />
           </button>
         )}
 
-        {/* Right-edge fade — always present, makes cut-off intentional */}
+        {/* Right-edge fade — parchment-matched so it blends with the page bg */}
         {showRightArrow && (
           <div
             className="absolute right-0 top-0 bottom-0 w-16 z-10 pointer-events-none"
-            style={{ background: 'linear-gradient(to right, transparent, white)' }}
+            style={{ background: 'linear-gradient(to right, transparent, #F4EFE8)' }}
           />
         )}
 
@@ -149,7 +155,7 @@ export const PracticeByCategorySelector: React.FC<PracticeByCategorySelectorProp
           onMouseUp={handleMouseUp}
           onMouseLeave={handleMouseLeave}
         >
-          <div className="flex gap-3">
+          <div className="flex gap-2.5">
             {sortedFilters.map((filter) => {
               const displayName = filter
                 .split('-')
@@ -162,37 +168,48 @@ export const PracticeByCategorySelector: React.FC<PracticeByCategorySelectorProp
               const incorrectConcepts = filterConcepts.filter((c: any) => c.mastery_data?.mastery_level === 1).length;
 
               const masteredPercent = totalConcepts > 0 ? (masteredConcepts / totalConcepts) * 100 : 0;
-              const incorrectPercent = totalConcepts > 0 ? (incorrectConcepts / totalConcepts) * 100 : 0;
               const hasStarted = masteredConcepts > 0 || incorrectConcepts > 0;
 
               return (
                 <button
                   key={filter}
                   onClick={() => onFilterClick(filter)}
-                  className="group relative flex-shrink-0 w-[155px] rounded-2xl overflow-hidden transition-all duration-200 active:scale-[0.98]"
-                  style={{ backgroundColor: hasStarted ? '#F5E0D4' : '#FBF8F4' }}
+                  className="group flex-shrink-0 rounded-[18px] transition-all duration-150 active:scale-[0.98]"
+                  style={{
+                    minWidth: '148px',
+                    backgroundColor: hasStarted ? '#F5E0D4' : '#FBF8F4',
+                    border: `0.5px solid ${hasStarted ? '#DEC0AE' : '#EAE4DC'}`,
+                  }}
                 >
-                  <div className="flex flex-col p-4" style={{ minHeight: '175px' }}>
+                  <div className="flex flex-col" style={{ padding: '15px 14px 13px', minHeight: '170px' }}>
                     {/* Eyebrow: concept count */}
                     <p
-                      className="text-[10px] uppercase tracking-[0.08em] mb-5"
                       style={{
                         fontFamily: "'Manrope', sans-serif",
-                        opacity: 0.45,
-                        color: hasStarted ? accent.text : '#1C1814',
+                        fontSize: '10px',
+                        fontWeight: 300,
+                        letterSpacing: '0.06em',
+                        textTransform: 'uppercase',
+                        color: hasStarted ? accent.text : '#C4AE9A',
+                        marginBottom: '5px',
                       }}
                     >
                       {totalConcepts.toLocaleString()} concepts
                     </p>
 
-                    {/* Name */}
+                    {/* Spacer pushes name downward */}
+                    <div style={{ flex: 1, minHeight: '16px' }} />
+
+                    {/* Name — wraps naturally, no overflow */}
                     <h3
-                      className="text-[15px] leading-tight flex-1"
                       style={{
                         fontFamily: "'Unbounded', sans-serif",
                         fontWeight: 300,
-                        letterSpacing: '-0.02em',
+                        fontSize: '15px',
+                        lineHeight: 1.2,
+                        letterSpacing: '-0.01em',
                         color: hasStarted ? accent.text : '#1C1814',
+                        marginBottom: '10px',
                       }}
                     >
                       {displayName}
@@ -200,42 +217,48 @@ export const PracticeByCategorySelector: React.FC<PracticeByCategorySelectorProp
 
                     {/* Progress bar + % or Begin pill */}
                     {hasStarted ? (
-                      <div className="mt-4">
-                        <div className="flex items-center gap-2 mb-1.5">
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '7px', marginTop: '4px' }}>
+                        <div style={{ flex: 1, height: '1.5px', backgroundColor: `${accent.bar}26`, borderRadius: '2px' }}>
                           <div
-                            className="flex-1 rounded-full overflow-hidden"
-                            style={{ height: '1.5px', backgroundColor: `${accent.bar}28` }}
-                          >
-                            <div
-                              style={{
-                                width: `${masteredPercent}%`,
-                                height: '1.5px',
-                                backgroundColor: accent.bar,
-                                transition: 'width 600ms ease-out',
-                              }}
-                            />
-                          </div>
-                          <span
-                            className="text-[10px] font-medium min-w-[26px] text-right"
-                            style={{ fontFamily: "'Manrope', sans-serif", color: accent.bar }}
-                          >
-                            {Math.round(masteredPercent)}%
-                          </span>
+                            style={{
+                              width: `${masteredPercent}%`,
+                              height: '1.5px',
+                              backgroundColor: accent.bar,
+                              borderRadius: '2px',
+                              transition: 'width 600ms ease-out',
+                            }}
+                          />
                         </div>
-                      </div>
-                    ) : (
-                      <div className="mt-4">
                         <span
-                          className="inline-flex items-center text-[11px] font-medium px-3 py-1.5 rounded-full"
                           style={{
                             fontFamily: "'Manrope', sans-serif",
-                            backgroundColor: '#1C181418',
-                            color: '#1C1814',
+                            fontSize: '10px',
+                            fontWeight: 400,
+                            color: accent.bar,
+                            minWidth: '26px',
+                            textAlign: 'right',
                           }}
                         >
-                          Begin →
+                          {Math.round(masteredPercent)}%
                         </span>
                       </div>
+                    ) : (
+                      <span
+                        style={{
+                          fontFamily: "'Manrope', sans-serif",
+                          fontSize: '11px',
+                          fontWeight: 500,
+                          padding: '5px 12px',
+                          borderRadius: '999px',
+                          backgroundColor: 'rgba(28,24,20,0.07)',
+                          color: '#1C1814',
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          marginTop: '4px',
+                        }}
+                      >
+                        Begin →
+                      </span>
                     )}
                   </div>
                 </button>
