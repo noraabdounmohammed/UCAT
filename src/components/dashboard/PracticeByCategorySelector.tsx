@@ -170,16 +170,14 @@ export const PracticeByCategorySelector: React.FC<PracticeByCategorySelectorProp
                   style={{ height: '196px', backgroundColor: accent.cardBg }}
                 >
                   <div className="h-full flex flex-col justify-between p-5">
-                    {/* Top row: accent dot + arrow */}
-                    <div className="flex items-start justify-between">
-                      <span
-                        className="w-2 h-2 rounded-full mt-0.5 flex-shrink-0"
-                        style={{ backgroundColor: accent.bar, opacity: 0.7 }}
-                      />
-                      <ArrowUpRight
-                        className="h-4 w-4 opacity-0 group-hover:opacity-40 transition-opacity duration-200"
-                        style={{ color: '#1C1917' }}
-                      />
+                    {/* Top row: arrow only shown on hover for started cards */}
+                    <div className="flex items-start justify-end">
+                      {hasStarted && (
+                        <ArrowUpRight
+                          className="h-4 w-4 opacity-0 group-hover:opacity-40 transition-opacity duration-200"
+                          style={{ color: '#1C1917' }}
+                        />
+                      )}
                     </div>
 
                     {/* Bottom section */}
