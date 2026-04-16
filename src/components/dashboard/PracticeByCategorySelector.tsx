@@ -12,13 +12,14 @@ interface PracticeByCategorySelectorProps {
 }
 
 // Muted editorial accent palette — one per category section
+// cardBg is the flat tile background; bar/begin are the accent colour used for dot + progress
 const ACCENT_PALETTE = [
-  { bar: '#C4956A', begin: '#C4956A' }, // warm terracotta
-  { bar: '#7B9E87', begin: '#7B9E87' }, // sage
-  { bar: '#7A8FA6', begin: '#7A8FA6' }, // slate blue
-  { bar: '#B08EA2', begin: '#B08EA2' }, // dusty mauve
-  { bar: '#A89B72', begin: '#A89B72' }, // warm khaki
-  { bar: '#6E9EA6', begin: '#6E9EA6' }, // teal
+  { cardBg: '#EDF1F5', bar: '#7A8FA6', begin: '#7A8FA6' }, // powder blue-grey / slate
+  { cardBg: '#EDF5F1', bar: '#7B9E87', begin: '#7B9E87' }, // soft sage
+  { cardBg: '#F5EDF5', bar: '#B08EA2', begin: '#B08EA2' }, // soft lavender / mauve
+  { cardBg: '#F5F1ED', bar: '#C4956A', begin: '#C4956A' }, // warm cream / terracotta
+  { cardBg: '#EDF5F5', bar: '#6E9EA6', begin: '#6E9EA6' }, // soft teal
+  { cardBg: '#F5EDEE', bar: '#B08888', begin: '#B08888' }, // blush / rose
 ];
 
 // Derive a stable accent from the category name so it's consistent across renders
@@ -166,7 +167,7 @@ export const PracticeByCategorySelector: React.FC<PracticeByCategorySelectorProp
                   key={filter}
                   onClick={() => onFilterClick(filter)}
                   className="group relative flex-shrink-0 w-[196px] rounded-2xl overflow-hidden transition-all duration-200 ease-out hover:scale-[1.02]"
-                  style={{ height: '196px', backgroundColor: '#F7F4F0' }}
+                  style={{ height: '196px', backgroundColor: accent.cardBg }}
                 >
                   <div className="h-full flex flex-col justify-between p-5">
                     {/* Top row: accent dot + arrow */}
