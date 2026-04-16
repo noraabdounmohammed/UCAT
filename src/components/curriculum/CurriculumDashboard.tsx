@@ -193,6 +193,9 @@ export const CurriculumDashboard: React.FC<CurriculumDashboardProps> = ({
     [curriculum?.id]
   );
 
+  // Categories to hide from the dashboard (noise/catch-all buckets)
+  const HIDDEN_CATEGORIES = new Set(['other', 'investigation', 'investigations', 'other conditions']);
+
   // Build category+filters list once
   const categoryRows = useMemo(() => {
     if (!filterCategories) return [];
@@ -203,7 +206,10 @@ export const CurriculumDashboard: React.FC<CurriculumDashboardProps> = ({
           .filter(([_, catId]) => catId === category.id)
           .map(([filter]) => filter),
       }))
-      .filter(row => row.filters.length > 0);
+      .filter(row =>
+        row.filters.length > 0 &&
+        !HIDDEN_CATEGORIES.has(row.category.name.toLowerCase().trim())
+      );
   }, [filterCategories, filterAssignments]);
 
   useEffect(() => {

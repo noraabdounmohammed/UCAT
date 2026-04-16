@@ -9,22 +9,15 @@ import { PWAInstallPrompt } from '@/components/PWAInstallPrompt';
 import { PWAUpdateNotification } from '@/components/PWAUpdateNotification';
 import '@/styles/font-sizes.css';
 
-// Lazy load components for better performance
-const CurriculumApp = lazy(() => import('@/components/CurriculumApp').then(m => ({ default: m.CurriculumApp })));
+// Eager import for the main app — no spinner on first load
+import { CurriculumApp } from '@/components/CurriculumApp';
+
+// Lazy only for secondary routes rarely visited
 const LandingPage = lazy(() => import('@/pages/LandingPage').then(m => ({ default: m.LandingPage })));
 const CurriculumLandingPage = lazy(() => import('@/pages/CurriculumLandingPage').then(m => ({ default: m.CurriculumLandingPage })));
 
-// Loading component
-const PageLoader = () => (
-  <div className="h-screen w-screen flex items-center justify-center bg-stone-50">
-    <div className="text-center">
-      <div className="w-12 h-12 border-4 border-stone-200 border-t-stone-900 rounded-full animate-spin mx-auto mb-4"></div>
-      <p className="text-sm text-stone-600" style={{ fontFamily: "'Manrope', sans-serif" }}>Loading...</p>
-    </div>
-  </div>
-);
-
-// Mock user data removed
+// Instant blank parchment — replaces the spinning loader for secondary routes
+const BlankFallback = () => <div className="h-screen w-screen" style={{ backgroundColor: '#F4EFE8' }} />;
 
 function App() {
   return (
@@ -34,25 +27,31 @@ function App() {
           <StorageNotification />
           <PWAInstallPrompt />
           <PWAUpdateNotification />
-          <Suspense fallback={<PageLoader />}>
-            <Routes>
-              {/* Landing Page */}
-              <Route path="/" element={<LandingPage />} />
-              
-              {/* Curriculum Hub & Practice */}
-              <Route path="/concept-practice" element={
-                <MainLayout currentPage="concept-practice">
-                  <CurriculumApp />
-                </MainLayout>
-              } />
-              
-              {/* Expert Curriculums - 3D Carousel */}
-              <Route path="/curriculums" element={<CurriculumLandingPage />} />
-              
-              {/* Redirect any routes to home */}
-              <Route path="*" element={<Navigate to="/" replace />} />
-            </Routes>
-          </Suspense>
+          <Routes>
+            {/* Landing Page — lazy, shown rarely */}
+            <Route path="/" element={
+              <Suspense fallback={<BlankFallback />}>
+                <LandingPage />
+              </Suspense>
+            } />
+
+            {/* Main app — eager, instant */}
+            <Route path="/concept-practice" element={
+              <MainLayout currentPage="concept-practice">
+                <CurriculumApp />
+              </MainLayout>
+            } />
+
+            {/* Expert Curriculums — lazy, shown rarely */}
+            <Route path="/curriculums" element={
+              <Suspense fallback={<BlankFallback />}>
+                <CurriculumLandingPage />
+              </Suspense>
+            } />
+
+            {/* Catch-all */}
+            <Route path="*" element={<Navigate to="/" replace />} />
+          </Routes>
         </FontSizeProvider>
       </ThemeProvider>
     </AuthProvider>

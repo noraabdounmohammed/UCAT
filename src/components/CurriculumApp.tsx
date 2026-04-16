@@ -219,18 +219,9 @@ export const CurriculumApp: React.FC = () => {
     return <div className="h-screen w-screen bg-[#FAFAF9]" />;
   }
 
-  // Show auth loading state
+  // Auth resolves in <100ms — show blank parchment instead of spinner
   if (loading) {
-    return (
-      <div className="h-screen w-screen flex items-center justify-center bg-stone-50">
-        <div className="flex flex-col items-center gap-4">
-          <div className="animate-spin rounded-full h-12 w-12 border-4 border-stone-300 border-t-stone-800"></div>
-          <p className="text-stone-600 text-sm" style={{ fontFamily: "'Manrope', sans-serif" }}>
-            Loading...
-          </p>
-        </div>
-      </div>
-    );
+    return <div className="h-screen w-screen" style={{ backgroundColor: '#F4EFE8' }} />;
   }
 
   // Protect hub view - require sign-in to access "My Curriculums"
