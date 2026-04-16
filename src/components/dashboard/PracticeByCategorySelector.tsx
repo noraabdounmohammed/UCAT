@@ -1,5 +1,5 @@
 import React, { useRef, useState, useEffect } from 'react';
-import { ChevronLeft, ChevronRight, ArrowUpRight } from 'lucide-react';
+import { ChevronLeft, ChevronRight } from 'lucide-react';
 import type { FilterCategory } from '@/types/conceptTypes';
 
 interface PracticeByCategorySelectorProps {
@@ -11,22 +11,25 @@ interface PracticeByCategorySelectorProps {
   accentIndex?: number; // allows parent to assign a colour slot per section
 }
 
-// Muted editorial accent palette — one per category section
-// cardBg is the flat tile background; bar/begin are the accent colour used for dot + progress
-const ACCENT_PALETTE = [
-  { cardBg: '#EDF1F5', bar: '#7A8FA6', begin: '#7A8FA6' }, // powder blue-grey / slate
-  { cardBg: '#EDF5F1', bar: '#7B9E87', begin: '#7B9E87' }, // soft sage
-  { cardBg: '#F5EDF5', bar: '#B08EA2', begin: '#B08EA2' }, // soft lavender / mauve
-  { cardBg: '#F5F1ED', bar: '#C4956A', begin: '#C4956A' }, // warm cream / terracotta
-  { cardBg: '#EDF5F5', bar: '#6E9EA6', begin: '#6E9EA6' }, // soft teal
-  { cardBg: '#F5EDEE', bar: '#B08888', begin: '#B08888' }, // blush / rose
+// Rhode-inspired warm palette: card state communicates through background tint
+// Unstarted  → warm off-white surface (#FBF8F4)
+// In-progress → blush tint (#F5E0D4) — warmth signals activity
+// Progress bar always uses blush (#E8B4A0) for consistency
+
+// Per-section accent used ONLY for the progress bar and Begin pill text
+const SECTION_ACCENTS = [
+  { bar: '#C47A62', text: '#5A2818' }, // blush / terracotta
+  { bar: '#7B9E87', text: '#1A3A28' }, // sage
+  { bar: '#7A8FA6', text: '#0C1A2E' }, // slate blue
+  { bar: '#B08EA2', text: '#3A1A30' }, // mauve
+  { bar: '#A89B72', text: '#2E2810' }, // khaki
+  { bar: '#6E9EA6', text: '#0A2428' }, // teal
 ];
 
-// Derive a stable accent from the category name so it's consistent across renders
 function accentForCategory(name: string) {
   let hash = 0;
   for (let i = 0; i < name.length; i++) hash = (hash * 31 + name.charCodeAt(i)) & 0xffffffff;
-  return ACCENT_PALETTE[Math.abs(hash) % ACCENT_PALETTE.length];
+  return SECTION_ACCENTS[Math.abs(hash) % SECTION_ACCENTS.length];
 }
 
 export const PracticeByCategorySelector: React.FC<PracticeByCategorySelectorProps> = ({
@@ -107,13 +110,13 @@ export const PracticeByCategorySelector: React.FC<PracticeByCategorySelectorProp
 
   return (
     <div className="mb-6 w-full">
-      {/* Section header — tighter gap below */}
+      {/* Section header */}
       <div className="mb-3">
         <h2
-          className="text-2xl md:text-3xl font-medium text-stone-900 tracking-tight"
-          style={{ fontFamily: "'Unbounded', sans-serif", fontWeight: 500 }}
+          className="text-xl font-light tracking-tight"
+          style={{ fontFamily: "'Unbounded', sans-serif", fontWeight: 300, color: '#1C1814' }}
         >
-          Practice by {category.name}
+          By <em style={{ fontStyle: 'italic', fontWeight: 300 }}>{category.name}</em>
         </h2>
       </div>
 
@@ -166,74 +169,74 @@ export const PracticeByCategorySelector: React.FC<PracticeByCategorySelectorProp
                 <button
                   key={filter}
                   onClick={() => onFilterClick(filter)}
-                  className="group relative flex-shrink-0 w-[196px] rounded-2xl overflow-hidden transition-all duration-200 ease-out hover:scale-[1.02]"
-                  style={{ height: '196px', backgroundColor: accent.cardBg }}
+                  className="group relative flex-shrink-0 w-[155px] rounded-2xl overflow-hidden transition-all duration-200 active:scale-[0.98]"
+                  style={{ backgroundColor: hasStarted ? '#F5E0D4' : '#FBF8F4' }}
                 >
-                  <div className="h-full flex flex-col justify-between p-5">
-                    {/* Top row: arrow only shown on hover for started cards */}
-                    <div className="flex items-start justify-end">
-                      {hasStarted && (
-                        <ArrowUpRight
-                          className="h-4 w-4 opacity-0 group-hover:opacity-40 transition-opacity duration-200"
-                          style={{ color: '#1C1917' }}
-                        />
-                      )}
-                    </div>
+                  <div className="flex flex-col p-4" style={{ minHeight: '175px' }}>
+                    {/* Eyebrow: concept count */}
+                    <p
+                      className="text-[10px] uppercase tracking-[0.08em] mb-5"
+                      style={{
+                        fontFamily: "'Manrope', sans-serif",
+                        opacity: 0.45,
+                        color: hasStarted ? accent.text : '#1C1814',
+                      }}
+                    >
+                      {totalConcepts.toLocaleString()} concepts
+                    </p>
 
-                    {/* Bottom section */}
-                    <div>
-                      {/* Name — primary, large */}
-                      <h3
-                        className="text-[15px] leading-tight mb-1"
-                        style={{ fontFamily: "'Unbounded', sans-serif", fontWeight: 400, letterSpacing: '-0.02em', color: '#1C1917' }}
-                      >
-                        {displayName}
-                      </h3>
+                    {/* Name */}
+                    <h3
+                      className="text-[15px] leading-tight flex-1"
+                      style={{
+                        fontFamily: "'Unbounded', sans-serif",
+                        fontWeight: 300,
+                        letterSpacing: '-0.02em',
+                        color: hasStarted ? accent.text : '#1C1814',
+                      }}
+                    >
+                      {displayName}
+                    </h3>
 
-                      {/* Concept count — small, muted */}
-                      <p
-                        className="text-[10px] uppercase tracking-[0.1em] mb-3 opacity-35"
-                        style={{ fontFamily: "'Manrope', sans-serif", color: '#1C1917' }}
-                      >
-                        {totalConcepts} concepts
-                      </p>
-
-                      {/* Progress bar or Begin pill */}
-                      {hasStarted ? (
-                        <div
-                          className="h-[2px] w-full rounded-full overflow-hidden"
-                          style={{ backgroundColor: 'rgba(28,25,23,0.1)' }}
-                        >
-                          <div className="h-full flex">
+                    {/* Progress bar + % or Begin pill */}
+                    {hasStarted ? (
+                      <div className="mt-4">
+                        <div className="flex items-center gap-2 mb-1.5">
+                          <div
+                            className="flex-1 rounded-full overflow-hidden"
+                            style={{ height: '1.5px', backgroundColor: `${accent.bar}28` }}
+                          >
                             <div
                               style={{
                                 width: `${masteredPercent}%`,
+                                height: '1.5px',
                                 backgroundColor: accent.bar,
-                                transition: 'width 400ms ease-out',
-                              }}
-                            />
-                            <div
-                              style={{
-                                width: `${incorrectPercent}%`,
-                                backgroundColor: '#FCA5A5',
-                                transition: 'width 400ms ease-out',
+                                transition: 'width 600ms ease-out',
                               }}
                             />
                           </div>
+                          <span
+                            className="text-[10px] font-medium min-w-[26px] text-right"
+                            style={{ fontFamily: "'Manrope', sans-serif", color: accent.bar }}
+                          >
+                            {Math.round(masteredPercent)}%
+                          </span>
                         </div>
-                      ) : (
+                      </div>
+                    ) : (
+                      <div className="mt-4">
                         <span
-                          className="inline-flex items-center gap-1 text-[10px] uppercase tracking-[0.1em] px-2.5 py-1 rounded-full"
+                          className="inline-flex items-center text-[11px] font-medium px-3 py-1.5 rounded-full"
                           style={{
                             fontFamily: "'Manrope', sans-serif",
-                            color: accent.begin,
-                            backgroundColor: `${accent.begin}18`,
+                            backgroundColor: '#1C181418',
+                            color: '#1C1814',
                           }}
                         >
-                          Begin
+                          Begin →
                         </span>
-                      )}
-                    </div>
+                      </div>
+                    )}
                   </div>
                 </button>
               );

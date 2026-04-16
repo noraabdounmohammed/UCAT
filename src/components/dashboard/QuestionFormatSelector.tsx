@@ -16,24 +16,24 @@ export const QUESTION_FORMATS: QuestionFormat[] = [
     name: 'Flashcards',
     description: 'Active recall',
     icon: BookOpen,
-    bg: '#F7F4F0',
-    fg: '#1C1917',
+    bg: '#F2D4C8',   // blush
+    fg: '#5A2818',
   },
   {
     id: 'sba',
     name: 'Quick SBA',
     description: 'Single best answer',
     icon: ClipboardList,
-    bg: '#EFF3F6',
-    fg: '#0C1A2E',
+    bg: '#EDD9CC',   // glaze
+    fg: '#4A2810',
   },
   {
     id: 'ukmla_sba',
     name: 'UKMLA SBA',
     description: 'Clinical vignettes',
     icon: Stethoscope,
-    bg: '#F0F5F2',
-    fg: '#0D1F18',
+    bg: '#E4D4C4',   // praline
+    fg: '#3A1E08',
   },
 ];
 
@@ -184,37 +184,36 @@ export const QuestionFormatSelector: React.FC<QuestionFormatSelectorProps> = ({
                 onFormatChange(format.id);
                 if (onOpenFilters) onOpenFilters(format.id);
               }}
-              className="group relative flex-shrink-0 w-[200px] rounded-2xl overflow-hidden transition-all duration-200 ease-out hover:scale-[1.02]"
-              style={{ height: '200px', backgroundColor: format.bg }}
+              className="group relative flex-shrink-0 w-[170px] rounded-2xl overflow-hidden transition-all duration-200 active:scale-[0.98]"
+              style={{ backgroundColor: format.bg }}
             >
-              {/* Content: icon top-left, text bottom-left, arrow top-right */}
-              <div className="h-full flex flex-col justify-between p-5">
-                {/* Top row */}
-                <div className="flex items-start justify-between">
-                  <Icon
-                    className="h-5 w-5 opacity-40"
-                    style={{ color: format.fg }}
-                  />
-                  <ArrowUpRight
-                    className="h-4 w-4 opacity-0 group-hover:opacity-40 transition-opacity duration-200"
-                    style={{ color: format.fg }}
-                  />
-                </div>
+              <div className="flex flex-col p-5 gap-0" style={{ minHeight: '185px' }}>
+                {/* Eyebrow */}
+                <p
+                  className="text-[10px] uppercase tracking-[0.09em] mb-7"
+                  style={{ fontFamily: "'Manrope', sans-serif", fontWeight: 400, color: format.fg, opacity: 0.6 }}
+                >
+                  {format.description}
+                </p>
 
-                {/* Bottom text */}
-                <div>
-                  <p
-                    className="text-[11px] uppercase tracking-[0.12em] mb-2 opacity-40"
-                    style={{ fontFamily: "'Manrope', sans-serif", color: format.fg }}
-                  >
-                    {format.description}
-                  </p>
-                  <h3
-                    className="text-[17px] leading-tight"
-                    style={{ fontFamily: "'Unbounded', sans-serif", fontWeight: 400, letterSpacing: '-0.02em', color: format.fg }}
-                  >
-                    {format.name}
-                  </h3>
+                {/* Name */}
+                <h3
+                  className="text-[20px] leading-[1.1] flex-1"
+                  style={{ fontFamily: "'Unbounded', sans-serif", fontWeight: 300, letterSpacing: '-0.02em', color: format.fg }}
+                >
+                  {format.name}
+                </h3>
+
+                {/* Begin button */}
+                <div
+                  className="mt-4 inline-flex items-center gap-1 text-[11px] font-medium px-3 py-1.5 rounded-full w-fit transition-opacity duration-150"
+                  style={{
+                    fontFamily: "'Manrope', sans-serif",
+                    backgroundColor: `${format.fg}18`,
+                    color: format.fg,
+                  }}
+                >
+                  Begin →
                 </div>
               </div>
             </button>
