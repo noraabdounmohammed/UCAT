@@ -4,7 +4,6 @@ import { SimpleMasteryRing } from './SimpleMasteryRing';
 import { NextSessionCard } from './NextSessionCard';
 import { QuestionFormatSelector } from '@/components/dashboard/QuestionFormatSelector';
 import { PracticeByCategorySelector } from '@/components/dashboard/PracticeByCategorySelector';
-import { useAuth } from '@/contexts/AuthContext';
 
 interface CurriculumDashboardProps {
   curriculum?: {
@@ -35,7 +34,6 @@ export const CurriculumDashboard: React.FC<CurriculumDashboardProps> = ({
     filterCategories
   } = useConceptStore();
 
-  const { user } = useAuth();
   const [selectedFormat, setSelectedFormat] = useState<string>('');
 
   // Day of week greeting — computed once
@@ -44,12 +42,6 @@ export const CurriculumDashboard: React.FC<CurriculumDashboardProps> = ({
     []
   );
 
-  // User initials — derived from auth user
-  const initials = useMemo((): string => {
-    const name: string = (user as any)?.user_metadata?.full_name || user?.email || '';
-    const parts = name.split(/[\s@]/);
-    return parts.slice(0, 2).map((p: string) => (p[0] || '').toUpperCase()).join('') || 'M';
-  }, [user]);
 
   // Parse filter assignments ONCE — not inside render map
   const filterAssignments = useMemo(
@@ -85,7 +77,7 @@ export const CurriculumDashboard: React.FC<CurriculumDashboardProps> = ({
       <div className="max-w-6xl mx-auto px-4 sm:px-6 pt-2 pb-4 md:pt-0">
 
         {/* ── TOP BAR ──────────────────────────────────────── */}
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '16px' }}>
+        <div style={{ marginBottom: '16px' }}>
           <span style={{
             fontFamily: "'Manrope', sans-serif",
             fontWeight: 300,
@@ -96,20 +88,12 @@ export const CurriculumDashboard: React.FC<CurriculumDashboardProps> = ({
           }}>
             {dayName}
           </span>
-          <div style={{
-            width: '34px', height: '34px', borderRadius: '50%',
-            backgroundColor: '#F2D4C8', color: '#6A2E1E',
-            fontFamily: "'Manrope', sans-serif", fontWeight: 500, fontSize: '11px',
-            display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
-          }}>
-            {initials}
-          </div>
         </div>
 
         {/* ── HERO ─────────────────────────────────────────── */}
         <div style={{ marginBottom: '32px' }}>
           <h1 style={{
-            fontFamily: "'Unbounded', sans-serif",
+            fontFamily: "'Manrope', sans-serif",
             fontWeight: 300,
             fontSize: '38px',
             lineHeight: 1.05,
