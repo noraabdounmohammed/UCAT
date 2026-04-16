@@ -243,7 +243,7 @@ export const CurriculumDashboard: React.FC<CurriculumDashboardProps> = ({
         {/* ── HERO ─────────────────────────────────────────── */}
         <div style={{ marginBottom: '24px' }}>
           <h1 style={{
-            fontFamily: "'Manrope', sans-serif",
+            fontFamily: "'Unbounded', sans-serif",
             fontWeight: 300,
             fontSize: '38px',
             lineHeight: 1.05,
