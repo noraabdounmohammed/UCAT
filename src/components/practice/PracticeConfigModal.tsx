@@ -980,4 +980,3 @@ export const PracticeConfigModal: React.FC<PracticeConfigModalProps> = ({
     </div>
   );
 };
- 

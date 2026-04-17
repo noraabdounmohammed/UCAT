@@ -4,6 +4,7 @@ import { SimpleMasteryRing } from './SimpleMasteryRing';
 import { NextSessionCard } from './NextSessionCard';
 import { QuestionFormatSelector } from '@/components/dashboard/QuestionFormatSelector';
 import { PracticeByCategorySelector } from '@/components/dashboard/PracticeByCategorySelector';
+import { Skeleton } from '@/components/ui/skeleton';
 
 // ── STREAK HOOK ───────────────────────────────────────────────────────────────
 // Tracks daily study streak in localStorage.
@@ -172,7 +173,8 @@ export const CurriculumDashboard: React.FC<CurriculumDashboardProps> = ({
     concepts,
     stats,
     setPracticeSelection,
-    filterCategories
+    filterCategories,
+    isLoading
   } = useConceptStore();
 
   const [selectedFormat, setSelectedFormat] = useState<string>('');
@@ -221,6 +223,32 @@ export const CurriculumDashboard: React.FC<CurriculumDashboardProps> = ({
     setSelectedFormat(formatId);
     localStorage.setItem('preferredQuestionFormat', formatId);
   };
+
+  // Show skeleton while loading (but only if we have no concepts yet)
+  if (isLoading && concepts.length === 0) {
+    return (
+      <div className="flex-1 pb-20 md:pb-4">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 pt-2 pb-4 md:pt-0">
+          <Skeleton className="h-3 w-20 mb-4 bg-stone-200" />
+          <Skeleton className="h-10 w-48 mb-2 bg-stone-200" />
+          <Skeleton className="h-10 w-32 mb-6 bg-stone-200" />
+          <Skeleton className="h-20 w-full rounded-2xl mb-8 bg-stone-200" />
+          <div className="flex gap-4 mb-8">
+            <Skeleton className="h-48 w-52 rounded-2xl bg-stone-200" />
+            <Skeleton className="h-48 w-52 rounded-2xl bg-stone-200" />
+            <Skeleton className="h-48 w-52 rounded-2xl bg-stone-200" />
+          </div>
+          <Skeleton className="h-px w-full mb-8 bg-stone-200" />
+          <Skeleton className="h-6 w-32 mb-4 bg-stone-200" />
+          <div className="flex gap-3 flex-wrap">
+            {[1,2,3,4,5,6].map(i => (
+              <Skeleton key={i} className="h-10 w-24 rounded-full bg-stone-200" />
+            ))}
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="flex-1 pb-20 md:pb-4">

@@ -34,7 +34,7 @@ const SidebarContent = ({ currentPage, onNavigate }: Pick<SidebarProps, 'current
         <div className="apple-app-icon">
           <GraduationCap className="h-5 w-5 text-white" />
         </div>
-        <span className="apple-app-title">MedICU UKMLA</span>
+        <span className="apple-app-title">Study Edit</span>
       </div>
       
       <div className="apple-sidebar-section">

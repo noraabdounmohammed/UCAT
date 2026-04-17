@@ -1,19 +1,21 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, lazy, Suspense } from 'react';
 import { useConceptStore, ConceptStoreProvider } from '@/contexts/ConceptStoreContext';
 import { ConceptFilterPanel } from '@/components/concept/ConceptFilterPanel';
 import { TrackDashboard } from '@/components/track/TrackDashboard.loft';
-import { ApplePracticeSession } from '@/components/practice/ApplePracticeSession';
-import { PracticeConfigModal } from '@/components/practice/PracticeConfigModal';
-import { ConceptCreationHub } from '@/components/concept/ConceptCreationHub';
 import { GenerationLoadingScreen } from '@/components/practice/GenerationLoadingScreen';
 import { Plus, Sliders, Search, Grid, List, ChevronDown, Folder, ChevronRight, Check, X, Brain } from 'lucide-react';
-import { ConceptEditorModal } from '@/components/concept/ConceptEditorModal';
 import { CurriculumDashboard } from '@/components/curriculum/CurriculumDashboard';
-import { ConceptBulkUploadModal } from '@/components/concept/ConceptBulkUploadModal';
-import { ConceptManualAddModal } from '@/components/concept/ConceptManualAddModal.new';
 import { useAuth } from '@/contexts/AuthContext';
 import { AuthForm } from '@/components/auth/AuthForm';
 import { useUserRole } from '@/hooks/useUserRole';
+
+// Lazy load heavy components (practice session uses markdown = 295KB)
+const ApplePracticeSession = lazy(() => import('@/components/practice/ApplePracticeSession').then(m => ({ default: m.ApplePracticeSession })));
+const PracticeConfigModal = lazy(() => import('@/components/practice/PracticeConfigModal').then(m => ({ default: m.PracticeConfigModal })));
+const ConceptCreationHub = lazy(() => import('@/components/concept/ConceptCreationHub').then(m => ({ default: m.ConceptCreationHub })));
+const ConceptEditorModal = lazy(() => import('@/components/concept/ConceptEditorModal').then(m => ({ default: m.ConceptEditorModal })));
+const ConceptBulkUploadModal = lazy(() => import('@/components/concept/ConceptBulkUploadModal').then(m => ({ default: m.ConceptBulkUploadModal })));
+const ConceptManualAddModal = lazy(() => import('@/components/concept/ConceptManualAddModal.new').then(m => ({ default: m.ConceptManualAddModal })));
 
 interface Curriculum {
   id: string;
@@ -256,12 +258,14 @@ const ConceptPracticePageLoftContent: React.FC<Omit<ConceptPracticePageLoftProps
   // Show practice session
   if (isPracticing && practiceQuestions && practiceQuestions.length > 0) {
     return (
-      <ApplePracticeSession
-        questions={practiceQuestions}
-        onComplete={handlePracticeComplete}
-        onAnswerSubmit={handleAnswerSubmit}
-        section="UKMLA Concepts"
-      />
+      <Suspense fallback={<GenerationLoadingScreen conceptCount={practiceQuestions.length} />}>
+        <ApplePracticeSession
+          questions={practiceQuestions}
+          onComplete={handlePracticeComplete}
+          onAnswerSubmit={handleAnswerSubmit}
+          section="UKMLA Concepts"
+        />
+      </Suspense>
     );
   }
 
@@ -300,7 +304,8 @@ const ConceptPracticePageLoftContent: React.FC<Omit<ConceptPracticePageLoftProps
           }}
         />
 
-        {/* Modals */}
+        {/* Modals - lazy loaded */}
+        <Suspense fallback={null}>
         {showPracticeConfig && (
           <PracticeConfigModal
             isOpen={showPracticeConfig}
@@ -351,6 +356,7 @@ const ConceptPracticePageLoftContent: React.FC<Omit<ConceptPracticePageLoftProps
             setShowCreationHub(true);
           }}
         />
+        </Suspense>
 
         {/* Mobile Bottom Navigation */}
         <div className="md:hidden fixed bottom-0 left-0 right-0 z-50 pb-safe">

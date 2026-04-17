@@ -106,7 +106,7 @@ export function PWAInstallPrompt() {
                 className="text-lg font-medium tracking-tight text-stone-900 mb-2" 
                 style={{ fontFamily: "'Unbounded', sans-serif", fontWeight: 500 }}
               >
-                Install Medicu
+                Install Study Edit
               </h3>
               <p 
                 className="text-sm text-stone-600 mb-4 leading-relaxed" 

@@ -166,175 +166,92 @@ export const createConceptStore = (curriculumId: string = 'default') => {
         }
       },
 
-      // Load concepts from localStorage (with optional Supabase sync)
+      // Load concepts from localStorage INSTANTLY, then sync Supabase in background
       loadConcepts: async () => {
-        console.log('🚀 loadConcepts called for curriculum:', curriculumId);
-        console.log('📍 Current concepts count before load:', get().concepts.length);
-        
-        // Run migration first
+        // Run migration first (sync, fast)
         get().migrateFilterState();
         
-        set({ isLoading: true });
-        
-        // ALWAYS load from localStorage first for immediate display
+        // === INSTANT LOAD FROM LOCALSTORAGE (no await, no blocking) ===
         const userConceptsKey = getCurriculumKey(curriculumId, 'user_concepts');
         const storedUserConceptsData = localStorage.getItem(userConceptsKey);
-        let userConcepts: any[] = storedUserConceptsData ? JSON.parse(storedUserConceptsData) : [];
-        console.log('📥 Loaded from localStorage:', userConcepts.length, 'concepts');
+        const userConcepts: any[] = storedUserConceptsData ? JSON.parse(storedUserConceptsData) : [];
         
-        try {
-          // Try to sync with Supabase in the background (non-blocking)
-          const { data: { user } } = await Promise.race([
-            supabase.auth.getUser(),
-            new Promise<{ data: { user: null } }>((resolve) => 
-              setTimeout(() => {
-                console.log('⏱️ Supabase not available, continuing with localStorage');
-                resolve({ data: { user: null } });
-              }, 1000)
-            )
-          ]);
-          console.log('👤 User status:', user ? 'authenticated' : 'not authenticated');
-          
-          if (user && userConcepts.length > 0) {
-            console.log('✅ User authenticated, concepts loaded from localStorage');
-            // TODO: Implement ProgressSyncService for Supabase sync
-            // For now, localStorage is the primary storage
+        // Load deleted concepts list
+        const deletedConceptsStr = localStorage.getItem(getCurriculumKey(curriculumId, 'deleted_concepts'));
+        const deletedConceptIds = deletedConceptsStr ? JSON.parse(deletedConceptsStr) : [];
+        
+        // Normalize concepts (fast, sync)
+        const normalizedConcepts = userConcepts.map((concept: any) => {
+          const masteryData = concept.mastery_data || {
+            attempts: 0, correct: 0, incorrect: 0, mastery_level: 0, last_practiced: null
+          };
+          if (masteryData.mastery_level > 2) masteryData.mastery_level = 0;
+          return {
+            ...concept,
+            content: concept.content || concept.description || concept.knowledge || 'No content available',
+            custom_filters: concept.custom_filters || concept.tags || [],
+            prerequisites: concept.prerequisites || [],
+            mastery_data: masteryData
+          };
+        });
+        
+        // Filter out deleted concepts
+        const allConcepts = normalizedConcepts.filter(
+          (concept: any) => !deletedConceptIds.includes(concept.concept_id)
+        );
+        
+        // Batch localStorage reads
+        const customFiltersKey = getCurriculumKey(curriculumId, 'custom_filters');
+        const categoriesKey = getCurriculumKey(curriculumId, 'filter_categories');
+        const migrationKey = `${curriculumId}_filter_migrated_v2`;
+        
+        let storedFilters = localStorage.getItem(customFiltersKey);
+        const storedCategories = localStorage.getItem(categoriesKey);
+        const alreadyMigrated = localStorage.getItem(migrationKey);
+        
+        if (!storedFilters) {
+          const legacyFilters = localStorage.getItem('custom_filters');
+          if (legacyFilters) {
+            storedFilters = legacyFilters;
+            localStorage.setItem(customFiltersKey, legacyFilters);
           }
-          
-          // Load deleted concepts list (still from localStorage for now)
-          const deletedConceptsStr = localStorage.getItem(getCurriculumKey(curriculumId, 'deleted_concepts'));
-          const deletedConceptIds = deletedConceptsStr ? JSON.parse(deletedConceptsStr) : [];
-          
-          // Ensure all concepts have required properties
-          const normalizedConcepts = userConcepts.map((concept: any) => {
-            const masteryData = concept.mastery_data || {
-              attempts: 0,
-              correct: 0,
-              incorrect: 0,
-              mastery_level: 0,
-              last_practiced: null
-            };
-            
-            // Normalize mastery level to 0-2 range (convert old 5-level system to 3-level)
-            if (masteryData.mastery_level > 2) {
-              masteryData.mastery_level = 0; // Reset to unseen if using old system
-            }
-            
-            return {
-              ...concept,
-              content: concept.content || concept.description || concept.knowledge || 'No content available',
-              custom_filters: concept.custom_filters || concept.tags || [],
-              prerequisites: concept.prerequisites || [],
-              mastery_data: masteryData
-            };
-          });
-          
-          // Filter out deleted concepts
-          const allConcepts = normalizedConcepts.filter(
-            (concept: any) => !deletedConceptIds.includes(concept.concept_id)
-          );
-          
-          // Debug: Check concept structure
-          if (allConcepts.length > 0) {
-            console.log('📊 Sample concept structure:', {
-              total: allConcepts.length,
-              firstConcept: allConcepts[0],
-              hasCustomFilters: allConcepts[0]?.custom_filters,
-              customFiltersType: typeof allConcepts[0]?.custom_filters,
-              customFiltersLength: allConcepts[0]?.custom_filters?.length
-            });
-          }
-          
-          // Batch all localStorage reads for better performance
-          const customFiltersKey = getCurriculumKey(curriculumId, 'custom_filters');
-          const categoriesKey = getCurriculumKey(curriculumId, 'filter_categories');
-          const migrationKey = `${curriculumId}_filter_migrated_v2`;
-          
-          let storedFilters = localStorage.getItem(customFiltersKey);
-          const storedCategories = localStorage.getItem(categoriesKey);
-          const alreadyMigrated = localStorage.getItem(migrationKey);
-          
-          // Check for legacy custom filters migration
-          if (!storedFilters) {
-            const legacyFilters = localStorage.getItem('custom_filters');
-            if (legacyFilters) {
-              storedFilters = legacyFilters;
-              localStorage.setItem(customFiltersKey, legacyFilters);
-            }
-          }
-          
-          const customFilters = storedFilters ? JSON.parse(storedFilters) : [];
-          const filterCategories = storedCategories ? JSON.parse(storedCategories) : [];
-          const filterOptions = extractFilterOptions(allConcepts);
-          
-          // Handle filter state migration
-          let updatedFilterState;
-          if (!alreadyMigrated) {
-            updatedFilterState = {
-              mastery_levels: [],
-              searchQuery: '',
-              custom_filters: []
-            };
-            localStorage.setItem(migrationKey, 'true');
-          } else {
-            updatedFilterState = { ...get().filterState };
-          }
-          
-          const filteredConcepts = filterConcepts(allConcepts, updatedFilterState);
-          const stats = calculateStats(filteredConcepts);
-          
-          // Debug: Check stats
-          console.log('📊 Calculated stats:', {
-            total: stats.total,
-            by_mastery: stats.by_mastery,
-            by_custom_filter: stats.by_custom_filter,
-            filterOptionsCount: filterOptions.custom_filters?.length
-          });
-          
-          set({ 
-            concepts: allConcepts,
-            filteredConcepts,
-            stats,
-            filterOptions,
-            filterState: updatedFilterState,
-            customFilters,
-            filterCategories,
-            isLoading: false 
-          });
-        } catch (error) {
-          console.error('❌ Failed to load concepts:', error);
-          console.error('Error details:', {
-            message: error instanceof Error ? error.message : 'Unknown error',
-            stack: error instanceof Error ? error.stack : undefined
-          });
-          
-          // Try to load from localStorage as last resort
-          try {
-            console.log('🔄 Attempting emergency localStorage load...');
-            const userConceptsKey = getCurriculumKey(curriculumId, 'user_concepts');
-            const storedUserConceptsData = localStorage.getItem(userConceptsKey);
-            const emergencyConcepts = storedUserConceptsData ? JSON.parse(storedUserConceptsData) : [];
-            console.log('📥 Emergency load found:', emergencyConcepts.length, 'concepts');
-            
-            if (emergencyConcepts.length > 0) {
-              const filterOptions = extractFilterOptions(emergencyConcepts);
-              const stats = calculateStats(emergencyConcepts);
-              
-              set({ 
-                concepts: emergencyConcepts,
-                filteredConcepts: emergencyConcepts,
-                stats,
-                filterOptions,
-                isLoading: false
-              });
-              return;
-            }
-          } catch (emergencyError) {
-            console.error('❌ Emergency load also failed:', emergencyError);
-          }
-          
-          set({ isLoading: false });
         }
+        
+        const customFilters = storedFilters ? JSON.parse(storedFilters) : [];
+        const filterCategories = storedCategories ? JSON.parse(storedCategories) : [];
+        const filterOptions = extractFilterOptions(allConcepts);
+        
+        let updatedFilterState;
+        if (!alreadyMigrated) {
+          updatedFilterState = { mastery_levels: [], searchQuery: '', custom_filters: [] };
+          localStorage.setItem(migrationKey, 'true');
+        } else {
+          updatedFilterState = { ...get().filterState };
+        }
+        
+        const filteredConcepts = filterConcepts(allConcepts, updatedFilterState);
+        const stats = calculateStats(filteredConcepts);
+        
+        // === SET STATE IMMEDIATELY (UI renders now) ===
+        set({ 
+          concepts: allConcepts,
+          filteredConcepts,
+          stats,
+          filterOptions,
+          filterState: updatedFilterState,
+          customFilters,
+          filterCategories,
+          isLoading: false 
+        });
+        
+        // === BACKGROUND SUPABASE SYNC (non-blocking, fire-and-forget) ===
+        supabase.auth.getUser().then(({ data: { user } }) => {
+          if (user && allConcepts.length > 0) {
+            // Future: sync progress to Supabase here
+          }
+        }).catch(() => {
+          // Silently ignore - localStorage is primary
+        });
       },
 
       // Update filter state
@@ -1026,4 +943,3 @@ export const createConceptStore = (curriculumId: string = 'default') => {
 
 // Default export for backward compatibility
 export const useConceptStore = createConceptStore('default');
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    

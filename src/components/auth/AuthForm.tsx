@@ -15,6 +15,7 @@ const signUpSchema = z.object({
   firstName: z.string().min(1, 'Please enter your first name'),
   email: z.string().email('Please enter a valid email address'),
   password: z.string().min(6, 'Password must be at least 6 characters'),
+  termsAccepted: z.literal(true, { errorMap: () => ({ message: 'You must accept the Terms of Service to continue' }) }),
 });
 
 type SignInData = z.infer<typeof signInSchema>;
@@ -81,6 +82,7 @@ export function AuthForm({ onSuccess }: AuthFormProps = {}) {
             emailRedirectTo: window.location.origin,
             data: {
               first_name: signUpData.firstName,
+              marketing_consent: true,
             }
           }
         });
@@ -94,7 +96,9 @@ export function AuthForm({ onSuccess }: AuthFormProps = {}) {
               id: authData.user.id,
               email: authData.user.email,
               first_name: signUpData.firstName,
-              role: 'consumer' // Default role for new users
+              role: 'consumer', // Default role for new users
+              marketing_consent: true,
+              marketing_consent_at: new Date().toISOString()
             });
           
           if (profileError) {
@@ -311,6 +315,28 @@ export function AuthForm({ onSuccess }: AuthFormProps = {}) {
                 </p>
               )}
             </div>
+            
+            {/* Terms & Marketing Consent - Only for Sign Up */}
+            {mode === 'signup' && (
+              <div className="space-y-3 pt-2">
+                <label className="flex items-start gap-3 cursor-pointer group">
+                  <input
+                    type="checkbox"
+                    {...register('termsAccepted')}
+                    className="mt-0.5 w-4 h-4 rounded border-stone-300 text-stone-900 focus:ring-stone-500 accent-stone-900"
+                  />
+                  <span className="text-xs text-stone-600 leading-relaxed" style={{ fontFamily: "'Manrope', sans-serif", fontWeight: 300 }}>
+                    I agree to the <a href="/terms" target="_blank" className="underline hover:text-stone-900">Terms of Service</a>, <a href="/privacy" target="_blank" className="underline hover:text-stone-900">Privacy Policy</a>, and to receive updates and promotions via email. You can unsubscribe at any time.
+                  </span>
+                </label>
+                {(errors as any).termsAccepted && (
+                  <p className="text-sm text-red-600 flex items-center gap-1 ml-7" style={{ fontFamily: "'Manrope', sans-serif" }}>
+                    <AlertCircle className="h-3.5 w-3.5" />
+                    {(errors as any).termsAccepted.message}
+                  </p>
+                )}
+              </div>
+            )}
             
             {/* Submit Button */}
             <button 

@@ -10,8 +10,8 @@ export default defineConfig({
       registerType: 'autoUpdate',
       includeAssets: ['favicon.ico', 'apple-touch-icon.png', 'mask-icon.svg'],
       manifest: {
-        name: 'Medicu - Medical Education Platform',
-        short_name: 'Medicu',
+        name: 'Study Edit - Medical Education Platform',
+        short_name: 'Study Edit',
         description: 'AI-powered medical education platform for UKMLA and medical exam preparation',
         theme_color: '#1c1917',
         background_color: '#fafaf9',
@@ -41,6 +41,11 @@ export default defineConfig({
         ]
       },
       workbox: {
+        skipWaiting: true,
+        clientsClaim: true,
+        cleanupOutdatedCaches: true,
+        navigateFallback: '/index.html',
+        navigateFallbackDenylist: [/^\/api/],
         globPatterns: ['**/*.{js,css,html,ico,png,svg,woff2}'],
         runtimeCaching: [
           {
