@@ -18,6 +18,7 @@ const CurriculumLandingPage = lazy(() => import('@/pages/CurriculumLandingPage')
 const StudyPage = lazy(() => import('@/pages/StudyPage').then(m => ({ default: m.StudyPage })));
 const ReviewPage = lazy(() => import('@/pages/ReviewPage').then(m => ({ default: m.ReviewPage })));
 const SeedPage = lazy(() => import('@/pages/SeedPage').then(m => ({ default: m.SeedPage })));
+const MistakesPage = lazy(() => import('@/pages/MistakesPage').then(m => ({ default: m.MistakesPage })));
 
 // Wrapper to extract curriculumId from URL params
 const CurriculumRoute = () => {
@@ -83,6 +84,13 @@ function App() {
             <Route path="/seed" element={
               <Suspense fallback={<BlankFallback />}>
                 <SeedPage />
+              </Suspense>
+            } />
+
+            {/* Mistake deck — lazy, drills recent lapses */}
+            <Route path="/mistakes" element={
+              <Suspense fallback={<BlankFallback />}>
+                <MistakesPage />
               </Suspense>
             } />
 
