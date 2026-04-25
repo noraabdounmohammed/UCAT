@@ -72,7 +72,7 @@ export function VoicePage() {
       confidence: 3,
       responseMs: 0,
     });
-    subscription.incrementDailyCount();
+    await subscription.incrementDailyCount();
   };
 
   const paywallKind: 'allowed' | 'daily-limit' =

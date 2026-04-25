@@ -55,7 +55,7 @@ export function StudyPage() {
   }
 
   const onRatedSideEffect = () => {
-    subscription.incrementDailyCount();
+    subscription.incrementDailyCount().catch(() => {});
     score.refresh().catch(() => {});
   };
 

@@ -56,7 +56,7 @@ export function MistakesPage() {
   }
 
   const onRatedSideEffect = () => {
-    subscription.incrementDailyCount();
+    subscription.incrementDailyCount().catch(() => {});
     score.refresh().catch(() => {});
   };
 
