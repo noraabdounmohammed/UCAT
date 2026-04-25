@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import { useEffect, useMemo, useRef } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/lib/supabase';
 import { MainLayout } from '@/components/layout/MainLayout';
@@ -8,6 +8,7 @@ import { MockTimer } from '@/components/mock/MockTimer';
 import { MockResult } from '@/components/mock/MockResult';
 import { useMockSession } from '@/hooks/useMockSession';
 import { createAtomRepository } from '@/atom/repository';
+import { createMockAttemptsRepository } from '@/atom/mockAttemptsRepository';
 
 const MOCK_ATOM_COUNT = 20;
 const MOCK_DURATION_SEC = 30 * 60;
@@ -15,12 +16,42 @@ const MOCK_DURATION_SEC = 30 * 60;
 export function MockPage() {
   const { user } = useAuth();
   const atomRepo = useMemo(() => createAtomRepository(supabase), []);
+  const mockAttemptsRepo = useMemo(() => createMockAttemptsRepository(supabase), []);
   const session = useMockSession({
     atomRepo,
     exam: 'UKMLA',
     atomCount: MOCK_ATOM_COUNT,
     durationSec: MOCK_DURATION_SEC,
   });
+
+  // Fire-and-forget persist on finished. Guarded with a ref so we save once
+  // per session even if the effect re-runs (e.g. on score reference changes).
+  const savedRef = useRef(false);
+  useEffect(() => {
+    if (session.status !== 'finished' || !session.score || !user) return;
+    if (savedRef.current) return;
+    savedRef.current = true;
+
+    const timeUsedSec = MOCK_DURATION_SEC - session.secondsLeft;
+    const finishedAt = new Date();
+    const startedAt = new Date(finishedAt.getTime() - timeUsedSec * 1000);
+
+    mockAttemptsRepo
+      .saveAttempt({
+        userId: user.id,
+        exam: 'UKMLA',
+        atomCount: MOCK_ATOM_COUNT,
+        correct: session.score.correct,
+        total: session.score.total,
+        percentage: session.score.percentage,
+        durationSec: MOCK_DURATION_SEC,
+        timeUsedSec,
+        finished: true,
+        startedAt,
+        finishedAt,
+      })
+      .catch((err) => console.error('Failed to save mock attempt:', err));
+  }, [session.status, session.score, session.secondsLeft, user, mockAttemptsRepo]);
 
   if (!user) {
     return (
