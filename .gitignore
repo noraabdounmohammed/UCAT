@@ -28,3 +28,13 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# Git worktrees (project-local isolation for parallel work)
+.worktrees/
+
+# Supabase CLI temp dir
+supabase/.temp/
+
+# Build / coverage artefacts
+coverage/
+.vitest-cache/
