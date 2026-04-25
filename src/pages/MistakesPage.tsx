@@ -6,6 +6,7 @@ import { FsrsSessionView } from '@/components/study/FsrsSessionView';
 import { PredictedScoreBadge } from '@/components/study/PredictedScoreBadge';
 import { useFsrsSession } from '@/hooks/useFsrsSession';
 import { usePredictedScore } from '@/hooks/usePredictedScore';
+import { useStreak } from '@/hooks/useStreak';
 import { createAtomRepository } from '@/atom/repository';
 import { createUserStateRepository } from '@/atom/userStateRepository';
 
@@ -34,6 +35,9 @@ export function MistakesPage() {
     userStateRepo,
   });
 
+  const streak = useStreak({ userId: user?.id ?? '', repo: userStateRepo });
+  const streakDays = streak.streakDays;
+
   if (!user) {
     return (
       <MainLayout currentPage="mistakes">
@@ -41,9 +45,6 @@ export function MistakesPage() {
       </MainLayout>
     );
   }
-
-  // Streak placeholder until Plan 7 wires real data.
-  const streakDays = 1;
 
   return (
     <MainLayout currentPage="mistakes">
