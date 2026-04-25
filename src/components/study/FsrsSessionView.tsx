@@ -5,9 +5,11 @@ import { SessionSummary } from './SessionSummary';
 export function FsrsSessionView({
   session,
   streakDays,
+  onRatedSideEffect,
 }: {
   session: UseFsrsSessionResult;
   streakDays: number;
+  onRatedSideEffect?: () => void;
 }) {
   if (session.status === 'loading') {
     return <div className="text-stone-500 text-center py-12">Loading…</div>;
@@ -46,7 +48,10 @@ export function FsrsSessionView({
         <AtomRenderer
           key={session.currentAtom.id}
           atom={session.currentAtom}
-          onRated={(r) => session.rateAtom(r)}
+          onRated={async (r) => {
+            await session.rateAtom(r);
+            onRatedSideEffect?.();
+          }}
         />
       )}
     </div>
