@@ -2,6 +2,7 @@ import { useEffect, useMemo } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/lib/supabase';
 import { MainLayout } from '@/components/layout/MainLayout';
+import { AuthGate } from '@/components/auth/AuthGate';
 import { PaywallGate } from '@/components/paywall/PaywallGate';
 import { useFsrsSession } from '@/hooks/useFsrsSession';
 import { useSubscription } from '@/hooks/useSubscription';
@@ -44,7 +45,10 @@ export function VoicePage() {
   if (!user) {
     return (
       <MainLayout currentPage="voice">
-        <div className="text-center py-12 text-stone-600">Sign in to use voice mode.</div>
+        <AuthGate
+          title="Sign in to use voice mode"
+          subtitle="Hands-free retrieval — listen, speak the answer, advance."
+        />
       </MainLayout>
     );
   }

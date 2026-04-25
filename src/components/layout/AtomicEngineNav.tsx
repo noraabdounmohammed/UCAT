@@ -34,7 +34,7 @@ export function AtomicEngineNav() {
       aria-label="Atomic Engine"
       className="sticky top-0 z-40 bg-white/90 dark:bg-zinc-900/90 backdrop-blur-md border-b border-stone-200 dark:border-zinc-800"
     >
-      <ul className="max-w-3xl mx-auto flex gap-1 px-3 py-2 overflow-x-auto scrollbar-hide">
+      <ul className="max-w-3xl mx-auto flex justify-center gap-1 px-3 py-2 overflow-x-auto scrollbar-hide">
         <li>
           <NavLink
             to="/"

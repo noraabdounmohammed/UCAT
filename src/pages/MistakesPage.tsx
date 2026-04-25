@@ -2,6 +2,7 @@ import { useMemo } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/lib/supabase';
 import { MainLayout } from '@/components/layout/MainLayout';
+import { AuthGate } from '@/components/auth/AuthGate';
 import { FsrsSessionView } from '@/components/study/FsrsSessionView';
 import { PredictedScoreBadge } from '@/components/study/PredictedScoreBadge';
 import { PaywallGate } from '@/components/paywall/PaywallGate';
@@ -46,7 +47,10 @@ export function MistakesPage() {
   if (!user) {
     return (
       <MainLayout currentPage="mistakes">
-        <div className="text-center py-12 text-stone-600">Sign in to drill mistakes.</div>
+        <AuthGate
+          title="Sign in to drill mistakes"
+          subtitle="Atoms you got wrong recently — auto-curated for retrieval practice."
+        />
       </MainLayout>
     );
   }
