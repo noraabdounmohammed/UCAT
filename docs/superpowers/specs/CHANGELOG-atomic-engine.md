@@ -70,3 +70,16 @@ Pre-existing findings (not introduced or modified by this migration): permissive
 | Net line delta | +4,754 / −31,169 (net **−26,415**) |
 
 The branch is ready for code review and PR. No remote push performed.
+
+---
+
+## 2026-04-26 — Plan 2 ships: 3-min retrieval session (`/study`)
+
+- New `/study` route (lazy) hosting `<FsrsSessionView>` powered by `useFsrsSession`
+- `<AtomRenderer>` renders one atom: stem (+ image) → confidence buttons → reveal + citation → FSRS rating buttons
+- `<SessionSummary>` end-of-session card (`right/total · streak day N`)
+- `userStateRepository` writes `user_atom_state` (FSRS state) and `review_events` (audit trail)
+- Pure session logic in `src/fsrs/session.ts` (`pickNextAtomId`, `isSessionDone`)
+- Hook hardens against pristine `user_atom_state` rows by re-initialising via the FSRS scheduler before first review
+- Tests added: 12 new (3 user-state repo, 4 session, 4 hook, 3 confidence/AtomRenderer, 3 summary, 5 view, 1 integration). **33 passing total.**
+- 5 free-tier UKMLA atoms in `scripts/seed-dogfood-atoms.sql` — apply pending in a Supabase-MCP session.
