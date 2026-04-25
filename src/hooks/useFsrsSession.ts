@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import type { Atom, FsrsRatingValue, ConfidenceValue } from '@/atom/types';
+import type { Atom, FsrsRatingValue, ConfidenceValue, UserAtomState } from '@/atom/types';
 import type { AtomRepository } from '@/atom/repository';
 import type { UserStateRepository } from '@/atom/userStateRepository';
 import { createFsrsScheduler } from '@/fsrs/scheduler';
@@ -14,6 +14,8 @@ export interface FsrsSessionDeps {
   maxAtoms?: number;
   atomRepo: AtomRepository;
   userStateRepo: UserStateRepository;
+  /** Optional custom queue loader. Defaults to userStateRepo.listDueForUser. */
+  loadQueue?: (userId: string, now: Date, maxAtoms: number) => Promise<UserAtomState[]>;
 }
 
 export interface RateInput {
@@ -62,7 +64,9 @@ export function useFsrsSession(deps: FsrsSessionDeps): UseFsrsSessionResult {
     let cancelled = false;
     (async () => {
       try {
-        const dueRows = await deps.userStateRepo.listDueForUser(deps.userId, now(), maxAtoms);
+        const dueRows = deps.loadQueue
+          ? await deps.loadQueue(deps.userId, now(), maxAtoms)
+          : await deps.userStateRepo.listDueForUser(deps.userId, now(), maxAtoms);
         if (cancelled) return;
         if (dueRows.length === 0) {
           setStatus('empty');
