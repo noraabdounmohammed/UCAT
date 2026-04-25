@@ -2,9 +2,6 @@ import React from 'react';
 import { QuestionData } from './questionTypes';
 import { ModernFlashcard } from './ModernFlashcard';
 import { UkmlaSBAQuestion } from './UkmlaSBAQuestion';
-import { EMQQuestion } from './EMQQuestion';
-import { TrueFalseQuestion } from './TrueFalseQuestion';
-import { RankingQuestion } from './RankingQuestion';
 import { SessionAnswer } from './SessionProgressDropdown';
 
 interface QuestionRendererProps {
@@ -75,33 +72,6 @@ export const QuestionRenderer: React.FC<QuestionRendererProps> = ({
           title={title || "UKMLA SBA"}
           sessionAnswers={sessionAnswers}
           onJumpTo={onJumpTo}
-        />
-      );
-    
-    case 'emq':
-      return (
-        <EMQQuestion
-          question={question}
-          onAnswer={onAnswer}
-          onNext={onNext}
-        />
-      );
-    
-    case 'true_false':
-      return (
-        <TrueFalseQuestion
-          question={question}
-          onAnswer={onAnswer}
-          onNext={onNext}
-        />
-      );
-    
-    case 'ranking':
-      return (
-        <RankingQuestion
-          question={question}
-          onAnswer={onAnswer}
-          onNext={onNext}
         />
       );
     
