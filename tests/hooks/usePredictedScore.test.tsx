@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { renderHook, waitFor } from '@testing-library/react';
+import { act, renderHook, waitFor } from '@testing-library/react';
 import { usePredictedScore } from '@/hooks/usePredictedScore';
 import type { UserAtomState } from '@/atom/types';
 
@@ -54,5 +54,38 @@ describe('usePredictedScore', () => {
 
     await waitFor(() => expect(result.current.status).toBe('error'));
     expect(result.current.errorMessage).toBe('boom');
+  });
+
+  it('refresh() re-fires the load and reflects updated state', async () => {
+    const initialStates: UserAtomState[] = [
+      { userId: 'u1', atomId: 'a1', stability: 10, difficulty: 5, dueAt: NOW.toISOString(), lastReviewAt: NOW.toISOString(), reps: 1, lapses: 0 },
+    ];
+    const updatedStates: UserAtomState[] = [
+      ...initialStates,
+      { userId: 'u1', atomId: 'a2', stability: 10, difficulty: 5, dueAt: NOW.toISOString(), lastReviewAt: NOW.toISOString(), reps: 1, lapses: 0 },
+    ];
+
+    const listAllForUser = vi.fn()
+      .mockResolvedValueOnce(initialStates)
+      .mockResolvedValueOnce(updatedStates);
+
+    const atomRepo = { countApprovedByExam: vi.fn(async () => 200) } as any;
+    const userStateRepo = { listAllForUser } as any;
+
+    const { result } = renderHook(() => usePredictedScore({
+      userId: 'u1', exam: 'UKMLA', now: () => NOW, atomRepo, userStateRepo,
+    }));
+
+    await waitFor(() => expect(result.current.status).toBe('ready'));
+    expect(result.current.atomCount).toBe(1);
+
+    await act(async () => {
+      await result.current.refresh();
+    });
+
+    expect(listAllForUser).toHaveBeenCalledTimes(2);
+    expect(atomRepo.countApprovedByExam).toHaveBeenCalledTimes(2);
+    expect(result.current.atomCount).toBe(2);
+    expect(result.current.status).toBe('ready');
   });
 });

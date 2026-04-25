@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import type { Exam } from '@/atom/types';
 import type { AtomRepository } from '@/atom/repository';
 import type { UserStateRepository } from '@/atom/userStateRepository';
@@ -22,6 +22,12 @@ export interface UsePredictedScoreResult {
   atomCount: number;
   totalAtoms: number;
   errorMessage: string | null;
+  /**
+   * Re-runs the load against the repos so callers can refresh after a
+   * rating event (which mutates `userStateRepo`). Safe to call without
+   * await; failures surface via `status === 'error'`.
+   */
+  refresh: () => Promise<void>;
 }
 
 export function usePredictedScore(deps: UsePredictedScoreDeps): UsePredictedScoreResult {
@@ -33,32 +39,45 @@ export function usePredictedScore(deps: UsePredictedScoreDeps): UsePredictedScor
   const [totalAtoms, setTotalAtoms] = useState(0);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
-  useEffect(() => {
-    let cancelled = false;
-    (async () => {
-      try {
-        const [total, states] = await Promise.all([
-          deps.atomRepo.countApprovedByExam(deps.exam),
-          deps.userStateRepo.listAllForUser(deps.userId),
-        ]);
-        if (cancelled) return;
-        const cardStates = states.map(fromUserAtomState);
-        const { retentionMean, atomCount } = computePredictedScore(cardStates, now());
-        setPredictedScore(retentionMean);
-        setAtomCount(atomCount);
-        setTotalAtoms(total);
-        setCoverageRatio(total > 0 ? atomCount / total : 0);
-        setStatus('ready');
-      } catch (err: any) {
-        if (!cancelled) {
-          setErrorMessage(err?.message ?? 'Failed to load predicted score');
-          setStatus('error');
-        }
+  const load = useCallback(async (cancelledRef?: { cancelled: boolean }) => {
+    try {
+      const [total, states] = await Promise.all([
+        deps.atomRepo.countApprovedByExam(deps.exam),
+        deps.userStateRepo.listAllForUser(deps.userId),
+      ]);
+      if (cancelledRef?.cancelled) return;
+      const cardStates = states.map(fromUserAtomState);
+      const { retentionMean, atomCount } = computePredictedScore(cardStates, now());
+      setPredictedScore(retentionMean);
+      setAtomCount(atomCount);
+      setTotalAtoms(total);
+      setCoverageRatio(total > 0 ? atomCount / total : 0);
+      setErrorMessage(null);
+      setStatus('ready');
+    } catch (err: any) {
+      if (!cancelledRef?.cancelled) {
+        setErrorMessage(err?.message ?? 'Failed to load predicted score');
+        setStatus('error');
       }
-    })();
-    return () => { cancelled = true; };
+    }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [deps.userId, deps.exam]);
 
-  return { status, predictedScore, coverageRatio, atomCount, totalAtoms, errorMessage };
+  const refresh = useCallback(() => load(), [load]);
+
+  useEffect(() => {
+    const ref = { cancelled: false };
+    load(ref);
+    return () => { ref.cancelled = true; };
+  }, [load]);
+
+  return {
+    status,
+    predictedScore,
+    coverageRatio,
+    atomCount,
+    totalAtoms,
+    errorMessage,
+    refresh,
+  };
 }
