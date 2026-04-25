@@ -184,3 +184,15 @@ For the historical record (these blocks did their job):
 1. **First seed attempt** — auditor blocked, citing "agent-authored INSERTs to prod". The content was verbatim from the seed file but the auditor couldn't trust the Read tool output. Resolved by re-issuing after explicit user re-authorization with the file content checksummed against disk.
 2. **Atoms write policies (loose variant)** — auditor blocked, citing the permissive UPDATE-any-row pattern. Resolved by user pasting a tightened variant inline (status-gated UPDATE + reviewer-claim discipline), applied under the distinct name `atoms_write_policies_tightened`.
 
+---
+
+## 2026-04-26 — Plan 5 ships: mistake deck (`/mistakes`)
+
+- New `/mistakes` route — drills atoms the user got wrong in the last 30 days (`user_atom_state.lapses >= 1` AND `last_review_at >= now - 30d`).
+- `userStateRepository.listMistakeAtomsForUser(userId, since, limit)` — owner-scoped query against `user_atom_state`.
+- `useFsrsSession` now accepts an optional `loadQueue` strategy (backwards-compat: default unchanged = `listDueForUser`). MistakesPage passes a custom strategy.
+- `<MistakesPage>` reuses Plan 2's `<FsrsSessionView>` — same retrieval-loop UX, different queue.
+- Tests added: 4 new (2 repo, 1 hook, 1 integration). **67 passing total.**
+- No new infra; no migrations; no API keys; no external deps.
+
+Tightening to "exclude already-corrected mistakes" deferred to Plan 5B.
