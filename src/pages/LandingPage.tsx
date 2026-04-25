@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import { CurriculumPublishingService, PublishedCurriculum } from '@/services/curriculumPublishing';
 import { AuthBar } from '@/components/auth/AuthBar';
 import { Trash2 } from 'lucide-react';
@@ -292,6 +292,23 @@ export const LandingPage: React.FC = () => {
       {/* Minimal Top Bar - Floating Sign In */}
       <div className="fixed top-6 right-6 z-40">
         <AuthBar />
+      </div>
+
+      {/* Try Study Mode CTA */}
+      <div className="bg-gradient-to-br from-stone-900 to-stone-700 text-white px-6 py-5 mx-4 my-4 rounded-2xl shadow-lg flex-shrink-0 relative z-30">
+        <div className="max-w-2xl mx-auto flex items-center justify-between gap-4 flex-col sm:flex-row">
+          <div>
+            <div className="text-xs uppercase tracking-wide text-white/70">New</div>
+            <div className="text-lg font-semibold">3-min retrieval sessions</div>
+            <p className="text-sm text-white/80 mt-1">FSRS-5 spaced repetition. Made by a doctor for UKMLA.</p>
+          </div>
+          <Link
+            to="/study"
+            className="px-5 py-2.5 bg-white text-stone-900 rounded-full text-sm font-medium hover:bg-stone-100 transition-colors whitespace-nowrap"
+          >
+            Try Study Mode
+          </Link>
+        </div>
       </div>
 
       {/* Header */}
