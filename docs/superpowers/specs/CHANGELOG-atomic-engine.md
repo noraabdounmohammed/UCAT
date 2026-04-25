@@ -207,3 +207,14 @@ Tightening to "exclude already-corrected mistakes" deferred to Plan 5B.
 - Repository extensions: `atomRepo.countApprovedByExam(exam)`, `userStateRepo.listAllForUser(userId)`.
 - v1 metric is "directionally honest" — mean retention across covered atoms. Cohort calibration vs real UKMLA scores deferred to Plan 10.
 - Tests added: 11 new (4 retention math, 3 hook, 4 badge). **78 passing total.**
+
+---
+
+## 2026-04-26 — Plan 7 ships: streaks
+
+- Real streak day count replaces the `streakDays={1}` placeholder in `/study` and `/mistakes` headers.
+- Pure function `computeStreak(dates, now)` in `src/streak/compute.ts` — consecutive UTC-days ending today or yesterday. Multiple reviews per day → 1 day. Any gap > 1 → break.
+- `useStreak({ userId, repo })` hook loads `review_events` dates from the past 90 days and computes.
+- `userStateRepository.listReviewEventDates(userId, since)` queries `review_events` (owner-scoped RLS).
+- Tests added: 12 new (7 streak math, 3 hook, 2 integration). **92 passing total.**
+- Grace days (Duolingo pattern) deferred to Plan 7B.
