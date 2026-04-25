@@ -16,13 +16,17 @@ interface Curriculum {
   progress: number;
 }
 
-export const CurriculumApp: React.FC = () => {
+interface CurriculumAppProps {
+  initialCurriculumId?: string;
+}
+
+export const CurriculumApp: React.FC<CurriculumAppProps> = ({ initialCurriculumId }) => {
   const { user, loading } = useAuth();
   // Check if we should skip hub and go directly to curriculum
-  const autoOpenId = sessionStorage.getItem('autoOpenCurriculumId');
+  const autoOpenId = sessionStorage.getItem('autoOpenCurriculumId') || initialCurriculumId;
   const pendingImport = sessionStorage.getItem('pendingCurriculumImport');
-  // If there's a pending import or autoOpenId, start in curriculum view to avoid showing sign-in
-  const [currentView, setCurrentView] = useState<'hub' | 'curriculum'>((autoOpenId || pendingImport) ? 'curriculum' : 'hub');
+  // If there's a pending import, autoOpenId, or URL curriculum ID, start in curriculum view
+  const [currentView, setCurrentView] = useState<'hub' | 'curriculum'>((autoOpenId || pendingImport || initialCurriculumId) ? 'curriculum' : 'hub');
   const [selectedCurriculum, setSelectedCurriculum] = useState<Curriculum | null>(null);
   const [curriculums, setCurriculums] = useState<Curriculum[]>([]);
   const [isLoaded, setIsLoaded] = useState(false);
@@ -102,47 +106,47 @@ export const CurriculumApp: React.FC = () => {
     loadCurriculums();
   }, [user]);
 
-  // Check sessionStorage for curriculum ID to auto-open (from landing page)
+  // Check sessionStorage or URL for curriculum ID to auto-open
   useEffect(() => {
     console.log('🔄 CurriculumApp useEffect triggered:', {
       isLoaded,
       curriculumsCount: curriculums.length,
       selectedCurriculum: selectedCurriculum?.id,
+      initialCurriculumId,
       sessionStorageKeys: Object.keys(sessionStorage)
     });
     
     if (!isLoaded || curriculums.length === 0) {
-
       return;
     }
 
-    const autoOpenId = sessionStorage.getItem('autoOpenCurriculumId');
+    // Check URL param first, then sessionStorage
+    const autoOpenId = initialCurriculumId || sessionStorage.getItem('autoOpenCurriculumId');
     const fromLandingPageFlag = sessionStorage.getItem('fromLandingPage');
     
     console.log('🔍 Checking for curriculum to open:', {
       autoOpenId,
+      initialCurriculumId,
       fromLandingPageFlag,
       availableCurriculums: curriculums.map(c => ({ id: c.id, name: c.name })),
       selectedCurriculum: selectedCurriculum?.id
     });
     
-    // If sessionStorage has a curriculum ID and we're not already viewing it
+    // If we have a curriculum ID and we're not already viewing it
     if (autoOpenId && !selectedCurriculum) {
       const curriculum = curriculums.find(c => c.id === autoOpenId);
       if (curriculum) {
-
         setSelectedCurriculum(curriculum);
         setCurrentView('curriculum');
         
-        // Clear sessionStorage so it doesn't re-trigger
+        // Clear sessionStorage so it doesn't re-trigger (URL param doesn't need clearing)
         sessionStorage.removeItem('autoOpenCurriculumId');
       } else {
-
         // Clear it anyway to prevent infinite retries
         sessionStorage.removeItem('autoOpenCurriculumId');
       }
     }
-  }, [curriculums, isLoaded, selectedCurriculum]);
+  }, [curriculums, isLoaded, selectedCurriculum, initialCurriculumId]);
 
   // Save curriculums to localStorage whenever they change
   useEffect(() => {

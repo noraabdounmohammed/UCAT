@@ -346,7 +346,7 @@ export function ConceptNodePracticeSection(): JSX.Element {
       {!isPracticing ? (
         <>
           <div className="flex justify-between items-center mb-6">
-            <h2 className="apple-heading-1" data-component-name="ConceptNodePracticeSection">UKMLA Practice</h2>
+            <h2 className="apple-heading-1" data-component-name="ConceptNodePracticeSection">UKMLA AKT Practice</h2>
             <ResetProgressButton />
           </div>
           

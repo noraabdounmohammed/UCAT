@@ -40,7 +40,7 @@ interface ConceptPracticePageLoftProps {
 const ConceptPracticePageLoftContent: React.FC<Omit<ConceptPracticePageLoftProps, 'curriculumId'>> = ({ 
   onBackToCurriculums,
   curriculum,
-  curriculumName = "UKMLA Cardiology",
+  curriculumName = "UKMLA AKT",
   initialView = 'dashboard'
 }) => {
   const { user } = useAuth();
@@ -263,7 +263,7 @@ const ConceptPracticePageLoftContent: React.FC<Omit<ConceptPracticePageLoftProps
           questions={practiceQuestions}
           onComplete={handlePracticeComplete}
           onAnswerSubmit={handleAnswerSubmit}
-          section="UKMLA Concepts"
+          section="UKMLA AKT"
         />
       </Suspense>
     );
@@ -301,6 +301,10 @@ const ConceptPracticePageLoftContent: React.FC<Omit<ConceptPracticePageLoftProps
           }}
           onDirectPracticeStart={(config) => {
             startPractice(config);
+          }}
+          onPreloadModal={() => {
+            // Preload the modal chunk on hover so it's instant when clicked
+            import('@/components/practice/PracticeConfigModal');
           }}
         />
 

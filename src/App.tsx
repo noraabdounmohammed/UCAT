@@ -1,4 +1,4 @@
-import { Routes, Route, Navigate } from 'react-router-dom';
+import { Routes, Route, Navigate, useParams } from 'react-router-dom';
 import { lazy, Suspense } from 'react';
 import { MainLayout } from '@/components/layout/MainLayout';
 import { ThemeProvider } from '@/contexts/ThemeContext';
@@ -15,6 +15,12 @@ import { CurriculumApp } from '@/components/CurriculumApp';
 // Lazy only for secondary routes rarely visited
 const LandingPage = lazy(() => import('@/pages/LandingPage').then(m => ({ default: m.LandingPage })));
 const CurriculumLandingPage = lazy(() => import('@/pages/CurriculumLandingPage').then(m => ({ default: m.CurriculumLandingPage })));
+
+// Wrapper to extract curriculumId from URL params
+const CurriculumRoute = () => {
+  const { curriculumId } = useParams<{ curriculumId: string }>();
+  return <CurriculumApp initialCurriculumId={curriculumId} />;
+};
 
 // Instant blank parchment — replaces the spinning loader for secondary routes
 const BlankFallback = () => <div className="h-screen w-screen" style={{ backgroundColor: '#F4EFE8' }} />;
@@ -39,6 +45,13 @@ function App() {
             <Route path="/concept-practice" element={
               <MainLayout currentPage="concept-practice">
                 <CurriculumApp />
+              </MainLayout>
+            } />
+
+            {/* Curriculum by ID — shareable URL */}
+            <Route path="/curriculum/:curriculumId" element={
+              <MainLayout currentPage="concept-practice">
+                <CurriculumRoute />
               </MainLayout>
             } />
 

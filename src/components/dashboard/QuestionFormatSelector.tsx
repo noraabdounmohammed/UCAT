@@ -29,7 +29,7 @@ export const QUESTION_FORMATS: QuestionFormat[] = [
   },
   {
     id: 'ukmla_sba',
-    name: 'UKMLA SBA',
+    name: 'UKMLA AKT',
     description: 'Clinical vignettes',
     icon: Stethoscope,
     bg: '#E4D4C4',   // praline
@@ -48,12 +48,14 @@ interface QuestionFormatSelectorProps {
   selectedFormat?: string; // Optional, not currently used
   onFormatChange: (formatId: string) => void;
   onOpenFilters?: (format?: string) => void;
+  onPreload?: () => void; // Preload modal on hover
   concepts?: any[]; // Optional, not currently used
 }
 
 export const QuestionFormatSelector: React.FC<QuestionFormatSelectorProps> = ({
   onFormatChange,
-  onOpenFilters
+  onOpenFilters,
+  onPreload
 }) => {
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const [showLeftArrow, setShowLeftArrow] = useState(false);
@@ -193,6 +195,7 @@ export const QuestionFormatSelector: React.FC<QuestionFormatSelectorProps> = ({
                 onFormatChange(format.id);
                 if (onOpenFilters) onOpenFilters(format.id);
               }}
+              onMouseEnter={onPreload}
               className="group flex-shrink-0 rounded-[20px] transition-all duration-150 active:scale-[0.98]"
               style={{
                 minWidth: '162px',

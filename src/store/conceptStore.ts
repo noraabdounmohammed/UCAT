@@ -13,6 +13,7 @@ import {
 import { generateQuestionWithConfig } from '@/services/aiQuestionGenerator';
 import { StorageManager } from '@/utils/storageManager';
 import { supabase } from '@/lib/supabase';
+import { getAllowedQuestionCount, recordQuestionsGenerated, getRemainingQuestions } from '@/utils/questionLimits';
 
 // Calculate statistics from filtered concepts
 function calculateStats(concepts: ConceptNode[]): ConceptStats {
@@ -142,6 +143,7 @@ export const createConceptStore = (curriculumId: string = 'default') => {
       isPracticing: false,
       practiceQuestions: [],
       generatingQuestionCount: 0,
+      practiceError: null,
       practiceConfig: {
         target_bloom_levels: [],
         target_formats: [],
@@ -631,7 +633,28 @@ export const createConceptStore = (curriculumId: string = 'default') => {
         const startTime = Date.now();
         
         // Calculate actual question count first
-        const questionCount = practiceConfig?.question_count || 10;
+        const requestedCount = practiceConfig?.question_count || 10;
+        
+        // Check daily limit - get user ID if available
+        const { data: { user } } = await supabase.auth.getUser();
+        const userId = user?.id;
+        const remaining = getRemainingQuestions(userId);
+        
+        if (remaining === 0) {
+          console.warn('⚠️ Daily question limit reached (100/day)');
+          set({ 
+            isLoading: false, 
+            isPracticing: false,
+            practiceError: 'You\'ve reached your daily limit of 100 questions. Come back tomorrow!'
+          });
+          return;
+        }
+        
+        // Cap to remaining allowance
+        const questionCount = getAllowedQuestionCount(requestedCount, userId);
+        if (questionCount < requestedCount) {
+          console.log(`📊 Limiting questions from ${requestedCount} to ${questionCount} (daily limit)`);
+        }
         
         set({ isLoading: true, isPracticing: true, currentSessionAnswers: [], sessionStartTime: startTime, generatingQuestionCount: questionCount });
         
@@ -751,11 +774,15 @@ export const createConceptStore = (curriculumId: string = 'default') => {
 
           const questions = await Promise.all(questionPromises);
           
+          // Record questions generated for daily limit tracking
+          recordQuestionsGenerated(questions.length, userId);
+          
           set({ 
             isPracticing: true,
             practiceQuestions: questions,
             practiceConfig: practiceConfig || currentState.practiceConfig,
-            isLoading: false 
+            isLoading: false,
+            practiceError: null
           });
         } catch (error) {
           console.error('Failed to start practice:', error);
@@ -811,7 +838,8 @@ export const createConceptStore = (curriculumId: string = 'default') => {
           practiceQuestions: [],
           currentSessionAnswers: [],
           sessionStartTime: null,
-          generatingQuestionCount: 0
+          generatingQuestionCount: 0,
+          practiceError: null
         });
       },
 

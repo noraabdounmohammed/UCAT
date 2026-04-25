@@ -8,6 +8,7 @@ interface PracticeByCategorySelectorProps {
   curriculumId: string;
   concepts: any[];
   onFilterClick: (filter: string) => void;
+  onPreload?: () => void;
   accentIndex?: number; // allows parent to assign a colour slot per section
 }
 
@@ -38,6 +39,7 @@ export const PracticeByCategorySelector: React.FC<PracticeByCategorySelectorProp
   curriculumId,
   concepts,
   onFilterClick,
+  onPreload,
 }) => {
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const [showLeftArrow, setShowLeftArrow] = useState(false);
@@ -174,6 +176,7 @@ export const PracticeByCategorySelector: React.FC<PracticeByCategorySelectorProp
                 <button
                   key={filter}
                   onClick={() => onFilterClick(filter)}
+                  onMouseEnter={onPreload}
                   className="group flex-shrink-0 rounded-[18px] transition-all duration-150 active:scale-[0.98]"
                   style={{
                     minWidth: '148px',

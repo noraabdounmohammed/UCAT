@@ -402,7 +402,7 @@ export const PracticeConfigModal: React.FC<PracticeConfigModalProps> = ({
   const getFormatDisplayName = (format: QuestionFormat) => {
     switch (format) {
       case 'sba': return 'Quick SBA';
-      case 'ukmla_sba': return 'UKMLA SBA';
+      case 'ukmla_sba': return 'UKMLA AKT';
       case 'mcq': return 'Multiple Choice';
       case 'emq': return 'Extended Matching';
       case 'true_false': return 'True/False';
@@ -410,7 +410,7 @@ export const PracticeConfigModal: React.FC<PracticeConfigModalProps> = ({
       case 'data_interpretation': return 'Data Interpretation';
       case 'osce': return 'OSCE';
       case 'short_answer': return 'Short Answer';
-      case 'flashcard': return 'Flashcard';
+      case 'flashcard': return 'Flashcards';
       case 'essay': return 'Essay';
       case 'mindmap': return 'Mind Map';
       default: return format;
@@ -607,7 +607,7 @@ export const PracticeConfigModal: React.FC<PracticeConfigModalProps> = ({
                           {fmt?.description ?? ''}
                         </p>
                         <h3
-                          className="text-[13px] leading-tight"
+                          className="text-[10px] sm:text-[12px] leading-tight break-words"
                           style={{ fontFamily: "'Unbounded', sans-serif", fontWeight: 400, letterSpacing: '-0.02em', color: fg }}
                         >
                           {getFormatDisplayName(format)}

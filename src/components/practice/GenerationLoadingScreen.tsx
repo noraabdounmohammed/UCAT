@@ -105,7 +105,7 @@ export const GenerationLoadingScreen: React.FC<GenerationLoadingScreenProps> = (
         
         {/* Title */}
         <h2 className="text-2xl sm:text-3xl font-medium text-gray-900 mb-2 sm:mb-3 tracking-tight" style={{ fontFamily: "'Unbounded', sans-serif", fontWeight: 500 }}>
-          {format === 'mindmap' ? 'Crafting Mind Maps' : format === 'flashcard' ? 'Creating Flashcards' : 'Generating Questions'}
+          {format === 'mindmap' ? 'Crafting Mind Maps' : format === 'flashcard' ? 'Creating Flashcards' : (<>Getting your<br />questions ready</>)}
         </h2>
         <p className="text-sm text-gray-600 font-light mb-8 sm:mb-12 max-w-sm mx-auto" style={{ fontFamily: "'Manrope', sans-serif", fontWeight: 300 }}>
           {format === 'mindmap' 

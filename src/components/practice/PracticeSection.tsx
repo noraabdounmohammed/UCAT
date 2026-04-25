@@ -517,7 +517,7 @@ export function PracticeSection(): JSX.Element {
   return (
     <div className="max-w-4xl mx-auto pt-12 px-6">
       <div className="flex justify-between items-center mb-6">
-        <h2 className="apple-heading-1" data-component-name="PracticeSection">UKMLA Practice</h2>
+        <h2 className="apple-heading-1" data-component-name="PracticeSection">UKMLA AKT Practice</h2>
         <ResetProgressButton />
       </div>
       

@@ -161,13 +161,15 @@ interface CurriculumDashboardProps {
   onStartPractice: () => void;
   onOpenFilters?: (format?: string, filter?: string) => void;
   onDirectPracticeStart?: (config: any) => void;
+  onPreloadModal?: () => void;
 }
 
 export const CurriculumDashboard: React.FC<CurriculumDashboardProps> = ({
   curriculum,
   onStartPractice,
   onOpenFilters,
-  onDirectPracticeStart
+  onDirectPracticeStart,
+  onPreloadModal
 }) => {
   const {
     concepts,
@@ -292,6 +294,7 @@ export const CurriculumDashboard: React.FC<CurriculumDashboardProps> = ({
           selectedFormat={selectedFormat}
           onFormatChange={handleFormatChange}
           onOpenFilters={onOpenFilters}
+          onPreload={onPreloadModal}
           concepts={concepts}
         />
 
@@ -309,6 +312,7 @@ export const CurriculumDashboard: React.FC<CurriculumDashboardProps> = ({
               onFilterClick={(filter) => {
                 if (onOpenFilters) onOpenFilters(undefined, filter);
               }}
+              onPreload={onPreloadModal}
             />
             {idx < categoryRows.length - 1 && (
               <div style={{ height: '0.5px', backgroundColor: '#E4DDD4', margin: '4px 0 28px' }} />

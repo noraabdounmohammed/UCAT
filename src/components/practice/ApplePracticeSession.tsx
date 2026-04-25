@@ -333,18 +333,6 @@ export function ApplePracticeSession({
       </header>
       )}
 
-      {/* Floating progress pill for flashcard only — sba/ukmla_sba have their own built-in pill in the header */}
-      {questionContent.format === 'flashcard' && sessionAnswers.length > 0 && (
-        <div className="fixed top-4 right-4 z-20">
-          <SessionProgressDropdown
-            answers={sessionAnswers}
-            total={activeQuestions.length}
-            currentIndex={currentIndex}
-            isLightMode={false}
-          />
-        </div>
-      )}
-
       {/* Main content */}
       <div className={(questionContent.format === 'flashcard' || questionContent.format === 'sba' || questionContent.format === 'ukmla_sba') ? "flex-1 overflow-y-auto" : "flex-1 overflow-auto"} ref={containerRef}>
         {(questionContent.format === 'flashcard' || questionContent.format === 'sba' || questionContent.format === 'ukmla_sba') ? (

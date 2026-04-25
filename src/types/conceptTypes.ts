@@ -227,6 +227,7 @@ export interface ConceptPracticeState {
   currentSessionAnswers: Array<{questionId: string; conceptId: string; isCorrect: boolean; timestamp: string}>;
   sessionStartTime: number | null; // Timestamp when practice session started
   generatingQuestionCount: number; // Number of questions being generated for loading screen
+  practiceError: string | null; // Error message for practice (e.g., daily limit reached)
   
   // Actions
   migrateFilterState: () => void;
