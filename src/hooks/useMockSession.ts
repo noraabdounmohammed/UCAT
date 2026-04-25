@@ -10,6 +10,7 @@ import {
   type MockAnswer,
   type MockState,
 } from '@/mock/state';
+import { track } from '@/instrumentation/events';
 
 type Status = 'loading' | 'in_progress' | 'finished' | 'empty' | 'error';
 
@@ -56,6 +57,7 @@ export function useMockSession(deps: UseMockSessionDeps): UseMockSessionResult {
         const fresh = initialMockState({ atoms: sampled, durationSec: deps.durationSec });
         setState(fresh);
         setStatus('in_progress');
+        track('mock_started', { exam: deps.exam, atomCount: sampled.length, durationSec: deps.durationSec });
       } catch (err: any) {
         if (!cancelled) {
           setErrorMessage(err?.message ?? 'Failed to load mock');
@@ -97,6 +99,19 @@ export function useMockSession(deps: UseMockSessionDeps): UseMockSessionResult {
   const progress = state ? { done: state.atomIndex, total: state.atoms.length } : { done: 0, total: 0 };
   const secondsLeft = state?.secondsLeft ?? 0;
   const score = state && status === 'finished' ? computeScore(state) : null;
+
+  // Fire mock_finished once per finished transition.
+  const finishedTrackedRef = useRef(false);
+  useEffect(() => {
+    if (status === 'finished' && !finishedTrackedRef.current && score) {
+      finishedTrackedRef.current = true;
+      track('mock_finished', {
+        correct: score.correct,
+        total: score.total,
+        percentage: score.percentage,
+      });
+    }
+  }, [status, score]);
 
   return { status, currentAtom, progress, secondsLeft, score, submit, errorMessage };
 }

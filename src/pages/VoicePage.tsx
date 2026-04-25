@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import { useEffect, useMemo } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/lib/supabase';
 import { MainLayout } from '@/components/layout/MainLayout';
@@ -10,6 +10,7 @@ import { createAtomRepository } from '@/atom/repository';
 import { createUserStateRepository } from '@/atom/userStateRepository';
 import { isVoiceAvailable } from '@/voice/speech';
 import { VoiceAtomView } from '@/components/voice/VoiceAtomView';
+import { track } from '@/instrumentation/events';
 import type { MatchOutcome } from '@/voice/match';
 import type { FsrsRatingValue } from '@/atom/types';
 
@@ -33,6 +34,12 @@ export function VoicePage() {
   });
 
   const subscription = useSubscription();
+
+  // One-shot mount track — separate from session_started since voice has different cost/UX profile.
+  useEffect(() => {
+    if (user && voiceOk) track('voice_session_started');
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user?.id, voiceOk]);
 
   if (!user) {
     return (

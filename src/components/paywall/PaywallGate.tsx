@@ -1,4 +1,5 @@
-import type { ReactNode } from 'react';
+import { useEffect, type ReactNode } from 'react';
+import { track } from '@/instrumentation/events';
 
 export interface PaywallGateProps {
   kind: 'allowed' | 'daily-limit' | 'free-tier-only';
@@ -8,6 +9,13 @@ export interface PaywallGateProps {
 }
 
 export function PaywallGate({ kind, dailyQuestionsRemaining, onUpgrade, children }: PaywallGateProps) {
+  // Fire `paywall_shown` whenever we transition to a non-allowed kind.
+  useEffect(() => {
+    if (kind !== 'allowed') {
+      track('paywall_shown', { kind });
+    }
+  }, [kind]);
+
   if (kind === 'allowed') return <>{children}</>;
 
   const headline = kind === 'daily-limit'
