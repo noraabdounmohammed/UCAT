@@ -259,3 +259,33 @@ Free atom-set gating (free_tier=true atoms only for unauthed/free) deferred — 
 - No FSRS state mutation during mocks (it's a test, not learning).
 - Mock-attempt persistence + per-topic breakdown deferred to Plan 10B.
 - Tests added: 6 state + 4 hook + 3 component + 1 integration = **14 new**, **129 total**.
+
+---
+
+## 2026-04-25 — Plan 11 ships: production-readiness instrumentation (Sentry + PostHog + NPS)
+
+- `src/instrumentation/sentry.ts` + `posthog.ts` + `events.ts` — three-piece scaffold.
+  All three are **opt-in via env vars** (`VITE_SENTRY_DSN`, `VITE_POSTHOG_KEY`,
+  optional `VITE_POSTHOG_HOST`). When unset, the integrations no-op silently —
+  dev/test environments don't pollute counters and tests don't need keys.
+- Stable `TrackedEvent` union (9 names) keeps mistyped events failing at compile time.
+- `track()` is fire-and-forget — never blocks render paths, swallows transport errors.
+- `track(...)` instrumented at: `session_started`, `atom_rated`, `session_completed`
+  (`useFsrsSession`); `mock_started`, `mock_finished` (`useMockSession`);
+  `paywall_shown` (`PaywallGate` mount); `upgrade_clicked` (`startStripeCheckout`);
+  `voice_session_started` (`VoicePage`); `nps_submitted` (`useNpsTrigger`).
+- New `nps_responses` table (migration `20260425220000`, **not yet applied** — file
+  commit only; will be applied via Supabase-MCP in a separate handoff). RLS
+  permits owner-insert only; reads are admin-via-service-role.
+- `<NpsPrompt />` — 11-button 0-10 score, optional comment, Submit + "Not now".
+- `useNpsTrigger` — gates the prompt on a localStorage session counter (>=5)
+  and a per-device "shown" flag, persists submissions via `createNpsRepository`.
+- StudyPage mounts the prompt conditionally after a user completes 5 study sessions.
+- `tests/setup.ts` adds an in-memory localStorage fallback (jsdom v29 ships an
+  incomplete implementation in some configurations).
+- Runtime deps added: `@sentry/react@^10.50`, `posthog-js@^1.372`.
+- Tests added: 2 sentry + 3 events + 2 npsRepository + 5 NpsPrompt + 6 useNpsTrigger
+  = **18 new**, **147 total**.
+
+Cohort leaderboards, sourcemap upload pipeline, PostHog feature flags, A/B testing
+infra, and mock-session persistence are deferred to Plan 11B.
