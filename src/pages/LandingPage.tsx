@@ -295,20 +295,25 @@ export const LandingPage: React.FC = () => {
       </div>
 
       {/* Try Study Mode CTA */}
-      <div className="bg-gradient-to-br from-stone-900 to-stone-700 text-white px-6 py-5 mx-4 my-4 rounded-2xl shadow-lg flex-shrink-0 relative z-30">
-        <div className="max-w-2xl mx-auto flex items-center justify-between gap-4 flex-col sm:flex-row">
-          <div>
-            <div className="text-xs uppercase tracking-wide text-white/70">New</div>
-            <div className="text-lg font-semibold">3-min retrieval sessions</div>
-            <p className="text-sm text-white/80 mt-1">FSRS-5 spaced repetition. Made by a doctor for UKMLA.</p>
+      <div className="mx-4 my-4 flex-shrink-0 relative z-30">
+        <div className="bg-gradient-to-br from-stone-900 to-stone-700 text-white px-6 py-5 rounded-2xl shadow-lg">
+          <div className="max-w-2xl mx-auto flex items-center justify-between gap-4 flex-col sm:flex-row">
+            <div>
+              <div className="text-xs uppercase tracking-wide text-white/70">New</div>
+              <div className="text-lg font-semibold">3-min retrieval sessions</div>
+              <p className="text-sm text-white/80 mt-1">FSRS-5 spaced repetition. Made by a doctor for UKMLA.</p>
+            </div>
+            <Link
+              to="/study"
+              className="px-5 py-2.5 bg-white text-stone-900 rounded-full text-sm font-medium hover:bg-stone-100 transition-colors whitespace-nowrap"
+            >
+              Try Study Mode
+            </Link>
           </div>
-          <Link
-            to="/study"
-            className="px-5 py-2.5 bg-white text-stone-900 rounded-full text-sm font-medium hover:bg-stone-100 transition-colors whitespace-nowrap"
-          >
-            Try Study Mode
-          </Link>
         </div>
+        <p className="text-xs text-stone-500 dark:text-stone-400 text-center mt-2">
+          Made by a UK doctor. Every atom signed off by clinician.
+        </p>
       </div>
 
       {/* Header */}
