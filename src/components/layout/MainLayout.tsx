@@ -4,7 +4,7 @@ import './apple-layout-styles.css';
 
 interface MainLayoutProps {
   children: React.ReactNode;
-  currentPage: 'dashboard' | 'mock' | 'dynamic-demo' | 'explanation-test' | 'concise-demo' | 'concept-practice' | 'concept-practice-old' | 'concept-bulk-upload' | 'curriculum-dashboard';
+  currentPage: 'dashboard' | 'mock' | 'dynamic-demo' | 'explanation-test' | 'concise-demo' | 'concept-practice' | 'concept-practice-old' | 'concept-bulk-upload' | 'curriculum-dashboard' | 'study';
   isPracticeSession?: boolean;
 }
 

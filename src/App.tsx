@@ -15,6 +15,7 @@ import { CurriculumApp } from '@/components/CurriculumApp';
 // Lazy only for secondary routes rarely visited
 const LandingPage = lazy(() => import('@/pages/LandingPage').then(m => ({ default: m.LandingPage })));
 const CurriculumLandingPage = lazy(() => import('@/pages/CurriculumLandingPage').then(m => ({ default: m.CurriculumLandingPage })));
+const StudyPage = lazy(() => import('@/pages/StudyPage').then(m => ({ default: m.StudyPage })));
 
 // Wrapper to extract curriculumId from URL params
 const CurriculumRoute = () => {
@@ -59,6 +60,13 @@ function App() {
             <Route path="/curriculums" element={
               <Suspense fallback={<BlankFallback />}>
                 <CurriculumLandingPage />
+              </Suspense>
+            } />
+
+            {/* FSRS Study session — lazy, primary feature route */}
+            <Route path="/study" element={
+              <Suspense fallback={<BlankFallback />}>
+                <StudyPage />
               </Suspense>
             } />
 
