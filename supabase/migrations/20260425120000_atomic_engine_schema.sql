@@ -65,9 +65,12 @@ create table if not exists public.user_atom_state (
   primary key (user_id, atom_id)
 );
 
+-- Partial predicate `where due_at <= now()` removed: Postgres requires
+-- index predicates to be IMMUTABLE, and now() is STABLE. The full
+-- (user_id, due_at) B-tree serves the "overdue for this user" query
+-- via a range scan with equivalent performance.
 create index user_atom_state_due_idx
-  on public.user_atom_state(user_id, due_at)
-  where due_at <= now();
+  on public.user_atom_state(user_id, due_at);
 
 create table if not exists public.review_events (
   id              uuid primary key default gen_random_uuid(),
