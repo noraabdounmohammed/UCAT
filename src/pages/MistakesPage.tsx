@@ -3,7 +3,9 @@ import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/lib/supabase';
 import { MainLayout } from '@/components/layout/MainLayout';
 import { FsrsSessionView } from '@/components/study/FsrsSessionView';
+import { PredictedScoreBadge } from '@/components/study/PredictedScoreBadge';
 import { useFsrsSession } from '@/hooks/useFsrsSession';
+import { usePredictedScore } from '@/hooks/usePredictedScore';
 import { createAtomRepository } from '@/atom/repository';
 import { createUserStateRepository } from '@/atom/userStateRepository';
 
@@ -25,6 +27,13 @@ export function MistakesPage() {
     },
   });
 
+  const score = usePredictedScore({
+    userId: user?.id ?? '',
+    exam: 'UKMLA',
+    atomRepo,
+    userStateRepo,
+  });
+
   if (!user) {
     return (
       <MainLayout currentPage="mistakes">
@@ -41,6 +50,7 @@ export function MistakesPage() {
       <div className="max-w-md mx-auto py-6 px-4 space-y-4">
         <h1 className="text-xl font-semibold text-stone-900">Mistake deck</h1>
         <p className="text-xs text-stone-500">Atoms you got wrong in the last {LOOKBACK_DAYS} days.</p>
+        <PredictedScoreBadge {...score} />
         <FsrsSessionView session={session} streakDays={streakDays} />
       </div>
     </MainLayout>
