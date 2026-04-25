@@ -35,6 +35,7 @@ export interface AtomRepository {
   listApprovedByExam(exam: Exam): Promise<Atom[]>;
   listFreeTier(exam: Exam): Promise<Atom[]>;
   getById(id: string): Promise<Atom | null>;
+  countApprovedByExam(exam: Exam): Promise<number>;
 }
 
 export function createAtomRepository(supabase: SupabaseClient): AtomRepository {
@@ -75,6 +76,16 @@ export function createAtomRepository(supabase: SupabaseClient): AtomRepository {
         throw error;
       }
       return data ? rowToAtom(data) : null;
+    },
+
+    async countApprovedByExam(exam) {
+      const { count, error } = await supabase
+        .from('atoms')
+        .select('*', { count: 'exact', head: true })
+        .eq('exam', exam)
+        .eq('status', 'approved');
+      if (error) throw error;
+      return count ?? 0;
     },
   };
 }
