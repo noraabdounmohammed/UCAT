@@ -54,7 +54,10 @@ export function StudyPage() {
     );
   }
 
-  const onRatedSideEffect = () => subscription.incrementDailyCount();
+  const onRatedSideEffect = () => {
+    subscription.incrementDailyCount();
+    score.refresh().catch(() => {});
+  };
 
   const paywallKind: 'allowed' | 'daily-limit' =
     !subscription.loading && subscription.isAtLimit && !subscription.isPremium
