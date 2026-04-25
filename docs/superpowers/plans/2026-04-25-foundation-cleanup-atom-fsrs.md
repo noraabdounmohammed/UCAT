@@ -15,7 +15,7 @@
 ## File structure for this plan
 
 ### Deleted
-- All `*.bak`, `*.fixed*`, `*.new`, `*.old`, `*.loft.tsx` files (~30 files)
+- All `*.bak`, `*.fixed*`, `*.new`, `*.old`, `*.tsx.txt` files (~20 files). **`*.loft.tsx` is kept** — those are Nora's Manhattan-loft redesign (production code, imported from `CurriculumApp.tsx`).
 - `src/services/inworldRealtimeService.ts`, `inworldService.ts`, `realtimeTutorService.ts`
 - `netlify/functions/inworld-session.ts`, `netlify/functions/inworld-tts.ts`
 - `src/components/practice/EMQQuestion.tsx`, `TrueFalseQuestion.tsx`, `RankingQuestion.tsx`
@@ -54,20 +54,20 @@
 ### Task A1: Delete legacy backup/duplicate files
 
 **Files:**
-- Delete (find by glob): `**/*.bak`, `**/*.fixed*`, `**/*.new`, `**/*.old`, `**/*.loft.tsx`, `**/*.txt` under `src/`
+- Delete (find by glob): `**/*.bak`, `**/*.fixed*`, `**/*.new`, `**/*.old`, `**/*.txt` under `src/`. **`*.loft.tsx` files are NOT cruft** — they are production loft-redesign components imported by `CurriculumApp.tsx` (verified: `CurriculumHub.loft.tsx`, `ConceptPracticePage.loft.tsx`, `TrackDashboard.loft.tsx`).
 
 - [ ] **Step 1: List all files matching the cruft globs**
 
 ```bash
-find src -type f \( -name '*.bak' -o -name '*.fixed*' -o -name '*.new' -o -name '*.old' -o -name '*.loft.tsx' -o -name '*.tsx.bak' -o -name '*.tsx.new' -o -name '*.tsx.backup' -o -name '*.txt' \) | sort
+find src -type f \( -name '*.bak' -o -name '*.fixed*' -o -name '*.new' -o -name '*.old' -o -name '*.tsx.bak' -o -name '*.tsx.new' -o -name '*.tsx.backup' -o -name '*.txt' \) | sort
 ```
 
-Expected: a list of ~30 files. Examples to expect: `src/components/practice/PracticeSection.tsx.bak`, `src/store/conceptStore.fixed.ts`, `src/pages/CurriculumHub.loft.tsx`, `src/components/practice/ApplePracticeSession.txt`.
+Expected: ~20 files. Examples: `src/components/practice/PracticeSection.tsx.bak`, `src/store/conceptStore.fixed.ts`, `src/components/practice/ApplePracticeSession.txt`. **Not** `*.loft.tsx`.
 
 - [ ] **Step 2: Delete them**
 
 ```bash
-find src -type f \( -name '*.bak' -o -name '*.fixed*' -o -name '*.new' -o -name '*.old' -o -name '*.loft.tsx' -o -name '*.tsx.bak' -o -name '*.tsx.new' -o -name '*.tsx.backup' -o -name '*.txt' \) -print -delete
+find src -type f \( -name '*.bak' -o -name '*.fixed*' -o -name '*.new' -o -name '*.old' -o -name '*.tsx.bak' -o -name '*.tsx.new' -o -name '*.tsx.backup' -o -name '*.txt' \) -print -delete
 ```
 
 Also delete `public/conceptModel.json.fixed` and `public/conceptModel.json.new`:
