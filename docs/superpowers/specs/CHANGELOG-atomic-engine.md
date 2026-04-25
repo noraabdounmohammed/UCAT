@@ -83,3 +83,15 @@ The branch is ready for code review and PR. No remote push performed.
 - Hook hardens against pristine `user_atom_state` rows by re-initialising via the FSRS scheduler before first review
 - Tests added: 12 new (3 user-state repo, 4 session, 4 hook, 3 confidence/AtomRenderer, 3 summary, 5 view, 1 integration). **33 passing total.**
 - 5 free-tier UKMLA atoms in `scripts/seed-dogfood-atoms.sql` — apply pending in a Supabase-MCP session.
+
+---
+
+## 2026-04-26 — Plan 3 ships: review queue (`/review`)
+
+- New `/review` route gated on `useUserRole().isCreator`. Non-creators see "Not authorised".
+- `<ReviewQueueView>` powered by `useReviewQueue` (load pending → approve / reject-with-reason / edit-and-approve → advance).
+- `<ReviewCard>` shows claim, stem, answer, distractors, citation chip + 3 action buttons + inline edit form.
+- `<RejectReasonModal>` mobile-first bottom-sheet with 4 preset reasons + free text.
+- `reviewRepository`: `listPendingReview`, `approveAtom`, `rejectAtom`, `updateAtom`.
+- New schema migration `supabase/migrations/20260425133000_review_event_log.sql` adds `review_decisions` audit table with owner-scoped RLS. **Apply pending.**
+- Tests added: 18 new (4 repo, 5 hook, 4 ReviewCard, 4 ReviewQueueView, 1 integration). **51 passing total.**
