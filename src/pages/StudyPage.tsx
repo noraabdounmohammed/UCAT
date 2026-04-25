@@ -3,7 +3,9 @@ import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/lib/supabase';
 import { MainLayout } from '@/components/layout/MainLayout';
 import { FsrsSessionView } from '@/components/study/FsrsSessionView';
+import { PredictedScoreBadge } from '@/components/study/PredictedScoreBadge';
 import { useFsrsSession } from '@/hooks/useFsrsSession';
+import { usePredictedScore } from '@/hooks/usePredictedScore';
 import { createAtomRepository } from '@/atom/repository';
 import { createUserStateRepository } from '@/atom/userStateRepository';
 
@@ -17,6 +19,13 @@ export function StudyPage() {
     atomRepo,
     userStateRepo,
     maxAtoms: 5,
+  });
+
+  const score = usePredictedScore({
+    userId: user?.id ?? '',
+    exam: 'UKMLA',
+    atomRepo,
+    userStateRepo,
   });
 
   if (!user) {
@@ -34,7 +43,10 @@ export function StudyPage() {
 
   return (
     <MainLayout currentPage="study">
-      <FsrsSessionView session={session} streakDays={streakDays} />
+      <div className="max-w-md mx-auto py-6 px-4 space-y-4">
+        <PredictedScoreBadge {...score} />
+        <FsrsSessionView session={session} streakDays={streakDays} />
+      </div>
     </MainLayout>
   );
 }
