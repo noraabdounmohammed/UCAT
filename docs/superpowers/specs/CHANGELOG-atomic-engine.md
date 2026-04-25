@@ -95,3 +95,15 @@ The branch is ready for code review and PR. No remote push performed.
 - `reviewRepository`: `listPendingReview`, `approveAtom`, `rejectAtom`, `updateAtom`.
 - New schema migration `supabase/migrations/20260425133000_review_event_log.sql` adds `review_decisions` audit table with owner-scoped RLS. **Apply pending.**
 - Tests added: 18 new (4 repo, 5 hook, 4 ReviewCard, 4 ReviewQueueView, 1 integration). **51 passing total.**
+
+---
+
+## 2026-04-26 — Plan 4 ships: atom seeding form (`/seed`)
+
+- New `/seed` route gated on `useUserRole().isCreator`. Non-creators see "Not authorised".
+- `<AtomSeedForm>` 13-field mobile-first form: claim, stem, answer, 3 distractors, citation URL/label, topic path, difficulty, source type, exam, high-yield checkbox.
+- `useSeedAtom` hook: idle / submitting / success / error states.
+- `seedRepository.createDraftAtom` inserts as `status='pending_review'` so the new atom flows directly into Plan 3's review queue.
+- Cross-cutting RLS fix: new migration `20260425150000_atoms_write_policies.sql` adds INSERT + UPDATE policies on `atoms` and `atom_variants` (Plan 1's schema only had SELECT, so writes were silently blocked). **Apply pending — unblocks both Plan 3 review queue updates and Plan 4 seed inserts in production.**
+- Tests added: 11 new (2 repo, 4 hook, 5 form, 1 integration). **63 passing total.**
+- Voice + AI variant generation deferred (Plan 8 / Plan 4B).
