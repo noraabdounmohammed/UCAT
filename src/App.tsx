@@ -16,6 +16,7 @@ import { CurriculumApp } from '@/components/CurriculumApp';
 const LandingPage = lazy(() => import('@/pages/LandingPage').then(m => ({ default: m.LandingPage })));
 const CurriculumLandingPage = lazy(() => import('@/pages/CurriculumLandingPage').then(m => ({ default: m.CurriculumLandingPage })));
 const StudyPage = lazy(() => import('@/pages/StudyPage').then(m => ({ default: m.StudyPage })));
+const ReviewPage = lazy(() => import('@/pages/ReviewPage').then(m => ({ default: m.ReviewPage })));
 
 // Wrapper to extract curriculumId from URL params
 const CurriculumRoute = () => {
@@ -67,6 +68,13 @@ function App() {
             <Route path="/study" element={
               <Suspense fallback={<BlankFallback />}>
                 <StudyPage />
+              </Suspense>
+            } />
+
+            {/* Atom review queue — lazy, gated on creator role */}
+            <Route path="/review" element={
+              <Suspense fallback={<BlankFallback />}>
+                <ReviewPage />
               </Suspense>
             } />
 
