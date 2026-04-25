@@ -55,3 +55,18 @@ Run via `mcp__supabase__get_advisors(type='security')`. **One new finding from t
 - `function_search_path_mutable` (WARN) — `public.touch_updated_at` does not pin its `search_path`. Mitigation: `alter function public.touch_updated_at() set search_path = public, pg_temp;` Recommended as a follow-up commit (the existing `public.update_updated_at_column` function in the project has the same warning, so this is consistent with current project posture, not a regression).
 
 Pre-existing findings (not introduced or modified by this migration): permissive RLS policies on `curriculum_concepts` and `published_curriculums`, missing policies on `publish_admins`, leaked-password-protection disabled at the auth level. None of these are scoped to Plan 1.
+
+---
+
+## 2026-04-25 — Plan 1 verification (Task E1)
+
+| Check | Result |
+|---|---|
+| `npm test` | **10 / 10 pass** (smoke 2 + atom-repo 2 + fsrs-scheduler 4 + fsrs-integration 2) |
+| `npm run build` | **3.20 s**, 29 PWA precache entries, 1460 KiB |
+| `npx tsc --noEmit` | clean (no output) |
+| `du -sh dist/` | 10 MB (held steady vs pre-Plan-1 baseline) |
+| Commit count on branch | 24 commits since `ukmla-akt-version` |
+| Net line delta | +4,754 / −31,169 (net **−26,415**) |
+
+The branch is ready for code review and PR. No remote push performed.
