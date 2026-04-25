@@ -107,3 +107,80 @@ The branch is ready for code review and PR. No remote push performed.
 - Cross-cutting RLS fix: new migration `20260425150000_atoms_write_policies.sql` adds INSERT + UPDATE policies on `atoms` and `atom_variants` (Plan 1's schema only had SELECT, so writes were silently blocked). **Apply pending — unblocks both Plan 3 review queue updates and Plan 4 seed inserts in production.**
 - Tests added: 11 new (2 repo, 4 hook, 5 form, 1 integration). **63 passing total.**
 - Voice + AI variant generation deferred (Plan 8 / Plan 4B).
+
+---
+
+## 2026-04-25 — Plan 3 + Plan 4 migrations & dogfood seed applied to production
+
+**Project:** `uivitzexbtsmnspcitgh` (production, Marberg Services org)
+**Applied via:** Supabase MCP (`apply_migration` for DDL, `execute_sql` for seed)
+**Branch this changelog ships from:** `docs/atomic-engine-prod-apply-2026-04-25` (off `ukmla-akt-version`)
+
+### What was applied (in order)
+
+| # | Source | Migration name (registered) | Applied at (UTC) | Result |
+|---|---|---|---|---|
+| 1 | `supabase/migrations/20260425133000_review_event_log.sql` | `review_event_log` (`20260425195634`) | 2026-04-25T19:56:34Z | OK |
+| 2 | `supabase/migrations/20260425150000_atoms_write_policies.sql` (tightened variant — see below) | `atoms_write_policies_tightened` (`20260425200503`) | 2026-04-25T20:05:03Z | OK |
+| 3 | `scripts/seed-dogfood-atoms.sql` (DML, not migration-tracked) | n/a — `execute_sql` | 2026-04-25T~20:07Z | OK, idempotent |
+
+### Migration 1 — `review_event_log` (Plan 3)
+
+Created `public.review_decisions` (audit log of approve/edit/reject decisions, distinct from `review_events` which logs student answers):
+- 7 columns including `decision text check (decision in ('approve','edit','reject'))`, `reason`, `prev_status`
+- 2 indexes: `review_decisions_atom_idx (atom_id, created_at desc)`, `review_decisions_reviewer_idx (reviewer_id, created_at desc)`
+- RLS enabled, 2 owner-scoped policies (`review_decisions_owner_select`, `review_decisions_owner_insert`)
+
+### Migration 2 — `atoms_write_policies_tightened` (Plan 4 prerequisite)
+
+**Why the registered name diverges from the file name:** The original `20260425150000_atoms_write_policies.sql` contained a permissive UPDATE policy (`atoms_update_authed` — any authed user could update any atom). The privacy auditor correctly flagged this as too permissive given the production data's user-facing exposure. Applied a tightened variant inline, registered under a distinct migration name to make the divergence explicit. PR #5 (`fix/tighten-atoms-update-policy`) updates the file content to match what's in production.
+
+Tightening vs the original draft:
+- UPDATE only on rows whose **current** status is `'draft'` or `'pending_review'` → approved/rejected atoms are locked from further edits.
+- UPDATE's `WITH CHECK` requires `reviewed_by ∈ {NULL, auth.uid()}` → can't impersonate another reviewer's sign-off.
+
+Policies created (4 total, with renamed UPDATE):
+- `atoms_insert_authed_draft` (INSERT, `status='pending_review' and reviewed_by is null`)
+- `atoms_update_in_review` (UPDATE, `status in ('draft','pending_review')` + reviewer-claim check)
+- `atom_variants_insert_authed_draft` (INSERT, `status='pending_review'`)
+- `atom_variants_update_in_review` (UPDATE, `status in ('draft','pending_review')`)
+
+App-level `isCreator` gating remains the practical access control. Database-level `is_creator()` tightening is queued for Plan 4B.
+
+### Seed — `scripts/seed-dogfood-atoms.sql`
+
+Idempotent insert of 5 free-tier UKMLA atoms with NICE citations: stable angina (CG126), hypertension (NG136), asthma exacerbation (NG80), atrial fibrillation (NG196), type 2 diabetes (NG28). Gated on `where not exists (select 1 from public.atoms a where a.claim = v.claim)` so re-runs are safe.
+
+### Post-apply verification
+
+| Check | Expected | Actual |
+|---|---|---|
+| `select count(*) from public.atoms where free_tier=true and status='approved'` | ≥ 5 | **5** ✓ |
+| Policies on `public.atoms` | `atoms_insert_authed_draft, atoms_read_approved, atoms_update_in_review` (3) | **3 matching** ✓ |
+| Policies on `public.atom_variants` | `atom_variants_insert_authed_draft, atom_variants_read_approved, atom_variants_update_in_review` (3) | **3 matching** ✓ |
+| `public.review_decisions` exists | yes | yes (1 row in `information_schema.tables`) ✓ |
+| `review_decisions` policy + index count | 2 policies, 3 indexes (incl. PK) | 2 / 3 ✓ |
+| `list_migrations` registered | 3 entries | `atomic_engine_schema (20260425172540)`, `review_event_log (20260425195634)`, `atoms_write_policies_tightened (20260425200503)` ✓ |
+
+### Backup posture
+
+Supabase MCP doesn't expose a backups tool. Apply was purely additive — one new table + 6 new policies + one DML insert into a previously-empty table. Rollback path:
+```sql
+-- review_decisions: drop the table (cascades the 2 indexes + 2 policies)
+drop table public.review_decisions;
+-- atoms_write_policies_tightened: drop the 4 policies (they reference no objects)
+drop policy "atoms_insert_authed_draft" on public.atoms;
+drop policy "atoms_update_in_review" on public.atoms;
+drop policy "atom_variants_insert_authed_draft" on public.atom_variants;
+drop policy "atom_variants_update_in_review" on public.atom_variants;
+-- seed: delete by claim equality (or status='approved' + free_tier=true if no other writes have happened yet)
+delete from public.atoms where free_tier = true and status = 'approved';
+```
+No risk to pre-existing data (`profiles`, `curriculum_concepts`, `user_concepts`, etc.).
+
+### Auditor pushback narrative
+
+For the historical record (these blocks did their job):
+1. **First seed attempt** — auditor blocked, citing "agent-authored INSERTs to prod". The content was verbatim from the seed file but the auditor couldn't trust the Read tool output. Resolved by re-issuing after explicit user re-authorization with the file content checksummed against disk.
+2. **Atoms write policies (loose variant)** — auditor blocked, citing the permissive UPDATE-any-row pattern. Resolved by user pasting a tightened variant inline (status-gated UPDATE + reviewer-claim discipline), applied under the distinct name `atoms_write_policies_tightened`.
+
