@@ -44,6 +44,7 @@ export function FsrsSessionView({
       </div>
       {session.currentAtom && (
         <AtomRenderer
+          key={session.currentAtom.id}
           atom={session.currentAtom}
           onRated={(r) => session.rateAtom(r)}
         />
