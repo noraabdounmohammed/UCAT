@@ -3,7 +3,6 @@ import { useConceptStore } from '@/contexts/ConceptStoreContext';
 import { WeakestList } from './WeakestList';
 import { TrendSpark } from './TrendSpark';
 import { SessionsCompletedTable } from './SessionsCompletedTable';
-import { BarChart, PieChart } from 'lucide-react';
 
 type ConceptStat = {
   id: string;
@@ -57,26 +56,9 @@ export const TrackDashboard: React.FC<TrackDashboardProps> = ({ curriculumId = '
   const [activeCoverageTab, setActiveCoverageTab] = React.useState<string>('');
   const [coverageCategoryCount, setCoverageCategoryCount] = React.useState(0);
   
-  // Mastery view type (bar or ring)
-  const [masteryViewType, setMasteryViewType] = React.useState<'bar' | 'ring'>(() => {
-    const saved = localStorage.getItem('masteryViewType');
-    return (saved === 'ring' || saved === 'bar') ? saved : 'bar';
-  });
-  
-  // Category view type (bar or ring)
-  const [categoryViewType, setCategoryViewType] = React.useState<'bar' | 'ring'>(() => {
-    const saved = localStorage.getItem('categoryViewType');
-    return (saved === 'ring' || saved === 'bar') ? saved : 'bar';
-  });
-  
-  // Save view preferences to localStorage
-  React.useEffect(() => {
-    localStorage.setItem('masteryViewType', masteryViewType);
-  }, [masteryViewType]);
-  
-  React.useEffect(() => {
-    localStorage.setItem('categoryViewType', categoryViewType);
-  }, [categoryViewType]);
+  // Mastery / category view-type toggles removed alongside the rings + bars in
+  // Task A4. The single placeholder below stands in until Plan 6 ships the
+  // predicted-exam-score view.
 
   const trackData: TrackData = useMemo(() => {
     // Load recent sessions first - needed for daily calculations
@@ -298,24 +280,8 @@ export const TrackDashboard: React.FC<TrackDashboardProps> = ({ curriculumId = '
     );
   }
 
-  // Handle mastery filter selection
-  const handleMasterySelect = (key: "correct" | "incorrect" | "unseen") => {
-    const masteryMap = {
-      correct: 2,
-      incorrect: 1,
-      unseen: 0
-    };
-    
-    const currentMastery = filterState.mastery_levels || [];
-    const level = masteryMap[key];
-    
-    // Toggle the mastery level
-    const newMastery = currentMastery.includes(level)
-      ? currentMastery.filter((l: number) => l !== level)
-      : [...currentMastery, level];
-    
-    updateFilterState({ mastery_levels: newMastery });
-  };
+  // handleMasterySelect removed — only consumers were the deleted
+  // <MasterySummaryBar/> + <MasteryProgressRing/> in Task A4.
 
   // Prepare data for new components
   const summaryData = {
@@ -368,36 +334,9 @@ export const TrackDashboard: React.FC<TrackDashboardProps> = ({ curriculumId = '
     <div className="max-w-7xl mx-auto space-y-6">
       {/* Overall Mastery Summary - Full Width */}
       <div className="bg-white/60 dark:bg-zinc-900/60 backdrop-blur-xl rounded-xl border border-black/[0.08] dark:border-white/[0.08] p-6">
-        {/* Toggle Button */}
-        <div className="flex justify-end mb-4">
-          <div className="inline-flex items-center gap-1 bg-white/80 dark:bg-zinc-800/80 rounded-lg p-1 border border-black/[0.08] dark:border-white/[0.08]">
-            <button
-              onClick={() => setMasteryViewType('bar')}
-              className={`flex items-center gap-2 px-3 py-1.5 text-[13px] font-medium rounded-md transition-all ${
-                masteryViewType === 'bar'
-                  ? 'bg-[#007AFF] text-white shadow-sm'
-                  : 'text-zinc-600 dark:text-zinc-400 hover:bg-white/60 dark:hover:bg-zinc-700/60'
-              }`}
-            >
-              <BarChart className="h-4 w-4" />
-              <span>Bar</span>
-            </button>
-            <button
-              onClick={() => setMasteryViewType('ring')}
-              className={`flex items-center gap-2 px-3 py-1.5 text-[13px] font-medium rounded-md transition-all ${
-                masteryViewType === 'ring'
-                  ? 'bg-[#007AFF] text-white shadow-sm'
-                  : 'text-zinc-600 dark:text-zinc-400 hover:bg-white/60 dark:hover:bg-zinc-700/60'
-              }`}
-            >
-              <PieChart className="h-4 w-4" />
-              <span>Ring</span>
-            </button>
-          </div>
+        <div className="text-sm text-stone-500 dark:text-stone-400">
+          Predicted exam-day score arrives in Plan 6.
         </div>
-        
-        {/* Conditional Mastery View */}
-        <div className="text-sm text-stone-500">Predicted exam score (Plan 6)</div>
       </div>
 
       {/* Desktop Grid Layout */}
@@ -428,30 +367,6 @@ export const TrackDashboard: React.FC<TrackDashboardProps> = ({ curriculumId = '
               </div>
               
               <div className="flex items-center gap-2">
-                {/* View Toggle */}
-                <div className="inline-flex items-center gap-1 bg-white/80 dark:bg-zinc-800/80 rounded-lg p-1 border border-black/[0.08] dark:border-white/[0.08]">
-                  <button
-                    onClick={() => setCategoryViewType('bar')}
-                    className={`flex items-center gap-1.5 px-2 py-1 text-[12px] font-medium rounded-md transition-all ${
-                      categoryViewType === 'bar'
-                        ? 'bg-[#007AFF] text-white shadow-sm'
-                        : 'text-zinc-600 dark:text-zinc-400 hover:bg-white/60 dark:hover:bg-zinc-700/60'
-                    }`}
-                  >
-                    <BarChart className="h-3 w-3" />
-                  </button>
-                  <button
-                    onClick={() => setCategoryViewType('ring')}
-                    className={`flex items-center gap-1.5 px-2 py-1 text-[12px] font-medium rounded-md transition-all ${
-                      categoryViewType === 'ring'
-                        ? 'bg-[#007AFF] text-white shadow-sm'
-                        : 'text-zinc-600 dark:text-zinc-400 hover:bg-white/60 dark:hover:bg-zinc-700/60'
-                    }`}
-                  >
-                    <PieChart className="h-3 w-3" />
-                  </button>
-                </div>
-                
                 {/* Sort Button */}
                 <button
                   onClick={() => setCoverageSortAscending(!coverageSortAscending)}
@@ -472,7 +387,9 @@ export const TrackDashboard: React.FC<TrackDashboardProps> = ({ curriculumId = '
             
             {/* Active Category Content - Fixed height with scroll */}
             <div className="max-h-[400px] overflow-y-auto scrollbar-thin scrollbar-thumb-gray-300 dark:scrollbar-thumb-gray-600 scrollbar-track-transparent pr-2">
-              <div className="text-sm text-stone-500">Predicted exam score (Plan 6)</div>
+              <div className="text-sm text-stone-500 dark:text-stone-400">
+                Per-category coverage arrives in Plan 6.
+              </div>
             </div>
           </div>
         </div>

@@ -2,7 +2,6 @@ import React, { useMemo } from 'react';
 import { useConceptStore } from '@/contexts/ConceptStoreContext';
 import { WeakestList } from './WeakestList';
 import { SessionsCompletedTable } from './SessionsCompletedTable';
-import { BarChart, PieChart } from 'lucide-react';
 
 type ConceptStat = {
   id: string;
@@ -56,42 +55,9 @@ export const TrackDashboard: React.FC<TrackDashboardProps> = ({ curriculumId = '
   const [activeCoverageTab, setActiveCoverageTab] = React.useState<string>('');
   const [coverageCategoryCount, setCoverageCategoryCount] = React.useState(0);
   
-  // Mastery view type (bar or ring)
-  const [masteryViewType, setMasteryViewType] = React.useState<'bar' | 'ring'>(() => {
-    const saved = localStorage.getItem('masteryViewType');
-    return (saved === 'ring' || saved === 'bar') ? saved : 'ring';
-  });
-  
-  // Category view type (bar or ring)
-  const [categoryViewType, setCategoryViewType] = React.useState<'bar' | 'ring'>(() => {
-    const saved = localStorage.getItem('categoryViewType');
-    return (saved === 'ring' || saved === 'bar') ? saved : 'bar';
-  });
-  
-  // Save view preferences to localStorage
-  React.useEffect(() => {
-    localStorage.setItem('masteryViewType', masteryViewType);
-  }, [masteryViewType]);
-  
-  React.useEffect(() => {
-    localStorage.setItem('categoryViewType', categoryViewType);
-  }, [categoryViewType]);
-
-  // Force bar view on mobile
-  React.useEffect(() => {
-    const handleResize = () => {
-      if (window.innerWidth < 768 && categoryViewType === 'ring') {
-        setCategoryViewType('bar');
-      }
-    };
-    
-    // Check on mount
-    handleResize();
-    
-    // Check on resize
-    window.addEventListener('resize', handleResize);
-    return () => window.removeEventListener('resize', handleResize);
-  }, [categoryViewType]);
+  // Mastery / category view-type toggles + mobile-resize coercion removed
+  // alongside the rings + bars in Task A4. The placeholders below stand in
+  // until Plan 6 ships the predicted-exam-score view.
 
   const trackData: TrackData = useMemo(() => {
     // Load recent sessions first - needed for daily calculations
@@ -316,39 +282,15 @@ export const TrackDashboard: React.FC<TrackDashboardProps> = ({ curriculumId = '
     <div className="space-y-4 sm:space-y-6">
       {/* Overall Mastery Card */}
       <div className="bg-white/90 backdrop-blur-2xl rounded-3xl border border-white/30 shadow-[0_8px_32px_0_rgba(0,0,0,0.12)] backdrop-saturate-150 overflow-hidden">
-        <div className="px-4 sm:px-8 py-4 sm:py-6 border-b border-stone-200/50 flex items-center justify-between">
+        <div className="px-4 sm:px-8 py-4 sm:py-6 border-b border-stone-200/50">
           <h3 className="text-base sm:text-lg font-medium text-stone-900" style={{ fontFamily: "'Unbounded', sans-serif", fontWeight: 500 }}>
             Overall Mastery
           </h3>
-          
-          {/* View Toggle */}
-          <div className="flex items-center gap-1 bg-white/60 backdrop-blur-xl rounded-full p-1 border border-stone-300">
-            <button
-              onClick={() => setMasteryViewType('bar')}
-              className={`p-2 rounded-full transition-all duration-300 ${
-                masteryViewType === 'bar'
-                  ? 'bg-stone-900 text-white'
-                  : 'text-stone-600 hover:text-stone-900'
-              }`}
-              title="Bar view"
-            >
-              <BarChart className="h-3 w-3" />
-            </button>
-            <button
-              onClick={() => setMasteryViewType('ring')}
-              className={`p-2 rounded-full transition-all duration-300 ${
-                masteryViewType === 'ring'
-                  ? 'bg-stone-900 text-white'
-                  : 'text-stone-600 hover:text-stone-900'
-              }`}
-              title="Ring view"
-            >
-              <PieChart className="h-3 w-3" />
-            </button>
-          </div>
         </div>
         <div className="p-4 sm:p-8">
-          <div className="text-sm text-stone-500">Predicted exam score (Plan 6)</div>
+          <div className="text-sm text-stone-500">
+            Predicted exam-day score arrives in Plan 6.
+          </div>
         </div>
       </div>
 
@@ -362,34 +304,8 @@ export const TrackDashboard: React.FC<TrackDashboardProps> = ({ curriculumId = '
                 Progress by Category
               </h3>
             
-              {/* View Toggle and Sort */}
+              {/* Sort */}
               <div className="flex items-center gap-2">
-              {/* View Toggle - Hidden on mobile, only show on desktop */}
-              <div className="hidden md:flex items-center gap-1 bg-white/60 backdrop-blur-xl rounded-full p-1 border border-stone-300">
-                <button
-                  onClick={() => setCategoryViewType('bar')}
-                  className={`p-2 rounded-full transition-all duration-300 ${
-                    categoryViewType === 'bar'
-                      ? 'bg-stone-900 text-white'
-                      : 'text-stone-600 hover:text-stone-900'
-                  }`}
-                  title="Bar view"
-                >
-                  <BarChart className="h-3 w-3" />
-                </button>
-                <button
-                  onClick={() => setCategoryViewType('ring')}
-                  className={`p-2 rounded-full transition-all duration-300 ${
-                    categoryViewType === 'ring'
-                      ? 'bg-stone-900 text-white'
-                      : 'text-stone-600 hover:text-stone-900'
-                  }`}
-                  title="Ring view"
-                >
-                  <PieChart className="h-3 w-3" />
-                </button>
-              </div>
-              
               {/* Sort Button */}
               <button
                 onClick={() => setCoverageSortAscending(!coverageSortAscending)}
@@ -432,7 +348,9 @@ export const TrackDashboard: React.FC<TrackDashboardProps> = ({ curriculumId = '
             
             {/* Active Category Content - Fixed height with scroll */}
             <div className="max-h-[400px] overflow-y-auto pr-2">
-              <div className="text-sm text-stone-500">Predicted exam score (Plan 6)</div>
+              <div className="text-sm text-stone-500">
+                Per-category coverage arrives in Plan 6.
+              </div>
             </div>
           </div>
         </div>
