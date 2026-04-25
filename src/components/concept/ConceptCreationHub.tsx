@@ -1,10 +1,9 @@
 import React from 'react';
-import { Plus, Zap, X } from 'lucide-react';
+import { Plus, X } from 'lucide-react';
 
 interface ConceptCreationHubProps {
   isOpen: boolean;
   onClose: () => void;
-  onBulkUpload: () => void;
   onManualAdd: () => void;
   onKnowledgeBaseImport: () => void;
 }
@@ -12,49 +11,24 @@ interface ConceptCreationHubProps {
 export const ConceptCreationHub: React.FC<ConceptCreationHubProps> = ({
   isOpen,
   onClose,
-  onBulkUpload,
   onManualAdd,
   onKnowledgeBaseImport
 }) => {
-  console.log('🎨 ConceptCreationHub render:', { 
-    isOpen, 
-    hasOnBulkUpload: !!onBulkUpload, 
+  console.log('🎨 ConceptCreationHub render:', {
+    isOpen,
     hasOnManualAdd: !!onManualAdd,
-    onBulkUploadType: typeof onBulkUpload,
     onManualAddType: typeof onManualAdd
   });
-  
+
   // Test calling the functions directly
   if (isOpen) {
     console.log('🧪 Testing function calls:');
-    console.log('  - onBulkUpload:', onBulkUpload);
     console.log('  - onManualAdd:', onManualAdd);
   }
-  
+
   if (!isOpen) return null;
 
   const creationOptions = [
-    {
-      id: 'bulk',
-      title: 'Generate with AI',
-      description: 'Auto-generate multiple concepts from text, URLs, or documents using AI',
-      icon: Zap,
-      color: 'bg-blue-500',
-      hoverColor: 'hover:bg-blue-600',
-      onClick: () => {
-        console.log('🔵 Generate with AI clicked - calling onBulkUpload');
-        onBulkUpload();
-        console.log('🔵 Generate with AI - calling onClose');
-        onClose();
-        console.log('🔵 Generate with AI - done');
-      },
-      features: [
-        'AI-powered text extraction',
-        'URL content fetching',
-        'Automatic concept generation',
-        'Custom AI prompts'
-      ]
-    },
     {
       id: 'manual',
       title: 'Add Manually',

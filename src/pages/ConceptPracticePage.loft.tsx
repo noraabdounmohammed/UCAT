@@ -14,7 +14,6 @@ const ApplePracticeSession = lazy(() => import('@/components/practice/ApplePract
 const PracticeConfigModal = lazy(() => import('@/components/practice/PracticeConfigModal').then(m => ({ default: m.PracticeConfigModal })));
 const ConceptCreationHub = lazy(() => import('@/components/concept/ConceptCreationHub').then(m => ({ default: m.ConceptCreationHub })));
 const ConceptEditorModal = lazy(() => import('@/components/concept/ConceptEditorModal').then(m => ({ default: m.ConceptEditorModal })));
-const ConceptBulkUploadModal = lazy(() => import('@/components/concept/ConceptBulkUploadModal').then(m => ({ default: m.ConceptBulkUploadModal })));
 const ConceptManualAddModal = lazy(() => import('@/components/concept/ConceptManualAddModal.new').then(m => ({ default: m.ConceptManualAddModal })));
 
 interface Curriculum {
@@ -66,7 +65,6 @@ const ConceptPracticePageLoftContent: React.FC<Omit<ConceptPracticePageLoftProps
   
   const [showPracticeConfig, setShowPracticeConfig] = useState(false);
   const [showCreationHub, setShowCreationHub] = useState(false);
-  const [showBulkUpload, setShowBulkUpload] = useState(false);
   const [showManualAdd, setShowManualAdd] = useState(false);
   const [showFiltersPanel, setShowFiltersPanel] = useState(false);
   type ViewType = 'dashboard' | 'progress' | 'concepts';
@@ -337,21 +335,12 @@ const ConceptPracticePageLoftContent: React.FC<Omit<ConceptPracticePageLoftProps
           <ConceptCreationHub
             isOpen={showCreationHub}
             onClose={() => setShowCreationHub(false)}
-            onBulkUpload={() => setShowBulkUpload(true)}
             onManualAdd={() => setShowManualAdd(true)}
             onKnowledgeBaseImport={() => {}}
           />
         )}
 
         {/* Modals triggered from Creation Hub while on dashboard */}
-        <ConceptBulkUploadModal
-          isOpen={showBulkUpload}
-          onClose={() => setShowBulkUpload(false)}
-          onBack={() => {
-            setShowBulkUpload(false);
-            setShowCreationHub(true);
-          }}
-        />
         <ConceptManualAddModal
           isOpen={showManualAdd}
           onClose={() => setShowManualAdd(false)}
@@ -1207,21 +1196,12 @@ const ConceptPracticePageLoftContent: React.FC<Omit<ConceptPracticePageLoftProps
         <ConceptCreationHub
           isOpen={showCreationHub}
           onClose={() => setShowCreationHub(false)}
-          onBulkUpload={() => setShowBulkUpload(true)}
           onManualAdd={() => setShowManualAdd(true)}
           onKnowledgeBaseImport={() => {}}
         />
       )}
 
       {/* Modals triggered from Creation Hub while in concepts/progress views */}
-      <ConceptBulkUploadModal
-        isOpen={showBulkUpload}
-        onClose={() => setShowBulkUpload(false)}
-        onBack={() => {
-          setShowBulkUpload(false);
-          setShowCreationHub(true);
-        }}
-      />
       <ConceptManualAddModal
         isOpen={showManualAdd}
         onClose={() => setShowManualAdd(false)}

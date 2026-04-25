@@ -1,6 +1,4 @@
 import { useState, useEffect } from 'react';
-import { ConceptNodeTreeView, buildConceptNodeTree } from './ConceptNodeTreeView';
-import { ConceptNodeGraphView, buildConceptNodeGraph } from './ConceptNodeGraphView';
 import { ApplePracticeSession, QuestionData } from './ApplePracticeSession';
 import { Target, BookOpen, Brain, Calculator, Scale, Loader2, Check, ChevronRight } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
@@ -68,8 +66,6 @@ export function ConceptNodePracticeSection(): JSX.Element {
   
   // State for showing/hiding visualizations
   const [showMatrixView, setShowMatrixView] = useState(true);
-  const [showTreeView, setShowTreeView] = useState(true);
-  const [showGraphView, setShowGraphView] = useState(true);
   
   // Condition structure state
   const [conditionStructure, setConditionStructure] = useState<Array<ConditionStructure>>([]);
@@ -414,132 +410,8 @@ export function ConceptNodePracticeSection(): JSX.Element {
           <div className="space-y-6">
             {/* Practice Section Content */}
             <div className="mb-10">
-              {/* Network Graph View */}
-              <div className="mb-8">
-                <div className="flex items-center mb-4">
-                  <h4 className="apple-heading-2">Concept Relationships</h4>
-                  <button 
-                    className="ml-auto apple-button-small"
-                    onClick={() => setShowGraphView(prev => !prev)}
-                  >
-                    {showGraphView ? 'Hide Graph' : 'Show Graph'}
-                  </button>
-                </div>
-                
-                {showGraphView && (
-                  <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-4 mb-6 flex justify-center">
-                    <ConceptNodeGraphView 
-                      data={buildConceptNodeGraph(
-                        availableSystems,
-                        conditionStructure,
-                        availablePresentations,
-                        filterOptions.conditions,
-                        filterOptions.presentations,
-                        filterOptions.competencies
-                      )}
-                      width={600}
-                      height={300}
-                      onNodeSelect={(node) => {
-                        // Handle node selection based on type
-                        if (node.type === 'condition') {
-                          const condition = node.label;
-                          const isSelected = filterOptions.conditions.includes(condition);
-                          
-                          setFilterOptions({
-                            ...filterOptions,
-                            conditions: isSelected
-                              ? filterOptions.conditions.filter(c => c !== condition)
-                              : [...filterOptions.conditions, condition]
-                          });
-                        } else if (node.type === 'presentation') {
-                          const presentation = node.label;
-                          const isSelected = filterOptions.presentations.includes(presentation);
-                          
-                          setFilterOptions({
-                            ...filterOptions,
-                            presentations: isSelected
-                              ? filterOptions.presentations.filter(p => p !== presentation)
-                              : [...filterOptions.presentations, presentation]
-                          });
-                        } else if (node.type === 'competency') {
-                          const competencyId = node.id.replace('competency-', '');
-                          const isSelected = filterOptions.competencies.includes(competencyId);
-                          
-                          setFilterOptions({
-                            ...filterOptions,
-                            competencies: isSelected
-                              ? filterOptions.competencies.filter(c => c !== competencyId)
-                              : [...filterOptions.competencies, competencyId]
-                          });
-                        }
-                      }}
-                    />
-                  </div>
-                )}
-              </div>
-              
-              {/* Hierarchical Tree View */}
-              <div className="mb-8">
-                <div className="flex items-center mb-4">
-                  <h4 className="apple-heading-2">Concept Hierarchy</h4>
-                  <button 
-                    className="ml-auto apple-button-small"
-                    onClick={() => setShowTreeView(prev => !prev)}
-                  >
-                    {showTreeView ? 'Hide Tree' : 'Show Tree'}
-                  </button>
-                </div>
-                
-                {showTreeView && (
-                  <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-4 mb-6 overflow-auto" style={{ maxHeight: '400px' }}>
-                    <ConceptNodeTreeView 
-                      data={buildConceptNodeTree(
-                        availableSystems,
-                        conditionStructure,
-                        availablePresentations,
-                        filterOptions.conditions,
-                        filterOptions.presentations,
-                        filterOptions.competencies
-                      )}
-                      onNodeSelect={(node) => {
-                        // Handle node selection based on type
-                        if (node.type === 'condition') {
-                          const condition = node.name;
-                          const isSelected = filterOptions.conditions.includes(condition);
-                          
-                          setFilterOptions({
-                            ...filterOptions,
-                            conditions: isSelected
-                              ? filterOptions.conditions.filter(c => c !== condition)
-                              : [...filterOptions.conditions, condition]
-                          });
-                        } else if (node.type === 'presentation') {
-                          const presentation = node.name;
-                          const isSelected = filterOptions.presentations.includes(presentation);
-                          
-                          setFilterOptions({
-                            ...filterOptions,
-                            presentations: isSelected
-                              ? filterOptions.presentations.filter(p => p !== presentation)
-                              : [...filterOptions.presentations, presentation]
-                          });
-                        } else if (node.type === 'competency') {
-                          const competencyId = node.id.replace('competency-', '');
-                          const isSelected = filterOptions.competencies.includes(competencyId);
-                          
-                          setFilterOptions({
-                            ...filterOptions,
-                            competencies: isSelected
-                              ? filterOptions.competencies.filter(c => c !== competencyId)
-                              : [...filterOptions.competencies, competencyId]
-                          });
-                        }
-                      }}
-                    />
-                  </div>
-                )}
-              </div>
-              
+              {/* Concept graph navigation will return in Plan 2 with prerequisite-edge support */}
+
               {/* Matrix Heatmap */}
               <div className="mb-8">
                 <div className="flex items-center mb-4">
