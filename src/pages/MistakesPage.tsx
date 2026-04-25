@@ -4,9 +4,12 @@ import { supabase } from '@/lib/supabase';
 import { MainLayout } from '@/components/layout/MainLayout';
 import { FsrsSessionView } from '@/components/study/FsrsSessionView';
 import { PredictedScoreBadge } from '@/components/study/PredictedScoreBadge';
+import { PaywallGate } from '@/components/paywall/PaywallGate';
 import { useFsrsSession } from '@/hooks/useFsrsSession';
 import { usePredictedScore } from '@/hooks/usePredictedScore';
 import { useStreak } from '@/hooks/useStreak';
+import { useSubscription } from '@/hooks/useSubscription';
+import { startStripeCheckout } from '@/services/stripeCheckout';
 import { createAtomRepository } from '@/atom/repository';
 import { createUserStateRepository } from '@/atom/userStateRepository';
 
@@ -38,6 +41,8 @@ export function MistakesPage() {
   const streak = useStreak({ userId: user?.id ?? '', repo: userStateRepo });
   const streakDays = streak.streakDays;
 
+  const subscription = useSubscription();
+
   if (!user) {
     return (
       <MainLayout currentPage="mistakes">
@@ -46,13 +51,37 @@ export function MistakesPage() {
     );
   }
 
+  const onRatedSideEffect = () => subscription.incrementDailyCount();
+
+  const paywallKind: 'allowed' | 'daily-limit' =
+    !subscription.loading && subscription.isAtLimit && !subscription.isPremium
+      ? 'daily-limit'
+      : 'allowed';
+
+  const handleUpgrade = () => {
+    if (!user.id || !user.email) return;
+    startStripeCheckout(user.id, user.email).catch((err) =>
+      console.error('Checkout failed:', err),
+    );
+  };
+
   return (
     <MainLayout currentPage="mistakes">
       <div className="max-w-md mx-auto py-6 px-4 space-y-4">
         <h1 className="text-xl font-semibold text-stone-900">Mistake deck</h1>
         <p className="text-xs text-stone-500">Atoms you got wrong in the last {LOOKBACK_DAYS} days.</p>
         <PredictedScoreBadge {...score} />
-        <FsrsSessionView session={session} streakDays={streakDays} />
+        <PaywallGate
+          kind={paywallKind}
+          dailyQuestionsRemaining={subscription.dailyQuestionsRemaining}
+          onUpgrade={handleUpgrade}
+        >
+          <FsrsSessionView
+            session={session}
+            streakDays={streakDays}
+            onRatedSideEffect={onRatedSideEffect}
+          />
+        </PaywallGate>
       </div>
     </MainLayout>
   );
