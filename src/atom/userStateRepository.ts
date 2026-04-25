@@ -18,6 +18,7 @@ export interface UserStateRepository {
   listDueForUser(userId: string, asOf: Date, limit: number): Promise<UserAtomState[]>;
   listMistakeAtomsForUser(userId: string, since: Date, limit: number): Promise<UserAtomState[]>;
   listAllForUser(userId: string): Promise<UserAtomState[]>;
+  listReviewEventDates(userId: string, since: Date): Promise<Date[]>;
   upsertState(state: UserAtomState): Promise<void>;
   insertReviewEvent(ev: Omit<ReviewEvent, 'id' | 'createdAt'>): Promise<void>;
 }
@@ -56,6 +57,17 @@ export function createUserStateRepository(supabase: SupabaseClient): UserStateRe
         .eq('user_id', userId);
       if (error) throw error;
       return (data ?? []).map(rowToState);
+    },
+
+    async listReviewEventDates(userId, since) {
+      const { data, error } = await supabase
+        .from('review_events')
+        .select('created_at')
+        .eq('user_id', userId)
+        .gte('created_at', since.toISOString())
+        .order('created_at', { ascending: false });
+      if (error) throw error;
+      return (data ?? []).map((r: any) => new Date(r.created_at));
     },
 
     async upsertState(state) {
