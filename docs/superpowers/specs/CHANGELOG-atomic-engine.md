@@ -196,3 +196,14 @@ For the historical record (these blocks did their job):
 - No new infra; no migrations; no API keys; no external deps.
 
 Tightening to "exclude already-corrected mistakes" deferred to Plan 5B.
+
+---
+
+## 2026-04-26 — Plan 6 ships: predicted exam-day score
+
+- New `<PredictedScoreBadge />` shown above the session in `/study` and `/mistakes`.
+- `usePredictedScore({ userId, exam })` hook loads `user_atom_state` rows + total approved atom count, computes mean retention via ts-fsrs's `forgetting_curve`.
+- Pure functions in `src/fsrs/retention.ts`: `computeRetention(state, now)`, `computePredictedScore(states, now)`.
+- Repository extensions: `atomRepo.countApprovedByExam(exam)`, `userStateRepo.listAllForUser(userId)`.
+- v1 metric is "directionally honest" — mean retention across covered atoms. Cohort calibration vs real UKMLA scores deferred to Plan 10.
+- Tests added: 11 new (4 retention math, 3 hook, 4 badge). **78 passing total.**
