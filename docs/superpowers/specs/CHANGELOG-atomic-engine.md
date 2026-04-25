@@ -218,3 +218,16 @@ Tightening to "exclude already-corrected mistakes" deferred to Plan 5B.
 - `userStateRepository.listReviewEventDates(userId, since)` queries `review_events` (owner-scoped RLS).
 - Tests added: 12 new (7 streak math, 3 hook, 2 integration). **92 passing total.**
 - Grace days (Duolingo pattern) deferred to Plan 7B.
+
+---
+
+## 2026-04-26 — Plan 8 ships: voice mode (`/voice`)
+
+- New `/voice` route — hands-free retrieval. TTS reads each atom's stem; STT listens for the spoken answer; we match loosely against `atom.answer` + distractors and auto-rate (answer→Good 3, distractor→Forgot 1, no-match→Hard 2).
+- Web Speech API only (free, browser-native). Graceful "Voice mode unavailable" page on browsers that don't support it (older Safari, etc.).
+- `src/voice/match.ts:matchSpokenAnswer(transcript, atom)` — case- and punctuation-insensitive bidirectional substring matching against answer + distractors.
+- `src/voice/speech.ts` — `speak`, `listen`, `isVoiceAvailable` thin wrappers around `speechSynthesis` + `SpeechRecognition`.
+- `<VoiceAtomView>` — orchestrates the speak→listen→match flow per atom; emits `MatchOutcome` to the parent.
+- `<VoicePage>` reuses `useFsrsSession` — same queue and rating pipeline as `/study`. `key={atom.id}` remount pattern (Plan 2 fix) keeps phase state fresh between atoms.
+- Tests added: 17 new (6 match, 8 speech wrappers, 3 voice-session integration). **109 passing total.**
+- Voice INPUT for atom seeding (Whisper) deferred to Plan 8B. Levenshtein/embedding-based fuzzy matching deferred to Plan 8B.

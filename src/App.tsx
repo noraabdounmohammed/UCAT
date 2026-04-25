@@ -19,6 +19,7 @@ const StudyPage = lazy(() => import('@/pages/StudyPage').then(m => ({ default: m
 const ReviewPage = lazy(() => import('@/pages/ReviewPage').then(m => ({ default: m.ReviewPage })));
 const SeedPage = lazy(() => import('@/pages/SeedPage').then(m => ({ default: m.SeedPage })));
 const MistakesPage = lazy(() => import('@/pages/MistakesPage').then(m => ({ default: m.MistakesPage })));
+const VoicePage = lazy(() => import('@/pages/VoicePage').then(m => ({ default: m.VoicePage })));
 
 // Wrapper to extract curriculumId from URL params
 const CurriculumRoute = () => {
@@ -91,6 +92,13 @@ function App() {
             <Route path="/mistakes" element={
               <Suspense fallback={<BlankFallback />}>
                 <MistakesPage />
+              </Suspense>
+            } />
+
+            {/* Voice mode — lazy, hands-free retrieval via Web Speech API */}
+            <Route path="/voice" element={
+              <Suspense fallback={<BlankFallback />}>
+                <VoicePage />
               </Suspense>
             } />
 
