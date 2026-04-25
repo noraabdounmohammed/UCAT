@@ -1,0 +1,71 @@
+import { useMemo } from 'react';
+import { useAuth } from '@/contexts/AuthContext';
+import { supabase } from '@/lib/supabase';
+import { MainLayout } from '@/components/layout/MainLayout';
+import { MockQuestion } from '@/components/mock/MockQuestion';
+import { MockTimer } from '@/components/mock/MockTimer';
+import { MockResult } from '@/components/mock/MockResult';
+import { useMockSession } from '@/hooks/useMockSession';
+import { createAtomRepository } from '@/atom/repository';
+
+const MOCK_ATOM_COUNT = 20;
+const MOCK_DURATION_SEC = 30 * 60;
+
+export function MockPage() {
+  const { user } = useAuth();
+  const atomRepo = useMemo(() => createAtomRepository(supabase), []);
+  const session = useMockSession({
+    atomRepo,
+    exam: 'UKMLA',
+    atomCount: MOCK_ATOM_COUNT,
+    durationSec: MOCK_DURATION_SEC,
+  });
+
+  if (!user) {
+    return (
+      <MainLayout currentPage="mock">
+        <div className="text-center py-12 text-stone-600">Sign in to take a mock.</div>
+      </MainLayout>
+    );
+  }
+
+  return (
+    <MainLayout currentPage="mock">
+      <div className="max-w-md mx-auto py-6 px-4 space-y-4">
+        <div className="flex justify-between items-center">
+          <h1 className="text-xl font-semibold text-stone-900">Mock exam</h1>
+          {session.status === 'in_progress' && <MockTimer secondsLeft={session.secondsLeft} />}
+        </div>
+        {session.status === 'loading' && (
+          <div className="text-stone-500 text-center py-12">Loading…</div>
+        )}
+        {session.status === 'empty' && (
+          <div className="text-stone-700 text-center py-12">No atoms available.</div>
+        )}
+        {session.status === 'error' && (
+          <div className="text-red-700 text-center py-12">{session.errorMessage}</div>
+        )}
+        {session.status === 'in_progress' && session.currentAtom && (
+          <>
+            <div className="text-xs text-stone-500 text-right">
+              {session.progress.done} / {session.progress.total}
+            </div>
+            <MockQuestion
+              key={session.currentAtom.id}
+              atom={session.currentAtom}
+              onSubmit={(a) => session.submit(a)}
+            />
+          </>
+        )}
+        {session.status === 'finished' && session.score && (
+          <MockResult
+            correct={session.score.correct}
+            total={session.score.total}
+            percentage={session.score.percentage}
+            timeUsedSec={MOCK_DURATION_SEC - session.secondsLeft}
+          />
+        )}
+      </div>
+    </MainLayout>
+  );
+}

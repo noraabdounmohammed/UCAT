@@ -20,6 +20,7 @@ const ReviewPage = lazy(() => import('@/pages/ReviewPage').then(m => ({ default:
 const SeedPage = lazy(() => import('@/pages/SeedPage').then(m => ({ default: m.SeedPage })));
 const MistakesPage = lazy(() => import('@/pages/MistakesPage').then(m => ({ default: m.MistakesPage })));
 const VoicePage = lazy(() => import('@/pages/VoicePage').then(m => ({ default: m.VoicePage })));
+const MockPage = lazy(() => import('@/pages/MockPage').then(m => ({ default: m.MockPage })));
 
 // Wrapper to extract curriculumId from URL params
 const CurriculumRoute = () => {
@@ -99,6 +100,13 @@ function App() {
             <Route path="/voice" element={
               <Suspense fallback={<BlankFallback />}>
                 <VoicePage />
+              </Suspense>
+            } />
+
+            {/* Mock exam — lazy, full timed UKMLA-style mock */}
+            <Route path="/mock" element={
+              <Suspense fallback={<BlankFallback />}>
+                <MockPage />
               </Suspense>
             } />
 
