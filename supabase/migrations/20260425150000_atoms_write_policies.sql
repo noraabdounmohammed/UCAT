@@ -1,9 +1,16 @@
--- Plan 4 prerequisite — RLS write policies for atoms + atom_variants
--- Plan 1's schema only had SELECT policies, so INSERT/UPDATE were blocked
--- for non-service-role users. This unblocks Plan 3's review queue (which
--- updates atom status) and Plan 4's seed form (which inserts drafts).
+-- Plan 4 — RLS write policies for atoms + atom_variants (tightened post-audit).
+-- Plan 1's schema only had SELECT policies, so INSERT/UPDATE were silently
+-- blocked. This unblocks Plan 3's review queue (updates to non-finalised
+-- atoms) and Plan 4's seed form (inserts of pending_review drafts).
+--
+-- Tightening vs the original (loose) draft of this migration:
+--   - UPDATE only on rows whose CURRENT status is 'draft' or 'pending_review'
+--     → approved/rejected atoms are locked from further edits.
+--   - UPDATE's WITH CHECK requires reviewed_by ∈ {NULL, auth.uid()}
+--     → can't impersonate another reviewer's sign-off.
+-- App-level isCreator gating remains the practical access control.
 
--- atoms: allow any authed user to INSERT new draft atoms (pending_review)
+-- atoms: INSERT new draft atoms (pending_review only)
 create policy "atoms_insert_authed_draft"
   on public.atoms for insert
   with check (
@@ -12,15 +19,16 @@ create policy "atoms_insert_authed_draft"
     and reviewed_by is null
   );
 
--- atoms: allow any authed user to UPDATE atoms. App-level isCreator gate
--- is the practical control; tightening to a database-level is_creator()
--- check is queued for a Plan 4B follow-up.
-create policy "atoms_update_authed"
+-- atoms: UPDATE only on non-finalised rows; reviewer must claim authorship
+create policy "atoms_update_in_review"
   on public.atoms for update
-  using (auth.uid() is not null)
-  with check (auth.uid() is not null);
+  using (status in ('draft', 'pending_review'))
+  with check (
+    auth.uid() is not null
+    and (reviewed_by is null or reviewed_by = auth.uid())
+  );
 
--- atom_variants: same shape — INSERT drafts, UPDATE freely (app-gated)
+-- atom_variants: INSERT pending_review drafts only
 create policy "atom_variants_insert_authed_draft"
   on public.atom_variants for insert
   with check (
@@ -28,7 +36,8 @@ create policy "atom_variants_insert_authed_draft"
     and status = 'pending_review'
   );
 
-create policy "atom_variants_update_authed"
+-- atom_variants: UPDATE only on non-finalised rows
+create policy "atom_variants_update_in_review"
   on public.atom_variants for update
-  using (auth.uid() is not null)
+  using (status in ('draft', 'pending_review'))
   with check (auth.uid() is not null);
