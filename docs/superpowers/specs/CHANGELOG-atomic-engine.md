@@ -231,3 +231,17 @@ Tightening to "exclude already-corrected mistakes" deferred to Plan 5B.
 - `<VoicePage>` reuses `useFsrsSession` — same queue and rating pipeline as `/study`. `key={atom.id}` remount pattern (Plan 2 fix) keeps phase state fresh between atoms.
 - Tests added: 17 new (6 match, 8 speech wrappers, 3 voice-session integration). **109 passing total.**
 - Voice INPUT for atom seeding (Whisper) deferred to Plan 8B. Levenshtein/embedding-based fuzzy matching deferred to Plan 8B.
+
+---
+
+## 2026-04-26 — Plan 9 ships: Pro paywall
+
+- `<PaywallGate />` wraps `/study`, `/mistakes`, `/voice` content.
+- Free users get 20 questions/day (`FREE_DAILY_QUESTION_LIMIT` from existing `useSubscription`); after that, `<PaywallGate kind="daily-limit">` shows the upgrade pitch.
+- Pro users (`profiles.is_premium = true`) bypass the limit.
+- `startStripeCheckout(userId, email)` calls the pre-existing `/.netlify/functions/stripe-checkout` (kept from the old MVP) and redirects to Stripe.
+- `<FsrsSessionView>` now accepts an optional `onRatedSideEffect` prop; pages pass `subscription.incrementDailyCount`.
+- Reused infra: `useSubscription` hook (old MVP), `profiles.is_premium` column (old MVP migration), Stripe Netlify functions (old MVP), Stripe webhook (flips `is_premium` on subscription events).
+- Tests added: 6 new (4 PaywallGate + 2 integration). **115 passing total.**
+
+Free atom-set gating (free_tier=true atoms only for unauthed/free) deferred — current Plan 9 only enforces the daily count limit.
