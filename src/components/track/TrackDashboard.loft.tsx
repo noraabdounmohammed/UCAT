@@ -1,10 +1,6 @@
 import React, { useMemo } from 'react';
 import { useConceptStore } from '@/contexts/ConceptStoreContext';
-import MasterySummaryBar from './MasterySummaryBar';
-import MasteryProgressRing from './MasteryProgressRing';
 import { WeakestList } from './WeakestList';
-import { CoverageTiles } from './CoverageTiles';
-import { CoverageRings } from './CoverageRings';
 import { SessionsCompletedTable } from './SessionsCompletedTable';
 import { BarChart, PieChart } from 'lucide-react';
 
@@ -352,17 +348,7 @@ export const TrackDashboard: React.FC<TrackDashboardProps> = ({ curriculumId = '
           </div>
         </div>
         <div className="p-4 sm:p-8">
-          {masteryViewType === 'bar' ? (
-            <MasterySummaryBar
-              counts={trackData.counts}
-            />
-          ) : (
-            <div className="flex items-center justify-center">
-              <MasteryProgressRing
-                counts={trackData.counts}
-              />
-            </div>
-          )}
+          <div className="text-sm text-stone-500">Predicted exam score (Plan 6)</div>
         </div>
       </div>
 
@@ -446,41 +432,7 @@ export const TrackDashboard: React.FC<TrackDashboardProps> = ({ curriculumId = '
             
             {/* Active Category Content - Fixed height with scroll */}
             <div className="max-h-[400px] overflow-y-auto pr-2">
-              {activeCategory && (
-                categoryViewType === 'bar' ? (
-                  <CoverageTiles 
-                  buckets={activeCategory.items.map(item => ({
-                    bucket: item.key,
-                    label: item.label,
-                    total: item.total,
-                    mastered: item.mastered,
-                    attempted: item.attempted,
-                    correct: item.correct,
-                    incorrect: item.incorrect
-                  }))}
-                  showAttempted={activeCategory.categoryName !== 'Individual Concepts'}
-                  onReview={(filterName) => {
-                    updateFilterState({ custom_filters: [filterName] });
-                  }}
-                />
-              ) : (
-                <CoverageRings 
-                  buckets={activeCategory.items.map(item => ({
-                    bucket: item.key,
-                    label: item.label,
-                    total: item.total,
-                    mastered: item.mastered,
-                    attempted: item.attempted,
-                    correct: item.correct,
-                    incorrect: item.incorrect
-                  }))}
-                  showAttempted={activeCategory.categoryName !== 'Individual Concepts'}
-                  onReview={(filterName) => {
-                    updateFilterState({ custom_filters: [filterName] });
-                  }}
-                />
-                )
-              )}
+              <div className="text-sm text-stone-500">Predicted exam score (Plan 6)</div>
             </div>
           </div>
         </div>
