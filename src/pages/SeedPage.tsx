@@ -3,6 +3,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useUserRole } from '@/hooks/useUserRole';
 import { supabase } from '@/lib/supabase';
 import { MainLayout } from '@/components/layout/MainLayout';
+import { AuthGate } from '@/components/auth/AuthGate';
 import { AtomSeedForm } from '@/components/seed/AtomSeedForm';
 import { useSeedAtom } from '@/hooks/useSeedAtom';
 import { createSeedRepository } from '@/atom/seedRepository';
@@ -13,7 +14,11 @@ export function SeedPage() {
   const repo = useMemo(() => createSeedRepository(supabase), []);
   const seed = useSeedAtom({ repo });
 
-  if (!user) return <MainLayout currentPage="seed"><div className="text-center py-12 text-stone-600">Sign in to seed atoms.</div></MainLayout>;
+  if (!user) return (
+    <MainLayout currentPage="seed">
+      <AuthGate title="Sign in to seed atoms" subtitle="Add new UKMLA atoms to the review queue." />
+    </MainLayout>
+  );
   if (!isCreator) return <MainLayout currentPage="seed"><div className="text-center py-12 max-w-md mx-auto"><div className="text-2xl font-medium text-stone-900 mb-2">Not authorised</div><p className="text-sm text-stone-500">Atom seeding is reserved for clinical creators.</p></div></MainLayout>;
 
   return (

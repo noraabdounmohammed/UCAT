@@ -2,6 +2,7 @@ import { useMemo } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/lib/supabase';
 import { MainLayout } from '@/components/layout/MainLayout';
+import { AuthGate } from '@/components/auth/AuthGate';
 import { MockQuestion } from '@/components/mock/MockQuestion';
 import { MockTimer } from '@/components/mock/MockTimer';
 import { MockResult } from '@/components/mock/MockResult';
@@ -24,7 +25,10 @@ export function MockPage() {
   if (!user) {
     return (
       <MainLayout currentPage="mock">
-        <div className="text-center py-12 text-stone-600">Sign in to take a mock.</div>
+        <AuthGate
+          title="Sign in to take a mock"
+          subtitle="A 30-minute, 20-atom timed UKMLA-style mock exam."
+        />
       </MainLayout>
     );
   }

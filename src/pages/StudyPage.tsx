@@ -2,6 +2,7 @@ import { useMemo } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/lib/supabase';
 import { MainLayout } from '@/components/layout/MainLayout';
+import { AuthGate } from '@/components/auth/AuthGate';
 import { FsrsSessionView } from '@/components/study/FsrsSessionView';
 import { PredictedScoreBadge } from '@/components/study/PredictedScoreBadge';
 import { PaywallGate } from '@/components/paywall/PaywallGate';
@@ -45,9 +46,10 @@ export function StudyPage() {
   if (!user) {
     return (
       <MainLayout currentPage="study">
-        <div className="text-center py-12 text-stone-600">
-          Sign in to study.
-        </div>
+        <AuthGate
+          title="Sign in to study"
+          subtitle="3-min retrieval sessions powered by FSRS-5 spaced repetition."
+        />
       </MainLayout>
     );
   }

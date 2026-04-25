@@ -3,6 +3,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useUserRole } from '@/hooks/useUserRole';
 import { supabase } from '@/lib/supabase';
 import { MainLayout } from '@/components/layout/MainLayout';
+import { AuthGate } from '@/components/auth/AuthGate';
 import { ReviewQueueView } from '@/components/review/ReviewQueueView';
 import { useReviewQueue } from '@/hooks/useReviewQueue';
 import { createReviewRepository } from '@/atom/reviewRepository';
@@ -21,9 +22,10 @@ export function ReviewPage() {
   if (!user) {
     return (
       <MainLayout currentPage="review">
-        <div className="text-center py-12 text-stone-600">
-          Sign in to review atoms.
-        </div>
+        <AuthGate
+          title="Sign in to review atoms"
+          subtitle="Approve, edit, or reject draft atoms before they go live."
+        />
       </MainLayout>
     );
   }
