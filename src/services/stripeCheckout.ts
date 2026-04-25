@@ -1,8 +1,11 @@
+import { track } from '@/instrumentation/events';
+
 /**
  * Calls the existing /.netlify/functions/stripe-checkout (from the old MVP),
  * which creates a Stripe Checkout Session and returns its URL.
  */
 export async function startStripeCheckout(userId: string, email: string): Promise<void> {
+  track('upgrade_clicked', { userId });
   const res = await fetch('/.netlify/functions/stripe-checkout', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },

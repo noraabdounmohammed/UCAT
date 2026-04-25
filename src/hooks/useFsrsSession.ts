@@ -5,6 +5,19 @@ import type { UserStateRepository } from '@/atom/userStateRepository';
 import { createFsrsScheduler } from '@/fsrs/scheduler';
 import { fromUserAtomState, toUserAtomState } from '@/fsrs/mapper';
 import { isSessionDone, pickNextAtomId, type SessionState } from '@/fsrs/session';
+import { track } from '@/instrumentation/events';
+
+const NPS_SESSION_COUNT_KEY = 'nps_session_count';
+
+function bumpNpsSessionCount(): void {
+  if (typeof localStorage === 'undefined') return;
+  try {
+    const current = parseInt(localStorage.getItem(NPS_SESSION_COUNT_KEY) ?? '0', 10);
+    localStorage.setItem(NPS_SESSION_COUNT_KEY, String(current + 1));
+  } catch {
+    // localStorage may be unavailable (private mode, quota); ignore — instrumentation must not break flow.
+  }
+}
 
 export interface FsrsSessionDeps {
   userId: string;
@@ -90,6 +103,7 @@ export function useFsrsSession(deps: FsrsSessionDeps): UseFsrsSessionResult {
         setSessionState({ atomIds, ratedAtomIds: [], maxAtoms });
         startedAtRef.current = now();
         setStatus('in_progress');
+        track('session_started', { mode: 'study', atomCount: atomIds.length });
       } catch (err: any) {
         if (!cancelled) {
           setErrorMessage(err?.message ?? 'Failed to load session');
@@ -122,6 +136,8 @@ export function useFsrsSession(deps: FsrsSessionDeps): UseFsrsSessionResult {
       responseMs,
     });
 
+    track('atom_rated', { rating, confidence, responseMs });
+
     ratingsRef.current.push(rating);
     const nextRated = [...sessionState.ratedAtomIds, currentAtomId];
     const nextState: SessionState = { ...sessionState, ratedAtomIds: nextRated };
@@ -129,6 +145,8 @@ export function useFsrsSession(deps: FsrsSessionDeps): UseFsrsSessionResult {
 
     if (isSessionDone(nextState)) {
       setStatus('summary');
+      track('session_completed', { atomCount: nextRated.length });
+      bumpNpsSessionCount();
     }
   };
 

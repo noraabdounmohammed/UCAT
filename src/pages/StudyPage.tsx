@@ -5,18 +5,22 @@ import { MainLayout } from '@/components/layout/MainLayout';
 import { FsrsSessionView } from '@/components/study/FsrsSessionView';
 import { PredictedScoreBadge } from '@/components/study/PredictedScoreBadge';
 import { PaywallGate } from '@/components/paywall/PaywallGate';
+import { NpsPrompt } from '@/components/nps/NpsPrompt';
 import { useFsrsSession } from '@/hooks/useFsrsSession';
 import { usePredictedScore } from '@/hooks/usePredictedScore';
 import { useStreak } from '@/hooks/useStreak';
 import { useSubscription } from '@/hooks/useSubscription';
+import { useNpsTrigger } from '@/hooks/useNpsTrigger';
 import { startStripeCheckout } from '@/services/stripeCheckout';
 import { createAtomRepository } from '@/atom/repository';
 import { createUserStateRepository } from '@/atom/userStateRepository';
+import { createNpsRepository } from '@/atom/npsRepository';
 
 export function StudyPage() {
   const { user } = useAuth();
   const atomRepo = useMemo(() => createAtomRepository(supabase), []);
   const userStateRepo = useMemo(() => createUserStateRepository(supabase), []);
+  const npsRepo = useMemo(() => createNpsRepository(supabase), []);
 
   const session = useFsrsSession({
     userId: user?.id ?? '',
@@ -36,6 +40,7 @@ export function StudyPage() {
   const streakDays = streak.streakDays;
 
   const subscription = useSubscription();
+  const nps = useNpsTrigger({ userId: user?.id ?? null, repo: npsRepo });
 
   if (!user) {
     return (
@@ -76,6 +81,12 @@ export function StudyPage() {
             onRatedSideEffect={onRatedSideEffect}
           />
         </PaywallGate>
+        {nps.shouldShow && (
+          <NpsPrompt
+            onSubmit={(p) => { nps.submit(p).catch(() => nps.dismiss()); }}
+            onDismiss={nps.dismiss}
+          />
+        )}
       </div>
     </MainLayout>
   );

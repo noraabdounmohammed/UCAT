@@ -5,7 +5,13 @@ import { createRoot } from 'react-dom/client';
 import { BrowserRouter } from 'react-router-dom';
 import { AuthProvider } from './contexts/AuthContext';
 import App from './App.tsx';
+import { initSentry } from '@/instrumentation/sentry';
+import { initPosthog } from '@/instrumentation/posthog';
 import './index.css';
+
+// Fire-and-forget: both no-op when their env vars are unset.
+initSentry().catch(() => {});
+initPosthog().catch(() => {});
 
 console.log('✅ All imports loaded successfully');
 
