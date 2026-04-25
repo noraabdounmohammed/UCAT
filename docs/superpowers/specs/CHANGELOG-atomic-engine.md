@@ -245,3 +245,17 @@ Tightening to "exclude already-corrected mistakes" deferred to Plan 5B.
 - Tests added: 6 new (4 PaywallGate + 2 integration). **115 passing total.**
 
 Free atom-set gating (free_tier=true atoms only for unauthed/free) deferred — current Plan 9 only enforces the daily count limit.
+
+---
+
+## 2026-04-26 — Plan 10 ships: mock exam (`/mock`)
+
+- New `/mock` route — 20-atom timed mock (30 min default).
+- Pure state machine `src/mock/state.ts` — initial / submit / tick / finish / score.
+- `useMockSession` hook with injectable timer for tests.
+- `<MockQuestion>` randomly shuffles 4 options per atom; click submits.
+- `<MockTimer>` — count-down display, red ≤60s.
+- `<MockResult>` — final correct/total/percentage card.
+- No FSRS state mutation during mocks (it's a test, not learning).
+- Mock-attempt persistence + per-topic breakdown deferred to Plan 10B.
+- Tests added: 6 state + 4 hook + 3 component + 1 integration = **14 new**, **129 total**.
