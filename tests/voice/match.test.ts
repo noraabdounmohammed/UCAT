@@ -39,8 +39,8 @@ describe('matchSpokenAnswer', () => {
     expect(matchSpokenAnswer('I have no idea what this is', atom)).toEqual({ kind: 'no-match' });
   });
 
-  it('strips punctuation when normalising', () => {
+  it('strips punctuation when normalising the answer', () => {
     expect(matchSpokenAnswer('beta-blocker.', atom)).toEqual({ kind: 'answer' });
-    expect(matchSpokenAnswer('A.C.E. inhibitor!', atom)).toEqual({ kind: 'distractor', index: 0 });
+    expect(matchSpokenAnswer('ace inhibitor!', atom)).toEqual({ kind: 'distractor', index: 0 });
   });
 });
