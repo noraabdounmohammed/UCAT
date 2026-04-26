@@ -7,27 +7,41 @@ import { FsrsSessionView } from '@/components/study/FsrsSessionView';
 import { PredictedScoreBadge } from '@/components/study/PredictedScoreBadge';
 import { PaywallGate } from '@/components/paywall/PaywallGate';
 import { NpsPrompt } from '@/components/nps/NpsPrompt';
+import { UnreviewedToggle } from '@/components/study/UnreviewedToggle';
 import { useFsrsSession } from '@/hooks/useFsrsSession';
 import { usePredictedScore } from '@/hooks/usePredictedScore';
 import { useStreak } from '@/hooks/useStreak';
 import { useSubscription } from '@/hooks/useSubscription';
 import { useNpsTrigger } from '@/hooks/useNpsTrigger';
+import { useUnreviewedToggle } from '@/hooks/useUnreviewedToggle';
 import { startStripeCheckout } from '@/services/stripeCheckout';
 import { createAtomRepository } from '@/atom/repository';
 import { createUserStateRepository } from '@/atom/userStateRepository';
 import { createNpsRepository } from '@/atom/npsRepository';
+import { buildStudyQueue } from '@/study/queueLoader';
 
 export function StudyPage() {
   const { user } = useAuth();
   const atomRepo = useMemo(() => createAtomRepository(supabase), []);
   const userStateRepo = useMemo(() => createUserStateRepository(supabase), []);
   const npsRepo = useMemo(() => createNpsRepository(supabase), []);
+  const unreviewed = useUnreviewedToggle();
 
   const session = useFsrsSession({
     userId: user?.id ?? '',
     atomRepo,
     userStateRepo,
     maxAtoms: 5,
+    loadQueue: (uid, now, max) =>
+      buildStudyQueue({
+        userId: uid,
+        exam: 'UKMLA',
+        asOf: now,
+        maxAtoms: max,
+        includeUnreviewed: unreviewed.value,
+        atomRepo,
+        userStateRepo,
+      }),
   });
 
   const score = usePredictedScore({
@@ -89,6 +103,7 @@ export function StudyPage() {
     <MainLayout currentPage="study">
       <div className="max-w-md mx-auto py-6 px-4 space-y-4">
         <PredictedScoreBadge {...score} />
+        <UnreviewedToggle value={unreviewed.value} onChange={unreviewed.setValue} />
         <PaywallGate
           kind={paywallKind}
           dailyQuestionsRemaining={subscription.dailyQuestionsRemaining}

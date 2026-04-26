@@ -2,6 +2,7 @@ import { useRef, useState } from 'react';
 import type { Atom, ConfidenceValue, FsrsRatingValue } from '@/atom/types';
 import { ConfidenceButtons } from './ConfidenceButtons';
 import { FsrsRatingButtons } from './FsrsRatingButtons';
+import { UnreviewedAtomChip } from './UnreviewedAtomChip';
 
 export interface AtomRated {
   rating: FsrsRatingValue;
@@ -15,7 +16,8 @@ export function AtomRenderer({ atom, onRated }: { atom: Atom; onRated: (r: AtomR
 
   return (
     <div className="space-y-4">
-      <h2 className="text-lg font-medium text-stone-900">{atom.canonicalStem}</h2>
+      <UnreviewedAtomChip atom={atom} />
+      <h2 className="text-lg font-medium text-stone-900 dark:text-stone-100">{atom.canonicalStem}</h2>
       {atom.imageUrl && (
         <img src={atom.imageUrl} alt={atom.imageAlt ?? ''} className="rounded-lg max-h-64 mx-auto" />
       )}

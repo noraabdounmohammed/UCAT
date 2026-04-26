@@ -19,6 +19,12 @@ export interface UseMockSessionDeps {
   exam: Exam;
   atomCount: number;
   durationSec: number;
+  /**
+   * When true, include AI-drafted, not-yet-reviewed atoms in the mock pool.
+   * Default false. The MockQuestion component shows a per-atom disclaimer
+   * for any returned atom whose status !== 'approved'.
+   */
+  includeUnreviewed?: boolean;
   /** Override for testability; default uses setInterval. */
   startTimer?: (onTick: () => void) => () => void;
 }
@@ -40,12 +46,15 @@ export function useMockSession(deps: UseMockSessionDeps): UseMockSessionResult {
   const stateRef = useRef<MockState | null>(null);
   stateRef.current = state;
 
-  // Initial load
+  // Initial load — re-runs whenever exam, atomCount, durationSec, or
+  // includeUnreviewed change so the mock pool reflects the latest opt-in.
   useEffect(() => {
     let cancelled = false;
     (async () => {
       try {
-        const all = await deps.atomRepo.listApprovedByExam(deps.exam);
+        const all = await deps.atomRepo.listAvailableForExam(deps.exam, {
+          includeUnreviewedAiDrafts: !!deps.includeUnreviewed,
+        });
         if (cancelled) return;
         if (all.length === 0) {
           setStatus('empty');
@@ -67,7 +76,7 @@ export function useMockSession(deps: UseMockSessionDeps): UseMockSessionResult {
     })();
     return () => { cancelled = true; };
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [deps.exam, deps.atomCount, deps.durationSec]);
+  }, [deps.exam, deps.atomCount, deps.durationSec, deps.includeUnreviewed]);
 
   // Timer tick
   useEffect(() => {

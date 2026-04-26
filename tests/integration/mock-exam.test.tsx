@@ -21,7 +21,8 @@ const atoms: Atom[] = ['a1', 'a2'].map(id => ({
 function Harness() {
   const session = useMockSession({
     atomRepo: {
-      listApprovedByExam: async () => atoms,
+      listApprovedByExam: vi.fn(),
+      listAvailableForExam: async () => atoms,
       listFreeTier: vi.fn(),
       getById: vi.fn(),
       countApprovedByExam: vi.fn(),
