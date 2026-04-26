@@ -108,7 +108,7 @@ export function AtomRenderer({ atom, onRated }: { atom: Atom; onRated: (r: AtomR
         })}
       </div>
 
-      {/* Post-pick: citation + Next / Easy. */}
+      {/* Post-pick: answer + explanation + citation + Next / Easy. */}
       {picked && (
         <div className="space-y-3 pt-1">
           <div className="rounded-lg bg-stone-50 dark:bg-stone-900 p-3 border border-stone-200 dark:border-stone-800">
@@ -118,13 +118,28 @@ export function AtomRenderer({ atom, onRated }: { atom: Atom; onRated: (r: AtomR
             <div className="font-medium text-stone-900 dark:text-stone-100">
               {atom.answer}
             </div>
+            {atom.explanation && (
+              <div className="mt-3 pt-3 border-t border-stone-200 dark:border-stone-800">
+                <div className="text-[11px] uppercase tracking-widest text-stone-500 dark:text-stone-400 mb-1">
+                  Why
+                </div>
+                <p className="text-sm text-stone-800 dark:text-stone-200 leading-relaxed">
+                  {atom.explanation}
+                </p>
+                {atom.explanationSource && (
+                  <div className="text-[11px] text-stone-500 dark:text-stone-400 mt-2 italic">
+                    Paraphrased from {atom.explanationSource}
+                  </div>
+                )}
+              </div>
+            )}
             <a
               href={atom.citationUrl}
               target="_blank"
               rel="noreferrer"
               className="text-xs text-stone-600 dark:text-stone-400 hover:underline mt-2 inline-block"
             >
-              {atom.citationLabel}
+              Source: {atom.citationLabel} →
             </a>
           </div>
           <div className="flex gap-2">

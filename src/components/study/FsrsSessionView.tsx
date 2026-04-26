@@ -1,5 +1,5 @@
 import type { UseFsrsSessionResult } from '@/hooks/useFsrsSession';
-import { AtomRenderer } from './AtomRenderer';
+import { QuestionRouter } from './QuestionRouter';
 import { SessionSummary } from './SessionSummary';
 
 export function FsrsSessionView({
@@ -45,7 +45,7 @@ export function FsrsSessionView({
         Question {session.progress.done + 1} of {session.progress.total}
       </div>
       {session.currentAtom && (
-        <AtomRenderer
+        <QuestionRouter
           key={session.currentAtom.id}
           atom={session.currentAtom}
           onRated={async (r) => {

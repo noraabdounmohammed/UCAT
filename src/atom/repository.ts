@@ -31,6 +31,10 @@ function rowToAtom(row: any): Atom {
     aiReviewStatus: row.ai_review_status ?? row.aiReviewStatus ?? null,
     aiReviewNotes: row.ai_review_notes ?? row.aiReviewNotes ?? null,
     aiReviewedAt: row.ai_reviewed_at ?? row.aiReviewedAt ?? null,
+    explanation: row.explanation ?? null,
+    explanationSource: row.explanation_source ?? row.explanationSource ?? null,
+    explanationGeneratedAt: row.explanation_generated_at ?? row.explanationGeneratedAt ?? null,
+    questionKind: row.question_kind ?? row.questionKind ?? 'sba',
   };
 }
 
