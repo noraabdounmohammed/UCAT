@@ -12,7 +12,12 @@ vi.mock('@/hooks/useSubscription', () => ({ useSubscription: vi.fn() }));
 vi.mock('@/hooks/useNpsTrigger', () => ({ useNpsTrigger: vi.fn() }));
 vi.mock('@/services/stripeCheckout', () => ({ startStripeCheckout: vi.fn() }));
 vi.mock('@/atom/repository', () => ({ createAtomRepository: vi.fn(() => ({})) }));
-vi.mock('@/atom/userStateRepository', () => ({ createUserStateRepository: vi.fn(() => ({})) }));
+vi.mock('@/atom/userStateRepository', () => ({
+  createUserStateRepository: vi.fn(() => ({
+    // <StatsSummary /> calls this on mount.
+    listAllForUser: vi.fn().mockResolvedValue([]),
+  })),
+}));
 vi.mock('@/atom/npsRepository', () => ({ createNpsRepository: vi.fn(() => ({})) }));
 
 import { StudyPage } from '@/pages/StudyPage';
