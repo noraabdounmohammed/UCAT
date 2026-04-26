@@ -23,7 +23,7 @@ export function AuthGate({ title, subtitle }: AuthGateProps) {
           <p className="text-sm text-stone-500 dark:text-stone-400">{subtitle}</p>
         )}
       </header>
-      <div className="rounded-2xl bg-white dark:bg-zinc-900 border border-stone-200 dark:border-zinc-800 p-6">
+      <div className="rounded-2xl bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-800 p-6">
         <AuthForm />
       </div>
       <p className="text-xs text-stone-500 dark:text-stone-400 text-center mt-2">

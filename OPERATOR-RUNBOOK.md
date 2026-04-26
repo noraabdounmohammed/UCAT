@@ -52,6 +52,80 @@ That project's anon key was committed on `master`'s `.env`. If unused:
 
 After setting, redeploy. Both no-op silently when absent so the app works without.
 
+## One-off — fix sign-up confirmation redirect (URGENT)
+
+**Symptom:** sign-up confirmation email link redirects to `https://medicu-app.netlify.app/?code=…` instead of `https://studyedit.com/?code=…`.
+
+**Cause:** Supabase Auth's **Site URL** is still set to the legacy Netlify subdomain. The `?code=` flow falls back to Site URL when the requested `emailRedirectTo` isn't in the Redirect URLs allow list.
+
+**Fix (2 min, dashboard only):**
+
+1. Open https://supabase.com/dashboard/project/uivitzexbtsmnspcitgh/auth/url-configuration.
+2. **Site URL** → change to `https://studyedit.com`.
+3. **Redirect URLs** → ensure both are listed (so legacy bookmarks still work during the cutover):
+   - `https://studyedit.com/**`
+   - `https://medicu-app.netlify.app/**`
+4. Click **Save**.
+5. Trigger a real sign-up against `https://studyedit.com` to verify the email link now points there.
+
+**Optional follow-up:** the in-app `signUp` call passes `emailRedirectTo: window.location.origin` ([src/components/auth/AuthForm.tsx:82](src/components/auth/AuthForm.tsx:82)). That works *if* the user signs up on the canonical domain. To make it bulletproof, hard-code to `'https://studyedit.com/auth/callback'` in a future PR.
+
+## One-off — fix the broken Upgrade button (URGENT)
+
+**Symptom:** clicking **Upgrade — £19.99/mo** does nothing (or shows a generic error).
+
+**Cause:** `/.netlify/functions/stripe-checkout` returns 500 with `"Failed to create checkout session"` because one or more env vars are missing in Netlify. The function code itself is fine ([netlify/functions/stripe-checkout.ts](netlify/functions/stripe-checkout.ts)).
+
+**Fix (5 min, Netlify dashboard + Stripe dashboard):**
+
+1. Open https://app.netlify.com/sites/medicu-app/configuration/env (or the Netlify-side equivalent for `studyedit.com` if it's a separate site).
+2. Verify these env vars exist and are non-empty:
+   - `STRIPE_SECRET_KEY` — from https://dashboard.stripe.com/apikeys (use **live** key for prod, `sk_live_…`).
+   - `STRIPE_PRICE_ID_MONTHLY` — from https://dashboard.stripe.com/products → click your product → copy the price ID, format `price_…`.
+   - `STRIPE_WEBHOOK_SECRET` — from https://dashboard.stripe.com/webhooks → click your webhook → "Signing secret" → reveal, format `whsec_…`. **This is what `stripe-webhook.ts` uses to verify incoming Stripe events; without it, paid users won't get `is_premium = true` flipped.**
+   - `VITE_SUPABASE_URL` — already set for the frontend, also needed by the webhook.
+   - `SUPABASE_SERVICE_ROLE_KEY` — from https://supabase.com/dashboard/project/uivitzexbtsmnspcitgh/settings/api → "service_role secret". **Server-side only — never expose this in any `VITE_…` var.**
+3. **Trigger a redeploy** so the functions pick up the new env: `netlify deploy --prod --dir=dist` (or click **Trigger deploy** in the Netlify dashboard).
+4. **Verify** by signing in with a test account, hitting the daily limit (20 questions), clicking **Upgrade**. Stripe Checkout page should load. Use Stripe test card `4242 4242 4242 4242` (test mode) to confirm webhook → `is_premium` flow.
+5. **Optional check from a terminal** (don't probe with a real `userId` against prod; use a known-bad one to confirm only that the function isn't 500ing on env):
+   ```sh
+   curl -i -X POST https://studyedit.com/.netlify/functions/stripe-checkout \
+     -H 'Content-Type: application/json' \
+     -d '{"userId":"00000000-0000-0000-0000-000000000000","userEmail":"diagnostic@studyedit.com"}'
+   ```
+   - **400** with `"userId and userEmail are required"` ⇒ payload-validation OK.
+   - **500** with `"Stripe price not configured"` ⇒ `STRIPE_PRICE_ID_MONTHLY` still missing.
+   - **500** with `"Failed to create checkout session"` + a Stripe error in the body ⇒ `STRIPE_SECRET_KEY` invalid or wrong mode (test key in prod, etc.).
+   - **200** with a `url` field ⇒ env is good. (You'll have created an orphan Stripe Checkout Session — delete it from the Stripe dashboard if you want to keep things clean.)
+
+## One-off — upload brand-aligned auth email templates
+
+The 5 HTML templates in [supabase/templates/](supabase/templates/) replace Supabase's default emails. They match the in-app warm Stone palette + Unbounded/Manrope typography. **They don't auto-deploy** — they need a one-off paste into the Supabase dashboard.
+
+**Steps (10 min, dashboard only):**
+
+1. Open https://supabase.com/dashboard/project/uivitzexbtsmnspcitgh/auth/templates.
+2. For each of the 5 templates, paste the full file contents into the matching slot:
+
+   | Dashboard tab | File to paste | Subject line |
+   |---|---|---|
+   | **Confirm signup** | `supabase/templates/confirmation.html` | `Confirm your Study Edit account` |
+   | **Magic Link** | `supabase/templates/magic_link.html` | `Your Study Edit sign-in link` |
+   | **Reset Password** | `supabase/templates/recovery.html` | `Reset your Study Edit password` |
+   | **Change Email Address** | `supabase/templates/email_change.html` | `Confirm your new email · Study Edit` |
+   | **Invite User** | `supabase/templates/invite.html` | `You're invited to Study Edit` |
+
+3. For each tab, also update the **Subject** field to the value above (the dashboard subject overrides the `<title>` inside the HTML).
+4. Click **Save** on each tab (the dashboard does not save across tabs automatically).
+5. **Verify with a real-client test:** trigger one email of each type to a personal inbox (Gmail web + iOS Mail at minimum). Check:
+   - Wordmark renders in Unbounded (or Inter fallback) — the divider line below it should be visible.
+   - CTA button is a black pill with white uppercase text.
+   - Card has rounded corners and a stone-200 border.
+   - The fallback `Or paste this link` URL is selectable / clickable.
+   - In Outlook 365, the layout doesn't collapse (we use `<table>` for layout precisely to survive Outlook).
+
+**Reverting** is easy — Supabase Auth has "Reset to default" on each template tab if anything regresses.
+
 ## One-off — content seeding
 
 ### Add atoms via the seed form

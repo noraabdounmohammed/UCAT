@@ -33,7 +33,7 @@ export function AtomicEngineNav() {
   return (
     <nav
       aria-label="Atomic Engine"
-      className="sticky top-0 z-40 bg-white/90 dark:bg-zinc-900/90 backdrop-blur-md border-b border-stone-200 dark:border-zinc-800"
+      className="sticky top-0 z-40 bg-white dark:bg-stone-950 border-b border-stone-200 dark:border-stone-800"
     >
       <ul className="max-w-3xl mx-auto flex justify-center gap-1 px-3 py-2 overflow-x-auto scrollbar-hide">
         <li>
@@ -44,7 +44,7 @@ export function AtomicEngineNav() {
               `inline-block px-3 py-1.5 text-xs font-medium rounded-full whitespace-nowrap transition-colors ${
                 isActive
                   ? 'bg-stone-900 text-white dark:bg-stone-100 dark:text-stone-900'
-                  : 'text-stone-600 hover:bg-stone-100 dark:text-stone-300 dark:hover:bg-zinc-800'
+                  : 'text-stone-600 hover:bg-stone-100 dark:text-stone-300 dark:hover:bg-stone-800'
               }`
             }
           >
@@ -59,7 +59,7 @@ export function AtomicEngineNav() {
                 `inline-block px-3 py-1.5 text-xs font-medium rounded-full whitespace-nowrap transition-colors ${
                   isActive
                     ? 'bg-stone-900 text-white dark:bg-stone-100 dark:text-stone-900'
-                    : 'text-stone-600 hover:bg-stone-100 dark:text-stone-300 dark:hover:bg-zinc-800'
+                    : 'text-stone-600 hover:bg-stone-100 dark:text-stone-300 dark:hover:bg-stone-800'
                 }`
               }
             >
