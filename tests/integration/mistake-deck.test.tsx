@@ -16,6 +16,9 @@ const atoms: Atom[] = ['m1', 'm2'].map(id => ({
   sourceType: 'NICE', prereqAtomIds: [], highYield: false, freeTier: false,
   reviewedBy: null, reviewedAt: null, status: 'approved',
   createdAt: NOW.toISOString(), updatedAt: NOW.toISOString(),
+  // Pin to SBA so the test asserts MCQ behaviour deterministically; without
+  // this the QuestionRouter would occasionally land in the cloze bucket.
+  questionKind: 'sba',
 }));
 
 const listMistakeAtomsForUser = vi.fn(async () =>

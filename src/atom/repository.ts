@@ -34,6 +34,7 @@ function rowToAtom(row: any): Atom {
     explanation: row.explanation ?? null,
     explanationSource: row.explanation_source ?? row.explanationSource ?? null,
     explanationGeneratedAt: row.explanation_generated_at ?? row.explanationGeneratedAt ?? null,
+    questionKind: row.question_kind ?? row.questionKind ?? 'sba',
   };
 }
 
