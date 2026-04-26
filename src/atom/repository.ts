@@ -28,6 +28,9 @@ function rowToAtom(row: any): Atom {
     status: row.status,
     createdAt: row.created_at ?? row.createdAt,
     updatedAt: row.updated_at ?? row.updatedAt,
+    aiReviewStatus: row.ai_review_status ?? row.aiReviewStatus ?? null,
+    aiReviewNotes: row.ai_review_notes ?? row.aiReviewNotes ?? null,
+    aiReviewedAt: row.ai_reviewed_at ?? row.aiReviewedAt ?? null,
   };
 }
 
