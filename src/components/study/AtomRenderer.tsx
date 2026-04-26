@@ -61,9 +61,29 @@ export function AtomRenderer({ atom, onRated }: { atom: Atom; onRated: (r: AtomR
     }
   };
 
+  // EMQ atoms get a small "Extended matching" banner so the user knows
+  // why there are 9–12 options instead of the usual 4. Theme hint pulled
+  // from topic_path[1] which is set to "EMQ: <theme>" by the generator.
+  const isEmq = atom.questionKind === 'emq';
+  const emqTheme = isEmq ? atom.topicPath?.[1]?.replace(/^EMQ:\s*/, '') ?? null : null;
+
   return (
     <div className="space-y-4">
       <UnreviewedAtomChip atom={atom} />
+      {isEmq && (
+        <div
+          className="rounded-lg border border-stone-300 dark:border-stone-700 bg-stone-50 dark:bg-stone-900 px-3 py-2 text-xs text-stone-700 dark:text-stone-300"
+          role="note"
+        >
+          <span className="uppercase tracking-widest text-[10px] text-stone-500 dark:text-stone-400 mr-2">
+            Extended matching
+          </span>
+          {emqTheme && <span className="font-medium">{emqTheme}</span>}
+          <div className="text-[11px] text-stone-500 dark:text-stone-400 mt-1">
+            Pick the single best answer from the {options.length} options below.
+          </div>
+        </div>
+      )}
       <h2 className="text-lg font-medium text-stone-900 dark:text-stone-100">
         {atom.canonicalStem}
       </h2>
