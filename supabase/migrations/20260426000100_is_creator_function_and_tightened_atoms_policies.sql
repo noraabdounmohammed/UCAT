@@ -3,8 +3,9 @@
 -- gating; a malicious authed user could bypass the React app and call the
 -- REST API directly to mutate any atom. This closes that gap server-side.
 --
--- Source of creator-truth: the existing `profiles.is_creator` boolean
--- (added in old MVP migration `20250115_add_user_roles.sql`).
+-- Source of creator-truth: the existing `profiles.role` text column
+-- (added in old MVP migration `20250115_add_user_roles.sql`), where the
+-- value `'creator'` denotes a content creator and `'consumer'` is default.
 
 create or replace function public.is_creator(uid uuid)
 returns boolean
@@ -14,7 +15,7 @@ security definer
 set search_path = public, pg_temp
 as $$
   select coalesce(
-    (select is_creator from public.profiles where id = uid),
+    (select role = 'creator' from public.profiles where id = uid),
     false
   );
 $$;
