@@ -16,6 +16,7 @@ vi.mock('@/atom/userStateRepository', () => ({
   createUserStateRepository: vi.fn(() => ({
     // <StatsSummary /> calls this on mount.
     listAllForUser: vi.fn().mockResolvedValue([]),
+    getReviewEventStats: vi.fn().mockResolvedValue({ totalAttempts: 0, correctAttempts: 0, wrongAttempts: 0 }),
   })),
 }));
 vi.mock('@/atom/npsRepository', () => ({ createNpsRepository: vi.fn(() => ({})) }));

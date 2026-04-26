@@ -14,11 +14,27 @@ function rowToState(row: any): UserAtomState {
   };
 }
 
+export interface ReviewEventStats {
+  /** Total `review_events` rows for the user — every "Next" click counts. */
+  totalAttempts: number;
+  /** Attempts with rating >= 3 (Good, Easy). */
+  correctAttempts: number;
+  /** Attempts with rating <= 2 (Forgot, Hard). */
+  wrongAttempts: number;
+}
+
 export interface UserStateRepository {
   listDueForUser(userId: string, asOf: Date, limit: number): Promise<UserAtomState[]>;
   listMistakeAtomsForUser(userId: string, since: Date, limit: number): Promise<UserAtomState[]>;
   listAllForUser(userId: string): Promise<UserAtomState[]>;
   listReviewEventDates(userId: string, since: Date): Promise<Date[]>;
+  /**
+   * Aggregate count of every rating the user has ever clicked. Powers the
+   * StatsSummary "ATTEMPTS / CORRECT / WRONG" cells — matches the user's
+   * mental model ("I clicked through 15 questions") rather than the
+   * deduplicated unique-atom count from `listAllForUser`.
+   */
+  getReviewEventStats(userId: string): Promise<ReviewEventStats>;
   upsertState(state: UserAtomState): Promise<void>;
   insertReviewEvent(ev: Omit<ReviewEvent, 'id' | 'createdAt'>): Promise<void>;
 }
@@ -68,6 +84,22 @@ export function createUserStateRepository(supabase: SupabaseClient): UserStateRe
         .order('created_at', { ascending: false });
       if (error) throw error;
       return (data ?? []).map((r: any) => new Date(r.created_at));
+    },
+
+    async getReviewEventStats(userId) {
+      const { data, error } = await supabase
+        .from('review_events')
+        .select('rating')
+        .eq('user_id', userId);
+      if (error) throw error;
+      const rows = data ?? [];
+      let correct = 0;
+      let wrong = 0;
+      for (const r of rows as { rating: number }[]) {
+        if (r.rating >= 3) correct++;
+        else wrong++;
+      }
+      return { totalAttempts: rows.length, correctAttempts: correct, wrongAttempts: wrong };
     },
 
     async upsertState(state) {

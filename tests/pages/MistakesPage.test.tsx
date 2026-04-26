@@ -17,6 +17,7 @@ vi.mock('@/atom/userStateRepository', () => ({
     // <StatsSummary /> calls this; harmless empty list — the component
     // returns null when the user has no atoms answered yet.
     listAllForUser: vi.fn().mockResolvedValue([]),
+    getReviewEventStats: vi.fn().mockResolvedValue({ totalAttempts: 0, correctAttempts: 0, wrongAttempts: 0 }),
   })),
 }));
 
