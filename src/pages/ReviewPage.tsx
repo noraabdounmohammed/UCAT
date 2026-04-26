@@ -34,8 +34,8 @@ export function ReviewPage() {
     return (
       <MainLayout currentPage="review">
         <div className="text-center py-12 max-w-md mx-auto">
-          <div className="text-2xl font-medium text-stone-900 mb-2">Not authorised</div>
-          <p className="text-sm text-stone-500">
+          <div className="text-2xl font-medium text-stone-900 dark:text-stone-100 mb-2">Not authorised</div>
+          <p className="text-sm text-stone-500 dark:text-stone-400">
             Atom review is reserved for clinical reviewers. If this is wrong, contact Nora.
           </p>
         </div>
@@ -46,7 +46,7 @@ export function ReviewPage() {
   return (
     <MainLayout currentPage="review">
       <div className="max-w-md mx-auto py-6 px-4">
-        <h1 className="text-xl font-semibold text-stone-900 mb-4">Review queue</h1>
+        <h1 className="text-xl font-semibold text-stone-900 dark:text-stone-100 mb-4">Review queue</h1>
         <ReviewQueueView queue={queue} />
       </div>
     </MainLayout>

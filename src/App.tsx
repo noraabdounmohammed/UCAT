@@ -49,19 +49,12 @@ function App() {
               </Suspense>
             } />
 
-            {/* Main app — eager, instant */}
-            <Route path="/concept-practice" element={
-              <MainLayout currentPage="concept-practice">
-                <CurriculumApp />
-              </MainLayout>
-            } />
-
-            {/* Curriculum by ID — shareable URL */}
-            <Route path="/curriculum/:curriculumId" element={
-              <MainLayout currentPage="concept-practice">
-                <CurriculumRoute />
-              </MainLayout>
-            } />
+            {/* Legacy concept-practice flow — its question source table no
+                longer exists in this project (atoms is the new source of
+                truth, with 501 questions live). Redirect to /study so users
+                aren't dropped on an empty options list. */}
+            <Route path="/concept-practice" element={<Navigate to="/study" replace />} />
+            <Route path="/curriculum/:curriculumId" element={<Navigate to="/study" replace />} />
 
             {/* Expert Curriculums — lazy, shown rarely */}
             <Route path="/curriculums" element={

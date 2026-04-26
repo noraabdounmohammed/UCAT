@@ -4,15 +4,18 @@ import { supabase } from '@/lib/supabase';
 import { MainLayout } from '@/components/layout/MainLayout';
 import { AuthGate } from '@/components/auth/AuthGate';
 import { PaywallGate } from '@/components/paywall/PaywallGate';
+import { UnreviewedToggle } from '@/components/study/UnreviewedToggle';
 import { useFsrsSession } from '@/hooks/useFsrsSession';
 import { usePredictedScore } from '@/hooks/usePredictedScore';
 import { useSubscription } from '@/hooks/useSubscription';
+import { useUnreviewedToggle } from '@/hooks/useUnreviewedToggle';
 import { startStripeCheckout } from '@/services/stripeCheckout';
 import { createAtomRepository } from '@/atom/repository';
 import { createUserStateRepository } from '@/atom/userStateRepository';
 import { isVoiceAvailable } from '@/voice/speech';
 import { VoiceAtomView } from '@/components/voice/VoiceAtomView';
 import { track } from '@/instrumentation/events';
+import { buildStudyQueue } from '@/study/queueLoader';
 import type { MatchOutcome } from '@/voice/match';
 import type { FsrsRatingValue } from '@/atom/types';
 
@@ -27,12 +30,23 @@ export function VoicePage() {
   const atomRepo = useMemo(() => createAtomRepository(supabase), []);
   const userStateRepo = useMemo(() => createUserStateRepository(supabase), []);
   const voiceOk = isVoiceAvailable();
+  const unreviewed = useUnreviewedToggle();
 
   const session = useFsrsSession({
     userId: user?.id ?? '',
     atomRepo,
     userStateRepo,
     maxAtoms: 5,
+    loadQueue: (uid, now, max) =>
+      buildStudyQueue({
+        userId: uid,
+        exam: 'UKMLA',
+        asOf: now,
+        maxAtoms: max,
+        includeUnreviewed: unreviewed.value,
+        atomRepo,
+        userStateRepo,
+      }),
   });
 
   const subscription = useSubscription();
@@ -63,9 +77,9 @@ export function VoicePage() {
   if (!voiceOk) {
     return (
       <MainLayout currentPage="voice">
-        <div className="max-w-md mx-auto py-12 px-4 text-center text-stone-700">
-          <h1 className="text-xl font-semibold mb-2">Voice mode unavailable</h1>
-          <p className="text-sm text-stone-600">
+        <div className="max-w-md mx-auto py-12 px-4 text-center text-stone-700 dark:text-stone-300">
+          <h1 className="text-xl font-semibold mb-2 text-stone-900 dark:text-stone-100">Voice mode unavailable</h1>
+          <p className="text-sm text-stone-600 dark:text-stone-400">
             Your browser doesn't support the Web Speech API. Try Chrome on desktop or Android.
           </p>
         </div>
@@ -107,10 +121,13 @@ export function VoicePage() {
   return (
     <MainLayout currentPage="voice">
       <div className="max-w-md mx-auto py-6 px-4 space-y-4">
-        <h1 className="text-xl font-semibold text-stone-900">Voice mode</h1>
-        <p className="text-xs text-stone-500">
+        <h1 className="text-xl font-semibold text-stone-900 dark:text-stone-100">Voice mode</h1>
+        <p className="text-xs text-stone-500 dark:text-stone-400">
           Hands-free retrieval. Speak your answer when you hear "Listening".
         </p>
+        {session.status !== 'in_progress' && (
+          <UnreviewedToggle value={unreviewed.value} onChange={unreviewed.setValue} />
+        )}
 
         <PaywallGate
           kind={paywallKind}
@@ -118,28 +135,28 @@ export function VoicePage() {
           onUpgrade={handleUpgrade}
           predictedScore={score.predictedScore}
         >
-          {session.status === 'loading' && <div className="text-stone-500 text-center py-12">Loading...</div>}
+          {session.status === 'loading' && <div className="text-stone-500 dark:text-stone-400 text-center py-12">Loading...</div>}
           {session.status === 'empty' && (
-            <div className="text-stone-700 text-center py-12">
-              <div className="text-2xl font-medium mb-2">All caught up.</div>
-              <p className="text-sm text-stone-500">No questions due right now.</p>
+            <div className="text-stone-700 dark:text-stone-300 text-center py-12">
+              <div className="text-2xl font-medium mb-2 text-stone-900 dark:text-stone-100">All caught up.</div>
+              <p className="text-sm text-stone-500 dark:text-stone-400">No questions due right now.</p>
             </div>
           )}
           {session.status === 'error' && (
-            <div className="text-red-700 text-center py-12">{session.errorMessage}</div>
+            <div className="text-red-700 dark:text-red-400 text-center py-12">{session.errorMessage}</div>
           )}
           {session.status === 'summary' && session.summary && (
-            <div className="text-center py-12 text-stone-800">
+            <div className="text-center py-12 text-stone-800 dark:text-stone-200">
               <div className="text-2xl font-medium">Done.</div>
               <p className="text-sm text-stone-500 mt-2">
-                {session.summary.totalAtoms} atom{session.summary.totalAtoms === 1 ? '' : 's'} reviewed by voice.
+                {session.summary.totalAtoms} question{session.summary.totalAtoms === 1 ? '' : 's'} reviewed by voice.
               </p>
             </div>
           )}
           {session.status === 'in_progress' && session.currentAtom && (
             <>
-              <div className="text-xs text-stone-500 text-right">
-                {session.progress.done} / {session.progress.total}
+              <div className="text-xs text-stone-500 dark:text-stone-400 text-right">
+                Question {session.progress.done + 1} of {session.progress.total}
               </div>
               <VoiceAtomView
                 key={session.currentAtom.id}

@@ -82,7 +82,7 @@ export function MockPage() {
           <div className="text-stone-500 text-center py-12">Loading…</div>
         )}
         {session.status === 'empty' && (
-          <div className="text-stone-700 text-center py-12">No questions available.</div>
+          <div className="text-stone-700 dark:text-stone-300 text-center py-12">No questions available.</div>
         )}
         {session.status === 'error' && (
           <div className="text-red-700 text-center py-12">{session.errorMessage}</div>

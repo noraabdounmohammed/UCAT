@@ -56,6 +56,11 @@ export interface AtomRepository {
    */
   listAvailableForExam(exam: Exam, opts?: ListAvailableOptions): Promise<Atom[]>;
   getById(id: string): Promise<Atom | null>;
+  /**
+   * Batched `getById` — single round-trip via `.in('id', ids)`. Used by
+   * `useFsrsSession` to hydrate the queue in one request instead of N.
+   */
+  getByIds(ids: string[]): Promise<Atom[]>;
   countApprovedByExam(exam: Exam): Promise<number>;
 }
 
@@ -129,6 +134,16 @@ export function createAtomRepository(supabase: SupabaseClient): AtomRepository {
         throw error;
       }
       return data ? rowToAtom(data) : null;
+    },
+
+    async getByIds(ids) {
+      if (ids.length === 0) return [];
+      const { data, error } = await supabase
+        .from('atoms')
+        .select('*')
+        .in('id', ids);
+      if (error) throw error;
+      return (data ?? []).map(rowToAtom);
     },
 
     async countApprovedByExam(exam) {

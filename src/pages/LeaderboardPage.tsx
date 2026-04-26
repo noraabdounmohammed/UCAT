@@ -27,10 +27,10 @@ export function LeaderboardPage() {
   return (
     <MainLayout currentPage="leaderboard">
       <div className="max-w-md mx-auto py-6 px-4 space-y-4">
-        <h1 className="text-xl font-semibold text-stone-900">Leaderboard</h1>
+        <h1 className="text-xl font-semibold text-stone-900 dark:text-stone-100">Leaderboard</h1>
 
         {lb.status === 'loading' && (
-          <div className="text-stone-500 text-center py-8">Loading…</div>
+          <div className="text-stone-500 dark:text-stone-400 text-center py-8">Loading…</div>
         )}
 
         {lb.status === 'no-cohort' && (
@@ -39,7 +39,7 @@ export function LeaderboardPage() {
 
         {lb.status === 'ready' && (
           <>
-            <p className="text-xs text-stone-500">
+            <p className="text-xs text-stone-500 dark:text-stone-400">
               {lb.cohort} · last 7 days
             </p>
             <LeaderboardTable rows={lb.rows} currentUserId={user.id} />

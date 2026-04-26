@@ -288,7 +288,7 @@ export const LandingPage: React.FC = () => {
   };
 
   return (
-    <div className={`h-screen ${displayCards[currentIndex]?.bgColor || 'bg-[#E8F2F6]'} flex flex-col transition-colors duration-700 overflow-hidden relative`}>
+    <div className={`h-screen ${displayCards[currentIndex]?.bgColor || 'bg-[#F5F1EC]'} dark:bg-stone-950 flex flex-col transition-colors duration-700 overflow-hidden relative`}>
       {/* Subtle texture overlay */}
       <div className="absolute inset-0 opacity-[0.015] pointer-events-none" style={{ backgroundImage: 'url("data:image/svg+xml,%3Csvg width="100" height="100" xmlns="http://www.w3.org/2000/svg"%3E%3Cfilter id="noise"%3E%3CfeTurbulence type="fractalNoise" baseFrequency="0.9" numOctaves="4" /%3E%3C/filter%3E%3Crect width="100" height="100" filter="url(%23noise)" /%3E%3C/svg%3E")' }}></div>
 
@@ -315,7 +315,7 @@ export const LandingPage: React.FC = () => {
           </div>
         </div>
         <p className="text-xs text-stone-500 dark:text-stone-400 text-center mt-2">
-          Made by a UK doctor. Every atom signed off by clinician.
+          Made by a UK doctor. Every question signed off by a clinician.
         </p>
       </div>
 

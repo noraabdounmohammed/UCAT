@@ -11,10 +11,7 @@
  * (typically one per academic year); update this list when one launches.
  *
  * If a user attends a school not on the list, they pick "Other (UK)" — those
- * users still appear in the leaderboard but in a single shared bucket. (We
- * deliberately keep "Other (UK)" rather than free text to avoid fragmenting
- * cohorts; if a meaningful share of users land in "Other", add the missing
- * schools and migrate.)
+ * users still appear in the leaderboard but in a single shared bucket.
  */
 export const UK_MEDICAL_SCHOOLS: readonly string[] = [
   'Anglia Ruskin University',
@@ -33,10 +30,10 @@ export const UK_MEDICAL_SCHOOLS: readonly string[] = [
   'Leicester Medical School',
   'Norwich Medical School (UEA)',
   'Plymouth University',
-  'Queen Mary University of London',
   "Queen's University Belfast",
   'St George\'s, University of London',
   'Swansea University',
+  'University College London (UCL)',
   'University of Aberdeen',
   'University of Birmingham',
   'University of Bristol',
@@ -45,7 +42,6 @@ export const UK_MEDICAL_SCHOOLS: readonly string[] = [
   'University of Central Lancashire',
   'University of Chester',
   'University of Dundee',
-  'University of East Anglia',
   'University of Edinburgh',
   'University of Exeter',
   'University of Glasgow',

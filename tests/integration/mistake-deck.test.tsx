@@ -36,6 +36,7 @@ function Harness() {
       listApprovedByExam: vi.fn(),
       listFreeTier: vi.fn(),
       getById: async (id) => atoms.find(a => a.id === id) ?? null,
+      getByIds: async (ids: string[]) => atoms.filter(a => ids.includes(a.id)),
     } as any,
     userStateRepo: {
       listDueForUser: vi.fn(),
@@ -52,18 +53,20 @@ function Harness() {
 describe('mistake deck integration', () => {
   beforeEach(() => vi.clearAllMocks());
 
-  it('full flow: load mistakes → rate 2 → summary', async () => {
+  it('full flow: load mistakes → answer 2 → summary', async () => {
     const user = userEvent.setup();
     render(<Harness />);
 
     await waitFor(() => expect(screen.getByText(/Stem m1\?/)).toBeInTheDocument());
     expect(listMistakeAtomsForUser).toHaveBeenCalledTimes(1);
 
-    await user.click(screen.getAllByRole('button', { name: /how sure/i })[2]);
-    await user.click(await screen.findByRole('button', { name: /^Good$/i }));
+    // Question 1 (m1) — pick correct, then Next
+    await user.click(screen.getByRole('button', { name: /Answer m1/i }));
+    await user.click(await screen.findByRole('button', { name: /Next question/i }));
 
+    // Question 2 (m2) — pick correct, then Easy
     await waitFor(() => expect(screen.getByText(/Stem m2\?/)).toBeInTheDocument());
-    await user.click(screen.getAllByRole('button', { name: /how sure/i })[3]);
+    await user.click(screen.getByRole('button', { name: /Answer m2/i }));
     await user.click(await screen.findByRole('button', { name: /^Easy$/i }));
 
     await waitFor(() => expect(screen.getByText(/2\s*\/\s*2/)).toBeInTheDocument());

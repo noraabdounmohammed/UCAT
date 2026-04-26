@@ -27,7 +27,7 @@ export function AuthGate({ title, subtitle }: AuthGateProps) {
         <AuthForm />
       </div>
       <p className="text-xs text-stone-500 dark:text-stone-400 text-center mt-2">
-        Made by a UK doctor. Every atom signed off by clinician.
+        Made by a UK doctor. Every question signed off by a clinician.
       </p>
     </div>
   );
