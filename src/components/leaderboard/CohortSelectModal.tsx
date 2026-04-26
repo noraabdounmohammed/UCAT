@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import type { CohortRepository } from '@/atom/cohortRepository';
+import { UK_MEDICAL_SCHOOLS } from '@/leaderboard/ukMedicalSchools';
 
 export interface CohortSelectModalProps {
   repo: CohortRepository;
@@ -8,9 +9,10 @@ export interface CohortSelectModalProps {
 
 /**
  * Inline form (not a literal overlay modal) shown on /leaderboard when the user
- * has no `cohort_school` set. Captures the school + display name and persists
- * via `repo.setMyCohort`. On success, fires `onCohortSet` so the parent hook
- * can refresh the leaderboard.
+ * has no `cohort_school` set. Captures the school (closed dropdown of UK
+ * medical schools — see `ukMedicalSchools.ts` for the rationale) + a display
+ * name, persists via `repo.setMyCohort`. On success, fires `onCohortSet` so
+ * the parent hook can refresh the leaderboard.
  */
 export function CohortSelectModal({ repo, onCohortSet }: CohortSelectModalProps) {
   const [school, setSchool] = useState('');
@@ -39,37 +41,42 @@ export function CohortSelectModal({ repo, onCohortSet }: CohortSelectModalProps)
   return (
     <form
       onSubmit={handleSubmit}
-      className="rounded-2xl bg-white border border-stone-200 p-6 space-y-4"
+      className="rounded-2xl bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-800 p-6 space-y-4"
       aria-label="Pick your cohort"
     >
       <div className="space-y-1">
-        <h2 className="text-base font-semibold text-stone-900">Join your cohort</h2>
-        <p className="text-xs text-stone-500">
+        <h2 className="text-base font-semibold text-stone-900 dark:text-stone-100">Join your cohort</h2>
+        <p className="text-xs text-stone-500 dark:text-stone-400">
           Pick your medical school to see how you stack up against your peers
           this week. You can use any name you like as your handle.
         </p>
       </div>
 
       <label className="block text-sm">
-        <span className="text-stone-700">Medical school</span>
-        <input
-          type="text"
+        <span className="text-stone-700 dark:text-stone-300">Medical school</span>
+        <select
           value={school}
           onChange={(e) => setSchool(e.target.value)}
-          placeholder="e.g. Imperial College London"
-          className="w-full border border-stone-300 rounded-lg p-2 mt-1 text-sm"
-          autoComplete="off"
-        />
+          className="w-full border border-stone-300 dark:border-stone-700 rounded-lg p-2 mt-1 text-sm bg-white dark:bg-stone-900 text-stone-900 dark:text-stone-100"
+          aria-label="Medical school"
+        >
+          <option value="">Select your medical school…</option>
+          {UK_MEDICAL_SCHOOLS.map((name) => (
+            <option key={name} value={name}>
+              {name}
+            </option>
+          ))}
+        </select>
       </label>
 
       <label className="block text-sm">
-        <span className="text-stone-700">Display name</span>
+        <span className="text-stone-700 dark:text-stone-300">Display name</span>
         <input
           type="text"
           value={displayName}
           onChange={(e) => setDisplayName(e.target.value)}
           placeholder="Your handle (visible to your cohort)"
-          className="w-full border border-stone-300 rounded-lg p-2 mt-1 text-sm"
+          className="w-full border border-stone-300 dark:border-stone-700 rounded-lg p-2 mt-1 text-sm bg-white dark:bg-stone-900 text-stone-900 dark:text-stone-100"
           autoComplete="off"
         />
       </label>
@@ -87,7 +94,7 @@ export function CohortSelectModal({ repo, onCohortSet }: CohortSelectModalProps)
           'w-full px-4 py-3 rounded-lg text-sm font-medium ' +
           (canSubmit
             ? 'bg-stone-900 text-white hover:bg-stone-800'
-            : 'bg-stone-100 text-stone-400 cursor-not-allowed')
+            : 'bg-stone-100 dark:bg-stone-800 text-stone-400 dark:text-stone-600 cursor-not-allowed')
         }
       >
         {submitting ? 'Saving…' : 'Save'}

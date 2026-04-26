@@ -65,26 +65,29 @@ export const LandingPage: React.FC = () => {
     }
   };
 
-  // Color palette - cycles through for variety regardless of category
+  // Color palette - cycles through for variety regardless of category.
+  // All entries are warm Stone variants to match the brand (no cool blues
+  // / cyans / slates) — the previous palette mixed blue + cool grey, which
+  // looked off-brand against the rest of the warm-Stone surfaces.
   const colorPalette = [
-    { 
-      gradient: 'bg-gradient-to-br from-blue-300/40 to-cyan-400/40', 
-      bg: 'bg-[#E8F2F6]' // Soft blue
+    {
+      gradient: 'bg-gradient-to-br from-stone-200/60 to-stone-300/60',
+      bg: 'bg-[#F5F1EC]' // Warm off-white
     },
-    { 
-      gradient: 'bg-gradient-to-br from-red-300/40 to-rose-400/40', 
+    {
+      gradient: 'bg-gradient-to-br from-red-300/40 to-rose-400/40',
       bg: 'bg-[#F0EBE6]' // Warm beige
     },
-    { 
-      gradient: 'bg-gradient-to-br from-orange-300/40 to-amber-400/40', 
+    {
+      gradient: 'bg-gradient-to-br from-orange-300/40 to-amber-400/40',
       bg: 'bg-[#E8E3DC]' // Light tan
     },
-    { 
-      gradient: 'bg-gradient-to-br from-slate-400/40 to-gray-500/40', 
-      bg: 'bg-[#D4CFC7]' // Cool gray
+    {
+      gradient: 'bg-gradient-to-br from-stone-300/50 to-stone-400/50',
+      bg: 'bg-[#E5E0D8]' // Warm grey
     },
-    { 
-      gradient: 'bg-gradient-to-br from-green-300/40 to-emerald-400/40', 
+    {
+      gradient: 'bg-gradient-to-br from-green-300/40 to-emerald-400/40',
       bg: 'bg-[#E8F0E6]' // Soft green
     },
     { 
