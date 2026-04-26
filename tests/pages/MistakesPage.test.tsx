@@ -84,7 +84,7 @@ describe('<MistakesPage />', () => {
     (useAuth as any).mockReturnValue({ user: { id: 'u1', email: 'u@x.com' } });
     renderPage();
     expect(screen.getByRole('heading', { name: /mistake deck/i })).toBeInTheDocument();
-    expect(screen.getByText(/Atoms you got wrong/i)).toBeInTheDocument();
+    expect(screen.getByText(/Questions you got wrong/i)).toBeInTheDocument();
   });
 
   it('shows the paywall when at the daily limit and not premium', () => {
