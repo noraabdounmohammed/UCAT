@@ -39,7 +39,7 @@ describe('<SeedPage />', () => {
     (useAuth as any).mockReturnValue({ user: null });
     (useUserRole as any).mockReturnValue({ isCreator: false });
     renderPage();
-    expect(screen.getByRole('heading', { name: /sign in to seed atoms/i })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: /sign in to add questions/i })).toBeInTheDocument();
   });
 
   it('shows "Not authorised" when authed but not a creator', () => {
@@ -54,7 +54,7 @@ describe('<SeedPage />', () => {
     (useAuth as any).mockReturnValue({ user: { id: 'u1', email: 'u@x.com' } });
     (useUserRole as any).mockReturnValue({ isCreator: true });
     renderPage();
-    expect(screen.getByRole('heading', { name: /seed an atom/i })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: /add a question/i })).toBeInTheDocument();
     expect(screen.queryByText(/not authorised/i)).not.toBeInTheDocument();
   });
 });

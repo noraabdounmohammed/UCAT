@@ -122,7 +122,7 @@ export function VoicePage() {
           {session.status === 'empty' && (
             <div className="text-stone-700 text-center py-12">
               <div className="text-2xl font-medium mb-2">All caught up.</div>
-              <p className="text-sm text-stone-500">No atoms due right now.</p>
+              <p className="text-sm text-stone-500">No questions due right now.</p>
             </div>
           )}
           {session.status === 'error' && (

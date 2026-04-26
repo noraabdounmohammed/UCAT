@@ -8,7 +8,7 @@ export function ReviewQueueView({ queue }: { queue: UseReviewQueueResult }) {
   if (queue.status === 'empty') {
     return (
       <div className="text-stone-700 text-center py-12 max-w-md mx-auto">
-        <div className="text-2xl font-medium mb-2">No atoms left to review 🎉</div>
+        <div className="text-2xl font-medium mb-2">No questions left to review 🎉</div>
         <p className="text-sm text-stone-500">Check back when more drafts come in.</p>
       </div>
     );

@@ -17,7 +17,7 @@ export function PrivacyPolicy() {
         <h2 className="text-lg font-semibold mt-6 mb-2">What we collect</h2>
         <ul className="list-disc pl-5 space-y-1 text-sm">
           <li>Your email + name when you sign up (Supabase Auth).</li>
-          <li>Your atom-rating history — stored in Supabase to power FSRS-5 spaced repetition.</li>
+          <li>Your answer history — stored in Supabase to power FSRS-5 spaced repetition.</li>
           <li>Aggregate session telemetry (PostHog, optional — see below).</li>
           <li>Error reports when something crashes (Sentry, optional — see below).</li>
         </ul>
@@ -38,7 +38,7 @@ export function PrivacyPolicy() {
 
         <h2 className="text-lg font-semibold mt-6 mb-2">Made by a doctor</h2>
         <p className="text-sm">
-          Built by Nora Mohammed, MD. Every atom of clinical content is signed off by a clinician
+          Built by Nora Mohammed, MD. Every question is signed off by a clinician
           before it reaches the live bank. If you spot a clinical error, email{' '}
           <code className="text-xs bg-stone-100 dark:bg-stone-800 px-1 py-0.5 rounded">nora@studyedit.com</code>.
         </p>

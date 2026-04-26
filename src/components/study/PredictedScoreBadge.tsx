@@ -28,7 +28,7 @@ export function PredictedScoreBadge({ predictedScore, atomCount, totalAtoms, sta
       <span className="text-2xl font-semibold text-stone-900">{pct}%</span>
       <span className="text-stone-500">predicted</span>
       <span className="text-stone-300">·</span>
-      <span className="text-stone-500">{atomCount} / {totalAtoms} atoms</span>
+      <span className="text-stone-500">{atomCount} / {totalAtoms} questions</span>
     </div>
   );
 }

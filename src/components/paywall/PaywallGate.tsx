@@ -41,10 +41,10 @@ export function PaywallGate({
   } else if (kind === 'crossed-target') {
     const pct = Math.round((predictedScore ?? 0) * 100);
     headline = "You're nearly UKMLA-ready";
-    body = `Predicted score is ${pct}% — Pro unlocks the full atom bank to lock it in.`;
+    body = `Predicted score is ${pct}% — Pro unlocks the full question bank to lock it in.`;
   } else {
     // free-tier-only
-    headline = 'Unlock the full atom bank';
+    headline = 'Unlock the full question bank';
     body = 'Free covers a high-yield starter set. Upgrade for the complete UKMLA library plus mock exams, mistake deck, and voice mode.';
   }
 

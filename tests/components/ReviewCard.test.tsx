@@ -40,7 +40,7 @@ describe('<ReviewCard />', () => {
     const user = userEvent.setup();
     render(<ReviewCard atom={atom} onApprove={vi.fn()} onReject={vi.fn()} onUpdate={vi.fn()} />);
     await user.click(screen.getByRole('button', { name: /^reject$/i }));
-    expect(screen.getByRole('heading', { name: /reject this atom/i })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: /reject this question/i })).toBeInTheDocument();
   });
 
   it('clicking Edit toggles an inline form for claim/stem/answer/citation', async () => {

@@ -32,7 +32,7 @@ describe('<PaywallGate />', () => {
       </PaywallGate>
     );
     expect(screen.queryByText('study content')).not.toBeInTheDocument();
-    expect(screen.getByText(/full.*atom.*bank|pro/i)).toBeInTheDocument();
+    expect(screen.getByText(/full.*question.*bank|pro/i)).toBeInTheDocument();
   });
 
   it('calls onUpgrade when the upgrade button is clicked', async () => {

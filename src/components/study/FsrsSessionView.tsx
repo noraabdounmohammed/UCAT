@@ -18,7 +18,7 @@ export function FsrsSessionView({
     return (
       <div className="text-stone-700 text-center py-12 max-w-md mx-auto">
         <div className="text-2xl font-medium mb-2">All caught up 🎉</div>
-        <p className="text-sm text-stone-500">No atoms due right now. Come back tomorrow.</p>
+        <p className="text-sm text-stone-500">No questions due right now. Come back tomorrow.</p>
       </div>
     );
   }
