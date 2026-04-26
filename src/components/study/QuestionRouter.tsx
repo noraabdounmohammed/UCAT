@@ -3,6 +3,8 @@ import type { Atom } from '@/atom/types';
 import { AtomRenderer, type AtomRated } from './AtomRenderer';
 import { ClozeRenderer } from './ClozeRenderer';
 import { CalcRenderer } from './CalcRenderer';
+import { CaseVignette } from './CaseVignette';
+import { supabase } from '@/lib/supabase';
 
 /**
  * Picks which renderer to use for a given atom:
@@ -36,7 +38,21 @@ export function pickRenderer(atom: Atom): 'sba' | 'cloze' | 'calc' {
 
 export function QuestionRouter({ atom, onRated }: { atom: Atom; onRated: (r: AtomRated) => void }) {
   const kind = useMemo(() => pickRenderer(atom), [atom.id]);
-  if (kind === 'calc') return <CalcRenderer atom={atom} onRated={onRated} />;
-  if (kind === 'cloze') return <ClozeRenderer atom={atom} onRated={onRated} />;
-  return <AtomRenderer atom={atom} onRated={onRated} />;
+  // Chained-case vignette renders above the question when caseId is set —
+  // independent of the renderer kind (sba / cloze / calc all benefit).
+  const vignette = atom.caseId
+    ? <CaseVignette supabase={supabase} caseId={atom.caseId} />
+    : null;
+  const body = kind === 'calc'
+    ? <CalcRenderer atom={atom} onRated={onRated} />
+    : kind === 'cloze'
+      ? <ClozeRenderer atom={atom} onRated={onRated} />
+      : <AtomRenderer atom={atom} onRated={onRated} />;
+  if (!vignette) return body;
+  return (
+    <div className="space-y-3">
+      {vignette}
+      {body}
+    </div>
+  );
 }

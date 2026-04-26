@@ -68,6 +68,26 @@ export interface Atom {
    * of unset atoms to cloze for variety.
    */
   questionKind?: QuestionKind;
+  /**
+   * When set, this atom belongs to a chained clinical case — the
+   * `<CaseVignette />` is shown above the question. Loaded lazily by id.
+   */
+  caseId?: string | null;
+}
+
+/**
+ * Chained clinical case — a vignette + several linked atoms (typically
+ * Ix → Dx → Mx). Renderer fetches by id when an atom has `caseId` set.
+ */
+export interface ClinicalCase {
+  id: string;
+  exam: Exam;
+  title: string;
+  vignetteMd: string;
+  citationUrl: string | null;
+  citationLabel: string | null;
+  status: AtomStatus;
+  createdAt: string;
 }
 
 export interface AtomVariant {
