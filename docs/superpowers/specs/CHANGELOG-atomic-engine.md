@@ -328,3 +328,13 @@ Tests added: ~6 new across batches. **~184 passing total.**
 - View aggregates `review_events` per (cohort, user) — keeps personal events private via RLS while allowing aggregate visibility within a cohort.
 - Tests: 20 new (5 repo + 4 hook + 4 modal + 3 table + 4 page tests). 204 total.
 - Migration NOT yet applied — handoff via Supabase-MCP.
+
+---
+
+## 2026-04-26 — Plan 18 ships: Playwright E2E smoke
+
+- New `npm run test:e2e` runs Playwright against `E2E_BASE_URL` (default https://studyedit.com).
+- 3 spec files: home (CTA + nav + cookie consent), 7-route smoke, /privacy.
+- Auto-run in CI on `ukmla-akt-version` post-merge.
+- Doesn't cover sign-up / paywall / voice — those need real test accounts and Stripe test mode (deferred).
+- ~13 E2E tests new, all passing.
