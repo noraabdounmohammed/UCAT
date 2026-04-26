@@ -38,3 +38,7 @@ supabase/.temp/
 # Build / coverage artefacts
 coverage/
 .vitest-cache/
+
+# Playwright artefacts
+playwright-report/
+test-results/
