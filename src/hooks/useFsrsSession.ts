@@ -40,6 +40,12 @@ export interface RateInput {
 export interface SessionSummaryData {
   totalAtoms: number;
   ratings: FsrsRatingValue[];
+  /**
+   * Per-atom record of what was rated, in order. Used by
+   * <SessionTakeaways /> to ask the LLM "what's the pattern in this
+   * student's misses?". `correct` is `rating >= 3`.
+   */
+  rated: { atom: Atom; rating: FsrsRatingValue; correct: boolean }[];
   startedAt: Date;
   finishedAt: Date;
 }
@@ -156,6 +162,11 @@ export function useFsrsSession(deps: FsrsSessionDeps): UseFsrsSessionResult {
     ? {
         totalAtoms: sessionState.ratedAtomIds.length,
         ratings: [...ratingsRef.current],
+        rated: sessionState.ratedAtomIds.map((id, i) => {
+          const a = atomCacheRef.current.get(id);
+          const r = ratingsRef.current[i] ?? 1;
+          return a ? { atom: a, rating: r, correct: r >= 3 } : null;
+        }).filter((x): x is { atom: Atom; rating: FsrsRatingValue; correct: boolean } => x !== null),
         startedAt: startedAtRef.current,
         finishedAt: now(),
       }

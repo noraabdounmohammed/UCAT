@@ -12,7 +12,7 @@ export type AtomSourceType =
 export type AtomStatus = 'draft' | 'pending_review' | 'approved' | 'rejected';
 
 /** UKMLA-style question formats. SBA is the default 4-option MCQ. */
-export type QuestionKind = 'sba' | 'cloze' | 'emq';
+export type QuestionKind = 'sba' | 'cloze' | 'emq' | 'calc';
 
 /**
  * Verdict from the AI-side QA pass on AI-drafted atoms — populated by
