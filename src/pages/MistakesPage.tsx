@@ -85,7 +85,7 @@ export function MistakesPage() {
   return (
     <MainLayout currentPage="mistakes">
       <div className="max-w-md mx-auto py-6 px-4 space-y-4">
-        <h1 className="text-xl font-semibold text-stone-900">Mistake deck</h1>
+        <h1 className="text-xl font-semibold text-stone-900 dark:text-stone-100">Mistake deck</h1>
         <p className="text-xs text-stone-500">Questions you got wrong in the last {LOOKBACK_DAYS} days.</p>
         <PredictedScoreBadge {...score} />
         <PaywallGate

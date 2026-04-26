@@ -36,6 +36,7 @@ function Harness() {
       listApprovedByExam: vi.fn(),
       listFreeTier: vi.fn(),
       getById: async (id) => atoms.find(a => a.id === id) ?? null,
+      getByIds: async (ids: string[]) => atoms.filter(a => ids.includes(a.id)),
     } as any,
     userStateRepo: {
       listDueForUser: vi.fn(),

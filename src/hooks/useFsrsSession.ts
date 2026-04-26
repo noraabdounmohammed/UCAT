@@ -85,11 +85,13 @@ export function useFsrsSession(deps: FsrsSessionDeps): UseFsrsSessionResult {
           setStatus('empty');
           return;
         }
-        // Hydrate atom + state caches
+        // Hydrate atom + state caches in ONE round-trip via the batched
+        // `getByIds`. The previous N-round-trip `getById` chain caused a
+        // visible 1-2s "Loading…" gap on /study, /mistakes, /voice.
         const atomIds = dueRows.map(r => r.atomId);
-        const atoms = await Promise.all(atomIds.map(id => deps.atomRepo.getById(id)));
+        const atoms = await deps.atomRepo.getByIds(atomIds);
         if (cancelled) return;
-        for (const a of atoms) if (a) atomCacheRef.current.set(a.id, a);
+        for (const a of atoms) atomCacheRef.current.set(a.id, a);
         for (const r of dueRows) {
           const loaded = fromUserAtomState(r);
           // Pristine rows (never reviewed) carry placeholder zeros that violate

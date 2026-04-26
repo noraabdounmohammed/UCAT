@@ -50,6 +50,7 @@ function makeRepos({
     listFreeTier: vi.fn(),
     listAvailableForExam: vi.fn().mockResolvedValue(available),
     getById: vi.fn(),
+    getByIds: vi.fn(),
     countApprovedByExam: vi.fn(),
   };
   return { userStateRepo, atomRepo };
