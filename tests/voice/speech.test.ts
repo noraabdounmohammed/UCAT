@@ -45,11 +45,18 @@ describe('isVoiceAvailable', () => {
 });
 
 describe('speak', () => {
-  it('calls window.speechSynthesis.speak with the utterance', () => {
+  it('calls window.speechSynthesis.speak with the utterance', async () => {
     const speakFn = vi.fn();
-    setSynth({ speak: speakFn });
+    // Stub `getVoices` so the chooser resolves on the synchronous fast-path
+    // (otherwise it'd wait for the `voiceschanged` event up to 1s).
+    // Non-empty voices triggers the synchronous fast-path (no voiceschanged wait).
+    const fakeVoice = { name: 'Daniel (Premium)', lang: 'en-GB', default: false } as any;
+    setSynth({ speak: speakFn, getVoices: () => [fakeVoice], addEventListener: () => {}, removeEventListener: () => {} });
     setUtterCtor(function (this: any, t: string) { this.text = t; });
     speak({ text: 'hello' });
+    // `speak()` defers to a microtask so it can pick the best voice — flush it.
+    await Promise.resolve();
+    await Promise.resolve();
     expect(speakFn).toHaveBeenCalledTimes(1);
     expect(speakFn.mock.calls[0][0].text).toBe('hello');
   });
