@@ -18,12 +18,20 @@ beforeEach(() => {
   setSynth(undefined);
   setUtterCtor(undefined);
   setRecCtor(undefined);
+  // Stub fetch so the server-side TTS path resolves to "not configured" (503)
+  // immediately, and speak() falls back to the system path under test.
+  (window as any).fetch = vi.fn().mockResolvedValue({
+    ok: false,
+    status: 503,
+    arrayBuffer: async () => new ArrayBuffer(0),
+  });
 });
 
 afterEach(() => {
   setSynth(undefined);
   setUtterCtor(undefined);
   setRecCtor(undefined);
+  delete (window as any).fetch;
 });
 
 describe('isVoiceAvailable', () => {
@@ -47,23 +55,21 @@ describe('isVoiceAvailable', () => {
 describe('speak', () => {
   it('calls window.speechSynthesis.speak with the utterance', async () => {
     const speakFn = vi.fn();
-    // Stub `getVoices` so the chooser resolves on the synchronous fast-path
-    // (otherwise it'd wait for the `voiceschanged` event up to 1s).
-    // Non-empty voices triggers the synchronous fast-path (no voiceschanged wait).
     const fakeVoice = { name: 'Daniel (Premium)', lang: 'en-GB', default: false } as any;
     setSynth({ speak: speakFn, getVoices: () => [fakeVoice], addEventListener: () => {}, removeEventListener: () => {} });
     setUtterCtor(function (this: any, t: string) { this.text = t; });
     speak({ text: 'hello' });
-    // `speak()` defers to a microtask so it can pick the best voice — flush it.
-    await Promise.resolve();
-    await Promise.resolve();
+    // speak() is fully async — flush several microtasks for both the
+    // server-TTS attempt + the system-voice fallback.
+    for (let i = 0; i < 8; i++) await Promise.resolve();
     expect(speakFn).toHaveBeenCalledTimes(1);
     expect(speakFn.mock.calls[0][0].text).toBe('hello');
   });
 
-  it('calls onEnd immediately if no speechSynthesis', () => {
+  it('calls onEnd when no speechSynthesis (after server-TTS falls back)', async () => {
     const onEnd = vi.fn();
     speak({ text: 'x', onEnd });
+    for (let i = 0; i < 8; i++) await Promise.resolve();
     expect(onEnd).toHaveBeenCalledTimes(1);
   });
 });

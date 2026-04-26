@@ -141,10 +141,55 @@ function getBestVoice(lang: string): Promise<SpeechSynthesisVoice | null> {
 }
 
 /* ------------------------------------------------------------------ */
+/* Server-side TTS (opt-in via /.netlify/functions/tts)                */
+/* ------------------------------------------------------------------ */
+
+/**
+ * Sentinel: once the function returns 503/404 we don't keep retrying — the
+ * client falls back to system voice for the rest of the session.
+ */
+let serverTtsAvailable: boolean | null = null;
+
+async function trySpeakViaServer(text: string, onEnd?: () => void): Promise<boolean> {
+  if (typeof window === 'undefined') return false;
+  if (serverTtsAvailable === false) return false;
+  try {
+    const r = await fetch('/.netlify/functions/tts', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ text }),
+    });
+    if (!r.ok) {
+      // 503 = not configured (no OPENAI_TTS_KEY); 404 = not deployed.
+      if (r.status === 503 || r.status === 404) serverTtsAvailable = false;
+      return false;
+    }
+    serverTtsAvailable = true;
+    const buf = await r.arrayBuffer();
+    const audio = new Audio(URL.createObjectURL(new Blob([buf], { type: 'audio/mpeg' })));
+    if (onEnd) audio.addEventListener('ended', () => onEnd(), { once: true });
+    await audio.play();
+    return true;
+  } catch {
+    serverTtsAvailable = false;
+    return false;
+  }
+}
+
+/* ------------------------------------------------------------------ */
 /* Public API                                                          */
 /* ------------------------------------------------------------------ */
 
 export function speak({ text, lang = 'en-GB', rate = 0.95, pitch = 1, onEnd }: SpeakOptions): void {
+  // Prefer studio-quality server-side TTS when the operator has wired
+  // `OPENAI_TTS_KEY` on Netlify. Falls back to system voice transparently.
+  trySpeakViaServer(text, onEnd).then((ok) => {
+    if (ok) return;
+    speakViaSystem({ text, lang, rate, pitch, onEnd });
+  });
+}
+
+function speakViaSystem({ text, lang = 'en-GB', rate = 0.95, pitch = 1, onEnd }: SpeakOptions): void {
   if (typeof window === 'undefined' || !window.speechSynthesis) {
     onEnd?.();
     return;
