@@ -5,6 +5,7 @@ import { MainLayout } from '@/components/layout/MainLayout';
 import { AuthGate } from '@/components/auth/AuthGate';
 import { PaywallGate } from '@/components/paywall/PaywallGate';
 import { useFsrsSession } from '@/hooks/useFsrsSession';
+import { usePredictedScore } from '@/hooks/usePredictedScore';
 import { useSubscription } from '@/hooks/useSubscription';
 import { startStripeCheckout } from '@/services/stripeCheckout';
 import { createAtomRepository } from '@/atom/repository';
@@ -35,6 +36,12 @@ export function VoicePage() {
   });
 
   const subscription = useSubscription();
+  const score = usePredictedScore({
+    userId: user?.id ?? '',
+    exam: 'UKMLA',
+    atomRepo,
+    userStateRepo,
+  });
 
   // One-shot mount track — separate from session_started since voice has different cost/UX profile.
   useEffect(() => {
@@ -75,10 +82,20 @@ export function VoicePage() {
     await subscription.incrementDailyCount();
   };
 
-  const paywallKind: 'allowed' | 'daily-limit' =
-    !subscription.loading && subscription.isAtLimit && !subscription.isPremium
-      ? 'daily-limit'
-      : 'allowed';
+  // See `StudyPage.tsx` for the priority rationale.
+  const paywallKind: 'allowed' | 'daily-limit' | 'crossed-target' = (() => {
+    if (subscription.loading) return 'allowed';
+    if (subscription.isAtLimit && !subscription.isPremium) return 'daily-limit';
+    if (
+      !subscription.isPremium &&
+      score.status === 'ready' &&
+      score.predictedScore >= 0.7 &&
+      score.atomCount >= 30
+    ) {
+      return 'crossed-target';
+    }
+    return 'allowed';
+  })();
 
   const handleUpgrade = () => {
     if (!user.id || !user.email) return;
@@ -99,6 +116,7 @@ export function VoicePage() {
           kind={paywallKind}
           dailyQuestionsRemaining={subscription.dailyQuestionsRemaining}
           onUpgrade={handleUpgrade}
+          predictedScore={score.predictedScore}
         >
           {session.status === 'loading' && <div className="text-stone-500 text-center py-12">Loading...</div>}
           {session.status === 'empty' && (

@@ -59,10 +59,24 @@ export function StudyPage() {
     score.refresh().catch(() => {});
   };
 
-  const paywallKind: 'allowed' | 'daily-limit' =
-    !subscription.loading && subscription.isAtLimit && !subscription.isPremium
-      ? 'daily-limit'
-      : 'allowed';
+  // Paywall priority:
+  //   1. Hard daily-limit cap (free user out of questions today).
+  //   2. Soft conversion nudge once the user has demonstrably earned it
+  //      (predicted >= 70% across >= 30 atoms covered).
+  //   3. Otherwise allowed.
+  const paywallKind: 'allowed' | 'daily-limit' | 'crossed-target' = (() => {
+    if (subscription.loading) return 'allowed';
+    if (subscription.isAtLimit && !subscription.isPremium) return 'daily-limit';
+    if (
+      !subscription.isPremium &&
+      score.status === 'ready' &&
+      score.predictedScore >= 0.7 &&
+      score.atomCount >= 30
+    ) {
+      return 'crossed-target';
+    }
+    return 'allowed';
+  })();
 
   const handleUpgrade = () => {
     if (!user.id || !user.email) return;
@@ -79,6 +93,7 @@ export function StudyPage() {
           kind={paywallKind}
           dailyQuestionsRemaining={subscription.dailyQuestionsRemaining}
           onUpgrade={handleUpgrade}
+          predictedScore={score.predictedScore}
         >
           <FsrsSessionView
             session={session}

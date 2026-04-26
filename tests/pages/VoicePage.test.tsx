@@ -6,6 +6,7 @@ vi.mock('@/lib/supabase', () => ({ supabase: {} }));
 vi.mock('@/contexts/AuthContext', () => ({ useAuth: vi.fn() }));
 vi.mock('@/hooks/useUserRole', () => ({ useUserRole: vi.fn() }));
 vi.mock('@/hooks/useFsrsSession', () => ({ useFsrsSession: vi.fn() }));
+vi.mock('@/hooks/usePredictedScore', () => ({ usePredictedScore: vi.fn() }));
 vi.mock('@/hooks/useSubscription', () => ({ useSubscription: vi.fn() }));
 vi.mock('@/services/stripeCheckout', () => ({ startStripeCheckout: vi.fn() }));
 vi.mock('@/atom/repository', () => ({ createAtomRepository: vi.fn(() => ({})) }));
@@ -21,6 +22,7 @@ import { VoicePage } from '@/pages/VoicePage';
 import { useAuth } from '@/contexts/AuthContext';
 import { useUserRole } from '@/hooks/useUserRole';
 import { useFsrsSession } from '@/hooks/useFsrsSession';
+import { usePredictedScore } from '@/hooks/usePredictedScore';
 import { useSubscription } from '@/hooks/useSubscription';
 import { isVoiceAvailable } from '@/voice/speech';
 
@@ -51,11 +53,22 @@ const baseSub = {
   refresh: vi.fn().mockResolvedValue(undefined),
 };
 
+const baseScore = {
+  status: 'ready' as const,
+  predictedScore: 0.5,
+  coverageRatio: 0.2,
+  atomCount: 5,
+  totalAtoms: 25,
+  errorMessage: null,
+  refresh: vi.fn().mockResolvedValue(undefined),
+};
+
 describe('<VoicePage />', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     (useUserRole as any).mockReturnValue({ isCreator: false });
     (useFsrsSession as any).mockReturnValue(baseSession);
+    (usePredictedScore as any).mockReturnValue(baseScore);
     (useSubscription as any).mockReturnValue(baseSub);
     (isVoiceAvailable as any).mockReturnValue(true);
   });
