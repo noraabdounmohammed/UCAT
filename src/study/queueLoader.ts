@@ -39,22 +39,27 @@ const VARIETY_SLOTS = 2;
  *
  *   2. FSRS-due rows from `user_atom_state` (spaced repetition).
  *
- *   3. If short, top up with brand-new approved atoms (any kind).
+ *   3. If short, top up with brand-new unseen atoms of any kind.
  *
- * Variety atoms returned as pristine UserAtomState rows; useFsrsSession seeds
- * them via the FSRS scheduler on first attempt.
+ * Variety + fresh atoms come back from the `next_unseen_atoms_for_user`
+ * Postgres RPC, which does the user_atom_state anti-join server-side. No
+ * client-side excludeAtomIds list (was capped at 200, risked overwriting
+ * existing FSRS state for power users) and no listSeenAtomIds round-trip
+ * (was unbounded).
+ *
+ * Variety + fresh atoms returned as pristine UserAtomState rows;
+ * useFsrsSession seeds them via the FSRS scheduler on first attempt.
  */
 export async function buildStudyQueue(deps: BuildQueueDeps): Promise<UserAtomState[]> {
-  // Phase 1: variety reserve — fetch up to VARIETY_SLOTS atoms of newer kinds
-  // (calc / emq / case-bound) the user has not seen. Hidden behind a feature
-  // floor so we don't over-rotate variety on tiny sessions.
+  // Phase 1: variety reserve.
   const varietyTarget = Math.min(VARIETY_SLOTS, Math.max(0, deps.maxAtoms - 1));
-  const seenAtomIds = await deps.userStateRepo.listSeenAtomIds(deps.userId);
-  const varietyPool = await deps.atomRepo.listVarietyForExam(deps.exam, {
-    includeUnreviewedAiDrafts: deps.includeUnreviewed,
-    excludeAtomIds: seenAtomIds,
-    limit: varietyTarget,
-  });
+  const varietyPool = varietyTarget > 0
+    ? await deps.atomRepo.listVarietyForExam({
+        exam: deps.exam,
+        includeUnreviewedAiDrafts: deps.includeUnreviewed,
+        limit: varietyTarget,
+      })
+    : [];
   const varietyPristine: UserAtomState[] = varietyPool.map(a =>
     atomToPristineState(deps.userId, a, deps.asOf),
   );
@@ -65,28 +70,28 @@ export async function buildStudyQueue(deps: BuildQueueDeps): Promise<UserAtomSta
     ? await deps.userStateRepo.listDueForUser(deps.userId, deps.asOf, dueBudget)
     : [];
 
-  // Phase 3: top up with any brand-new atoms if we're still short.
-  const usedIds = new Set([
-    ...varietyPristine.map(v => v.atomId),
-    ...dueRows.map(d => d.atomId),
-    ...seenAtomIds,
-  ]);
+  // Phase 3: top up with any brand-new atoms if we're still short. Server
+  // already excludes anything in user_atom_state via the RPC's NOT EXISTS,
+  // so dueRows can't appear here. Variety atoms haven't been written to
+  // user_atom_state yet (they're fresh-pristine), so the fresh RPC may
+  // include them — we dedupe client-side at the end.
   const remainingSlots = deps.maxAtoms - varietyPristine.length - dueRows.length;
   const fresh = remainingSlots > 0
-    ? await deps.atomRepo.listAvailableForExam(deps.exam, {
+    ? await deps.atomRepo.listFreshUnseenForExam({
+        exam: deps.exam,
         includeUnreviewedAiDrafts: deps.includeUnreviewed,
-        excludeAtomIds: Array.from(usedIds),
-        limit: remainingSlots,
+        // Over-fetch a small buffer to absorb any variety-overlap dedupe.
+        limit: remainingSlots + varietyPristine.length,
       })
     : [];
-  const freshPristine: UserAtomState[] = fresh.map(a =>
-    atomToPristineState(deps.userId, a, deps.asOf),
-  );
+  const varietyIds = new Set(varietyPristine.map(v => v.atomId));
+  const freshPristine: UserAtomState[] = fresh
+    .filter(a => !varietyIds.has(a.id))
+    .slice(0, remainingSlots)
+    .map(a => atomToPristineState(deps.userId, a, deps.asOf));
 
-  // Interleave variety atoms throughout — first slot variety, then due, then
-  // alternate. This way the user encounters a calc/EMQ/case early in the
-  // session, not buried at the end. Final slice enforces maxAtoms as a hard
-  // cap regardless of how generous the repo was with `limit`.
+  // Interleave variety atoms across the queue — early-positioned, not buried
+  // at the end. Final slice enforces maxAtoms as a defensive hard cap.
   return interleaveVariety([...dueRows, ...freshPristine], varietyPristine)
     .slice(0, deps.maxAtoms);
 }

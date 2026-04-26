@@ -97,12 +97,20 @@ export interface AtomRepository {
   countAvailableForExam(exam: Exam, opts?: ListAvailableOptions): Promise<number>;
   countApprovedByExam(exam: Exam): Promise<number>;
   /**
-   * Pulls atoms of the "newer kinds" (calc / EMQ) OR atoms attached to a
-   * clinical case — the content the user most needs to see if they have a
-   * long FSRS-due backlog of older SBA atoms. `buildStudyQueue` reserves a
-   * couple of slots per session for this so variety isn't starved.
+   * Pulls **unseen** atoms of the "newer kinds" (calc / EMQ) OR atoms
+   * attached to a clinical case. Server-side anti-join via the
+   * `next_unseen_atoms_for_user` RPC — no client-side excludeAtomIds list,
+   * no listSeenAtomIds round-trip. Used by buildStudyQueue to inject
+   * variety so it isn't starved when the user has a long FSRS-due backlog.
    */
-  listVarietyForExam(exam: Exam, opts?: ListAvailableOptions): Promise<Atom[]>;
+  listVarietyForExam(opts: { exam: Exam; includeUnreviewedAiDrafts: boolean; limit: number }): Promise<Atom[]>;
+  /**
+   * Pulls **unseen** atoms of any kind. Same RPC backend as
+   * `listVarietyForExam`, just with the variety-only filter off. Used by
+   * buildStudyQueue to top up the session with brand-new content when due
+   * + variety phases are short.
+   */
+  listFreshUnseenForExam(opts: { exam: Exam; includeUnreviewedAiDrafts: boolean; limit: number }): Promise<Atom[]>;
 }
 
 export function createAtomRepository(supabase: SupabaseClient): AtomRepository {
@@ -209,38 +217,24 @@ export function createAtomRepository(supabase: SupabaseClient): AtomRepository {
       return count ?? 0;
     },
 
-    async listVarietyForExam(exam, opts = {}) {
-      // Pull "newer kind" content (calc / emq / case-bound), excluding atoms
-      // the user has already seen. Same availability rules as
-      // listAvailableForExam — doctor_seed pending counted always, ai-draft
-      // pending only with toggle.
-      //
-      // Note: we apply the kind/case filter as a separate .or(); PostgREST
-      // chains multiple .or() calls as AND between them, which is what we want
-      // (kind filter AND availability filter).
-      let q = supabase
-        .from('atoms')
-        .select('*')
-        .eq('exam', exam)
-        .or('question_kind.eq.calc,question_kind.eq.emq,case_id.not.is.null')
-        .or(buildAvailabilityFilter(opts.includeUnreviewedAiDrafts));
+    async listVarietyForExam({ exam, includeUnreviewedAiDrafts, limit }) {
+      const { data, error } = await supabase.rpc('next_unseen_atoms_for_user', {
+        p_exam: exam,
+        p_include_unreviewed: includeUnreviewedAiDrafts,
+        p_variety_only: true,
+        p_limit: limit,
+      });
+      if (error) throw error;
+      return (data ?? []).map(rowToAtom);
+    },
 
-      if (opts.excludeAtomIds && opts.excludeAtomIds.length > 0) {
-        // PostgREST chokes on very long IN lists; cap the exclusion list at
-        // 200 to keep the URL under typical limits. Worst case the user gets
-        // a stale repeat — acceptable for variety injection.
-        const trimmed = opts.excludeAtomIds.slice(0, 200);
-        const list = `(${trimmed.map(id => `"${id}"`).join(',')})`;
-        q = q.not('id', 'in', list);
-      }
-
-      q = q
-        .order('high_yield', { ascending: false })
-        .order('created_at', { ascending: false });
-
-      if (opts.limit) q = q.limit(opts.limit);
-
-      const { data, error } = await q;
+    async listFreshUnseenForExam({ exam, includeUnreviewedAiDrafts, limit }) {
+      const { data, error } = await supabase.rpc('next_unseen_atoms_for_user', {
+        p_exam: exam,
+        p_include_unreviewed: includeUnreviewedAiDrafts,
+        p_variety_only: false,
+        p_limit: limit,
+      });
       if (error) throw error;
       return (data ?? []).map(rowToAtom);
     },
