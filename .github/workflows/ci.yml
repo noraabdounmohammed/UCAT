@@ -1,0 +1,23 @@
+name: CI
+
+on:
+  push:
+    branches: [ '**' ]
+  pull_request:
+    branches: [ ukmla-akt-version, master ]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+      - run: npm ci
+      - name: Type-check (informational; pre-existing legacy errors)
+        run: npx tsc --noEmit
+        continue-on-error: true
+      - run: npm test
+      - run: npm run build

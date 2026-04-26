@@ -46,4 +46,21 @@ describe('<PaywallGate />', () => {
     await user.click(screen.getByRole('button', { name: /upgrade/i }));
     expect(onUpgrade).toHaveBeenCalledTimes(1);
   });
+
+  it('renders the crossed-target pitch with predicted score', () => {
+    render(
+      <PaywallGate
+        kind="crossed-target"
+        dailyQuestionsRemaining={5}
+        onUpgrade={vi.fn()}
+        predictedScore={0.73}
+      >
+        <div>study content</div>
+      </PaywallGate>
+    );
+    expect(screen.queryByText('study content')).not.toBeInTheDocument();
+    expect(screen.getByText(/nearly.*UKMLA-ready/i)).toBeInTheDocument();
+    expect(screen.getByText(/73%/)).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /upgrade/i })).toBeInTheDocument();
+  });
 });

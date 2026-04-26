@@ -56,14 +56,24 @@ export function MistakesPage() {
   }
 
   const onRatedSideEffect = () => {
-    subscription.incrementDailyCount();
+    subscription.incrementDailyCount().catch(() => {});
     score.refresh().catch(() => {});
   };
 
-  const paywallKind: 'allowed' | 'daily-limit' =
-    !subscription.loading && subscription.isAtLimit && !subscription.isPremium
-      ? 'daily-limit'
-      : 'allowed';
+  // See `StudyPage.tsx` for the priority rationale.
+  const paywallKind: 'allowed' | 'daily-limit' | 'crossed-target' = (() => {
+    if (subscription.loading) return 'allowed';
+    if (subscription.isAtLimit && !subscription.isPremium) return 'daily-limit';
+    if (
+      !subscription.isPremium &&
+      score.status === 'ready' &&
+      score.predictedScore >= 0.7 &&
+      score.atomCount >= 30
+    ) {
+      return 'crossed-target';
+    }
+    return 'allowed';
+  })();
 
   const handleUpgrade = () => {
     if (!user.id || !user.email) return;
@@ -82,6 +92,7 @@ export function MistakesPage() {
           kind={paywallKind}
           dailyQuestionsRemaining={subscription.dailyQuestionsRemaining}
           onUpgrade={handleUpgrade}
+          predictedScore={score.predictedScore}
         >
           <FsrsSessionView
             session={session}

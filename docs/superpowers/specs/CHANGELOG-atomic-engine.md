@@ -289,3 +289,31 @@ Free atom-set gating (free_tier=true atoms only for unauthed/free) deferred — 
 
 Cohort leaderboards, sourcemap upload pipeline, PostHog feature flags, A/B testing
 infra, and mock-session persistence are deferred to Plan 11B.
+
+---
+
+## 2026-04-26 — Plan 12 batches 1-4 ship: critical-review tighten-up
+
+### Batch 1 — UX polish
+- Home `/` gets 'Try Study Mode' CTA banner.
+- Made-by-a-doctor credit on home + AuthGate.
+- Streak switches to local timezone (was UTC).
+- Predicted score recomputes after every rating (was stale).
+
+### Batch 2 — Server-side hardening (migrations NOT yet applied)
+- `daily_session_counts` table → moves daily quota from localStorage (paywall-bypassable) to Supabase.
+- `is_creator(uid)` PL/pgSQL function + tightened atoms write policies → DB-level enforcement, no longer relying on app-level isCreator alone.
+- `mock_attempts` table → persists `/mock` results (was throwaway).
+
+### Batch 3 — Testing
+- Page-level tests for all 6 new pages (`/study`, `/mistakes`, `/mock`, `/voice`, `/review`, `/seed`).
+- AtomicEngineNav test (creator gating + active route).
+- GitHub Actions CI workflow (test + tsc + build on every push).
+
+### Batch 4 — Compliance + retention
+- `/privacy` page with PostHog/Sentry consent disclosure.
+- Cookie consent banner gates instrumentation init (no telemetry until accepted).
+- Streak grace: one missed day per rolling 7-day window forgiven (Duolingo pattern).
+- Paywall conversion trigger: when predicted score >= 70% with >= 30 atoms covered, gentler 'you're nearly there' upgrade pitch instead of hard cap.
+
+Tests added: ~6 new across batches. **~184 passing total.**

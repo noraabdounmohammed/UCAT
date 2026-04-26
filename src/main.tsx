@@ -7,11 +7,26 @@ import { AuthProvider } from './contexts/AuthContext';
 import App from './App.tsx';
 import { initSentry } from '@/instrumentation/sentry';
 import { initPosthog } from '@/instrumentation/posthog';
+import { hasConsented } from '@/instrumentation/consent';
+import { CookieConsent } from '@/components/consent/CookieConsent';
 import './index.css';
 
-// Fire-and-forget: both no-op when their env vars are unset.
-initSentry().catch(() => {});
-initPosthog().catch(() => {});
+// Telemetry is consent-gated. initSentry / initPosthog already no-op when
+// their env vars are missing, so this is two layers of opt-in: env + consent.
+function initTelemetryIfConsented() {
+  if (!hasConsented()) return;
+  initSentry().catch(() => {});
+  initPosthog().catch(() => {});
+}
+initTelemetryIfConsented();
+
+// Re-fire init when the user accepts the banner mid-session.
+if (typeof window !== 'undefined') {
+  window.addEventListener('cookie-consent-change', (e) => {
+    const detail = (e as CustomEvent).detail;
+    if (detail === 'accepted') initTelemetryIfConsented();
+  });
+}
 
 console.log('✅ All imports loaded successfully');
 
@@ -58,6 +73,7 @@ createRoot(document.getElementById('root')!).render(
         <BrowserRouter>
           <AuthProvider>
             <App />
+            <CookieConsent />
           </AuthProvider>
         </BrowserRouter>
       </MockSessionContextProvider>
@@ -65,6 +81,7 @@ createRoot(document.getElementById('root')!).render(
       <BrowserRouter>
         <AuthProvider>
           <App />
+          <CookieConsent />
         </AuthProvider>
       </BrowserRouter>
     )}
