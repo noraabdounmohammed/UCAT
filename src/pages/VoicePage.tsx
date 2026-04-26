@@ -77,9 +77,9 @@ export function VoicePage() {
   if (!voiceOk) {
     return (
       <MainLayout currentPage="voice">
-        <div className="max-w-md mx-auto py-12 px-4 text-center text-stone-700">
-          <h1 className="text-xl font-semibold mb-2">Voice mode unavailable</h1>
-          <p className="text-sm text-stone-600">
+        <div className="max-w-md mx-auto py-12 px-4 text-center text-stone-700 dark:text-stone-300">
+          <h1 className="text-xl font-semibold mb-2 text-stone-900 dark:text-stone-100">Voice mode unavailable</h1>
+          <p className="text-sm text-stone-600 dark:text-stone-400">
             Your browser doesn't support the Web Speech API. Try Chrome on desktop or Android.
           </p>
         </div>
@@ -135,15 +135,15 @@ export function VoicePage() {
           onUpgrade={handleUpgrade}
           predictedScore={score.predictedScore}
         >
-          {session.status === 'loading' && <div className="text-stone-500 text-center py-12">Loading...</div>}
+          {session.status === 'loading' && <div className="text-stone-500 dark:text-stone-400 text-center py-12">Loading...</div>}
           {session.status === 'empty' && (
-            <div className="text-stone-700 text-center py-12">
-              <div className="text-2xl font-medium mb-2">All caught up.</div>
-              <p className="text-sm text-stone-500">No questions due right now.</p>
+            <div className="text-stone-700 dark:text-stone-300 text-center py-12">
+              <div className="text-2xl font-medium mb-2 text-stone-900 dark:text-stone-100">All caught up.</div>
+              <p className="text-sm text-stone-500 dark:text-stone-400">No questions due right now.</p>
             </div>
           )}
           {session.status === 'error' && (
-            <div className="text-red-700 text-center py-12">{session.errorMessage}</div>
+            <div className="text-red-700 dark:text-red-400 text-center py-12">{session.errorMessage}</div>
           )}
           {session.status === 'summary' && session.summary && (
             <div className="text-center py-12 text-stone-800 dark:text-stone-200">

@@ -25,6 +25,7 @@ function Harness() {
       listAvailableForExam: async () => atoms,
       listFreeTier: vi.fn(),
       getById: vi.fn(),
+      getByIds: vi.fn(),
       countApprovedByExam: vi.fn(),
     } as any,
     exam: 'UKMLA',

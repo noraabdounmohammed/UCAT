@@ -44,6 +44,7 @@ describe('useFsrsSession with custom loadQueue (mistake mode)', () => {
       listApprovedByExam: vi.fn(),
       listFreeTier: vi.fn(),
       getById: vi.fn(async (id: string) => atoms.find(a => a.id === id) ?? null),
+      getByIds: vi.fn(async (ids: string[]) => atoms.filter(a => ids.includes(a.id))),
     };
 
     const { result } = renderHook(() =>
