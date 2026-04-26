@@ -17,14 +17,19 @@ The Atomic Engine ships in numbered plans. Each has a spec doc and an implementa
 | 11 | Instrumentation | [2026-04-25-plan-11-instrumentation.md](./2026-04-25-plan-11-instrumentation.md) | Shipped | Sentry + PostHog + NPS prompt |
 | 12 | Tighten-up | [2026-04-25-plan-12-tighten-up.md](./2026-04-25-plan-12-tighten-up.md) | In flight | Critical-review fixes (5 batches) |
 
+## Planned (doc written, ready for execution)
+
+| # | Title | Plan doc | What it does |
+|---|---|---|---|
+| 14 | Whisper voice atom seeding | [2026-04-25-plan-14-whisper-voice-seeding.md](./2026-04-25-plan-14-whisper-voice-seeding.md) | `/seed/voice` — Nora speaks an atom seed, Whisper transcribes, DeepSeek structures, row drops into review queue |
+| 15 | Image stems via Cloudflare R2 | [2026-04-25-plan-15-image-stems-r2.md](./2026-04-25-plan-15-image-stems-r2.md) | Image upload in `<AtomSeedForm>` via R2 presigned URLs; renders in `<AtomRenderer>` + `<MockQuestion>` |
+| 16 | Native iOS / Android via Capacitor | [2026-04-25-plan-16-capacitor-native-builds.md](./2026-04-25-plan-16-capacitor-native-builds.md) | Ship the PWA as native apps; mostly operator runbook for Xcode + Play Console flow |
+
 ## Deferred (not yet planned)
 
 | Title | Why |
 |---|---|
 | Plan 13 — AI Variant Generation (RAG) | Significant infra; needs careful citation discipline |
-| Plan 14 — Whisper voice atom seeding | Helps Nora; needs Whisper API + UI |
-| Plan 15 — Image stem upload (Cloudflare R2) | UI + storage + admin tooling |
-| Plan 16 — Native iOS / Android (Capacitor) | App store flows |
 | Plan 17 — Cohort leaderboards | Needs a real student cohort to be meaningful |
 | Plan 18 — Playwright E2E | Has been deferred twice; worth doing |
 
