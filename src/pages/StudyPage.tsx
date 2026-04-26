@@ -6,6 +6,7 @@ import { AuthGate } from '@/components/auth/AuthGate';
 import { FsrsSessionView } from '@/components/study/FsrsSessionView';
 import { PredictedScoreBadge } from '@/components/study/PredictedScoreBadge';
 import { StatsSummary } from '@/components/study/StatsSummary';
+import { TopicPrimer } from '@/components/study/TopicPrimer';
 import { PaywallGate } from '@/components/paywall/PaywallGate';
 import { NpsPrompt } from '@/components/nps/NpsPrompt';
 import { UnreviewedToggle } from '@/components/study/UnreviewedToggle';
@@ -108,6 +109,13 @@ export function StudyPage() {
             not noisy. The PredictedScoreBadge + opt-in toggle hide once a
             session starts (those ARE noisy and entry-screen-only). */}
         <StatsSummary userId={user.id} repo={userStateRepo} />
+        {/* Topic primer: read-before-drilling overview keyed off the
+            current question's top-level topic. Renders nothing if no
+            primer exists for the topic. */}
+        <TopicPrimer
+          supabase={supabase}
+          topicKey={session.currentAtom?.topicPath?.[0] ?? null}
+        />
         {session.status !== 'in_progress' && <PredictedScoreBadge {...score} />}
         {session.status !== 'in_progress' && (
           <UnreviewedToggle value={unreviewed.value} onChange={unreviewed.setValue} />

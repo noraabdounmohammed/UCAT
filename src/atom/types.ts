@@ -11,6 +11,9 @@ export type AtomSourceType =
 
 export type AtomStatus = 'draft' | 'pending_review' | 'approved' | 'rejected';
 
+/** UKMLA-style question formats. SBA is the default 4-option MCQ. */
+export type QuestionKind = 'sba' | 'cloze' | 'emq';
+
 /**
  * Verdict from the AI-side QA pass on AI-drafted atoms — populated by
  * `scripts/ai-review-atoms.ts`. `null` means the AI hasn't reviewed yet
@@ -59,6 +62,12 @@ export interface Atom {
   explanation?: string | null;
   explanationSource?: string | null;
   explanationGeneratedAt?: string | null;
+  /**
+   * Renderer hint — when set, overrides the default mix in QuestionRouter.
+   * Defaults to 'sba' DB-side; the in-app QuestionRouter rotates ~30%
+   * of unset atoms to cloze for variety.
+   */
+  questionKind?: QuestionKind;
 }
 
 export interface AtomVariant {

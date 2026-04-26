@@ -15,7 +15,8 @@
     "test:e2e": "playwright test",
     "seed:ukmla": "tsx scripts/generate-atoms-from-ukmla.ts",
     "review:ai": "tsx scripts/ai-review-atoms.ts",
-    "explain:ai": "tsx scripts/generate-explanations.ts"
+    "explain:ai": "tsx scripts/generate-explanations.ts",
+    "primers:ai": "tsx scripts/generate-topic-primers.ts"
   },
   "dependencies": {
     "@capacitor/android": "^7.4.4",
