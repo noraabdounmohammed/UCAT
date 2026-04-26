@@ -22,7 +22,9 @@ describe('useStreak', () => {
     expect(result.current.streakDays).toBe(0);
   });
 
-  it('computes 3 for three consecutive days ending today', async () => {
+  it('computes 4 for three consecutive days ending today (3 reviews + 1 grace day)', async () => {
+    // computeStreak() defaults to graceDaysPerWeek=1 (Duolingo grace), so the
+    // walk-back forgives one missing day before the oldest review.
     const dates = [
       new Date('2026-04-23T08:00:00Z'),
       new Date('2026-04-24T08:00:00Z'),
@@ -32,7 +34,7 @@ describe('useStreak', () => {
     const { result } = renderHook(() => useStreak({ userId: 'u1', repo: repo as any, now: () => NOW }));
 
     await waitFor(() => expect(result.current.status).toBe('ready'));
-    expect(result.current.streakDays).toBe(3);
+    expect(result.current.streakDays).toBe(4);
   });
 
   it('error path: status=error, streakDays=0', async () => {
