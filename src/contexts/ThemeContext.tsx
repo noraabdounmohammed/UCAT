@@ -28,10 +28,10 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
     if (theme === 'dark') {
       root.classList.add('dark');
       body.classList.add('dark');
-      // Force iOS to recognize dark mode
+      // Force iOS to recognize dark mode — warm Stone palette to match brand
       root.style.colorScheme = 'dark';
-      body.style.backgroundColor = '#111827';
-      body.style.color = '#f9fafb';
+      body.style.backgroundColor = '#1c1917'; // stone-900
+      body.style.color = '#fafaf9'; // stone-50
     } else {
       root.classList.remove('dark');
       body.classList.remove('dark');
