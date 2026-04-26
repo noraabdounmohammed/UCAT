@@ -56,6 +56,7 @@ function makeRepos({
     listFreeTier: vi.fn(),
     listAvailableForExam: vi.fn().mockResolvedValue(available),
     listVarietyForExam: vi.fn().mockResolvedValue(variety),
+    listFreshUnseenForExam: vi.fn().mockResolvedValue(available),
     getById: vi.fn(),
     getByIds: vi.fn(),
     countApprovedByExam: vi.fn(),
@@ -119,7 +120,7 @@ describe('buildStudyQueue', () => {
     expect(ids).toContain('a2');
   });
 
-  it('passes includeUnreviewed through to both variety and top-up calls', async () => {
+  it('passes includeUnreviewed through to both variety and fresh-unseen calls', async () => {
     const { userStateRepo, atomRepo } = makeRepos({ due: [], available: [], variety: [] });
 
     await buildStudyQueue({
@@ -128,12 +129,10 @@ describe('buildStudyQueue', () => {
     });
 
     expect(atomRepo.listVarietyForExam).toHaveBeenCalledWith(
-      'UKMLA',
-      expect.objectContaining({ includeUnreviewedAiDrafts: true }),
+      expect.objectContaining({ exam: 'UKMLA', includeUnreviewedAiDrafts: true }),
     );
-    expect(atomRepo.listAvailableForExam).toHaveBeenCalledWith(
-      'UKMLA',
-      expect.objectContaining({ includeUnreviewedAiDrafts: true }),
+    expect(atomRepo.listFreshUnseenForExam).toHaveBeenCalledWith(
+      expect.objectContaining({ exam: 'UKMLA', includeUnreviewedAiDrafts: true }),
     );
   });
 
