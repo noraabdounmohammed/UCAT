@@ -14,6 +14,9 @@ vi.mock('@/atom/repository', () => ({ createAtomRepository: vi.fn(() => ({})) })
 vi.mock('@/atom/userStateRepository', () => ({
   createUserStateRepository: vi.fn(() => ({
     listMistakeAtomsForUser: vi.fn().mockResolvedValue([]),
+    // <StatsSummary /> calls this; harmless empty list — the component
+    // returns null when the user has no atoms answered yet.
+    listAllForUser: vi.fn().mockResolvedValue([]),
   })),
 }));
 
