@@ -2,6 +2,25 @@ import type { SupabaseClient } from '@supabase/supabase-js';
 import type { Atom, Exam } from './types';
 
 /**
+ * Build the PostgREST .or() filter string defining what counts as
+ * "available to study". Always includes approved + doctor_seed pending,
+ * optionally adds ai-draft pending if the user has opted in.
+ *
+ * Centralised so listAvailableForExam, listVarietyForExam, and
+ * countAvailableForExam stay in lockstep.
+ */
+function buildAvailabilityFilter(includeUnreviewedAiDrafts?: boolean): string {
+  const base = [
+    'status.eq.approved',
+    'and(status.eq.pending_review,source_type.eq.doctor_seed)',
+  ];
+  if (includeUnreviewedAiDrafts) {
+    base.push('and(status.eq.pending_review,source_type.eq.ai-draft)');
+  }
+  return base.join(',');
+}
+
+/**
  * Maps a snake_case Supabase row to the camelCase Atom domain type.
  * Tolerates rows already in camelCase (e.g. test fixtures) by falling back.
  */
@@ -101,19 +120,19 @@ export function createAtomRepository(supabase: SupabaseClient): AtomRepository {
     },
 
     async listAvailableForExam(exam, opts = {}) {
-      // We can't express "(status='approved') OR (status='pending_review' AND
-      // source_type='ai-draft')" in a single PostgREST `.eq` chain, so we use
-      // a string-form `.or(...)` for the predicate.
+      // What counts as "available":
+      //   - status='approved'                                      (always)
+      //   - status='pending_review' AND source_type='doctor_seed'  (always —
+      //     trusted clinician/NICE-cited content, just awaiting formal
+      //     reviewer sign-off; same trust posture as approved)
+      //   - status='pending_review' AND source_type='ai-draft'      (only if
+      //     the user opts in via the unreviewed toggle, with disclaimer)
       let q = supabase
         .from('atoms')
         .select('*')
         .eq('exam', exam);
 
-      if (opts.includeUnreviewedAiDrafts) {
-        q = q.or('status.eq.approved,and(status.eq.pending_review,source_type.eq.ai-draft)');
-      } else {
-        q = q.eq('status', 'approved');
-      }
+      q = q.or(buildAvailabilityFilter(opts.includeUnreviewedAiDrafts));
 
       if (opts.excludeAtomIds && opts.excludeAtomIds.length > 0) {
         // Postgrest `not.in` syntax: `(id1,id2,...)`.
@@ -182,13 +201,8 @@ export function createAtomRepository(supabase: SupabaseClient): AtomRepository {
       let q = supabase
         .from('atoms')
         .select('*', { count: 'exact', head: true })
-        .eq('exam', exam);
-
-      if (opts.includeUnreviewedAiDrafts) {
-        q = q.or('status.eq.approved,and(status.eq.pending_review,source_type.eq.ai-draft)');
-      } else {
-        q = q.eq('status', 'approved');
-      }
+        .eq('exam', exam)
+        .or(buildAvailabilityFilter(opts.includeUnreviewedAiDrafts));
 
       const { count, error } = await q;
       if (error) throw error;
@@ -197,19 +211,19 @@ export function createAtomRepository(supabase: SupabaseClient): AtomRepository {
 
     async listVarietyForExam(exam, opts = {}) {
       // Pull "newer kind" content (calc / emq / case-bound), excluding atoms
-      // the user has already seen. Approved by default; pending_review +
-      // ai-draft when includeUnreviewedAiDrafts is true.
+      // the user has already seen. Same availability rules as
+      // listAvailableForExam — doctor_seed pending counted always, ai-draft
+      // pending only with toggle.
+      //
+      // Note: we apply the kind/case filter as a separate .or(); PostgREST
+      // chains multiple .or() calls as AND between them, which is what we want
+      // (kind filter AND availability filter).
       let q = supabase
         .from('atoms')
         .select('*')
         .eq('exam', exam)
-        .or('question_kind.eq.calc,question_kind.eq.emq,case_id.not.is.null');
-
-      if (opts.includeUnreviewedAiDrafts) {
-        q = q.or('status.eq.approved,and(status.eq.pending_review,source_type.eq.ai-draft)');
-      } else {
-        q = q.eq('status', 'approved');
-      }
+        .or('question_kind.eq.calc,question_kind.eq.emq,case_id.not.is.null')
+        .or(buildAvailabilityFilter(opts.includeUnreviewedAiDrafts));
 
       if (opts.excludeAtomIds && opts.excludeAtomIds.length > 0) {
         // PostgREST chokes on very long IN lists; cap the exclusion list at
