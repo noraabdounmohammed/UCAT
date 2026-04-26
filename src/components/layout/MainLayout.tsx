@@ -5,7 +5,7 @@ import { AtomicEngineNav } from './AtomicEngineNav';
 
 interface MainLayoutProps {
   children: React.ReactNode;
-  currentPage: 'dashboard' | 'mock' | 'dynamic-demo' | 'explanation-test' | 'concise-demo' | 'concept-practice' | 'concept-practice-old' | 'concept-bulk-upload' | 'curriculum-dashboard' | 'study' | 'review' | 'seed' | 'mistakes' | 'voice';
+  currentPage: 'dashboard' | 'mock' | 'dynamic-demo' | 'explanation-test' | 'concise-demo' | 'concept-practice' | 'concept-practice-old' | 'concept-bulk-upload' | 'curriculum-dashboard' | 'study' | 'review' | 'seed' | 'mistakes' | 'voice' | 'leaderboard';
   isPracticeSession?: boolean;
   /** Hide the Atomic Engine top nav (e.g. for full-screen practice sessions). */
   hideNav?: boolean;

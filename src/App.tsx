@@ -22,6 +22,7 @@ const MistakesPage = lazy(() => import('@/pages/MistakesPage').then(m => ({ defa
 const VoicePage = lazy(() => import('@/pages/VoicePage').then(m => ({ default: m.VoicePage })));
 const MockPage = lazy(() => import('@/pages/MockPage').then(m => ({ default: m.MockPage })));
 const PrivacyPolicy = lazy(() => import('@/pages/PrivacyPolicy').then(m => ({ default: m.PrivacyPolicy })));
+const LeaderboardPage = lazy(() => import('@/pages/LeaderboardPage').then(m => ({ default: m.LeaderboardPage })));
 
 // Wrapper to extract curriculumId from URL params
 const CurriculumRoute = () => {
@@ -115,6 +116,13 @@ function App() {
             <Route path="/privacy" element={
               <Suspense fallback={<BlankFallback />}>
                 <PrivacyPolicy />
+              </Suspense>
+            } />
+
+            {/* Cohort leaderboard — lazy, top-N studiers from your med school this week */}
+            <Route path="/leaderboard" element={
+              <Suspense fallback={<BlankFallback />}>
+                <LeaderboardPage />
               </Suspense>
             } />
 

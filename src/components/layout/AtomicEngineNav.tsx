@@ -13,6 +13,7 @@ const PUBLIC_ITEMS: NavItem[] = [
   { to: '/mistakes', label: 'Mistakes' },
   { to: '/mock', label: 'Mock' },
   { to: '/voice', label: 'Voice' },
+  { to: '/leaderboard', label: 'Leaderboard' },
 ];
 
 const CREATOR_ITEMS: NavItem[] = [
