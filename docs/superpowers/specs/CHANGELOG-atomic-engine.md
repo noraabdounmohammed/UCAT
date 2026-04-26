@@ -317,3 +317,14 @@ infra, and mock-session persistence are deferred to Plan 11B.
 - Paywall conversion trigger: when predicted score >= 70% with >= 30 atoms covered, gentler 'you're nearly there' upgrade pitch instead of hard cap.
 
 Tests added: ~6 new across batches. **~184 passing total.**
+
+---
+
+## 2026-04-26 — Plan 17 ships: cohort leaderboards
+
+- New `/leaderboard` route showing top 10 studiers in user's chosen med school cohort, last 7 days.
+- New `<CohortSelectModal />` for first-time users to set `cohort_school` + `display_name`.
+- Schema: `profiles.cohort_school` + `profiles.display_name`, `cohort_weekly_leaderboard` view (security_invoker=false), `my_cohort()` function.
+- View aggregates `review_events` per (cohort, user) — keeps personal events private via RLS while allowing aggregate visibility within a cohort.
+- Tests: 20 new (5 repo + 4 hook + 4 modal + 3 table + 4 page tests). 204 total.
+- Migration NOT yet applied — handoff via Supabase-MCP.

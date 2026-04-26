@@ -25,6 +25,7 @@ describe('<AtomicEngineNav />', () => {
     expect(screen.getByRole('link', { name: 'Mistakes' })).toBeInTheDocument();
     expect(screen.getByRole('link', { name: 'Mock' })).toBeInTheDocument();
     expect(screen.getByRole('link', { name: 'Voice' })).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'Leaderboard' })).toBeInTheDocument();
     expect(screen.queryByRole('link', { name: 'Review' })).not.toBeInTheDocument();
     expect(screen.queryByRole('link', { name: 'Seed' })).not.toBeInTheDocument();
   });
