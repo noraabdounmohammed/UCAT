@@ -34,6 +34,7 @@ export function FsrsSessionView({
       <SessionSummary
         totalAtoms={session.summary.totalAtoms}
         ratings={session.summary.ratings}
+        rated={session.summary.rated}
         streakDays={streakDays}
       />
     );
