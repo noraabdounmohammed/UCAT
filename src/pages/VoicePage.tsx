@@ -55,6 +55,7 @@ export function VoicePage() {
     exam: 'UKMLA',
     atomRepo,
     userStateRepo,
+    includeUnreviewed: unreviewed.value,
   });
 
   // One-shot mount track — separate from session_started since voice has different cost/UX profile.

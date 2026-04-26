@@ -64,6 +64,13 @@ export interface AtomRepository {
    * `useFsrsSession` to hydrate the queue in one request instead of N.
    */
   getByIds(ids: string[]): Promise<Atom[]>;
+  /**
+   * HEAD-only count of atoms reachable for the user, mirroring the same
+   * `includeUnreviewedAiDrafts` filter as `listAvailableForExam`. Used by
+   * `usePredictedScore` so the "covered / total" denominator reflects the
+   * actual pool the user is drilling — not just the approved subset.
+   */
+  countAvailableForExam(exam: Exam, opts?: ListAvailableOptions): Promise<number>;
   countApprovedByExam(exam: Exam): Promise<number>;
 }
 
@@ -155,6 +162,23 @@ export function createAtomRepository(supabase: SupabaseClient): AtomRepository {
         .select('*', { count: 'exact', head: true })
         .eq('exam', exam)
         .eq('status', 'approved');
+      if (error) throw error;
+      return count ?? 0;
+    },
+
+    async countAvailableForExam(exam, opts = {}) {
+      let q = supabase
+        .from('atoms')
+        .select('*', { count: 'exact', head: true })
+        .eq('exam', exam);
+
+      if (opts.includeUnreviewedAiDrafts) {
+        q = q.or('status.eq.approved,and(status.eq.pending_review,source_type.eq.ai-draft)');
+      } else {
+        q = q.eq('status', 'approved');
+      }
+
+      const { count, error } = await q;
       if (error) throw error;
       return count ?? 0;
     },

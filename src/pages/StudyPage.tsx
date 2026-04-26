@@ -50,6 +50,7 @@ export function StudyPage() {
     exam: 'UKMLA',
     atomRepo,
     userStateRepo,
+    includeUnreviewed: unreviewed.value,
   });
 
   const streak = useStreak({ userId: user?.id ?? '', repo: userStateRepo });
