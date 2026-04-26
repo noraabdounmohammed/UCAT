@@ -102,8 +102,13 @@ export function StudyPage() {
   return (
     <MainLayout currentPage="study">
       <div className="max-w-md mx-auto py-6 px-4 space-y-4">
-        <PredictedScoreBadge {...score} />
-        <UnreviewedToggle value={unreviewed.value} onChange={unreviewed.setValue} />
+        {/* Hide the predicted-score badge + opt-in toggle once a session has
+            actually started — they're an entry-screen affordance, not session
+            chrome. The user found it noisy mid-question. */}
+        {session.status !== 'in_progress' && <PredictedScoreBadge {...score} />}
+        {session.status !== 'in_progress' && (
+          <UnreviewedToggle value={unreviewed.value} onChange={unreviewed.setValue} />
+        )}
         <PaywallGate
           kind={paywallKind}
           dailyQuestionsRemaining={subscription.dailyQuestionsRemaining}

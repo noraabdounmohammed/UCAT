@@ -75,11 +75,17 @@ export function AuthForm({ onSuccess }: AuthFormProps = {}) {
     try {
       if (mode === 'signup') {
         const signUpData = data as SignUpData;
+        // Always send confirmation links to the canonical production domain.
+        // The previous `window.location.origin` value was sending users to
+        // the legacy `medicu-app.netlify.app` subdomain when they signed up
+        // there (and Supabase's Site URL config fallback only kicks in when
+        // emailRedirectTo isn't in the Redirect-URLs allow list).
+        const SITE_URL = 'https://studyedit.com';
         const { error: signUpError, data: authData } = await supabase.auth.signUp({
           email: signUpData.email,
           password: signUpData.password,
           options: {
-            emailRedirectTo: window.location.origin,
+            emailRedirectTo: SITE_URL,
             data: {
               first_name: signUpData.firstName,
               marketing_consent: true,
@@ -266,7 +272,7 @@ export function AuthForm({ onSuccess }: AuthFormProps = {}) {
                       }
                       try {
                         const { error } = await supabase.auth.resetPasswordForEmail(email, {
-                          redirectTo: `${window.location.origin}/reset-password`,
+                          redirectTo: 'https://studyedit.com/reset-password',
                         });
                         if (error) throw error;
                         alert('Password reset email sent! Check your inbox.');

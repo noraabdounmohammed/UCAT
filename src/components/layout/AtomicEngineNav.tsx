@@ -1,5 +1,6 @@
 import { NavLink } from 'react-router-dom';
 import { useUserRole } from '@/hooks/useUserRole';
+import { ThemeToggle } from './ThemeToggle';
 
 interface NavItem {
   to: string;
@@ -35,7 +36,8 @@ export function AtomicEngineNav() {
       aria-label="Atomic Engine"
       className="sticky top-0 z-40 bg-white dark:bg-stone-950 border-b border-stone-200 dark:border-stone-800"
     >
-      <ul className="max-w-3xl mx-auto flex justify-center gap-1 px-3 py-2 overflow-x-auto scrollbar-hide">
+      <div className="max-w-3xl mx-auto flex items-center justify-between gap-2 px-3 py-2">
+      <ul className="flex justify-center gap-1 overflow-x-auto scrollbar-hide flex-1 min-w-0">
         <li>
           <NavLink
             to="/"
@@ -68,6 +70,8 @@ export function AtomicEngineNav() {
           </li>
         ))}
       </ul>
+      <ThemeToggle />
+      </div>
     </nav>
   );
 }

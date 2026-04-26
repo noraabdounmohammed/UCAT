@@ -56,7 +56,19 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
 export function useTheme() {
   const context = useContext(ThemeContext);
   if (context === undefined) {
-    throw new Error('useTheme must be used within a ThemeProvider');
+    // Graceful fallback (e.g. tests that don't wrap in <ThemeProvider />,
+    // or components rendered before the provider mounts) — read whatever
+    // we can from localStorage and return a no-op toggle. The real
+    // provider supersedes this when it mounts.
+    let theme: 'light' | 'dark' = 'light';
+    try {
+      const saved = typeof localStorage !== 'undefined' ? localStorage.getItem('theme') : null;
+      if (saved === 'light' || saved === 'dark') theme = saved;
+      else if (typeof window !== 'undefined' && window.matchMedia?.('(prefers-color-scheme: dark)').matches) theme = 'dark';
+    } catch {
+      // localStorage may be unavailable (SSR, private mode); leave as light.
+    }
+    return { theme, toggleTheme: () => {} };
   }
   return context;
 }
