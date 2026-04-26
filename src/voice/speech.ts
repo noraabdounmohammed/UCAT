@@ -150,9 +150,26 @@ function getBestVoice(lang: string): Promise<SpeechSynthesisVoice | null> {
  */
 let serverTtsAvailable: boolean | null = null;
 
+/**
+ * Singleton ref to the in-flight server-TTS audio element so we can stop
+ * it when speak() is called for a new question. Without this, advancing
+ * questions in voice mode caused old + new audio to overlap.
+ */
+let currentServerAudio: HTMLAudioElement | null = null;
+
 async function trySpeakViaServer(text: string, onEnd?: () => void): Promise<boolean> {
   if (typeof window === 'undefined') return false;
   if (serverTtsAvailable === false) return false;
+
+  // Stop any previous server-TTS audio before kicking a new one.
+  if (currentServerAudio) {
+    try {
+      currentServerAudio.pause();
+      currentServerAudio.src = '';
+    } catch { /* swallow */ }
+    currentServerAudio = null;
+  }
+
   try {
     const r = await fetch('/.netlify/functions/tts', {
       method: 'POST',
@@ -167,6 +184,7 @@ async function trySpeakViaServer(text: string, onEnd?: () => void): Promise<bool
     serverTtsAvailable = true;
     const buf = await r.arrayBuffer();
     const audio = new Audio(URL.createObjectURL(new Blob([buf], { type: 'audio/mpeg' })));
+    currentServerAudio = audio;
     if (onEnd) audio.addEventListener('ended', () => onEnd(), { once: true });
     await audio.play();
     return true;
@@ -203,6 +221,11 @@ function speakViaSystem({ text, lang = 'en-GB', rate = 0.95, pitch = 1, onEnd }:
     onEnd?.();
     return;
   }
+
+  // Cancel any in-flight utterance — without this, advancing to the next
+  // question while the previous one is still being read causes the spoken
+  // and displayed atoms to drift apart. (User-reported bug.)
+  try { window.speechSynthesis.cancel(); } catch { /* swallow */ }
 
   const dispatch = (voice: SpeechSynthesisVoice | null) => {
     const utter = new Utter(text);

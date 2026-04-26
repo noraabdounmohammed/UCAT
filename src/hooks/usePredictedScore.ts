@@ -11,6 +11,15 @@ export interface UsePredictedScoreDeps {
   now?: () => Date;
   atomRepo: AtomRepository;
   userStateRepo: UserStateRepository;
+  /**
+   * When true, the `totalAtoms` denominator widens to include unreviewed
+   * AI drafts (i.e. the same pool as the study queue when the user opts
+   * in). When false (default), only `status='approved'` atoms count —
+   * matching the previous behaviour. Without this, "5 / 5 questions" was
+   * misleading because the bank actually has 501 questions accessible
+   * via the toggle.
+   */
+  includeUnreviewed?: boolean;
 }
 
 type Status = 'loading' | 'ready' | 'error';
@@ -42,7 +51,9 @@ export function usePredictedScore(deps: UsePredictedScoreDeps): UsePredictedScor
   const load = useCallback(async (cancelledRef?: { cancelled: boolean }) => {
     try {
       const [total, states] = await Promise.all([
-        deps.atomRepo.countApprovedByExam(deps.exam),
+        deps.atomRepo.countAvailableForExam(deps.exam, {
+          includeUnreviewedAiDrafts: !!deps.includeUnreviewed,
+        }),
         deps.userStateRepo.listAllForUser(deps.userId),
       ]);
       if (cancelledRef?.cancelled) return;
@@ -61,7 +72,7 @@ export function usePredictedScore(deps: UsePredictedScoreDeps): UsePredictedScor
       }
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [deps.userId, deps.exam]);
+  }, [deps.userId, deps.exam, deps.includeUnreviewed]);
 
   const refresh = useCallback(() => load(), [load]);
 

@@ -427,29 +427,8 @@ export const LandingPage: React.FC = () => {
         )}
       </div>
 
-      {/* Search Bar */}
-      <div className="w-full px-8 pt-6 pb-4 flex-shrink-0">
-        <div className="max-w-xl mx-auto w-full">
-          <div className="relative group">
-            <input
-              type="text"
-              placeholder="search curriculums..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full px-16 py-3 bg-white/60 backdrop-blur-sm border border-stone-200/50 rounded-full text-stone-700 placeholder-stone-400 focus:outline-none focus:ring-2 focus:ring-stone-300/50 focus:bg-white/80 transition-all text-center font-['Manrope']"
-              style={{ fontWeight: 300 }}
-            />
-            {searchQuery && (
-              <button
-                onClick={() => setSearchQuery('')}
-                className="absolute right-4 top-1/2 -translate-y-1/2 text-stone-400 hover:text-stone-700 transition-colors text-sm font-['Manrope']"
-              >
-                Clear
-              </button>
-            )}
-          </div>
-        </div>
-      </div>
+      {/* Search bar removed (per user request — no curriculum search needed
+          on the home page now that /study is the primary entry point). */}
 
       {/* Footer */}
       <footer className="w-full px-8 py-4 flex justify-between items-center text-stone-400 text-[10px] uppercase tracking-widest flex-shrink-0 border-t border-stone-300/20 font-['Unbounded']" style={{ fontWeight: 500 }}>

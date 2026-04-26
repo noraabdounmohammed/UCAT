@@ -38,11 +38,15 @@ export function MistakesPage() {
     },
   });
 
+  // Mistakes page doesn't have a toggle — assume the user has opted into
+  // the full bank when they're drilling mistakes (else the denominator
+  // collapses to 5 and looks broken with the new 496-atom AI-draft pool).
   const score = usePredictedScore({
     userId: user?.id ?? '',
     exam: 'UKMLA',
     atomRepo,
     userStateRepo,
+    includeUnreviewed: true,
   });
 
   const streak = useStreak({ userId: user?.id ?? '', repo: userStateRepo });
