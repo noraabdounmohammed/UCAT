@@ -74,12 +74,29 @@ export function ReviewCard({
   }
 
   return (
-    <div className="bg-white border border-stone-200 rounded-2xl p-6 max-w-md mx-auto space-y-4">
-      <div className="text-xs text-stone-500 uppercase tracking-wide">
+    <div className="bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-800 rounded-2xl p-6 max-w-md mx-auto space-y-4">
+      <div className="text-xs text-stone-500 dark:text-stone-400 uppercase tracking-wide">
         {atom.topicPath.join(' › ')}
       </div>
-      <p className="text-sm text-stone-700 italic">{atom.claim}</p>
-      <h2 className="text-base font-medium text-stone-900">{atom.canonicalStem}</h2>
+      {/* AI-side QA verdict — green/amber chip with note. */}
+      {atom.aiReviewStatus && (
+        <div
+          role="note"
+          aria-label={`AI review: ${atom.aiReviewStatus}`}
+          className={
+            atom.aiReviewStatus === 'ok'
+              ? 'rounded-lg border px-3 py-2 text-xs border-emerald-300 dark:border-emerald-900 bg-emerald-50 dark:bg-emerald-950/30 text-emerald-900 dark:text-emerald-200'
+              : 'rounded-lg border px-3 py-2 text-xs border-amber-300 dark:border-amber-900 bg-amber-50 dark:bg-amber-950/30 text-amber-900 dark:text-amber-200'
+          }
+        >
+          <div className="font-medium uppercase tracking-wide text-[10px] mb-0.5">
+            AI review · {atom.aiReviewStatus === 'ok' ? 'looks good' : 'concern'}
+          </div>
+          {atom.aiReviewNotes && <div>{atom.aiReviewNotes}</div>}
+        </div>
+      )}
+      <p className="text-sm text-stone-700 dark:text-stone-300 italic">{atom.claim}</p>
+      <h2 className="text-base font-medium text-stone-900 dark:text-stone-100">{atom.canonicalStem}</h2>
       <div className="bg-stone-50 rounded-lg p-3 border border-stone-200 space-y-1 text-sm">
         <div><span className="font-medium">Answer:</span> {atom.answer}</div>
         <div className="text-stone-600">
