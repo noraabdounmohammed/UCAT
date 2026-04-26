@@ -1,0 +1,155 @@
+/* WhatsApp-style reply animations and interactions */
+
+@keyframes slideInFromBottom {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes fadeInScale {
+  from {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes pulseReply {
+  0%, 100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.05);
+  }
+}
+
+.reply-preview-enter {
+  animation: slideInFromBottom 0.2s ease-out;
+}
+
+.reply-button-hover {
+  animation: fadeInScale 0.15s ease-out;
+}
+
+.reply-button-active {
+  animation: pulseReply 0.1s ease-in-out;
+}
+
+/* Mobile swipe indicator */
+.swipe-indicator {
+  position: absolute;
+  right: -30px;
+  top: 50%;
+  transform: translateY(-50%);
+  opacity: 0;
+  transition: all 0.2s ease-out;
+  pointer-events: none;
+}
+
+.message-swipeable {
+  position: relative;
+  transition: transform 0.2s ease-out;
+}
+
+.message-swipeable.swiping {
+  transform: translateX(-20px);
+}
+
+.message-swipeable.swiping .swipe-indicator {
+  opacity: 1;
+  right: -20px;
+}
+
+/* Enhanced hover states */
+.message-bubble-hover {
+  transition: all 0.2s ease-out;
+}
+
+.message-bubble-hover:hover {
+  transform: translateY(-1px);
+}
+
+/* Reply context styling */
+.reply-context {
+  position: relative;
+  overflow: hidden;
+}
+
+.reply-context::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 4px;
+  background: linear-gradient(45deg, #007AFF, #5AC8FA);
+  border-radius: 2px;
+}
+
+/* Line clamp utility for better text truncation */
+.line-clamp-2 {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+/* Smooth color transitions */
+.color-transition {
+  transition: color 0.15s ease-out, background-color 0.15s ease-out;
+}
+
+/* Enhanced button interactions */
+.reply-button {
+  position: relative;
+  overflow: hidden;
+}
+
+.reply-button::before {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 0;
+  height: 0;
+  background: rgba(0, 122, 255, 0.1);
+  border-radius: 50%;
+  transform: translate(-50%, -50%);
+  transition: width 0.3s ease-out, height 0.3s ease-out;
+}
+
+.reply-button:hover::before {
+  width: 40px;
+  height: 40px;
+}
+
+/* Mobile-specific styles */
+@media (max-width: 768px) {
+  .message-bubble-hover:hover {
+    transform: none;
+  }
+  
+  .reply-button {
+    padding: 12px;
+  }
+  
+  .reply-preview-enter {
+    animation-duration: 0.3s;
+  }
+}
+
+/* Dark mode enhancements */
+@media (prefers-color-scheme: dark) {
+  .reply-context::before {
+    background: linear-gradient(45deg, #0A84FF, #64D2FF);
+  }
+}

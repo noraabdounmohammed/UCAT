@@ -1,28 +1,40 @@
 import React from 'react';
 import '../practice/apple-styles.css';
 import './apple-layout-styles.css';
+import { AtomicEngineNav } from './AtomicEngineNav';
 
 interface MainLayoutProps {
   children: React.ReactNode;
-  currentPage: 'dashboard' | 'mock';
+  currentPage: 'dashboard' | 'mock' | 'dynamic-demo' | 'explanation-test' | 'concise-demo' | 'concept-practice' | 'concept-practice-old' | 'concept-bulk-upload' | 'curriculum-dashboard' | 'study' | 'review' | 'seed' | 'mistakes' | 'voice' | 'leaderboard';
+  isPracticeSession?: boolean;
+  /** Hide the Atomic Engine top nav (e.g. for full-screen practice sessions). */
+  hideNav?: boolean;
 }
 
-export function MainLayout({ children }: MainLayoutProps) {
+export function MainLayout({ children, isPracticeSession = false, hideNav = false }: MainLayoutProps) {
 
   return (
-    <div className="min-h-screen bg-[#F5F5F7]" data-component-name="MainLayout">
+    <div
+      className={`bg-white dark:bg-stone-950 ${isPracticeSession ? 'h-screen overflow-hidden' : 'min-h-screen'}`}
+      data-component-name="MainLayout"
+    >
+      {!hideNav && !isPracticeSession && <AtomicEngineNav />}
       {/* Main content area */}
-      <div className="flex flex-col w-full">
+      <div className={`flex flex-col w-full ${isPracticeSession ? 'h-full' : ''}`}>
         {/* Main content with Apple HIG spacing and design */}
-        <main 
-          className="flex-1 overflow-auto bg-[#F5F5F7] pt-6 pb-12" 
-          data-component-name="MainLayout-content"
+        <main
+          className={`flex-1 bg-white dark:bg-stone-950 ${isPracticeSession ? 'overflow-hidden' : 'pb-16'}`}
+          data-component-name="MainLayout"
         >
-          <div className="max-w-4xl mx-auto px-5 sm:px-6 md:px-8 lg:px-10">
-            {children}
-          </div>
+          {children}
         </main>
       </div>
+      {!isPracticeSession && (
+        <footer className="text-center py-6 text-xs text-stone-400 dark:text-stone-600">
+          {/* Plain <a> (not NavLink) — privacy is a lazy route; full reload is fine for a footer link. */}
+          <a href="/privacy" className="hover:underline">Privacy &amp; cookies</a>
+        </footer>
+      )}
     </div>
   );
 }

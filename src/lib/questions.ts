@@ -1,19 +1,37 @@
 // Supabase will be used for user progress tracking in the future
 import { PracticeFilterOptions, TopicStructure, InteractionStatus } from '@/types/practice';
 import { loadQuestionsForSection, getDynamicQuestionCounts, getDynamicTopicStructure, Question } from '../utils/questionBank';
+import { getUserProgress } from '../utils/userProgressStorage';
 
 // Define a type for question with topic property
 interface QuestionWithTopic extends Question {
   topic: string;
 }
 
-// Define a type for question with user interaction
-interface QuestionWithInteraction extends Question {
-  user_interaction: InteractionStatus;
-}
-
 // Cache for storing previously computed question counts to prevent redundant calculations
 const questionCountCache: Record<string, number> = {};
+
+/**
+ * Clear the question count cache for specific filters or entirely
+ * This is useful when user progress changes and we need fresh counts
+ */
+export function clearQuestionCountCache(filters?: PracticeFilterOptions): void {
+  if (!filters) {
+    // Clear entire cache
+    Object.keys(questionCountCache).forEach(key => {
+      delete questionCountCache[key];
+    });
+    console.log('Question count cache cleared');
+    return;
+  }
+  
+  // Clear cache for specific filters
+  const cacheKey = createCacheKey(filters);
+  if (questionCountCache[cacheKey] !== undefined) {
+    delete questionCountCache[cacheKey];
+    console.log('Question count cache cleared for filters:', filters);
+  }
+}
 
 export async function fetchQuestions(filters: PracticeFilterOptions) {
   try {
@@ -35,7 +53,8 @@ export async function fetchQuestions(filters: PracticeFilterOptions) {
     // Use the same filtering logic as in countFilteredQuestions to ensure consistency
     const hasTopicFilter = filters.topics.length > 0;
     const hasSkillFilter = filters.microSkills.length > 0;
-    const hasDifficultyFilter = filters.difficulty && filters.difficulty !== 'adaptive';
+    const hasDifficultyFilter = filters.difficulty && 
+      (typeof filters.difficulty === 'string' ? filters.difficulty !== 'adaptive' : true);
     const hasStatusFilter = filters.interactionStatus && filters.interactionStatus.length > 0;
     
     // If no filters are applied, use all questions
@@ -98,7 +117,7 @@ export async function fetchQuestions(filters: PracticeFilterOptions) {
       // Difficulty filter
       if (hasDifficultyFilter) {
         // Skip difficulty filtering if 'adaptive' is selected
-        if (filters.difficulty === 'adaptive') {
+        if (typeof filters.difficulty === 'string' && filters.difficulty === 'adaptive') {
           // Adaptive difficulty means we include all difficulties
           // No filtering needed
         } else {
@@ -128,10 +147,21 @@ export async function fetchQuestions(filters: PracticeFilterOptions) {
       
       // Interaction status filter (if applicable)
       if (hasStatusFilter) {
-        // In a real app, this would check the user's interaction status with this question
-        // For now, we'll assume all questions are 'unseen' unless specified otherwise
+        // Get the user's progress from local storage
+        const userProgress = getUserProgress();
+        const questionId = String(question.id);
+        
+        // Get the question's status from user progress, default to 'unseen' if not found
         const defaultStatus: InteractionStatus = 'unseen';
-        const questionStatus = (question as QuestionWithInteraction).user_interaction || defaultStatus;
+        let questionStatus: InteractionStatus = defaultStatus;
+        
+        // Check if this question exists in the user's progress
+        if (userProgress.questions[questionId]) {
+          questionStatus = userProgress.questions[questionId].status;
+        }
+        
+        // For debugging
+        console.log(`Question ${questionId} status:`, questionStatus);
         
         // Normalize the question status for comparison
         const normalizedQuestionStatus = String(questionStatus).toLowerCase().trim();
@@ -143,6 +173,9 @@ export async function fetchQuestions(filters: PracticeFilterOptions) {
           
           return normalizedQuestionStatus === normalizedFilterStatus;
         });
+        
+        // For debugging
+        console.log(`Question ${questionId} matches filter:`, statusMatches);
         
         if (!statusMatches) return false;
       }
@@ -157,8 +190,25 @@ export async function fetchQuestions(filters: PracticeFilterOptions) {
       return [];
     }
     
+    // Transform questions to include table and chart data before shuffling
+    const transformedQuestions = filteredQuestions.map(question => {
+      // Log the question to debug
+      console.log('Processing question:', question.id, question);
+      
+      return {
+        ...question,
+        // Ensure table data is properly passed through if it exists
+        table: question.table,
+        // Ensure chart data is properly passed through if it exists
+        chart: question.chart,
+        // Keep data_block for backward compatibility
+        data_block: question.data_block || [],
+        data_type: question.data_type || 'none'
+      };
+    });
+    
     // Shuffle questions and limit to 10 (or another appropriate number)
-    const shuffled = [...filteredQuestions].sort(() => Math.random() - 0.5);
+    const shuffled = [...transformedQuestions].sort(() => Math.random() - 0.5);
     return shuffled.slice(0, 10);
   } catch (error) {
     console.error('Error in fetchQuestions:', error);
@@ -247,21 +297,15 @@ export async function countFilteredQuestions(filters: PracticeFilterOptions): Pr
     
     // If no questions found, return 0
     if (!allQuestions || allQuestions.length === 0) {
-      questionCountCache[cacheKey] = 0;
       return 0;
     }
     
-    // If no specific filters are applied, return the total count
+    // Determine which filters are active
     const hasTopicFilter = filters.topics.length > 0;
     const hasSkillFilter = filters.microSkills.length > 0;
-    const hasDifficultyFilter = filters.difficulty && filters.difficulty !== 'adaptive';
+    const hasDifficultyFilter = filters.difficulty && 
+      (typeof filters.difficulty === 'string' ? filters.difficulty !== 'adaptive' : true);
     const hasStatusFilter = filters.interactionStatus && filters.interactionStatus.length > 0;
-    
-    if (!hasTopicFilter && !hasSkillFilter && !hasDifficultyFilter && !hasStatusFilter) {
-      const count = allQuestions.length;
-      questionCountCache[cacheKey] = count;
-      return count;
-    }
     
     // Filter questions based on selected criteria (using a single pass through the data)
     const filteredQuestions = allQuestions.filter(question => {
@@ -331,7 +375,7 @@ export async function countFilteredQuestions(filters: PracticeFilterOptions): Pr
       // Difficulty filter
       if (hasDifficultyFilter) {
         // Skip difficulty filtering if 'adaptive' is selected
-        if (filters.difficulty === 'adaptive') {
+        if (typeof filters.difficulty === 'string' && filters.difficulty === 'adaptive') {
           // Adaptive difficulty means we include all difficulties
           // No filtering needed
         } else {
@@ -363,12 +407,20 @@ export async function countFilteredQuestions(filters: PracticeFilterOptions): Pr
       
       // Interaction status filter (if applicable)
       if (hasStatusFilter) {
-        // In a real app, this would check the user's interaction status with this question
-        // For now, we'll assume all questions are 'unseen' unless specified otherwise
-        const defaultStatus: InteractionStatus = 'unseen';
+        // Get the user's progress from local storage
+        const userProgress = getUserProgress();
+        const questionId = String(question.id);
         
-        // Get the interaction status from the question or use the default
-        const questionStatus = (question as QuestionWithInteraction).user_interaction || defaultStatus;
+        // Get the question's status from user progress, default to 'unseen' if not found
+        let questionStatus: InteractionStatus = 'unseen';
+        
+        // Check if this question exists in the user's progress
+        if (userProgress.questions[questionId]) {
+          questionStatus = userProgress.questions[questionId].status;
+        }
+        
+        // For debugging
+        console.log(`Question ${questionId} status for filtering:`, questionStatus);
         
         // Normalize the question status for comparison
         const normalizedQuestionStatus = String(questionStatus).toLowerCase().trim();
@@ -378,12 +430,22 @@ export async function countFilteredQuestions(filters: PracticeFilterOptions): Pr
           // Normalize the filter status for comparison
           const normalizedFilterStatus = String(status).toLowerCase().trim();
           
-          return normalizedQuestionStatus === normalizedFilterStatus;
+          // Special handling for 'unseen' status
+          if (normalizedFilterStatus === 'unseen') {
+            // A question is 'unseen' if it doesn't exist in user progress
+            return !userProgress.questions[questionId];
+          }
+          
+          // Debug log for each status comparison
+          const matches = normalizedQuestionStatus === normalizedFilterStatus;
+          console.log(`  Comparing question status '${normalizedQuestionStatus}' with filter '${normalizedFilterStatus}': ${matches}`);
+          return matches;
         });
         
-        if (!statusMatches) {
-          return false;
-        }
+        // Debug log for overall status match
+        console.log(`  Question ${questionId} matches status filter: ${statusMatches}`);
+        
+        if (!statusMatches) return false;
       }
       
       // If it passed all filters, include it

@@ -1,175 +1,137 @@
-import { useState } from 'react';
-import { useUser } from '@supabase/auth-helpers-react';
-import { Routes, Route, Navigate } from 'react-router-dom';
-import Dashboard from '@/components/dashboard/Dashboard';
-import { MockExam } from '@/pages/MockExam';
-import { QuestionPracticePage } from '@/pages/QuestionPracticePage';
+import { Routes, Route, Navigate, useParams } from 'react-router-dom';
+import { lazy, Suspense } from 'react';
 import { MainLayout } from '@/components/layout/MainLayout';
-import { AuthForm } from '@/components/auth/AuthForm';
-import { DashboardProps } from '@/types/dashboard';
+import { ThemeProvider } from '@/contexts/ThemeContext';
+import { FontSizeProvider } from '@/contexts/FontSizeContext';
+import { AuthProvider } from '@/contexts/AuthContext';
+import { StorageNotification } from '@/components/StorageNotification';
+import { PWAInstallPrompt } from '@/components/PWAInstallPrompt';
+import { PWAUpdateNotification } from '@/components/PWAUpdateNotification';
+import '@/styles/font-sizes.css';
 
-// Mock user data
-const mockUserData: DashboardProps['userData'] = {
-  name: 'Alex',
-  targetScore: 2900,
-  currentScore: 2650,
-  streak: 7,
-  sectionProgress: {
-    QR: 78,
-    VR: 65,
-    DM: 89,
-    SJ: 72
-  },
-  insights: {
-    accuracy: {
-      overall: 76,
-      bySection: {
-        QR: 82,
-        VR: 68,
-        DM: 85,
-        SJ: 70
-      },
-      trend: [
-        { date: '2023-05-01', value: 65 },
-        { date: '2023-05-08', value: 68 },
-        { date: '2023-05-15', value: 72 },
-        { date: '2023-05-22', value: 76 }
-      ]
-    },
-    time: {
-      averagePerQuestion: {
-        QR: 58,
-        VR: 45,
-        DM: 62,
-        SJ: 39
-      },
-      trend: [
-        { date: '2023-05-01', value: 68 },
-        { date: '2023-05-08', value: 64 },
-        { date: '2023-05-15', value: 60 },
-        { date: '2023-05-22', value: 58 }
-      ],
-      timeManagementScore: 78
-    },
-    topSkills: [
-      { name: 'Data Interpretation', score: 92, section: 'QR' },
-      { name: 'Logical Reasoning', score: 88, section: 'DM' },
-      { name: 'Critical Analysis', score: 84, section: 'VR' },
-      { name: 'Ethical Decision Making', score: 80, section: 'SJ' },
-      { name: 'Statistical Analysis', score: 78, section: 'QR' }
-    ],
-    weakAreas: [
-      { 
-        name: 'Abstract Reasoning', 
-        score: 45, 
-        section: 'DM', 
-        recommendedActions: ['Practice pattern recognition exercises', 'Review advanced logic concepts'] 
-      },
-      { 
-        name: 'Reading Comprehension', 
-        score: 58, 
-        section: 'VR', 
-        recommendedActions: ['Focus on inference questions', 'Practice speed reading techniques'] 
-      },
-      { 
-        name: 'Professional Behavior', 
-        score: 62, 
-        section: 'SJ', 
-        recommendedActions: ['Review GMC guidelines', 'Practice ethical scenario questions'] 
-      }
-    ]
-  },
-  recommendations: [
-    {
-      id: 'rec-1',
-      title: 'Abstract Reasoning Bootcamp',
-      description: 'Intensive practice on pattern recognition and rule application',
-      section: 'DM',
-      difficulty: 'hard',
-      estimatedTime: 45,
-      type: 'practice'
-    },
-    {
-      id: 'rec-2',
-      title: 'Speed Reading Techniques',
-      description: 'Learn methods to improve reading efficiency without losing comprehension',
-      section: 'VR',
-      difficulty: 'medium',
-      estimatedTime: 30,
-      type: 'learn'
-    },
-    {
-      id: 'rec-3',
-      title: 'Review Quantitative Practice Test',
-      description: 'Analyze mistakes from your most recent QR practice test',
-      section: 'QR',
-      difficulty: 'easy',
-      estimatedTime: 20,
-      type: 'review'
-    }
-  ],
-  lastMockData: {
-    lastScore: 2680,
-    lastDate: '2023-05-20T14:30:00Z',
-    history: [
-      { date: '2023-04-15T10:00:00Z', score: 2500, type: 'timed' },
-      { date: '2023-04-28T13:15:00Z', score: 2580, type: 'untimed' },
-      { date: '2023-05-20T14:30:00Z', score: 2680, type: 'timed' }
-    ],
-    averageScore: 2587
-  }
+// Eager import for the main app — no spinner on first load
+import { CurriculumApp } from '@/components/CurriculumApp';
+
+// Lazy only for secondary routes rarely visited
+const LandingPage = lazy(() => import('@/pages/LandingPage').then(m => ({ default: m.LandingPage })));
+const CurriculumLandingPage = lazy(() => import('@/pages/CurriculumLandingPage').then(m => ({ default: m.CurriculumLandingPage })));
+const StudyPage = lazy(() => import('@/pages/StudyPage').then(m => ({ default: m.StudyPage })));
+const ReviewPage = lazy(() => import('@/pages/ReviewPage').then(m => ({ default: m.ReviewPage })));
+const SeedPage = lazy(() => import('@/pages/SeedPage').then(m => ({ default: m.SeedPage })));
+const MistakesPage = lazy(() => import('@/pages/MistakesPage').then(m => ({ default: m.MistakesPage })));
+const VoicePage = lazy(() => import('@/pages/VoicePage').then(m => ({ default: m.VoicePage })));
+const MockPage = lazy(() => import('@/pages/MockPage').then(m => ({ default: m.MockPage })));
+const PrivacyPolicy = lazy(() => import('@/pages/PrivacyPolicy').then(m => ({ default: m.PrivacyPolicy })));
+const LeaderboardPage = lazy(() => import('@/pages/LeaderboardPage').then(m => ({ default: m.LeaderboardPage })));
+
+// Wrapper to extract curriculumId from URL params
+const CurriculumRoute = () => {
+  const { curriculumId } = useParams<{ curriculumId: string }>();
+  return <CurriculumApp initialCurriculumId={curriculumId} />;
 };
 
+// Instant blank parchment — replaces the spinning loader for secondary routes
+const BlankFallback = () => <div className="h-screen w-screen" style={{ backgroundColor: '#F4EFE8' }} />;
+
 function App() {
-  // Loading state removed
-  const [userData] = useState<DashboardProps['userData']>(mockUserData);
-  // No longer need currentPage state since sidebar is removed
-  
-  // We need the user object for authentication state
-  const user = useUser();
-  
-  // Loading timer removed
-
-  // Mock exam handler
-  const handleMockStart = () => {
-    // Navigate to mock exam directly instead of changing current page
-    window.location.href = '/mock';
-  };
-  
-  // Recommendation action handler removed as part of the recommended practice box removal
-
-  if (!user) {
-    return (
-      <div className="min-h-screen w-full">
-        <AuthForm />
-      </div>
-    );
-  }
-  
   return (
-    <Routes>
-      {/* Dashboard route */}
-      <Route path="/" element={
-        <MainLayout currentPage="dashboard" onNavigate={() => {}}>
-          <Dashboard 
-            onMockStart={handleMockStart}
-          />
-        </MainLayout>
-      } />
-      
-      {/* Mock exam route */}
-      <Route path="/mock" element={
-        <MainLayout currentPage="mock" onNavigate={() => {}}>
-          <MockExam />
-        </MainLayout>
-      } />
-      
-      {/* Dedicated route for Question Practice without sidebar */}
-      <Route path="/practice" element={<QuestionPracticePage />} />
-      
-      {/* Redirect any routes to home */}
-      <Route path="*" element={<Navigate to="/" replace />} />
-    </Routes>
+    <AuthProvider>
+      <ThemeProvider>
+        <FontSizeProvider>
+          <StorageNotification />
+          <PWAInstallPrompt />
+          <PWAUpdateNotification />
+          <Routes>
+            {/* Landing Page — lazy, shown rarely */}
+            <Route path="/" element={
+              <Suspense fallback={<BlankFallback />}>
+                <LandingPage />
+              </Suspense>
+            } />
+
+            {/* Main app — eager, instant */}
+            <Route path="/concept-practice" element={
+              <MainLayout currentPage="concept-practice">
+                <CurriculumApp />
+              </MainLayout>
+            } />
+
+            {/* Curriculum by ID — shareable URL */}
+            <Route path="/curriculum/:curriculumId" element={
+              <MainLayout currentPage="concept-practice">
+                <CurriculumRoute />
+              </MainLayout>
+            } />
+
+            {/* Expert Curriculums — lazy, shown rarely */}
+            <Route path="/curriculums" element={
+              <Suspense fallback={<BlankFallback />}>
+                <CurriculumLandingPage />
+              </Suspense>
+            } />
+
+            {/* FSRS Study session — lazy, primary feature route */}
+            <Route path="/study" element={
+              <Suspense fallback={<BlankFallback />}>
+                <StudyPage />
+              </Suspense>
+            } />
+
+            {/* Atom review queue — lazy, gated on creator role */}
+            <Route path="/review" element={
+              <Suspense fallback={<BlankFallback />}>
+                <ReviewPage />
+              </Suspense>
+            } />
+
+            {/* Atom seeding form — lazy, gated on creator role */}
+            <Route path="/seed" element={
+              <Suspense fallback={<BlankFallback />}>
+                <SeedPage />
+              </Suspense>
+            } />
+
+            {/* Mistake deck — lazy, drills recent lapses */}
+            <Route path="/mistakes" element={
+              <Suspense fallback={<BlankFallback />}>
+                <MistakesPage />
+              </Suspense>
+            } />
+
+            {/* Voice mode — lazy, hands-free retrieval via Web Speech API */}
+            <Route path="/voice" element={
+              <Suspense fallback={<BlankFallback />}>
+                <VoicePage />
+              </Suspense>
+            } />
+
+            {/* Mock exam — lazy, full timed UKMLA-style mock */}
+            <Route path="/mock" element={
+              <Suspense fallback={<BlankFallback />}>
+                <MockPage />
+              </Suspense>
+            } />
+
+            {/* Privacy & cookies — lazy, accessible by URL + footer link */}
+            <Route path="/privacy" element={
+              <Suspense fallback={<BlankFallback />}>
+                <PrivacyPolicy />
+              </Suspense>
+            } />
+
+            {/* Cohort leaderboard — lazy, top-N studiers from your med school this week */}
+            <Route path="/leaderboard" element={
+              <Suspense fallback={<BlankFallback />}>
+                <LeaderboardPage />
+              </Suspense>
+            } />
+
+            {/* Catch-all */}
+            <Route path="*" element={<Navigate to="/" replace />} />
+          </Routes>
+        </FontSizeProvider>
+      </ThemeProvider>
+    </AuthProvider>
   );
 }
 

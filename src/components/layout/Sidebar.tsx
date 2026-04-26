@@ -1,8 +1,9 @@
-import { useSupabaseClient } from '@supabase/auth-helpers-react';
+// import { useSupabaseClient } from '@supabase/auth-helpers-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
 import { Sheet, SheetContent, SheetTrigger, SheetTitle } from '@/components/ui/sheet';
+import { FontSizeToggle } from '@/components/ui/FontSizeToggle';
 import {
   Target,
   Clock,
@@ -20,10 +21,10 @@ interface SidebarProps {
 }
 
 const SidebarContent = ({ currentPage, onNavigate }: Pick<SidebarProps, 'currentPage' | 'onNavigate'>) => {
-  const supabase = useSupabaseClient();
+  // const supabase = useSupabaseClient();
 
   const handleSignOut = async () => {
-    await supabase.auth.signOut();
+    // await supabase.auth.signOut();
   };
 
   return (
@@ -33,7 +34,7 @@ const SidebarContent = ({ currentPage, onNavigate }: Pick<SidebarProps, 'current
         <div className="apple-app-icon">
           <GraduationCap className="h-5 w-5 text-white" />
         </div>
-        <span className="apple-app-title">MedICU</span>
+        <span className="apple-app-title">Study Edit</span>
       </div>
       
       <div className="apple-sidebar-section">
@@ -70,6 +71,14 @@ const SidebarContent = ({ currentPage, onNavigate }: Pick<SidebarProps, 'current
             <span className="apple-sidebar-label">Mock Exams</span>
             <ChevronRight className="apple-sidebar-chevron" />
           </Button>
+        </div>
+      </div>
+      
+      {/* Accessibility Section */}
+      <div className="apple-sidebar-section">
+        <h3 className="apple-sidebar-heading">Accessibility</h3>
+        <div className="apple-sidebar-nav">
+          <FontSizeToggle />
         </div>
       </div>
       

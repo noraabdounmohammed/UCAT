@@ -1,0 +1,20 @@
+{
+  "ukmla-akt-gen-001": {
+    "id": "ukmla-akt-gen-001",
+    "section": "Cardiology",
+    "topic": "Acute Coronary Syndrome",
+    "microSkill": "Diagnosis",
+    "difficulty": "medium",
+    "content": "A 65-year-old man presents to the emergency department with acute chest pain radiating to his left arm. The pain started 2 hours ago while he was gardening. He has a history of hypertension and type 2 diabetes. His blood pressure is 160/95 mmHg, heart rate 92 bpm, and oxygen saturation 96% on room air. His ECG shows ST-segment elevation in leads V1-V4.\n\nWhat is the most likely diagnosis?",
+    "options": [
+      "Acute anterior ST-elevation myocardial infarction",
+      "Stable angina",
+      "Pericarditis",
+      "Aortic dissection",
+      "Pulmonary embolism"
+    ],
+    "correctAnswer": 0,
+    "explanation": "## Acute Anterior ST-Elevation Myocardial Infarction ❗️\n\n### Key Clinical Features:\n* **Classic symptoms**: Acute chest pain radiating to left arm\n* **Risk factors**: Hypertension, diabetes\n* **Critical ECG finding**: ST-segment elevation in leads V1-V4 → indicates anterior wall involvement\n\n### Why This Diagnosis?\nThe combination of typical anginal pain with ST elevation in the anterior leads (V1-V4) is pathognomonic for anterior wall STEMI. The patient's cardiovascular risk factors further support this diagnosis.\n\n### Management Priority:\n**URGENT** reperfusion therapy required (primary PCI preferred if available within 90 minutes, otherwise thrombolysis).",
+    "timeLimit": 60
+  }
+}

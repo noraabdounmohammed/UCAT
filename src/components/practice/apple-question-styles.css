@@ -1,5 +1,57 @@
 /* Apple HIG-compliant styles for practice questions */
 
+/* Markdown styling for explanations */
+.apple-explanation-content h2 {
+  font-size: 1.25rem;
+  font-weight: 600;
+  margin-top: 0.5rem;
+  margin-bottom: 0.75rem;
+  color: var(--sf-blue);
+}
+
+.apple-explanation-content h3 {
+  font-size: 1.1rem;
+  font-weight: 600;
+  margin-top: 1rem;
+  margin-bottom: 0.5rem;
+  color: #1D1D1F;
+}
+
+.apple-explanation-content ul {
+  list-style-type: disc;
+  padding-left: 1.5rem;
+  margin-top: 0.5rem;
+  margin-bottom: 0.75rem;
+}
+
+.apple-explanation-content ol {
+  list-style-type: decimal;
+  padding-left: 1.5rem;
+  margin-top: 0.5rem;
+  margin-bottom: 0.75rem;
+}
+
+.apple-explanation-content li {
+  margin-bottom: 0.25rem;
+}
+
+.apple-explanation-content strong {
+  font-weight: 600;
+}
+
+.apple-explanation-content p {
+  margin-bottom: 0.75rem;
+}
+
+.apple-explanation-content a {
+  color: var(--sf-blue);
+  text-decoration: none;
+}
+
+.apple-explanation-content a:hover {
+  text-decoration: underline;
+}
+
 :root {
   /* Apple's SF Pro system colors */
   --sf-blue: #007AFF;
@@ -71,7 +123,7 @@
   display: flex;
   flex-direction: column;
   height: 100%;
-  background-color: var(--sf-background);
+  background-color: #ffffff;
   font-family: var(--sf-font-family);
   color: var(--sf-label);
   -webkit-font-smoothing: antialiased;
@@ -79,6 +131,13 @@
   padding: 0;
   margin: 0;
   max-width: 100%;
+  width: 100%;
+  overflow-x: hidden;
+}
+
+.dark .apple-question-container {
+  background-color: #111827;
+  color: #f9fafb;
 }
 
 /* Header with SF Navigation Bar style */
@@ -172,16 +231,30 @@
 /* Question card - SF Pro style */
 .apple-question-card {
   background-color: transparent;
-  margin: var(--sf-spacing-lg) auto;
+  margin: 0 auto;
   max-width: 680px;
   overflow: visible;
   transition: opacity var(--sf-transition-fast) var(--sf-easing);
   padding: 0 var(--sf-spacing-lg);
+  width: 100%;
+  box-sizing: border-box;
+}
+
+@media (max-width: 768px) {
+  .apple-question-card {
+    max-width: 100%;
+    padding: 0 var(--sf-spacing-md);
+    width: 100%;
+    margin: 0 auto;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
 }
 
 /* Question content - SF Pro style */
 .apple-question-content {
-  max-width: 680px; /* Apple's standard readable content width */
+  max-width: 680px;
   margin: 0 auto;
   font-size: 14px;
   line-height: 1.4;
@@ -189,6 +262,17 @@
   background-color: transparent;
   padding: var(--sf-spacing-lg) 0;
   letter-spacing: -0.01em;
+  text-align: left;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+@media (max-width: 768px) {
+  .apple-question-content {
+    max-width: 100%;
+    width: 100%;
+    overflow-x: hidden;
+  }
 }
 
 .apple-question-box {
@@ -226,6 +310,10 @@
   flex-direction: column;
   gap: calc(var(--sf-spacing-md) / 2);
   margin-bottom: var(--sf-spacing-2xl);
+  align-items: flex-start;
+  width: 100%;
+  margin-left: 0;
+  margin-right: auto;
 }
 
 .apple-answer-option {
@@ -242,6 +330,10 @@
   position: relative;
   overflow: hidden;
   box-shadow: 0 1px 2px rgba(0, 0, 0, 0.03);
+  text-align: left;
+  justify-content: flex-start;
+  margin-left: 0;
+  margin-right: auto;
 }
 
 .apple-answer-option:hover {
@@ -313,14 +405,18 @@
 
 /* Feedback section - SF Pro style */
 .apple-feedback {
-  padding: var(--sf-spacing-lg);
+  padding: var(--sf-spacing-md);
   border-radius: var(--sf-radius-lg);
   margin-top: var(--sf-spacing-xl);
   font-size: 17px;
   line-height: 1.47059;
   display: flex;
   align-items: center;
+  justify-content: flex-start;
   gap: var(--sf-spacing-sm);
+  width: 100%;
+  min-height: 48px;
+  box-sizing: border-box;
 }
 
 .apple-feedback.correct {

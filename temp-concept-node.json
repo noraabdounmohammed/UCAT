@@ -1,0 +1,25 @@
+{
+  "concept_id": "cv_acs_stemi_dx",
+  "system": "Cardiovascular",
+  "condition": "ST-elevation Myocardial Infarction",
+  "presentation": ["Chest pain", "Left arm radiation", "Acute onset", "Cardiovascular risk factors"],
+  "competency": "Diagnosis",
+  "decision_rule": "ST-segment elevation in contiguous anterior leads (V1-V4) with typical anginal pain and cardiovascular risk factors is diagnostic of anterior wall STEMI requiring urgent reperfusion.",
+  "guideline_ref": {
+    "name": "NICE NG185",
+    "year": 2020,
+    "key_line": "Offer coronary angiography with primary PCI within 120 minutes of first medical contact for people with STEMI presenting within 12 hours of symptom onset."
+  },
+  "misconceptions": [
+    "Stable angina causes ST elevation on ECG",
+    "Pericarditis typically presents with unilateral arm pain",
+    "Aortic dissection commonly causes anterior ST elevation",
+    "Pulmonary embolism presents with ST elevation rather than right heart strain"
+  ],
+  "variable_schema": {
+    "must_have": ["age", "gender", "risk_factors", "symptom_onset", "ECG_findings"],
+    "optional": ["occupation", "blood_pressure", "heart_rate", "oxygen_saturation"]
+  },
+  "difficulty": "medium",
+  "linked_questions": ["ukmla-akt-gen-001"]
+}

@@ -1,0 +1,320 @@
+/* Font size accessibility classes */
+
+:root {
+  --font-size-base: 16px;
+  --font-size-sm: 14px;
+  --font-size-lg: 18px;
+  --font-size-xl: 20px;
+}
+
+/* Small font size */
+.font-small {
+  --font-size-base: 14px;
+  --font-size-sm: 12px;
+  --font-size-lg: 16px;
+  --font-size-xl: 18px;
+}
+
+/* Medium font size (default) */
+.font-medium {
+  --font-size-base: 16px;
+  --font-size-sm: 14px;
+  --font-size-lg: 18px;
+  --font-size-xl: 20px;
+}
+
+/* Large font size */
+.font-large {
+  --font-size-base: 18px;
+  --font-size-sm: 16px;
+  --font-size-lg: 20px;
+  --font-size-xl: 22px;
+}
+
+/* Extra large font size */
+.font-extra-large {
+  --font-size-base: 20px;
+  --font-size-sm: 18px;
+  --font-size-lg: 22px;
+  --font-size-xl: 24px;
+}
+
+/* Apply font sizes to common elements */
+.font-small body,
+.font-medium body,
+.font-large body,
+.font-extra-large body {
+  font-size: var(--font-size-base);
+}
+
+.font-small .text-sm,
+.font-medium .text-sm,
+.font-large .text-sm,
+.font-extra-large .text-sm {
+  font-size: var(--font-size-sm);
+}
+
+.font-small .text-lg,
+.font-medium .text-lg,
+.font-large .text-lg,
+.font-extra-large .text-lg {
+  font-size: var(--font-size-lg);
+}
+
+.font-small .text-xl,
+.font-medium .text-xl,
+.font-large .text-xl,
+.font-extra-large .text-xl {
+  font-size: var(--font-size-xl);
+}
+
+/* Question text and content */
+.font-small .apple-question-content,
+.font-medium .apple-question-content,
+.font-large .apple-question-content,
+.font-extra-large .apple-question-content {
+  font-size: var(--font-size-base) !important;
+  font-weight: 500 !important;
+}
+
+.font-small .apple-question-content div,
+.font-medium .apple-question-content div,
+.font-large .apple-question-content div,
+.font-extra-large .apple-question-content div {
+  font-size: var(--font-size-base) !important;
+  font-weight: 500 !important;
+}
+
+.font-small .apple-question-text,
+.font-medium .apple-question-text,
+.font-large .apple-question-text,
+.font-extra-large .apple-question-text {
+  font-size: var(--font-size-base) !important;
+  font-weight: 500 !important;
+}
+
+/* Answer options */
+.font-small .apple-answer-option,
+.font-medium .apple-answer-option,
+.font-large .apple-answer-option,
+.font-extra-large .apple-answer-option {
+  font-size: var(--font-size-base) !important;
+  font-weight: 500 !important;
+}
+
+.font-small .apple-answer-option div,
+.font-medium .apple-answer-option div,
+.font-large .apple-answer-option div,
+.font-extra-large .apple-answer-option div {
+  font-size: var(--font-size-base) !important;
+  font-weight: 500 !important;
+}
+
+.font-small .apple-answer-text,
+.font-medium .apple-answer-text,
+.font-large .apple-answer-text,
+.font-extra-large .apple-answer-text {
+  font-size: var(--font-size-base) !important;
+  font-weight: 500 !important;
+}
+
+/* Chat input and messages */
+.font-small textarea,
+.font-medium textarea,
+.font-large textarea,
+.font-extra-large textarea {
+  font-size: var(--font-size-base) !important;
+}
+
+/* AI Chat conversation text */
+.font-small .ai-chat-message,
+.font-medium .ai-chat-message,
+.font-large .ai-chat-message,
+.font-extra-large .ai-chat-message {
+  font-size: var(--font-size-base) !important;
+}
+
+/* Practice session navbar */
+.font-small .practice-navbar,
+.font-medium .practice-navbar,
+.font-large .practice-navbar,
+.font-extra-large .practice-navbar {
+  padding-top: calc(1rem + var(--font-size-base) * 0.125) !important;
+  padding-bottom: calc(1rem + var(--font-size-base) * 0.125) !important;
+}
+
+.font-small .practice-navbar .navbar-text,
+.font-medium .practice-navbar .navbar-text,
+.font-large .practice-navbar .navbar-text,
+.font-extra-large .practice-navbar .navbar-text {
+  font-size: var(--font-size-sm) !important;
+}
+
+.font-small .practice-navbar .navbar-button,
+.font-medium .practice-navbar .navbar-button,
+.font-large .practice-navbar .navbar-button,
+.font-extra-large .practice-navbar .navbar-button {
+  width: calc(2.5rem + var(--font-size-base) * 0.25) !important;
+  height: calc(2.5rem + var(--font-size-base) * 0.25) !important;
+}
+
+.font-small .practice-navbar .navbar-icon,
+.font-medium .practice-navbar .navbar-icon,
+.font-large .practice-navbar .navbar-icon,
+.font-extra-large .practice-navbar .navbar-icon {
+  width: calc(1.25rem + var(--font-size-base) * 0.125) !important;
+  height: calc(1.25rem + var(--font-size-base) * 0.125) !important;
+}
+
+.font-small .ai-chat-message p,
+.font-medium .ai-chat-message p,
+.font-large .ai-chat-message p,
+.font-extra-large .ai-chat-message p {
+  font-size: var(--font-size-base) !important;
+}
+
+.font-small .ai-chat-message li,
+.font-medium .ai-chat-message li,
+.font-large .ai-chat-message li,
+.font-extra-large .ai-chat-message li {
+  font-size: var(--font-size-base) !important;
+}
+
+.font-small .ai-chat-message h1,
+.font-medium .ai-chat-message h1,
+.font-large .ai-chat-message h1,
+.font-extra-large .ai-chat-message h1 {
+  font-size: calc(var(--font-size-base) * 1.5) !important;
+}
+
+.font-small .ai-chat-message h2,
+.font-medium .ai-chat-message h2,
+.font-large .ai-chat-message h2,
+.font-extra-large .ai-chat-message h2 {
+  font-size: calc(var(--font-size-base) * 1.25) !important;
+}
+
+.font-small .ai-chat-message h3,
+.font-medium .ai-chat-message h3,
+.font-large .ai-chat-message h3,
+.font-extra-large .ai-chat-message h3 {
+  font-size: calc(var(--font-size-base) * 1.125) !important;
+}
+
+/* Explanation text */
+.font-small .explanation-content,
+.font-medium .explanation-content,
+.font-large .explanation-content,
+.font-extra-large .explanation-content {
+  font-size: var(--font-size-base) !important;
+}
+
+/* Explanation title */
+.font-small .explanation-title,
+.font-medium .explanation-title,
+.font-large .explanation-title,
+.font-extra-large .explanation-title {
+  font-size: calc(var(--font-size-base) * 1.125) !important;
+  font-weight: 600 !important;
+}
+
+/* Explanation headings - proper hierarchy */
+.font-small .explanation-content h1,
+.font-medium .explanation-content h1,
+.font-large .explanation-content h1,
+.font-extra-large .explanation-content h1 {
+  font-size: calc(var(--font-size-base) * 1.5) !important;
+  font-weight: 700 !important;
+}
+
+.font-small .explanation-content h2,
+.font-medium .explanation-content h2,
+.font-large .explanation-content h2,
+.font-extra-large .explanation-content h2 {
+  font-size: calc(var(--font-size-base) * 1.25) !important;
+  font-weight: 600 !important;
+}
+
+.font-small .explanation-content h3,
+.font-medium .explanation-content h3,
+.font-large .explanation-content h3,
+.font-extra-large .explanation-content h3 {
+  font-size: calc(var(--font-size-base) * 1.125) !important;
+  font-weight: 600 !important;
+}
+
+.font-small .explanation-content p,
+.font-medium .explanation-content p,
+.font-large .explanation-content p,
+.font-extra-large .explanation-content p {
+  font-size: var(--font-size-base) !important;
+  font-weight: 500 !important;
+}
+
+.font-small .explanation-content li,
+.font-medium .explanation-content li,
+.font-large .explanation-content li,
+.font-extra-large .explanation-content li {
+  font-size: var(--font-size-base) !important;
+  font-weight: 500 !important;
+}
+
+.font-small .explanation-content strong,
+.font-medium .explanation-content strong,
+.font-large .explanation-content strong,
+.font-extra-large .explanation-content strong {
+  font-size: var(--font-size-base) !important;
+  font-weight: 600 !important;
+}
+
+/* Button text */
+.font-small button,
+.font-medium button,
+.font-large button,
+.font-extra-large button {
+  font-size: var(--font-size-sm);
+}
+
+/* Headings scale proportionally */
+.font-small h1,
+.font-medium h1,
+.font-large h1,
+.font-extra-large h1 {
+  font-size: calc(var(--font-size-base) * 2);
+}
+
+.font-small h2,
+.font-medium h2,
+.font-large h2,
+.font-extra-large h2 {
+  font-size: calc(var(--font-size-base) * 1.5);
+}
+
+.font-small h3,
+.font-medium h3,
+.font-large h3,
+.font-extra-large h3 {
+  font-size: calc(var(--font-size-base) * 1.25);
+}
+
+.font-small h4,
+.font-medium h4,
+.font-large h4,
+.font-extra-large h4 {
+  font-size: calc(var(--font-size-base) * 1.125);
+}
+
+/* Specific component overrides */
+.font-small .apple-section-card-title,
+.font-medium .apple-section-card-title,
+.font-large .apple-section-card-title,
+.font-extra-large .apple-section-card-title {
+  font-size: var(--font-size-base);
+}
+
+.font-small .apple-section-card-description,
+.font-medium .apple-section-card-description,
+.font-large .apple-section-card-description,
+.font-extra-large .apple-section-card-description {
+  font-size: var(--font-size-sm);
+}

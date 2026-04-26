@@ -1,14 +1,14 @@
-import { useState, useEffect } from 'react';
-import { Button } from '@/components/ui/button';
-import { ModernPracticeSession } from './ModernPracticeSession';
-import { Target, ArrowRight, Calculator, BookOpen, Brain, Scale, Loader2, CheckCircle, XCircle, HelpCircle, Flag, SkipForward, Eye, Check, ChevronRight } from 'lucide-react';
+import { useState, useEffect, useCallback } from 'react';
+import { ApplePracticeSession, QuestionData } from './ApplePracticeSession';
+import { Target, ArrowRight, Calculator, BookOpen, Brain, Scale, Loader2, CheckCircle, XCircle, Eye, Check, ChevronRight } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import './animations.css';
 import './apple-section-styles.css';
 import { getAvailableSections, Question } from '@/utils/questionBank';
-import { fetchQuestions, fetchQuestionCounts, fetchDynamicTopicStructure, countFilteredQuestions } from '@/lib/questions';
+import { fetchQuestions, fetchQuestionCounts, fetchDynamicTopicStructure, countFilteredQuestions, clearQuestionCountCache } from '@/lib/questions';
 import { getSectionProgress, getTopicProgress, getSkillProgress } from '@/utils/userProgressStorage';
 import { toast } from 'sonner';
+import { ResetProgressButton } from '@/components/ui/ResetProgressButton';
 import { PracticeFilterOptions, MainTopic, DifficultyOption, InteractionStatus } from '@/types/practice';
 
 // Section definitions with icons and descriptions
@@ -16,26 +16,22 @@ const SECTION_DETAILS: Record<string, { name: string, icon: LucideIcon, descript
   'VR': { name: 'Verbal Reasoning', icon: BookOpen, description: 'Evaluate information presented in written form' },
   'DM': { name: 'Decision Making', icon: Brain, description: 'Make informed decisions based on complex information' },
   'QR': { name: 'Quantitative Reasoning', icon: Calculator, description: 'Test your numerical and analytical skills' },
-  'SJ': { name: 'Situational Judgement', icon: Scale, description: 'Respond appropriately to real-world scenarios' }
+  'SJ': { name: 'Situational Judgement', icon: Scale, description: 'Respond appropriately to real-world scenarios' },
+  'AKT': { name: 'UKMLA AKT Exam', icon: Target, description: 'UK Medical Licensing Assessment Applied Knowledge Test' }
 };
 
-interface PracticeSectionProps {
-  onPracticeStart?: (section: string) => void;
-  // Removed unused prop
-}
-
-export function PracticeSection({ onPracticeStart }: PracticeSectionProps): JSX.Element {
+export function PracticeSection(): JSX.Element {
   const [activeSection, setActiveSection] = useState('QR');
   const [isLoading, setIsLoading] = useState(false);
   const [loadingSections, setLoadingSections] = useState(true);
   const [availableSections, setAvailableSections] = useState<string[]>([]);
-  const [questions, setQuestions] = useState<Question[]>([]);
+  const [questions, setQuestions] = useState<QuestionData[]>([]);
   const [isPracticing, setIsPracticing] = useState(false);
   const [filterOptions, setFilterOptions] = useState<PracticeFilterOptions>({
     section: activeSection,
     topics: ['Percentages', 'Ratios', 'Rates & Speed'] as MainTopic[], // Using valid MainTopic values
-    difficulty: ['easy', 'medium', 'hard'] as DifficultyOption[], // All difficulty options selected by default
-    interactionStatus: ['unseen', 'correct', 'incorrect', 'flagged', 'skipped'] as InteractionStatus[], // All options selected by default
+    difficulty: ['easy', 'medium', 'hard'] as DifficultyOption[], // All difficulty levels selected by default
+    interactionStatus: ['unseen', 'correct', 'incorrect'] as InteractionStatus[], // Skip option removed as we don't have skip functionality yet
     microSkills: []
   });
   
@@ -61,8 +57,11 @@ export function PracticeSection({ onPracticeStart }: PracticeSectionProps): JSX.
     sections: {} as Record<string, ReturnType<typeof getSectionProgress>>
   });
   
+  // Track question counts per section
+  const [sectionQuestionCounts, setSectionQuestionCounts] = useState<Record<string, number>>({});
+  
   // Force refresh of progress data
-  const refreshProgressData = () => {
+  const refreshProgressData = useCallback(() => {
     // Update progress data for current section
     const sectionProgress = getSectionProgress(activeSection);
     
@@ -87,7 +86,7 @@ export function PracticeSection({ onPracticeStart }: PracticeSectionProps): JSX.
       skills: {...prev.skills, ...skillsProgress},
       sections: {...prev.sections, [activeSection]: sectionProgress}
     }));
-  };
+  }, [activeSection, topicStructure]);
   
   // Get topic progress from local storage
   const getTopicProgressFromStorage = (topic: string) => {
@@ -112,29 +111,91 @@ export function PracticeSection({ onPracticeStart }: PracticeSectionProps): JSX.
   // Track filtered question count
   const [filteredCount, setFilteredCount] = useState(0);
   
-  // Track total question count for the active section
-  const [sectionQuestionCount, setSectionQuestionCount] = useState(0);
+  // We no longer need this since we're using sectionQuestionCounts instead
+  // const [sectionQuestionCount, setSectionQuestionCount] = useState(0);
   
-  // Fetch available sections on component mount
+  // Calculate initial filtered count on component mount
   useEffect(() => {
-    const fetchSections = async () => {
-      setLoadingSections(true);
+    if (filterOptions.section) {
+      console.log('Initial filtered count calculation with options:', filterOptions);
+      countFilteredQuestions(filterOptions)
+        .then(count => {
+          console.log('Initial filtered count:', count);
+          setFilteredCount(count);
+        })
+        .catch(error => {
+          console.error('Error calculating initial filtered count:', error);
+          setFilteredCount(0);
+        });
+    }
+  }, []); // Run only on mount
+
+  // Update filtered count whenever filterOptions change
+  useEffect(() => {
+    // Only run if we have a section specified
+    if (filterOptions.section) {
+      console.log('Filter options changed, current options:', filterOptions);
+      // Update filtered count based on current filter options
+      countFilteredQuestions(filterOptions)
+        .then(count => {
+          console.log('Filtered count after filter change:', count, 'with filters:', JSON.stringify(filterOptions));
+          setFilteredCount(count);
+        })
+        .catch(error => {
+          console.error('Error counting filtered questions on filter change:', error);
+          setFilteredCount(0);
+        });
+    }
+  }, [filterOptions]);
+  
+  // Load available sections
+  useEffect(() => {
+    const loadSections = async () => {
       try {
+        console.log('Loading available sections...');
         const sections = await getAvailableSections();
+        console.log('Available sections:', sections);
         setAvailableSections(sections);
-        if (sections.length > 0 && !sections.includes(activeSection)) {
-          setActiveSection(sections[0]);
+        
+        // Set a default section if available and no section is currently selected
+        if (sections && sections.length > 0) {
+          // Only set default section if none is selected
+          if (!activeSection || !sections.includes(activeSection)) {
+            console.log('Setting default section to:', sections[0]);
+            setActiveSection(sections[0]);
+            
+            // Update filter options with the selected section
+            setFilterOptions(prev => ({
+              ...prev,
+              section: sections[0]
+            }));
+          }
+          
+          // Load question counts for all sections on initial load
+          for (const section of sections) {
+            const countsData = await fetchQuestionCounts(section);
+            if (countsData) {
+              setSectionQuestionCounts(prev => ({
+                ...prev,
+                [section]: countsData.total || 0
+              }));
+              console.log(`Loaded question count for ${section}: ${countsData.total}`);
+            }
+          }
         }
+        
+        // Only mark loading as complete after we've set the active section
+        setLoadingSections(false);
       } catch (error) {
-        console.error('Error fetching sections:', error);
+        console.error('Error loading sections:', error);
         toast.error('Failed to load available sections');
-      } finally {
         setLoadingSections(false);
       }
     };
     
-    fetchSections();
-  }, [activeSection]); 
+    loadSections();
+    refreshProgressData();
+  }, [refreshProgressData, activeSection]); // Add activeSection dependency to react to changes
   
   // Helper functions for topic and skill selection
   const isTopicSelected = (topic: MainTopic): boolean => {
@@ -171,9 +232,10 @@ export function PracticeSection({ onPracticeStart }: PracticeSectionProps): JSX.
     return topicData?.skills.map(skill => skill.id) || [];
   };
 
-  const getMicroSkillCount = (skillId: string): { total: number } => {
-    return { total: questionCounts.skillCounts[skillId] || 0 };
-  };
+  // This function is not being used, so we can comment it out
+  // const getMicroSkillCount = (skillId: string): { total: number } => {
+  //   return { total: questionCounts.skillCounts[skillId] || 0 };
+  // };
 
   // Fetch topic structure and question counts when active section changes
   useEffect(() => {
@@ -198,25 +260,12 @@ export function PracticeSection({ onPracticeStart }: PracticeSectionProps): JSX.
           );
           
           // Set all topics and all their skills as selected by default
-          const updatedFilters = {
-            ...filterOptions,
+          setFilterOptions(prev => ({
+            ...prev,
             section: activeSection,
             topics: topicNames.length > 0 ? topicNames as MainTopic[] : ['Percentages'] as MainTopic[],
             microSkills: allSkillIds
-          };
-          
-          setFilterOptions(updatedFilters);
-          
-          // Update filtered count immediately after setting filters
-          countFilteredQuestions(updatedFilters)
-            .then(count => {
-              setFilteredCount(count);
-              console.log('Initial filtered count:', count);
-            })
-            .catch(error => {
-              console.error('Error counting initial filtered questions:', error);
-              setFilteredCount(0);
-            });
+          }));
         }
         
         // Fetch question counts for the active section
@@ -230,8 +279,14 @@ export function PracticeSection({ onPracticeStart }: PracticeSectionProps): JSX.
             skillCounts: countsData.skillCounts || {}
           });
           
-          // Set the total question count for the section
-          setSectionQuestionCount(countsData.total || 0);
+          // We no longer need to set this since we're using sectionQuestionCounts instead
+          // setSectionQuestionCount(countsData.total || 0);
+          
+          // Update section-specific question counts
+          setSectionQuestionCounts(prev => ({
+            ...prev,
+            [activeSection]: countsData.total || 0
+          }));
           
           // Debug log the question counts
           console.log('Set question counts:', {
@@ -259,10 +314,32 @@ export function PracticeSection({ onPracticeStart }: PracticeSectionProps): JSX.
   
   // Handle starting practice session
   const handleStartPractice = async () => {
-    if (!activeSection) return;
-    
     setIsLoading(true);
     try {
+      // Check if user is specifically trying to practice unseen questions only
+      const isUnseenOnly = filterOptions.interactionStatus.length === 1 && 
+                         filterOptions.interactionStatus.includes('unseen');
+      
+      // Get the total question count for this section
+      const totalSectionQuestions = sectionQuestionCounts[activeSection] || 0;
+      
+      // Get the number of questions the user has already attempted in this section
+      const sectionProgress = getSectionProgressFromStorage(activeSection);
+      const attemptedQuestions = sectionProgress.total || 0;
+      
+      // Calculate how many unseen questions should be available
+      const unseenCount = Math.max(0, totalSectionQuestions - attemptedQuestions);
+      
+      console.log(`Starting practice with filters:`, filterOptions);
+      console.log(`Section: ${activeSection}, Total: ${totalSectionQuestions}, Attempted: ${attemptedQuestions}, Unseen: ${unseenCount}`);
+      
+      // If user is trying to practice unseen questions but there are none left, show a message
+      if (isUnseenOnly && unseenCount === 0) {
+        toast.error('You have already attempted all questions in this system. Try including other question types in your filter.');
+        setIsLoading(false);
+        return;
+      }
+      
       // Fetch questions based on current filters
       const fetchedQuestions = await fetchQuestions({
         section: activeSection,
@@ -273,26 +350,39 @@ export function PracticeSection({ onPracticeStart }: PracticeSectionProps): JSX.
       });
       
       if (fetchedQuestions && fetchedQuestions.length > 0) {
-        // Transform questions to the format expected by ModernPracticeSession
-        const questionData: Question[] = fetchedQuestions.map((q: Question) => ({
+        // Transform fetched questions to match QuestionData interface expected by ApplePracticeSession
+        const questionData = fetchedQuestions.map((q: Question) => ({
           id: q.id,
           question_stem: q.question_stem,
           individual_question: q.individual_question,
-          options: q.options,
+          options: q.options.map(option => typeof option === 'string' ? option : option),
           correctAnswer: q.correct_answer,
           explanation: q.worked_solution,
           topic: q.main_topic,
           difficulty: q.difficulty.toLowerCase() as 'easy' | 'medium' | 'hard',
-          tags: [q.micro_skill] 
+          tags: [q.micro_skill],
+          // Include table data if present
+          table: q.table,
+          // Include chart data if present
+          chart: q.chart,
+          // Keep data_block for backward compatibility
+          data_block: q.data_block || {} as Record<string, unknown>,
+          data_type: q.data_type || 'none'
         }));
         
-        setQuestions(questionData);
+        // Cast to QuestionData[] to match ApplePracticeSession props
+        setQuestions(questionData as unknown as QuestionData[]);
         setIsPracticing(true);
         
-        // Notify parent component if callback provided
-        if (onPracticeStart) {
-          onPracticeStart(activeSection);
-        }
+        // Scroll to top of page when starting practice
+        setTimeout(() => {
+          window.scrollTo({ top: 0, behavior: 'instant' });
+          window.scrollTo(0, 0);
+          document.documentElement.scrollTop = 0;
+          document.body.scrollTop = 0;
+        }, 100);
+        
+        console.log('Filtered questions count:', questionData.length);
       } else {
         toast.error('No questions match your filters. Please adjust and try again.');
       }
@@ -308,8 +398,32 @@ export function PracticeSection({ onPracticeStart }: PracticeSectionProps): JSX.
   const handleCompletePractice = () => {
     setIsPracticing(false);
     setQuestions([]);
+    
+    console.log('Practice completed, refreshing progress data');
     // Refresh progress data when practice is completed
-    setTimeout(() => refreshProgressData(), 100); 
+    refreshProgressData();
+    
+    console.log('Current filter options:', JSON.stringify(filterOptions));
+    console.log('Current section progress:', getSectionProgressFromStorage(activeSection));
+    
+    // Clear the question count cache to ensure we get fresh counts
+    clearQuestionCountCache(filterOptions);
+    
+    // Update filtered count to reflect the new progress data
+    // Use setTimeout to ensure progress data is updated first
+    setTimeout(() => {
+      console.log('Re-counting filtered questions with options:', JSON.stringify(filterOptions));
+      countFilteredQuestions(filterOptions)
+        .then(count => {
+          console.log('Updated filtered count after practice:', count);
+          console.log('Section progress after timeout:', getSectionProgressFromStorage(activeSection));
+          setFilteredCount(count);
+        })
+        .catch(error => {
+          console.error('Error updating filtered count:', error);
+          setFilteredCount(0);
+        });
+    }, 100);
   };
   
   // Handle filter changes
@@ -320,35 +434,57 @@ export function PracticeSection({ onPracticeStart }: PracticeSectionProps): JSX.
       newFilters.interactionStatus = filterOptions.interactionStatus;
       toast.error('At least one question history option must be selected');
     }
-    
-    // Ensure at least one difficulty is selected
-    if (newFilters.difficulty && newFilters.difficulty.length === 0) {
-      // If no difficulty is selected, keep the current selection
-      newFilters.difficulty = filterOptions.difficulty;
-      toast.error('At least one difficulty level must be selected');
-    }
-    
     const updatedFilters = {
       ...newFilters,
       section: activeSection
     };
+    
+    console.log('Filter change requested:', JSON.stringify(updatedFilters));
+    console.log('Current section progress:', getSectionProgressFromStorage(activeSection));
+    
     setFilterOptions(updatedFilters);
     
-    // Update filtered count
+    // Clear the cache for these filters to ensure fresh counts
+    clearQuestionCountCache(updatedFilters);
+    
+    // Update filtered count based on new filters
+    console.log('Counting filtered questions with options:', JSON.stringify(updatedFilters));
     countFilteredQuestions(updatedFilters)
       .then(count => {
+        console.log('Updated filtered count after filter change:', count);
         setFilteredCount(count);
       })
       .catch(error => {
-        console.error('Error counting filtered questions:', error);
+        console.error('Error updating filtered count:', error);
         setFilteredCount(0);
       });
   };
   
   // Handle section change
   const handleSectionChange = (section: string) => {
+    console.log('Changing section to:', section);
+    
     if (section !== activeSection) {
+      // Set the active section
       setActiveSection(section);
+      
+      // Reset filter options for the new section
+      // This is important - we need to clear existing topic selections
+      setFilterOptions({
+        section: section,
+        topics: [], // Will be populated when topic structure loads
+        microSkills: [], // Will be populated when topic structure loads
+        difficulty: ['easy', 'medium', 'hard'] as DifficultyOption[],
+        interactionStatus: ['unseen', 'correct', 'incorrect'] as InteractionStatus[]
+      });
+      
+      // Clear topic structure to force reload
+      setTopicStructure([]);
+      
+      // Force refresh progress data for the new section
+      setTimeout(() => refreshProgressData(), 100);
+      
+      console.log('Section changed successfully to:', section);
     }
   };
   
@@ -366,10 +502,13 @@ export function PracticeSection({ onPracticeStart }: PracticeSectionProps): JSX.
   
   // Render practice session if practicing
   if (isPracticing && questions.length > 0) {
+    console.log('Starting practice with filtered questions:', questions.length);
+    console.log('Using active section:', activeSection);
     return (
-      <ModernPracticeSession
+      <ApplePracticeSession
         questions={questions}
         onComplete={handleCompletePractice}
+        section={activeSection} // Pass the active section to track progress correctly
       />
     );
   }
@@ -377,11 +516,15 @@ export function PracticeSection({ onPracticeStart }: PracticeSectionProps): JSX.
   // Render practice setup UI
   return (
     <div className="max-w-4xl mx-auto pt-12 px-6">
+      <div className="flex justify-between items-center mb-6">
+        <h2 className="apple-heading-1" data-component-name="PracticeSection">UKMLA AKT Practice</h2>
+        <ResetProgressButton />
+      </div>
       
 
       
       <div className="apple-section-container">
-        <h3 className="apple-heading-2 mb-4">Select Section</h3>
+        <h3 className="apple-heading-2 mb-4">Select System</h3>
         
         <div className="apple-section-grid">
           {availableSections.map((section) => {
@@ -393,6 +536,17 @@ export function PracticeSection({ onPracticeStart }: PracticeSectionProps): JSX.
                 key={section}
                 onClick={() => handleSectionChange(section)}
                 className={`apple-section-card ${isSelected ? 'selected' : ''}`}
+                style={{
+                  background: getSectionProgressFromStorage(section).total > 0 ?
+                    `linear-gradient(to right, 
+                      rgba(16, 185, 129, 0.08) 0%, 
+                      rgba(16, 185, 129, 0.08) ${(getSectionProgressFromStorage(section).correct / (sectionQuestionCounts[section] || 1)) * 100}%, 
+                      rgba(239, 68, 68, 0.08) ${(getSectionProgressFromStorage(section).correct / (sectionQuestionCounts[section] || 1)) * 100}%, 
+                      rgba(239, 68, 68, 0.08) ${((getSectionProgressFromStorage(section).correct + getSectionProgressFromStorage(section).incorrect) / (sectionQuestionCounts[section] || 1)) * 100}%, 
+                      var(--card-background) ${((getSectionProgressFromStorage(section).correct + getSectionProgressFromStorage(section).incorrect) / (sectionQuestionCounts[section] || 1)) * 100}%, 
+                      var(--card-background) 100%)` :
+                    undefined
+                }}
               >
                 <div className={`apple-section-card-content`}>
                   <div className={`apple-section-card-icon ${isSelected ? 'selected' : ''}`}>
@@ -402,14 +556,15 @@ export function PracticeSection({ onPracticeStart }: PracticeSectionProps): JSX.
                     <h4 className="apple-section-card-title">
                       {SECTION_DETAILS[section]?.name || section}
                     </h4>
-                    <div className="apple-section-card-subtitle">
-                      {sectionQuestionCount} questions
+                    <div className="apple-section-card-subtitle" data-component-name="PracticeSection">
+                      {/* Show the number of attempted questions from the section's progress data */}
+                      {(getSectionProgressFromStorage(section).correct + getSectionProgressFromStorage(section).incorrect)}/{sectionQuestionCounts[section] || 0} questions attempted
                       {getSectionProgressFromStorage(section).total > 0 && (
-                        <span className="ml-2">
-                          • <span className="text-green-600">{getSectionProgressFromStorage(section).correct} correct</span>
-                          • <span className="text-red-600">{getSectionProgressFromStorage(section).incorrect} incorrect</span>
-                          • <span className="text-amber-600">{getSectionProgressFromStorage(section).skipped} skipped</span>
-                        </span>
+                        <div className="mt-1 flex items-center" data-component-name="PracticeSection">
+                          <span className="text-xs font-medium text-gray-600">
+                            {Math.round((getSectionProgressFromStorage(section).correct / getSectionProgressFromStorage(section).total) * 100)}% correct
+                          </span>
+                        </div>
                       )}
                     </div>
                   </div>
@@ -428,10 +583,10 @@ export function PracticeSection({ onPracticeStart }: PracticeSectionProps): JSX.
           {/* Practice Section Content */}
           <div className="mb-10">
 
-            {/* Topics */}
+            {/* Conditions */}
             <div className="mb-8">
               <div className="flex items-center mb-4">
-                <h4 className="apple-heading-2">Topics</h4>
+                <h4 className="apple-heading-2">Conditions</h4>
                 <button 
                   className="ml-auto apple-button-small"
                   onClick={() => {
@@ -464,8 +619,8 @@ export function PracticeSection({ onPracticeStart }: PracticeSectionProps): JSX.
                 </button>
               </div>
               
-              {/* Topic list with expandable subtopics - Apple-style UI */}
-              <div className="apple-topic-list">
+              {/* Topic list with gamified, visually engaging UI */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {filterOptions.topics.map((topic) => {
                   // Get all skills/subtopics for this topic
                   const topicData = topicStructure.find((t: {topic: string; skills: Array<{id: string; name: string}>}) => t.topic === topic);
@@ -473,23 +628,50 @@ export function PracticeSection({ onPracticeStart }: PracticeSectionProps): JSX.
                   const isExpanded = expandedTopics[topic] || false;
                   const isSelected = isTopicSelected(topic as MainTopic);
                   
+                  // Get progress data for visual indicators
+                  const topicProgress = getTopicProgressFromStorage(topic);
+                  const totalAttempted = topicProgress.total;
+                  const hasProgress = totalAttempted > 0;
+                  
+                  // Calculate background gradient for the entire card
+                  const cardBackground = hasProgress ? 
+                    `linear-gradient(to right, 
+                      rgba(16, 185, 129, 0.08) 0%, 
+                      rgba(16, 185, 129, 0.08) ${(topicProgress.correct / getTopicCount(topic)) * 100}%, 
+                      rgba(239, 68, 68, 0.08) ${(topicProgress.correct / getTopicCount(topic)) * 100}%, 
+                      rgba(239, 68, 68, 0.08) ${((topicProgress.correct + topicProgress.incorrect) / getTopicCount(topic)) * 100}%, 
+                      var(--card-bg) ${((topicProgress.correct + topicProgress.incorrect) / getTopicCount(topic)) * 100}%, 
+                      var(--card-bg) 100%)` : 
+                    (isSelected ? 'var(--selected-bg)' : 'var(--card-bg)');
+                    
                   return (
-                    <div key={topic} className="apple-topic-item-container">
-                      {/* Main topic item - Apple-style */}
-                      <div className={`apple-topic-item ${isSelected ? 'selected' : ''}`}>
-                        <div 
-                          className="apple-topic-header"
-                          onClick={() => {
-                            // Toggle expanded state for this topic
-                            setExpandedTopics((prev: Record<string, boolean>) => ({
-                              ...prev,
-                              [topic]: !prev[topic]
-                            }));
-                          }}
-                        >
-                          {/* Topic checkbox */}
+                    <div 
+                      key={topic} 
+                      className={`rounded-xl border overflow-hidden shadow-sm transition-all duration-300 hover:shadow-md ${isSelected ? 'border-blue-300 ring-2 ring-blue-100 dark:border-gray-500 dark:ring-gray-700' : 'border-gray-200 dark:border-gray-700'}`}
+                      style={{ background: cardBackground }}
+                    >
+                      {/* Topic header */}
+                      <div 
+                        className="relative p-4 cursor-pointer overflow-hidden"
+                        onClick={() => {
+                          // Toggle expanded state for this topic
+                          setExpandedTopics((prev: Record<string, boolean>) => ({
+                            ...prev,
+                            [topic]: !prev[topic]
+                          }));
+                        }}
+                      >
+                        
+                        <div className="flex items-start">
+                          {/* Topic checkbox with animated check */}
                           <div 
-                            className={`apple-checkbox ${isSelected ? 'selected' : ''} ${isTopicPartiallySelected(topic as MainTopic) ? 'partial' : ''}`}
+                            className={`flex-shrink-0 w-6 h-6 rounded-md mr-3 flex items-center justify-center transition-colors duration-200 cursor-pointer ${
+                              isSelected 
+                                ? 'bg-blue-500 text-white dark:bg-gray-500 dark:text-white' 
+                                : isTopicPartiallySelected(topic as MainTopic)
+                                  ? 'bg-blue-200 border border-blue-300 dark:bg-gray-600 dark:border-gray-500' 
+                                  : 'border-2 border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800'
+                            }`}
                             onClick={(e) => {
                               e.stopPropagation();
                               // Get all skill IDs for this topic
@@ -514,97 +696,80 @@ export function PracticeSection({ onPracticeStart }: PracticeSectionProps): JSX.
                             }}
                           >
                             {isSelected && (
-                              <Check className="h-3 w-3" />
+                              <Check className="h-3 w-3 animate-checkmark" />
                             )}
                             {isTopicPartiallySelected(topic as MainTopic) && (
-                              <div className="apple-checkbox-partial"></div>
+                              <div className="w-2 h-2 bg-blue-500 rounded-sm"></div>
                             )}
                           </div>
                           
-                          {/* Topic name and info */}
-                          <div className="apple-topic-content">
-                            <div className="apple-topic-title">{topic}</div>
-                            <div className="apple-topic-subtitle">
-                              {subtopics.length} subtopics • {getTopicCount(topic)} questions
-                              {getTopicProgressFromStorage(topic).total > 0 && (
-                                <div className="mt-1 text-xs">
-                                  <span className="text-green-600 mr-2">
-                                    <CheckCircle className="inline h-3 w-3 mr-1" /> {getTopicProgressFromStorage(topic).correct} correct
-                                  </span>
-                                  <span className="text-red-600 mr-2">
-                                    <XCircle className="inline h-3 w-3 mr-1" /> {getTopicProgressFromStorage(topic).incorrect} incorrect
-                                  </span>
-                                  <span className="text-amber-600">
-                                    <HelpCircle className="inline h-3 w-3 mr-1" /> {getTopicProgressFromStorage(topic).skipped} skipped
-                                  </span>
-                                </div>
-                              )}
+                          {/* Topic content */}
+                          <div className="flex-grow">
+                            <div className="flex items-center justify-between">
+                              <h3 className="font-medium text-gray-900 dark:text-gray-100">{topic}</h3>
+                              <ChevronRight className={`h-4 w-4 text-gray-500 dark:text-gray-400 transition-transform duration-200 ${isExpanded ? 'transform rotate-90' : ''}`} />
                             </div>
-                          </div>
-                          
-                          {/* Disclosure chevron */}
-                          <div className="apple-chevron">
-                            <ChevronRight className={`h-4 w-4 transition-transform duration-200 ${isExpanded ? 'transform rotate-90' : ''}`} />
+                            
+                            <div className="mt-1 flex items-center text-sm text-gray-600 dark:text-gray-400">
+                              {/* Count of attempted sub-conditions out of total */}
+                              <span className="mr-2" data-component-name="PracticeSection">
+                                {subtopics.filter(skill => getSkillProgressFromStorage(skill.id).total > 0).length}/{subtopics.length} sub-conditions
+                              </span>
+                              <span>•</span>
+                              {/* Count of attempted questions out of total */}
+                              <span className="mx-2">
+                                {totalAttempted}/{getTopicCount(topic)} questions
+                              </span>
+                            </div>
+                            
+                            {/* Visual progress indicators */}
+                            {/* Progress percentage text removed per user request */}
+                            
+                            {/* Progress message removed as requested */}
                           </div>
                         </div>
-                        
-                        {/* Subtopics container - only visible when expanded */}
-                        {isExpanded && subtopics.length > 0 && (
-                          <div className="border-t border-gray-100 bg-gray-50 animate-slideDown">
-                            {subtopics.map((skill: {id: string; name: string}) => {
-                              const isSkillSelected = isMicroSkillSelected(skill.id);
-                              
-                              return (
-                                <div 
-                                  key={skill.id}
-                                  className="flex items-center p-3 pl-10 border-b border-gray-100 last:border-b-0 hover:bg-gray-100 transition-colors duration-200 cursor-pointer"
-                                  onClick={() => {
-                                    // Toggle selection of this skill
-                                    const updatedSkills = isSkillSelected
-                                      ? filterOptions.microSkills.filter(s => s !== skill.id)
-                                      : [...filterOptions.microSkills, skill.id];
-                                      
-                                    handleFilterChange({
-                                      ...filterOptions,
-                                      microSkills: updatedSkills
-                                    });
-                                  }}
-                                >
-                                  {/* Subtopic checkbox */}
-                                  <div className="w-5 h-5 rounded-sm border border-gray-300 flex items-center justify-center bg-white mr-3">
-                                    {isSkillSelected && (
-                                      <svg className="w-3 h-3 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                                      </svg>
-                                    )}
-                                  </div>
-                                  
-                                  {/* Subtopic name */}
-                                  <div className="text-xs font-medium text-gray-800">{skill.name}</div>
-                                  
-                                  {/* Question count */}
-                                  <div className="ml-auto text-xs">
-                                    <div className="text-gray-500">{getMicroSkillCount(skill.id).total} questions</div>
-                                    {getSkillProgressFromStorage(skill.id).total > 0 && (
-                                      <div className="flex items-center gap-2 mt-1">
-                                        <span className="text-green-600 flex items-center">
-                                          <CheckCircle className="h-3 w-3 mr-0.5" /> {getSkillProgressFromStorage(skill.id).correct}
-                                        </span>
-                                        <span className="text-red-600 flex items-center">
-                                          <XCircle className="h-3 w-3 mr-0.5" /> {getSkillProgressFromStorage(skill.id).incorrect}
-                                        </span>
-                                        <span className="text-amber-600 flex items-center">
-                                          <HelpCircle className="h-3 w-3 mr-0.5" /> {getSkillProgressFromStorage(skill.id).skipped}
-                                        </span>
-                                      </div>
-                                    )}
-                                  </div>
-                                </div>
-                              );
-                            })}
-                          </div>
-                        )}
                       </div>
+                      
+                      {/* Subtopics with animated expansion */}
+                      {isExpanded && subtopics.length > 0 && (
+                        <div className="bg-gray-50 dark:bg-gray-800 animate-slideDown divide-y divide-gray-100 dark:divide-gray-700">
+                          {subtopics.map((skill: {id: string; name: string}) => {
+                            const isSkillSelected = isMicroSkillSelected(skill.id);
+                            
+                            return (
+                              <div 
+                                key={skill.id}
+                                className="flex items-center p-3 pl-8 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors duration-200 cursor-pointer"
+                                onClick={() => {
+                                  // Toggle selection of this skill
+                                  const updatedSkills = isSkillSelected
+                                    ? filterOptions.microSkills.filter(s => s !== skill.id)
+                                    : [...filterOptions.microSkills, skill.id];
+                                    
+                                  handleFilterChange({
+                                    ...filterOptions,
+                                    microSkills: updatedSkills
+                                  });
+                                }}
+                              >
+                                {/* Subtopic checkbox with animated check */}
+                                <div 
+                                  className={`w-5 h-5 rounded-md flex items-center justify-center mr-3 transition-all duration-200 ${
+                                    isSkillSelected 
+                                      ? 'bg-blue-500 text-white dark:bg-gray-500 dark:text-white' 
+                                      : 'border-2 border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800'
+                                  }`}
+                                >
+                                  {isSkillSelected && (
+                                    <Check className="h-3 w-3 animate-checkmark" />
+                                  )}
+                                </div>
+                                <span className="text-sm text-gray-900 dark:text-gray-100">{skill.name}</span>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      )}
                     </div>
                   );
                 })}
@@ -614,13 +779,13 @@ export function PracticeSection({ onPracticeStart }: PracticeSectionProps): JSX.
             {/* Difficulty */}
             <div className="mb-8">
               <div className="flex items-center mb-4">
-                <h4 className="text-lg font-medium text-gray-800">Difficulty</h4>
+                <h4 className="apple-heading-2" data-component-name="PracticeSection">Difficulty</h4>
               </div>
               
               {/* Apple-style segmented control */}
               <div className="flex space-x-2">
                 <div 
-                  className={`flex-1 p-3 rounded-xl cursor-pointer ${filterOptions.difficulty.includes('easy') ? 'border border-blue-500 bg-blue-50' : 'border border-gray-200 bg-gray-50'}`}
+                  className={`flex-1 p-3 rounded-xl cursor-pointer ${filterOptions.difficulty.includes('easy') ? 'border border-blue-500 bg-blue-50 dark:bg-gray-700 dark:border-gray-500' : 'border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800'}`}
                   onClick={() => {
                     const isSelected = filterOptions.difficulty.includes('easy');
                     // Only allow deselection if there are other options selected
@@ -636,16 +801,15 @@ export function PracticeSection({ onPracticeStart }: PracticeSectionProps): JSX.
                   <div className="flex flex-col items-center justify-center text-center">
                     <div className="h-6 flex items-center justify-center mb-1">
                       {filterOptions.difficulty.includes('easy') && (
-                        <Check className="h-4 w-4 text-blue-500" />
+                        <Check className="h-4 w-4 text-blue-500 dark:text-gray-400" />
                       )}
                     </div>
-                    <div className="text-sm font-medium">Easy</div>
-                    <div className="text-xs text-gray-500">Beginner-level</div>
+                    <div className="text-sm font-medium text-gray-900 dark:text-gray-100">Easy</div>
                   </div>
                 </div>
                 
                 <div 
-                  className={`flex-1 p-3 rounded-xl cursor-pointer ${filterOptions.difficulty.includes('medium') ? 'border border-blue-500 bg-blue-50' : 'border border-gray-200 bg-gray-50'} ${filterOptions.difficulty.length === 1 && filterOptions.difficulty.includes('medium') ? 'opacity-90' : ''}`}
+                  className={`flex-1 p-3 rounded-xl cursor-pointer ${filterOptions.difficulty.includes('medium') ? 'border border-blue-500 bg-blue-50 dark:bg-gray-700 dark:border-gray-500' : 'border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800'} ${filterOptions.difficulty.length === 1 && filterOptions.difficulty.includes('medium') ? 'opacity-90' : ''}`}
                   onClick={() => {
                     const isSelected = filterOptions.difficulty.includes('medium');
                     // Only allow deselection if there are other options selected
@@ -661,16 +825,15 @@ export function PracticeSection({ onPracticeStart }: PracticeSectionProps): JSX.
                   <div className="flex flex-col items-center justify-center text-center">
                     <div className="h-6 flex items-center justify-center mb-1">
                       {filterOptions.difficulty.includes('medium') && (
-                        <Check className="h-4 w-4 text-blue-500" />
+                        <Check className="h-4 w-4 text-blue-500 dark:text-gray-400" />
                       )}
                     </div>
-                    <div className="text-sm font-medium">Medium</div>
-                    <div className="text-xs text-gray-500">Intermediate</div>
+                    <div className="text-sm font-medium text-gray-900 dark:text-gray-100">Medium</div>
                   </div>
                 </div>
                 
                 <div 
-                  className={`flex-1 p-3 rounded-xl cursor-pointer ${filterOptions.difficulty.includes('hard') ? 'border border-blue-500 bg-blue-50' : 'border border-gray-200 bg-gray-50'} ${filterOptions.difficulty.length === 1 && filterOptions.difficulty.includes('hard') ? 'opacity-90' : ''}`}
+                  className={`flex-1 p-3 rounded-xl cursor-pointer ${filterOptions.difficulty.includes('hard') ? 'border border-blue-500 bg-blue-50 dark:bg-gray-700 dark:border-gray-500' : 'border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800'} ${filterOptions.difficulty.length === 1 && filterOptions.difficulty.includes('hard') ? 'opacity-90' : ''}`}
                   onClick={() => {
                     const isSelected = filterOptions.difficulty.includes('hard');
                     // Only allow deselection if there are other options selected
@@ -686,11 +849,10 @@ export function PracticeSection({ onPracticeStart }: PracticeSectionProps): JSX.
                   <div className="flex flex-col items-center justify-center text-center">
                     <div className="h-6 flex items-center justify-center mb-1">
                       {filterOptions.difficulty.includes('hard') && (
-                        <Check className="h-4 w-4 text-blue-500" />
+                        <Check className="h-4 w-4 text-blue-500 dark:text-gray-400" />
                       )}
                     </div>
-                    <div className="text-sm font-medium">Hard</div>
-                    <div className="text-xs text-gray-500">Advanced</div>
+                    <div className="text-sm font-medium text-gray-900 dark:text-gray-100">Hard</div>
                   </div>
                 </div>
               </div>
@@ -699,13 +861,13 @@ export function PracticeSection({ onPracticeStart }: PracticeSectionProps): JSX.
             {/* Question History */}
             <div className="mb-8">
               <div className="flex items-center mb-4">
-                <h4 className="text-lg font-medium text-gray-800">Question History</h4>
+                <h4 className="apple-heading-2" data-component-name="PracticeSection">Question History</h4>
               </div>
               
               {/* Apple-style list items */}
-              <div className="rounded-xl overflow-hidden shadow-sm border border-gray-100">
+              <div className="rounded-xl overflow-hidden shadow-sm border border-gray-100 dark:border-gray-700">
                 <div 
-                  className="flex items-center p-4 bg-white border-b border-gray-100 cursor-pointer hover:bg-gray-50 transition-colors duration-200"
+                  className="flex items-center p-4 bg-white dark:bg-gray-800 border-b border-gray-100 dark:border-gray-700 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors duration-200"
                   onClick={() => {
                     const isSelected = filterOptions.interactionStatus.includes('incorrect');
                     // Only allow deselection if there are other options selected
@@ -718,11 +880,11 @@ export function PracticeSection({ onPracticeStart }: PracticeSectionProps): JSX.
                     }
                   }}
                 >
-                  <div className="w-8 h-8 rounded-full bg-red-100 flex items-center justify-center mr-3">
+                  <div className="w-8 h-8 rounded-full bg-red-100 dark:bg-red-900/30 flex items-center justify-center mr-3">
                     <XCircle className="h-4 w-4 text-red-500" />
                   </div>
                   <div className="flex-1">
-                    <div className="text-base font-medium text-gray-900">Incorrect</div>
+                    <div className="text-base font-medium text-gray-900 dark:text-gray-100">Incorrect</div>
                     <div className="text-sm text-gray-500">
                       Questions you got wrong
                       {getSectionProgressFromStorage(activeSection).incorrect > 0 && (
@@ -740,7 +902,7 @@ export function PracticeSection({ onPracticeStart }: PracticeSectionProps): JSX.
                 </div>
                 
                 <div 
-                  className="flex items-center p-4 bg-white border-b border-gray-100 cursor-pointer hover:bg-gray-50 transition-colors duration-200"
+                  className="flex items-center p-4 bg-white dark:bg-gray-800 border-b border-gray-100 dark:border-gray-700 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors duration-200"
                   onClick={() => {
                     const isSelected = filterOptions.interactionStatus.includes('correct');
                     // Only allow deselection if there are other options selected
@@ -753,11 +915,11 @@ export function PracticeSection({ onPracticeStart }: PracticeSectionProps): JSX.
                     }
                   }}
                 >
-                  <div className="w-8 h-8 rounded-full bg-green-100 flex items-center justify-center mr-3">
+                  <div className="w-8 h-8 rounded-full bg-green-100 dark:bg-green-900/30 flex items-center justify-center mr-3">
                     <CheckCircle className="h-4 w-4 text-green-500" />
                   </div>
                   <div className="flex-1">
-                    <div className="text-base font-medium text-gray-900">Correct</div>
+                    <div className="text-base font-medium text-gray-900 dark:text-gray-100">Correct</div>
                     <div className="text-sm text-gray-500">
                       Questions you got right
                       {getSectionProgressFromStorage(activeSection).correct > 0 && (
@@ -774,78 +936,11 @@ export function PracticeSection({ onPracticeStart }: PracticeSectionProps): JSX.
                   </div>
                 </div>
                 
-                <div 
-                  className="flex items-center p-4 bg-white border-b border-gray-100 cursor-pointer hover:bg-gray-50 transition-colors duration-200"
-                  onClick={() => {
-                    const isSelected = filterOptions.interactionStatus.includes('flagged');
-                    // Only allow deselection if there are other options selected
-                    if (isSelected && filterOptions.interactionStatus.length > 1) {
-                      const updatedStatus = filterOptions.interactionStatus.filter(status => status !== 'flagged');
-                      handleFilterChange({...filterOptions, interactionStatus: updatedStatus as InteractionStatus[]});
-                    } else if (!isSelected) {
-                      const updatedStatus = [...filterOptions.interactionStatus, 'flagged'];
-                      handleFilterChange({...filterOptions, interactionStatus: updatedStatus as InteractionStatus[]});
-                    }
-                  }}
-                >
-                  <div className="w-8 h-8 rounded-full bg-yellow-100 flex items-center justify-center mr-3">
-                    <Flag className="h-4 w-4 text-yellow-500" />
-                  </div>
-                  <div className="flex-1">
-                    <div className="text-base font-medium text-gray-900">Flagged</div>
-                    <div className="text-sm text-gray-500">
-                      Questions you flagged for review
-                      {getSectionProgressFromStorage(activeSection).flagged > 0 && (
-                        <span className="ml-2 text-indigo-600 font-medium">
-                          ({getSectionProgressFromStorage(activeSection).flagged})
-                        </span>
-                      )}
-                    </div>
-                  </div>
-                  <div className="w-6 h-6 rounded-full border border-gray-200 flex items-center justify-center">
-                    {filterOptions.interactionStatus.includes('flagged') && (
-                      <div className="w-4 h-4 rounded-full bg-blue-500"></div>
-                    )}
-                  </div>
-                </div>
+                
+                {/* Skipped filter removed as we don't have skip functionality yet */}
                 
                 <div 
-                  className="flex items-center p-4 bg-white border-b border-gray-100 cursor-pointer hover:bg-gray-50 transition-colors duration-200"
-                  onClick={() => {
-                    const isSelected = filterOptions.interactionStatus.includes('skipped');
-                    // Only allow deselection if there are other options selected
-                    if (isSelected && filterOptions.interactionStatus.length > 1) {
-                      const updatedStatus = filterOptions.interactionStatus.filter(status => status !== 'skipped');
-                      handleFilterChange({...filterOptions, interactionStatus: updatedStatus as InteractionStatus[]});
-                    } else if (!isSelected) {
-                      const updatedStatus = [...filterOptions.interactionStatus, 'skipped'];
-                      handleFilterChange({...filterOptions, interactionStatus: updatedStatus as InteractionStatus[]});
-                    }
-                  }}
-                >
-                  <div className="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center mr-3">
-                    <SkipForward className="h-4 w-4 text-blue-500" />
-                  </div>
-                  <div className="flex-1">
-                    <div className="text-base font-medium text-gray-900">Skipped</div>
-                    <div className="text-sm text-gray-500">
-                      Questions you skipped
-                      {getSectionProgressFromStorage(activeSection).skipped > 0 && (
-                        <span className="ml-2 text-amber-600 font-medium">
-                          ({getSectionProgressFromStorage(activeSection).skipped})
-                        </span>
-                      )}
-                    </div>
-                  </div>
-                  <div className="w-6 h-6 rounded-full border border-gray-200 flex items-center justify-center">
-                    {filterOptions.interactionStatus.includes('skipped') && (
-                      <div className="w-4 h-4 rounded-full bg-blue-500"></div>
-                    )}
-                  </div>
-                </div>
-                
-                <div 
-                  className="flex items-center p-4 bg-white cursor-pointer hover:bg-gray-50 transition-colors duration-200"
+                  className="flex items-center p-4 bg-white dark:bg-gray-800 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors duration-200"
                   onClick={() => {
                     const isSelected = filterOptions.interactionStatus.includes('unseen');
                     const updatedStatus = isSelected
@@ -854,11 +949,11 @@ export function PracticeSection({ onPracticeStart }: PracticeSectionProps): JSX.
                     handleFilterChange({...filterOptions, interactionStatus: updatedStatus as InteractionStatus[]});
                   }}
                 >
-                  <div className="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center mr-3">
+                  <div className="w-8 h-8 rounded-full bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center mr-3">
                     <Eye className="h-4 w-4 text-blue-500" />
                   </div>
                   <div className="flex-1">
-                    <div className="text-base font-medium text-gray-900">Unseen</div>
+                    <div className="text-base font-medium text-gray-900 dark:text-gray-100">Unseen</div>
                     <div className="text-sm text-gray-500">
                       Questions you haven't seen yet
                       {(() => {
@@ -868,7 +963,7 @@ export function PracticeSection({ onPracticeStart }: PracticeSectionProps): JSX.
                         
                         // Calculate unseen count - if total tracked is 0 or less than section count, show the difference
                         // Otherwise, there are no unseen questions (all have been seen)
-                        const unseenCount = Math.max(0, sectionQuestionCount - totalTracked);
+                        const unseenCount = Math.max(0, sectionQuestionCounts[activeSection] - totalTracked);
                         
                         return unseenCount > 0 ? (
                           <span className="ml-2 text-gray-600 font-medium">({unseenCount})</span>
@@ -893,23 +988,23 @@ export function PracticeSection({ onPracticeStart }: PracticeSectionProps): JSX.
             <div className="text-sm text-gray-500 mb-4">
               <span className="font-medium text-gray-700">{filteredCount}</span> questions match your filters
             </div>
-            <Button
+            <button
               onClick={handleStartPractice}
               disabled={isLoading || filteredCount === 0}
-              className={`w-full py-4 rounded-xl font-medium text-base transition-all duration-200 ${isLoading || filteredCount === 0 ? 'bg-gray-200 text-gray-400' : 'bg-blue-500 hover:bg-blue-600 text-white shadow-md hover:shadow-lg'}`}
+              className={`w-full py-3 rounded-xl font-medium text-base transition-all duration-200 flex items-center justify-center gap-2 ${isLoading || filteredCount === 0 ? 'bg-gray-200 text-gray-400' : 'bg-blue-500 hover:bg-blue-600 text-white shadow-md hover:shadow-lg'}`}
             >
               {isLoading ? (
-                <div className="flex items-center justify-center">
+                <>
                   <Loader2 className="h-5 w-5 animate-spin mr-2" />
                   Loading...
-                </div>
+                </>
               ) : (
-                <div className="flex items-center justify-center">
+                <>
                   Start Practice
                   <ArrowRight className="h-5 w-5 ml-2" />
-                </div>
+                </>
               )}
-            </Button>
+            </button>
           </div>
         </div>
       )}

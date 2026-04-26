@@ -1,0 +1,213 @@
+/* Markdown styling for AI chat messages */
+.markdown-content {
+  font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+  line-height: 1.5;
+  font-size: 14px;
+}
+
+/* Emoji styling */
+.markdown-content p {
+  margin-bottom: 0.75em;
+}
+
+/* Ensure emojis display at proper size */
+.markdown-content p:has(img.emoji) {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.25em;
+}
+
+.markdown-content img.emoji {
+  height: 1.2em;
+  width: 1.2em;
+  margin: 0 0.05em 0 0.1em;
+  vertical-align: -0.1em;
+}
+
+/* Bold text */
+.markdown-content strong {
+  font-weight: 600;
+  color: inherit;
+}
+
+/* Italic text */
+.markdown-content em {
+  font-style: italic;
+  color: inherit;
+}
+
+/* Headings */
+.markdown-content h1, 
+.markdown-content h2, 
+.markdown-content h3, 
+.markdown-content h4, 
+.markdown-content h5, 
+.markdown-content h6 {
+  margin-top: 0.8em;
+  margin-bottom: 0.5em;
+  font-weight: 600;
+  line-height: 1.25;
+  color: #1D1D1F;
+}
+
+.markdown-content h1 {
+  font-size: 1.3em;
+  border-bottom: 1px solid #E5E5EA;
+  padding-bottom: 0.3em;
+}
+
+.markdown-content h2 {
+  font-size: 1.2em;
+  color: #007AFF;
+}
+
+.markdown-content h3 {
+  font-size: 1.1em;
+  color: #1D1D1F;
+}
+
+.markdown-content h4, 
+.markdown-content h5, 
+.markdown-content h6 {
+  font-size: 1em;
+}
+
+/* Add a subtle indicator before headings for better visual hierarchy */
+.markdown-content h2::before {
+  content: "";
+  display: inline-block;
+  width: 4px;
+  height: 0.9em;
+  background-color: #007AFF;
+  margin-right: 0.5em;
+  vertical-align: 0;
+  border-radius: 2px;
+}
+
+/* Lists */
+.markdown-content ul, 
+.markdown-content ol {
+  padding-left: 1.5em;
+  margin: 0.5em 0;
+}
+
+.markdown-content li {
+  margin: 0.4em 0;
+  position: relative;
+}
+
+/* Custom bullet styling for unordered lists */
+.markdown-content ul li::marker {
+  color: #007AFF;
+  font-size: 1.2em;
+}
+
+/* Custom number styling for ordered lists */
+.markdown-content ol li::marker {
+  color: #007AFF;
+  font-weight: 600;
+}
+
+/* Nested lists */
+.markdown-content ul ul,
+.markdown-content ol ol,
+.markdown-content ul ol,
+.markdown-content ol ul {
+  margin: 0.3em 0 0.3em 0.8em;
+}
+
+/* Add spacing after lists */
+.markdown-content ul + p,
+.markdown-content ol + p {
+  margin-top: 0.8em;
+}
+
+/* Code blocks */
+.markdown-content code {
+  font-family: 'SF Mono', Menlo, Monaco, Consolas, 'Courier New', monospace;
+  background-color: rgba(0, 0, 0, 0.05);
+  padding: 0.2em 0.4em;
+  border-radius: 3px;
+  font-size: 0.9em;
+}
+
+.markdown-content pre {
+  background-color: rgba(0, 0, 0, 0.05);
+  padding: 0.5em;
+  border-radius: 6px;
+  overflow-x: auto;
+  margin: 0.5em 0;
+}
+
+.markdown-content pre code {
+  background-color: transparent;
+  padding: 0;
+}
+
+/* Links */
+.markdown-content a {
+  color: #007AFF;
+  text-decoration: none;
+}
+
+.markdown-content a:hover {
+  text-decoration: underline;
+}
+
+/* Blockquotes */
+.markdown-content blockquote {
+  border-left: 3px solid #E5E5EA;
+  padding-left: 1em;
+  margin: 0.5em 0;
+  color: #86868B;
+}
+
+/* Tables */
+.markdown-content table {
+  border-collapse: collapse;
+  width: 100%;
+  margin: 0.5em 0;
+}
+
+.markdown-content th,
+.markdown-content td {
+  border: 1px solid #E5E5EA;
+  padding: 0.4em 0.6em;
+  text-align: left;
+}
+
+.markdown-content th {
+  background-color: rgba(0, 0, 0, 0.03);
+  font-weight: 600;
+}
+
+/* Horizontal rule */
+.markdown-content hr {
+  border: 0;
+  border-top: 1px solid #E5E5EA;
+  margin: 1em 0;
+}
+
+/* Special styling for user messages (blue background) */
+.bg-\[\#007AFF\] .markdown-content {
+  color: white;
+}
+
+.bg-\[\#007AFF\] .markdown-content code {
+  background-color: rgba(255, 255, 255, 0.2);
+}
+
+.bg-\[\#007AFF\] .markdown-content pre {
+  background-color: rgba(255, 255, 255, 0.1);
+}
+
+.bg-\[\#007AFF\] .markdown-content a {
+  color: white;
+  text-decoration: underline;
+}
+
+.bg-\[\#007AFF\] .markdown-content blockquote {
+  border-left-color: rgba(255, 255, 255, 0.4);
+  color: rgba(255, 255, 255, 0.8);
+}

@@ -25,6 +25,12 @@ interface DataVisualizationProps {
   }> | Record<string, unknown> | null;
 }
 
+// Define table data structure from question database
+interface TableData {
+  columns?: string[];
+  rows?: Array<Array<string | number>>;
+}
+
 // Apple's color palette for charts
 const COLORS = [
   '#007AFF', // Apple Blue
@@ -49,6 +55,62 @@ export function DataVisualization({ type = 'bar_chart', data }: DataVisualizatio
   interface ChartDataItem {
     name: string;
     value: number;
+  }
+  
+  // Check if data is in table format (has columns and rows)
+  const isTableFormat = (data: any): data is TableData => {
+    return data && 
+           typeof data === 'object' && 
+           Array.isArray(data.columns) && 
+           Array.isArray(data.rows);
+  };
+  
+  // If data is in table format, render a table
+  if (type === 'table' || isTableFormat(data)) {
+    // Cast data to TableData type if it matches the structure
+    const tableData = data as { columns: string[]; rows: Array<Array<string | number>> };
+    
+    return (
+      <div className="my-4">
+        <div className="overflow-hidden rounded-2xl bg-white shadow-[0_0_20px_rgba(0,0,0,0.04)] border border-[#E5E5EA]/60 animate-in fade-in duration-500">
+          <table className="w-full border-collapse">
+            <thead>
+              <tr className="bg-gradient-to-r from-[#F8F9FA] to-[#F2F3F5]">
+                {tableData.columns.map((column, index) => (
+                  <th 
+                    key={index} 
+                    className="py-4 px-6 text-left font-semibold text-[#1D1D1F] text-sm tracking-wide border-b border-[#E5E5EA]/40 first:rounded-tl-2xl last:rounded-tr-2xl"
+                  >
+                    {column}
+                  </th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {tableData.rows.map((row, rowIndex) => (
+                <tr 
+                  key={rowIndex} 
+                  className="hover:bg-[#F8F9FA]/50 transition-colors duration-200 border-b border-[#E5E5EA]/30 last:border-b-0"
+                >
+                  {row.map((cell, cellIndex) => (
+                    <td 
+                      key={cellIndex} 
+                      className={`py-4 px-6 text-[#3A3A3C] ${
+                        cellIndex === 0 
+                          ? 'font-medium text-[#1D1D1F]' 
+                          : 'text-center font-mono text-sm'
+                      }`}
+                    >
+                      {cell}
+                    </td>
+                  ))}
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    );
   }
   
   // If no data is provided, create sample data

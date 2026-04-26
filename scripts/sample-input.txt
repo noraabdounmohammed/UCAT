@@ -1,0 +1,13 @@
+UKMLA Syllabus Section: Respiratory Medicine
+
+Asthma
+Asthma is a chronic inflammatory condition of the airways characterized by hyperresponsiveness, mucus hypersecretion, and airway remodeling. It presents with episodic wheezing, breathlessness, chest tightness, and coughing, particularly at night or early morning. Management follows a stepwise approach using bronchodilators and inhaled corticosteroids.
+
+Chronic Obstructive Pulmonary Disease (COPD)
+COPD is characterized by persistent airflow limitation that is usually progressive and associated with an enhanced chronic inflammatory response in the airways and lungs to noxious particles or gases. Key features include dyspnea, chronic cough, and sputum production. Diagnosis requires spirometry showing FEV1/FVC < 0.7 post-bronchodilator. Management includes smoking cessation, bronchodilators, and pulmonary rehabilitation.
+
+Pneumonia
+Pneumonia is an infection of the lung parenchyma characterized by inflammation of the alveoli and abnormal alveolar filling with fluid. Clinical features include cough, dyspnea, pleuritic chest pain, fever, and consolidation on examination. Community-acquired pneumonia is commonly caused by Streptococcus pneumoniae, while hospital-acquired pneumonia often involves gram-negative organisms and Staphylococcus aureus.
+
+Pulmonary Embolism
+Pulmonary embolism (PE) occurs when a blood clot lodges in the pulmonary arterial circulation, causing ventilation-perfusion mismatch. Risk factors include immobility, surgery, malignancy, pregnancy, and thrombophilia. Clinical features include sudden-onset dyspnea, pleuritic chest pain, hemoptysis, and signs of right heart strain. Diagnosis involves D-dimer testing and CT pulmonary angiography. Management includes anticoagulation and consideration of thrombolysis for massive PE.

@@ -8,17 +8,17 @@
 
 /* Card Styles */
 .apple-card {
-  background-color: white;
+  background-color: hsl(var(--card));
   border-radius: 12px;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
-  border: 1px solid #E5E5EA;
+  box-shadow: 0 1px 3px hsl(var(--foreground) / 0.05);
+  border: 1px solid hsl(var(--border));
   overflow: hidden;
   margin-bottom: 16px;
 }
 
 .apple-card-header {
   padding: 16px 20px;
-  border-bottom: 1px solid #F2F2F7;
+  border-bottom: 1px solid hsl(var(--border));
 }
 
 .apple-card-content {
@@ -55,7 +55,7 @@
   display: grid;
   grid-template-columns: repeat(2, 1fr);
   width: 100%;
-  background-color: #F2F2F7;
+  background-color: hsl(var(--secondary));
   border-radius: 8px;
   padding: 2px;
   height: auto;
@@ -72,13 +72,13 @@
   font-weight: 500;
   border-radius: 6px;
   transition: all 0.2s ease;
-  color: #86868B;
+  color: hsl(var(--muted-foreground));
 }
 
 .apple-segmented-item[data-state="active"] {
-  background-color: white;
+  background-color: hsl(var(--card));
   color: #0066CC;
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+  box-shadow: 0 1px 2px hsl(var(--foreground) / 0.05);
 }
 
 .apple-tabs-content {
@@ -87,10 +87,10 @@
 
 /* Info Box */
 .apple-info-box {
-  background-color: #F9F9FB;
+  background-color: hsl(var(--secondary));
   border-radius: 10px;
   padding: 16px;
-  border: 1px solid #E5E5EA;
+  border: 1px solid hsl(var(--border));
 }
 
 .apple-info-box-header {
@@ -130,9 +130,9 @@
   align-items: center;
   gap: 10px;
   padding: 10px 12px;
-  background-color: white;
+  background-color: hsl(var(--card));
   border-radius: 8px;
-  border: 1px solid #E5E5EA;
+  border: 1px solid hsl(var(--border));
 }
 
 .apple-section-icon {
@@ -142,7 +142,7 @@
 .apple-section-label {
   font-size: 14px;
   font-weight: 500;
-  color: #1D1D1F;
+  color: hsl(var(--foreground));
   flex: 1;
 }
 
@@ -173,8 +173,8 @@
   align-items: center;
   width: 100%;
   padding: 12px 16px;
-  background-color: white;
-  border: 1px solid #E5E5EA;
+  background-color: hsl(var(--card));
+  border: 1px solid hsl(var(--border));
   border-radius: 10px;
   text-align: left;
   cursor: pointer;
@@ -182,7 +182,7 @@
 }
 
 .apple-selection-button:hover {
-  background-color: #F9F9FB;
+  background-color: hsl(var(--secondary));
 }
 
 .apple-selection-button-selected {
@@ -197,7 +197,7 @@
   width: 36px;
   height: 36px;
   border-radius: 6px;
-  background-color: #F2F2F7;
+  background-color: hsl(var(--secondary));
   margin-right: 12px;
   flex-shrink: 0;
 }
@@ -218,19 +218,19 @@
 .apple-selection-title {
   font-size: 15px;
   font-weight: 500;
-  color: #1D1D1F;
+  color: hsl(var(--foreground));
   margin-bottom: 2px;
 }
 
 .apple-selection-subtitle {
   font-size: 13px;
-  color: #86868B;
+  color: hsl(var(--muted-foreground));
 }
 
 .apple-selection-chevron {
   width: 16px;
   height: 16px;
-  color: #86868B;
+  color: hsl(var(--muted-foreground));
   opacity: 0;
   transition: opacity 0.2s ease;
   margin-left: 8px;
@@ -263,15 +263,15 @@
   align-items: flex-start;
   gap: 12px;
   padding: 16px;
-  background-color: white;
-  border: 1px solid #E5E5EA;
+  background-color: hsl(var(--card));
+  border: 1px solid hsl(var(--border));
   border-radius: 10px;
   cursor: pointer;
   transition: all 0.2s ease;
 }
 
 .apple-radio-option:hover {
-  background-color: #F9F9FB;
+  background-color: hsl(var(--secondary));
 }
 
 .apple-radio-option-selected {
@@ -303,7 +303,7 @@
   width: 28px;
   height: 28px;
   border-radius: 6px;
-  background-color: #F2F2F7;
+  background-color: hsl(var(--secondary));
   color: #0066CC;
 }
 
@@ -314,12 +314,12 @@
 .apple-radio-title {
   font-size: 15px;
   font-weight: 500;
-  color: #1D1D1F;
+  color: hsl(var(--foreground));
 }
 
 .apple-radio-description {
   font-size: 14px;
-  color: #86868B;
+  color: hsl(var(--muted-foreground));
   margin-bottom: 4px;
 }
 
@@ -356,5 +356,5 @@
 
 /* Text colors */
 .text-secondary {
-  color: #86868B;
+  color: hsl(var(--muted-foreground));
 }

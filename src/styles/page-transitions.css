@@ -28,8 +28,8 @@
   transform: translateZ(0);
 }
 
-/* Prevent scroll jumps */
+/* Prevent scroll jumps - smooth behavior disabled to allow instant scroll-to-top */
 html, body {
-  scroll-behavior: smooth;
+  scroll-behavior: auto !important;
   overflow-anchor: none;
 }

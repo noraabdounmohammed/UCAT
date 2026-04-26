@@ -1,0 +1,288 @@
+/* Fixed input styles for ApplePracticeSession */
+
+.apple-practice-session {
+  position: relative;
+  padding-bottom: 32px; /* Smaller space since pill floats */
+}
+
+.apple-ai-helper {
+  position: relative;
+}
+
+.apple-ai-helper-fixed-input {
+  position: fixed;
+  bottom: 16px;
+  left: 0;
+  right: 0;
+  background: transparent; /* floating */
+  padding: 0 16px;
+  border-top: none;
+  z-index: 1000;
+  pointer-events: none; /* allow only pill to be interactive */
+  isolation: isolate; /* ensure correct backdrop composition */
+}
+
+.apple-ai-helper-fixed-input .input-container {
+  max-width: 768px;
+  margin: 0 auto;
+  display: flex;
+  gap: 8px;
+  justify-content: center;
+}
+
+/* Pill input styling */
+.chat-input-pill {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  background: rgba(255, 255, 255, 0.78); /* lighter but more obscuring */
+  border-radius: 9999px;
+  padding: 10px 12px;
+  gap: 8px;
+  border: 1px solid rgba(0, 0, 0, 0.06);
+  box-shadow: 0 8px 26px rgba(0,0,0,0.10), inset 0 1px 0 rgba(255,255,255,0.6);
+  backdrop-filter: blur(28px) saturate(160%) brightness(1.06);
+  -webkit-backdrop-filter: blur(28px) saturate(160%) brightness(1.06);
+  pointer-events: auto; /* interactive */
+  position: relative; /* for correct stacking */
+  isolation: isolate; /* ensure backdrop samples page behind */
+}
+
+.pill-icon-left {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #6B7280; /* gray-500 */
+}
+
+.pill-input {
+  flex: 1;
+  background: transparent;
+  border: none;
+  outline: none;
+  font-size: 16px;
+  color: #1D1D1F;
+  padding: 0 12px 0 16px;
+  text-align: left;
+}
+
+.pill-input::placeholder {
+  color: #86868B;
+}
+
+.pill-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  border-radius: 9999px;
+  color: #1D1D1F;
+  background: rgba(255,255,255,0.7);
+  border: 1px solid rgba(0,0,0,0.06);
+}
+
+.pill-icon.recording {
+  background: rgba(255, 59, 48, 0.10);
+  box-shadow: 0 0 0 6px rgba(255, 59, 48, 0.12);
+  color: #d00;
+}
+
+.pill-icon.holding {
+  background: rgba(0, 122, 255, 0.10);
+  box-shadow: 0 0 0 6px rgba(0, 122, 255, 0.14);
+  color: #0a66ff;
+}
+
+.pill-hint {
+  font-size: 12px;
+  color: #6e6e73;
+  margin-left: 8px;
+  user-select: none;
+}
+
+.pill-settings {
+  position: relative;
+}
+
+.pill-settings-popover {
+  position: absolute;
+  right: 0;
+  bottom: 44px;
+  min-width: 220px;
+  background: rgba(255,255,255,0.92);
+  border: 1px solid rgba(0,0,0,0.08);
+  border-radius: 12px;
+  box-shadow: 0 12px 24px rgba(0,0,0,0.12);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  padding: 10px;
+  z-index: 1001;
+}
+
+.pill-settings-popover .row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 6px 2px;
+}
+
+.pill-settings-toggle {
+  appearance: none;
+  width: 36px;
+  height: 22px;
+  border-radius: 9999px;
+  background: #e5e5ea;
+  position: relative;
+  outline: none;
+  border: none;
+}
+
+.pill-settings-toggle::after {
+  content: '';
+  position: absolute;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  top: 2px;
+  left: 2px;
+  background: #fff;
+  box-shadow: 0 1px 2px rgba(0,0,0,0.15);
+  transition: transform 0.15s ease;
+}
+
+.pill-settings-toggle[data-checked="true"] {
+  background: #0a84ff;
+}
+
+.pill-settings-toggle[data-checked="true"]::after {
+  transform: translateX(14px);
+}
+
+.pill-settings-gear {
+  width: 28px;
+  height: 28px;
+  border-radius: 8px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(255,255,255,0.65);
+  border: 1px solid rgba(0,0,0,0.06);
+  color: #1d1d1f;
+}
+
+.pill-send {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: #007AFF;
+  color: #fff;
+  transition: background 0.2s ease;
+}
+
+.pill-send:disabled {
+  background: #E5E5EA;
+  color: #86868B;
+}
+
+.pill-send:not(:disabled):hover {
+  background: #0071EB;
+}
+
+.pill-send:not(:disabled):active {
+  background: #0068D6;
+}
+
+/* Enhanced mobile optimizations */
+@media (max-width: 767px) {
+  .apple-practice-session {
+    padding-bottom: 24px;
+  }
+  
+  .apple-ai-helper-fixed-input {
+    bottom: 12px;
+    padding: 0 12px;
+  }
+  
+  /* Better message layout on mobile */
+  .chat-message {
+    max-width: 90% !important; /* Wider on mobile for better readability */
+  }
+  
+  /* Improved typography for mobile */
+  .chat-message p {
+    font-size: 16px !important;
+    line-height: 1.5 !important;
+  }
+  
+  .chat-message h1 {
+    font-size: 18px !important;
+  }
+  
+  .chat-message h2 {
+    font-size: 17px !important;
+  }
+  
+  .chat-message h3 {
+    font-size: 16px !important;
+  }
+  
+  /* Enhanced touch targets */
+  .pill-icon {
+    width: 38px;
+    height: 38px;
+    min-width: 38px;
+    min-height: 38px;
+  }
+  
+  .pill-send {
+    width: 40px;
+    height: 40px;
+    min-width: 40px;
+    min-height: 40px;
+  }
+}
+
+/* Momentum scrolling for chat container */
+.chat-messages-container {
+  -webkit-overflow-scrolling: touch;
+  scroll-behavior: smooth;
+  overscroll-behavior: contain;
+}
+
+/* Haptic feedback simulation for voice button */
+.pill-icon.recording {
+  transform: scale(0.95);
+  transition: transform 0.1s ease, background 0.2s ease, box-shadow 0.2s ease;
+}
+
+.pill-icon.holding {
+  transform: scale(0.95);
+  transition: transform 0.1s ease, background 0.2s ease, box-shadow 0.2s ease;
+}
+
+/* Better visual feedback for touch interactions */
+.pill-icon:active {
+  transform: scale(0.92);
+}
+
+.pill-send:active {
+  transform: scale(0.92);
+}
+
+/* Improved chat input on mobile keyboards */
+@media (max-width: 767px) {
+  .pill-input {
+    font-size: 16px; /* Prevents zoom on iOS */
+    padding: 2px 0;
+  }
+  
+  /* Adjust for mobile keyboard */
+  .apple-ai-helper-fixed-input {
+    transition: bottom 0.3s ease;
+  }
+}

@@ -1,0 +1,18 @@
+import React from 'react';
+
+interface StopIconProps {
+  className?: string;
+}
+
+export const StopIcon: React.FC<StopIconProps> = ({ className = "w-4 h-4" }) => {
+  return (
+    <svg
+      className={className}
+      fill="currentColor"
+      viewBox="0 0 24 24"
+      xmlns="http://www.w3.org/2000/svg"
+    >
+      <rect x="6" y="6" width="12" height="12" rx="2" />
+    </svg>
+  );
+};

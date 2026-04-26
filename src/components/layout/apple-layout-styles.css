@@ -3,7 +3,14 @@
 .apple-container {
   max-width: 1024px;
   margin: 0 auto;
-  padding: 0 20px;
+  padding: 0 16px;
+}
+
+@media (max-width: 768px) {
+  .apple-container {
+    max-width: 100%;
+    padding: 0 8px;
+  }
 }
 
 /* Apple Sidebar Styles - macOS Finder/Settings inspired */
@@ -260,11 +267,19 @@
   margin-bottom: 8px;
 }
 
+.dark .apple-heading-1 {
+  color: #F5F5F7;
+}
+
 .apple-heading-2 {
   font-size: 17px;
   font-weight: 600;
   color: #1D1D1F;
   margin-bottom: 4px;
+}
+
+.dark .apple-heading-2 {
+  color: #F5F5F7;
 }
 
 .apple-heading-3 {
