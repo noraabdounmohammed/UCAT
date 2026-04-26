@@ -323,14 +323,14 @@ export const LandingPage: React.FC = () => {
       <div className="w-full px-8 pt-16 pb-0 flex-shrink-0">
         <div className="max-w-6xl mx-auto w-full text-center">
           <div className="inline-block relative mb-8">
-            <h1 className="font-bold text-stone-800 tracking-tight transition-all duration-700 mb-0" style={{ fontFamily: "'Unbounded', sans-serif", fontWeight: 500, letterSpacing: '-0.02em', lineHeight: '1.2' }}>
+            <h1 className="font-bold text-stone-800 dark:text-stone-50 tracking-tight transition-all duration-700 mb-0" style={{ fontFamily: "'Unbounded', sans-serif", fontWeight: 500, letterSpacing: '-0.02em', lineHeight: '1.2' }}>
               <span className="text-[38px] md:text-[60px] whitespace-nowrap">Elevated</span><br />
               <span className="text-[38px] md:text-[60px] whitespace-nowrap">Exam Prep</span>
             </h1>
             <div className="h-[1px] w-20 bg-stone-400 mx-auto mt-6"></div>
           </div>
-          <p className="text-xl md:text-2xl text-stone-600 tracking-normal transition-all duration-700" style={{ fontFamily: "'Manrope', sans-serif", fontWeight: 300 }}>
-            for the <span className="font-semibold text-stone-800">{displayCards[currentIndex]?.title || 'Medical Education'}</span>
+          <p className="text-xl md:text-2xl text-stone-600 dark:text-stone-300 tracking-normal transition-all duration-700" style={{ fontFamily: "'Manrope', sans-serif", fontWeight: 300 }}>
+            for the <span className="font-semibold text-stone-800 dark:text-stone-100">{displayCards[currentIndex]?.title || 'Medical Education'}</span>
           </p>
         </div>
       </div>
@@ -346,12 +346,12 @@ export const LandingPage: React.FC = () => {
         {isLoading ? (
           <div className="flex flex-col items-center gap-4">
             <div className="animate-spin rounded-full h-12 w-12 border-4 border-stone-300 border-t-stone-800"></div>
-            <div className="text-stone-600 text-xl font-light" style={{ fontFamily: "'Manrope', sans-serif" }}>
+            <div className="text-stone-600 dark:text-stone-300 text-xl font-light" style={{ fontFamily: "'Manrope', sans-serif" }}>
               Loading curriculums...
             </div>
           </div>
         ) : displayCards.length === 0 ? (
-          <div className="text-stone-600 text-2xl font-light" style={{ fontFamily: "'Manrope', sans-serif" }}>
+          <div className="text-stone-600 dark:text-stone-300 text-2xl font-light" style={{ fontFamily: "'Manrope', sans-serif" }}>
             No curriculums found
           </div>
         ) : (
