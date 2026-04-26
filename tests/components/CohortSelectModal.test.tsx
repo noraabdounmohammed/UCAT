@@ -16,11 +16,15 @@ function makeRepo(overrides: Partial<CohortRepository> = {}): CohortRepository {
 describe('<CohortSelectModal />', () => {
   beforeEach(() => vi.clearAllMocks());
 
-  it('renders the school + display-name inputs', () => {
+  it('renders the school dropdown + display-name input', () => {
     render(<CohortSelectModal repo={makeRepo()} onCohortSet={vi.fn()} />);
     expect(screen.getByLabelText(/medical school/i)).toBeInTheDocument();
     expect(screen.getByLabelText(/display name/i)).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /save/i })).toBeInTheDocument();
+    // Sanity-check a couple of canonical schools are in the dropdown options.
+    expect(screen.getByRole('option', { name: 'Imperial College London' })).toBeInTheDocument();
+    expect(screen.getByRole('option', { name: 'University of Oxford' })).toBeInTheDocument();
+    expect(screen.getByRole('option', { name: 'Other (UK)' })).toBeInTheDocument();
   });
 
   it('submitting calls repo.setMyCohort and onCohortSet', async () => {
@@ -30,7 +34,7 @@ describe('<CohortSelectModal />', () => {
 
     render(<CohortSelectModal repo={repo} onCohortSet={onCohortSet} />);
 
-    await user.type(screen.getByLabelText(/medical school/i), 'Imperial College London');
+    await user.selectOptions(screen.getByLabelText(/medical school/i), 'Imperial College London');
     await user.type(screen.getByLabelText(/display name/i), 'Nora');
     await user.click(screen.getByRole('button', { name: /save/i }));
 
@@ -38,14 +42,14 @@ describe('<CohortSelectModal />', () => {
     expect(onCohortSet).toHaveBeenCalledTimes(1);
   });
 
-  it('disables save until both fields are non-empty', async () => {
+  it('disables save until a school is picked AND a display name is entered', async () => {
     const user = userEvent.setup();
     render(<CohortSelectModal repo={makeRepo()} onCohortSet={vi.fn()} />);
 
     const save = screen.getByRole('button', { name: /save/i });
     expect(save).toBeDisabled();
 
-    await user.type(screen.getByLabelText(/medical school/i), 'Imperial');
+    await user.selectOptions(screen.getByLabelText(/medical school/i), 'University of Oxford');
     expect(save).toBeDisabled();
 
     await user.type(screen.getByLabelText(/display name/i), 'Nora');
@@ -60,7 +64,7 @@ describe('<CohortSelectModal />', () => {
     const onCohortSet = vi.fn();
 
     render(<CohortSelectModal repo={repo} onCohortSet={onCohortSet} />);
-    await user.type(screen.getByLabelText(/medical school/i), 'Imperial');
+    await user.selectOptions(screen.getByLabelText(/medical school/i), 'Imperial College London');
     await user.type(screen.getByLabelText(/display name/i), 'Nora');
     await user.click(screen.getByRole('button', { name: /save/i }));
 

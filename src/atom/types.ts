@@ -7,7 +7,7 @@ export type Exam = 'UKMLA' | 'UCAT' | string;
 
 export type AtomSourceType =
   | 'NICE' | 'NHS' | 'BNF' | 'GMC' | 'past_paper'
-  | 'doctor_seed' | 'student_bounty';
+  | 'doctor_seed' | 'student_bounty' | 'ai-draft';
 
 export type AtomStatus = 'draft' | 'pending_review' | 'approved' | 'rejected';
 

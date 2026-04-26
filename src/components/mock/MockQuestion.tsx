@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react';
 import type { Atom } from '@/atom/types';
+import { UnreviewedAtomChip } from '@/components/study/UnreviewedAtomChip';
 
 export interface MockQuestionProps {
   atom: Atom;
@@ -26,8 +27,9 @@ export function MockQuestion({ atom, onSubmit }: MockQuestionProps) {
   };
 
   return (
-    <div className="rounded-2xl bg-white border border-stone-200 p-6 max-w-md mx-auto space-y-4">
-      <h2 className="text-base font-medium text-stone-900">{atom.canonicalStem}</h2>
+    <div className="rounded-2xl bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-800 p-6 max-w-md mx-auto space-y-4">
+      <UnreviewedAtomChip atom={atom} />
+      <h2 className="text-base font-medium text-stone-900 dark:text-stone-100">{atom.canonicalStem}</h2>
       <div className="space-y-2">
         {options.map((opt, i) => (
           <button
@@ -35,7 +37,7 @@ export function MockQuestion({ atom, onSubmit }: MockQuestionProps) {
             type="button"
             disabled={submitted}
             onClick={() => handleClick(i)}
-            className="block w-full text-left px-3 py-2 rounded-lg border border-stone-300 hover:bg-stone-50 disabled:opacity-50 text-sm"
+            className="block w-full text-left px-3 py-2 rounded-lg border border-stone-300 dark:border-stone-700 hover:bg-stone-50 dark:hover:bg-stone-800 disabled:opacity-50 text-sm text-stone-900 dark:text-stone-100"
           >
             {opt.text}
           </button>

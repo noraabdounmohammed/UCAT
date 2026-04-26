@@ -21,7 +21,8 @@ describe('useMockSession', () => {
 
   it('loads atoms and exposes the first atom', async () => {
     const atomRepo = {
-      listApprovedByExam: vi.fn(async () => [makeAtom('a1'), makeAtom('a2'), makeAtom('a3')]),
+      listApprovedByExam: vi.fn(),
+      listAvailableForExam: vi.fn(async () => [makeAtom('a1'), makeAtom('a2'), makeAtom('a3')]),
       listFreeTier: vi.fn(),
       getById: vi.fn(),
       countApprovedByExam: vi.fn(),
@@ -42,7 +43,8 @@ describe('useMockSession', () => {
 
   it('submit advances and tracks correctness', async () => {
     const atomRepo = {
-      listApprovedByExam: vi.fn(async () => [makeAtom('a1'), makeAtom('a2')]),
+      listApprovedByExam: vi.fn(),
+      listAvailableForExam: vi.fn(async () => [makeAtom('a1'), makeAtom('a2')]),
       listFreeTier: vi.fn(), getById: vi.fn(), countApprovedByExam: vi.fn(),
     };
     const { result } = renderHook(() =>
@@ -63,7 +65,8 @@ describe('useMockSession', () => {
 
   it('finishing all atoms transitions to status=finished with score', async () => {
     const atomRepo = {
-      listApprovedByExam: vi.fn(async () => [makeAtom('a1'), makeAtom('a2')]),
+      listApprovedByExam: vi.fn(),
+      listAvailableForExam: vi.fn(async () => [makeAtom('a1'), makeAtom('a2')]),
       listFreeTier: vi.fn(), getById: vi.fn(), countApprovedByExam: vi.fn(),
     };
     const { result } = renderHook(() =>
@@ -86,7 +89,8 @@ describe('useMockSession', () => {
 
   it('empty bank → status=empty', async () => {
     const atomRepo = {
-      listApprovedByExam: vi.fn(async () => []),
+      listApprovedByExam: vi.fn(),
+      listAvailableForExam: vi.fn(async () => []),
       listFreeTier: vi.fn(), getById: vi.fn(), countApprovedByExam: vi.fn(),
     };
     const { result } = renderHook(() =>

@@ -6,7 +6,9 @@ import { AuthGate } from '@/components/auth/AuthGate';
 import { MockQuestion } from '@/components/mock/MockQuestion';
 import { MockTimer } from '@/components/mock/MockTimer';
 import { MockResult } from '@/components/mock/MockResult';
+import { UnreviewedToggle } from '@/components/study/UnreviewedToggle';
 import { useMockSession } from '@/hooks/useMockSession';
+import { useUnreviewedToggle } from '@/hooks/useUnreviewedToggle';
 import { createAtomRepository } from '@/atom/repository';
 import { createMockAttemptsRepository } from '@/atom/mockAttemptsRepository';
 
@@ -17,11 +19,13 @@ export function MockPage() {
   const { user } = useAuth();
   const atomRepo = useMemo(() => createAtomRepository(supabase), []);
   const mockAttemptsRepo = useMemo(() => createMockAttemptsRepository(supabase), []);
+  const unreviewed = useUnreviewedToggle();
   const session = useMockSession({
     atomRepo,
     exam: 'UKMLA',
     atomCount: MOCK_ATOM_COUNT,
     durationSec: MOCK_DURATION_SEC,
+    includeUnreviewed: unreviewed.value,
   });
 
   // Fire-and-forget persist on finished. Guarded with a ref so we save once
@@ -68,9 +72,12 @@ export function MockPage() {
     <MainLayout currentPage="mock">
       <div className="max-w-md mx-auto py-6 px-4 space-y-4">
         <div className="flex justify-between items-center">
-          <h1 className="text-xl font-semibold text-stone-900">Mock exam</h1>
+          <h1 className="text-xl font-semibold text-stone-900 dark:text-stone-100">Mock exam</h1>
           {session.status === 'in_progress' && <MockTimer secondsLeft={session.secondsLeft} />}
         </div>
+        {session.status !== 'in_progress' && session.status !== 'finished' && (
+          <UnreviewedToggle value={unreviewed.value} onChange={unreviewed.setValue} />
+        )}
         {session.status === 'loading' && (
           <div className="text-stone-500 text-center py-12">Loading…</div>
         )}
