@@ -77,6 +77,13 @@ export interface AtomRepository {
    */
   countAvailableForExam(exam: Exam, opts?: ListAvailableOptions): Promise<number>;
   countApprovedByExam(exam: Exam): Promise<number>;
+  /**
+   * Pulls atoms of the "newer kinds" (calc / EMQ) OR atoms attached to a
+   * clinical case — the content the user most needs to see if they have a
+   * long FSRS-due backlog of older SBA atoms. `buildStudyQueue` reserves a
+   * couple of slots per session for this so variety isn't starved.
+   */
+  listVarietyForExam(exam: Exam, opts?: ListAvailableOptions): Promise<Atom[]>;
 }
 
 export function createAtomRepository(supabase: SupabaseClient): AtomRepository {
@@ -186,6 +193,42 @@ export function createAtomRepository(supabase: SupabaseClient): AtomRepository {
       const { count, error } = await q;
       if (error) throw error;
       return count ?? 0;
+    },
+
+    async listVarietyForExam(exam, opts = {}) {
+      // Pull "newer kind" content (calc / emq / case-bound), excluding atoms
+      // the user has already seen. Approved by default; pending_review +
+      // ai-draft when includeUnreviewedAiDrafts is true.
+      let q = supabase
+        .from('atoms')
+        .select('*')
+        .eq('exam', exam)
+        .or('question_kind.eq.calc,question_kind.eq.emq,case_id.not.is.null');
+
+      if (opts.includeUnreviewedAiDrafts) {
+        q = q.or('status.eq.approved,and(status.eq.pending_review,source_type.eq.ai-draft)');
+      } else {
+        q = q.eq('status', 'approved');
+      }
+
+      if (opts.excludeAtomIds && opts.excludeAtomIds.length > 0) {
+        // PostgREST chokes on very long IN lists; cap the exclusion list at
+        // 200 to keep the URL under typical limits. Worst case the user gets
+        // a stale repeat — acceptable for variety injection.
+        const trimmed = opts.excludeAtomIds.slice(0, 200);
+        const list = `(${trimmed.map(id => `"${id}"`).join(',')})`;
+        q = q.not('id', 'in', list);
+      }
+
+      q = q
+        .order('high_yield', { ascending: false })
+        .order('created_at', { ascending: false });
+
+      if (opts.limit) q = q.limit(opts.limit);
+
+      const { data, error } = await q;
+      if (error) throw error;
+      return (data ?? []).map(rowToAtom);
     },
   };
 }

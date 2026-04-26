@@ -19,35 +19,105 @@ export interface BuildQueueDeps {
 }
 
 /**
- * Builds the FSRS session queue, optionally topping up with unseen atoms when
- * the user's `user_atom_state`-driven due list is short of `maxAtoms`.
+ * Reserve at least this many slots in every session for "fresh-variety" atoms
+ * (calc / EMQ / case-bound) the user has never seen. Without this, returning
+ * users with a long FSRS-due queue would never encounter newly-added content
+ * kinds — they'd see only the old SBA cards they already have due.
  *
- * Two phases:
- *   1. Existing due rows from `user_atom_state` (FSRS-scheduled review).
- *   2. If short of `maxAtoms`, top up with brand-new atoms from the `atoms`
- *      table that the user has never seen, returned as pristine
- *      `UserAtomState` rows (`reps=0, lastReviewAt=null`). `useFsrsSession`'s
- *      isPristine branch then seeds them via the FSRS scheduler.
+ * 2 of every 5-atom session = 40 % new variety; 60 % spaced repetition. This
+ * trades a small dose of FSRS adherence for actually surfacing new content.
+ */
+const VARIETY_SLOTS = 2;
+
+/**
+ * Builds the FSRS session queue with three phases:
  *
- * This is the seam that lets a brand-new user (no history) actually start
- * studying, and lets returning users see new atoms once their existing queue
- * is exhausted. It also propagates the unreviewed-AI-draft opt-in.
+ *   1. Variety reserve — pull up to VARIETY_SLOTS unseen atoms with
+ *      question_kind in (calc, emq) OR case_id IS NOT NULL. Ensures every
+ *      session has a taste of the newer formats even when the user has a
+ *      backlog of due SBA cards.
+ *
+ *   2. FSRS-due rows from `user_atom_state` (spaced repetition).
+ *
+ *   3. If short, top up with brand-new approved atoms (any kind).
+ *
+ * Variety atoms returned as pristine UserAtomState rows; useFsrsSession seeds
+ * them via the FSRS scheduler on first attempt.
  */
 export async function buildStudyQueue(deps: BuildQueueDeps): Promise<UserAtomState[]> {
-  const dueRows = await deps.userStateRepo.listDueForUser(deps.userId, deps.asOf, deps.maxAtoms);
-  if (dueRows.length >= deps.maxAtoms) return dueRows;
-
-  const remainingSlots = deps.maxAtoms - dueRows.length;
-  const seenIds = dueRows.map(r => r.atomId);
-
-  const fresh = await deps.atomRepo.listAvailableForExam(deps.exam, {
+  // Phase 1: variety reserve — fetch up to VARIETY_SLOTS atoms of newer kinds
+  // (calc / emq / case-bound) the user has not seen. Hidden behind a feature
+  // floor so we don't over-rotate variety on tiny sessions.
+  const varietyTarget = Math.min(VARIETY_SLOTS, Math.max(0, deps.maxAtoms - 1));
+  const seenAtomIds = await deps.userStateRepo.listSeenAtomIds(deps.userId);
+  const varietyPool = await deps.atomRepo.listVarietyForExam(deps.exam, {
     includeUnreviewedAiDrafts: deps.includeUnreviewed,
-    excludeAtomIds: seenIds,
-    limit: remainingSlots,
+    excludeAtomIds: seenAtomIds,
+    limit: varietyTarget,
   });
+  const varietyPristine: UserAtomState[] = varietyPool.map(a =>
+    atomToPristineState(deps.userId, a, deps.asOf),
+  );
 
-  const pristine: UserAtomState[] = fresh.map(a => atomToPristineState(deps.userId, a, deps.asOf));
-  return [...dueRows, ...pristine];
+  // Phase 2: FSRS-due rows for the remaining slots.
+  const dueBudget = deps.maxAtoms - varietyPristine.length;
+  const dueRows = dueBudget > 0
+    ? await deps.userStateRepo.listDueForUser(deps.userId, deps.asOf, dueBudget)
+    : [];
+
+  // Phase 3: top up with any brand-new atoms if we're still short.
+  const usedIds = new Set([
+    ...varietyPristine.map(v => v.atomId),
+    ...dueRows.map(d => d.atomId),
+    ...seenAtomIds,
+  ]);
+  const remainingSlots = deps.maxAtoms - varietyPristine.length - dueRows.length;
+  const fresh = remainingSlots > 0
+    ? await deps.atomRepo.listAvailableForExam(deps.exam, {
+        includeUnreviewedAiDrafts: deps.includeUnreviewed,
+        excludeAtomIds: Array.from(usedIds),
+        limit: remainingSlots,
+      })
+    : [];
+  const freshPristine: UserAtomState[] = fresh.map(a =>
+    atomToPristineState(deps.userId, a, deps.asOf),
+  );
+
+  // Interleave variety atoms throughout — first slot variety, then due, then
+  // alternate. This way the user encounters a calc/EMQ/case early in the
+  // session, not buried at the end. Final slice enforces maxAtoms as a hard
+  // cap regardless of how generous the repo was with `limit`.
+  return interleaveVariety([...dueRows, ...freshPristine], varietyPristine)
+    .slice(0, deps.maxAtoms);
+}
+
+/**
+ * Interleave variety atoms across the queue so they don't all bunch at the
+ * front or back. Drops variety into every Nth slot.
+ */
+function interleaveVariety(
+  base: UserAtomState[],
+  variety: UserAtomState[],
+): UserAtomState[] {
+  if (variety.length === 0) return base;
+  if (base.length === 0) return variety;
+  const out: UserAtomState[] = [];
+  const total = base.length + variety.length;
+  const step = Math.max(1, Math.floor(total / variety.length));
+  let bi = 0;
+  let vi = 0;
+  for (let i = 0; i < total; i++) {
+    // Drop a variety atom every `step` positions; otherwise base.
+    const wantVariety = vi < variety.length && (i % step === 0);
+    if (wantVariety && vi < variety.length) {
+      out.push(variety[vi++]);
+    } else if (bi < base.length) {
+      out.push(base[bi++]);
+    } else if (vi < variety.length) {
+      out.push(variety[vi++]);
+    }
+  }
+  return out;
 }
 
 function atomToPristineState(userId: string, atom: Atom, asOf: Date): UserAtomState {

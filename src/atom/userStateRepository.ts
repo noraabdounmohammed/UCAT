@@ -37,6 +37,11 @@ export interface UserStateRepository {
   getReviewEventStats(userId: string): Promise<ReviewEventStats>;
   upsertState(state: UserAtomState): Promise<void>;
   insertReviewEvent(ev: Omit<ReviewEvent, 'id' | 'createdAt'>): Promise<void>;
+  /**
+   * Returns every atom_id the user has any state for. Used by buildStudyQueue
+   * to exclude already-seen atoms from the variety / fresh-pristine pools.
+   */
+  listSeenAtomIds(userId: string): Promise<string[]>;
 }
 
 export function createUserStateRepository(supabase: SupabaseClient): UserStateRepository {
@@ -129,6 +134,15 @@ export function createUserStateRepository(supabase: SupabaseClient): UserStateRe
         response_ms: ev.responseMs,
       });
       if (error) throw error;
+    },
+
+    async listSeenAtomIds(userId) {
+      const { data, error } = await supabase
+        .from('user_atom_state')
+        .select('atom_id')
+        .eq('user_id', userId);
+      if (error) throw error;
+      return (data ?? []).map((r: any) => r.atom_id as string);
     },
   };
 }
