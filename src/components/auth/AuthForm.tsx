@@ -152,7 +152,7 @@ export function AuthForm({ onSuccess }: AuthFormProps = {}) {
   return (
     <div className="w-full">
       {/* Main Card */}
-      <div className="bg-white/90 backdrop-blur-2xl rounded-3xl shadow-2xl overflow-hidden relative border border-black/[0.08]">
+      <div className="bg-white rounded-3xl shadow-2xl overflow-hidden relative border border-stone-200">
         
         {/* Header */}
         <div className="px-4 sm:px-8 pt-8 sm:pt-10 pb-6 sm:pb-8 text-center">

@@ -15,7 +15,7 @@ export function MainLayout({ children, isPracticeSession = false, hideNav = fals
 
   return (
     <div
-      className={`bg-white dark:bg-gray-900 ${isPracticeSession ? 'h-screen overflow-hidden' : 'min-h-screen'}`}
+      className={`bg-white dark:bg-stone-950 ${isPracticeSession ? 'h-screen overflow-hidden' : 'min-h-screen'}`}
       data-component-name="MainLayout"
     >
       {!hideNav && !isPracticeSession && <AtomicEngineNav />}
@@ -23,7 +23,7 @@ export function MainLayout({ children, isPracticeSession = false, hideNav = fals
       <div className={`flex flex-col w-full ${isPracticeSession ? 'h-full' : ''}`}>
         {/* Main content with Apple HIG spacing and design */}
         <main
-          className={`flex-1 bg-white dark:bg-gray-900 ${isPracticeSession ? 'overflow-hidden' : 'pb-16'}`}
+          className={`flex-1 bg-white dark:bg-stone-950 ${isPracticeSession ? 'overflow-hidden' : 'pb-16'}`}
           data-component-name="MainLayout"
         >
           {children}

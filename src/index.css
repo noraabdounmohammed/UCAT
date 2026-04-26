@@ -118,26 +118,26 @@
 
   .dark {
     color-scheme: dark;
-    color: #f9fafb;
-    background-color: #111827;
+    color: #fafaf9;
+    background-color: #1c1917;
   }
-  
+
   /* iOS Safari dark mode fixes */
   @supports (-webkit-appearance: none) {
     .dark {
       -webkit-color-scheme: dark;
     }
-    
+
     :root {
       -webkit-color-scheme: light;
     }
   }
-  
-  /* Force dark mode styles on iOS */
+
+  /* Force dark mode styles on iOS — warm Stone palette to match the brand */
   .dark body,
   .dark html {
-    background-color: #111827 !important;
-    color: #f9fafb !important;
+    background-color: #1c1917 !important;
+    color: #fafaf9 !important;
   }
 }
 
