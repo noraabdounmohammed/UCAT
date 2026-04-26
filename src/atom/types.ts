@@ -11,6 +11,14 @@ export type AtomSourceType =
 
 export type AtomStatus = 'draft' | 'pending_review' | 'approved' | 'rejected';
 
+/**
+ * Verdict from the AI-side QA pass on AI-drafted atoms — populated by
+ * `scripts/ai-review-atoms.ts`. `null` means the AI hasn't reviewed yet
+ * (or this is a human-seeded atom). Surface in the /review UI so Nora can
+ * fast-path "ok" cases and focus on "concern" ones.
+ */
+export type AiReviewStatus = 'ok' | 'concern' | null;
+
 export type VariantGeneratedBy =
   | 'ai-deepseek-v3' | 'ai-openai-gpt4o-mini'
   | 'human' | 'past_paper';
@@ -37,6 +45,10 @@ export interface Atom {
   status: AtomStatus;
   createdAt: string;
   updatedAt: string;
+  /** AI-QA verdict — see AiReviewStatus. */
+  aiReviewStatus?: AiReviewStatus;
+  aiReviewNotes?: string | null;
+  aiReviewedAt?: string | null;
 }
 
 export interface AtomVariant {

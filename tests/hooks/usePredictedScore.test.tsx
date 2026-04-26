@@ -42,7 +42,12 @@ describe('usePredictedScore', () => {
     expect(result.current.atomCount).toBe(2);
     expect(result.current.totalAtoms).toBe(200);
     expect(result.current.coverageRatio).toBeCloseTo(0.01);
-    expect(result.current.predictedScore).toBeGreaterThan(0.99);
+    // Retention is now projected 7 days forward (see PROJECTION_DAYS in
+    // retention.ts). For stability=10, that's still high (~0.92) but not
+    // ~1.0 like before — this is intentional so the badge isn't always
+    // 100% right after a rating.
+    expect(result.current.predictedScore).toBeGreaterThan(0.85);
+    expect(result.current.predictedScore).toBeLessThan(0.99);
   });
 
   it('error path: status=error with message', async () => {

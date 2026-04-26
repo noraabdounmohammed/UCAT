@@ -94,19 +94,23 @@ export function AuthForm({ onSuccess }: AuthFormProps = {}) {
         });
         if (signUpError) throw signUpError;
         
-        // Create profile with default 'consumer' role
+        // Create profile with default 'consumer' role.
+        // (The DB-side `auto_promote_creators` trigger overrides the role
+        // for the operator-email allowlist before the row lands.)
+        // NOTE: profiles only has `name` (not `first_name`) and no
+        // `marketing_consent*` columns — the previous insert was silently
+        // failing for every signup, leaving users without a profiles row
+        // and breaking useUserRole() / /review.
         if (authData.user) {
           const { error: profileError } = await supabase
             .from('profiles')
             .insert({
               id: authData.user.id,
               email: authData.user.email,
-              first_name: signUpData.firstName,
-              role: 'consumer', // Default role for new users
-              marketing_consent: true,
-              marketing_consent_at: new Date().toISOString()
+              name: signUpData.firstName,
+              role: 'consumer',
             });
-          
+
           if (profileError) {
             console.error('Error creating profile:', profileError);
             // Don't throw - user is created, profile can be fixed later
