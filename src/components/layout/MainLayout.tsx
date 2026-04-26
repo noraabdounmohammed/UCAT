@@ -29,6 +29,12 @@ export function MainLayout({ children, isPracticeSession = false, hideNav = fals
           {children}
         </main>
       </div>
+      {!isPracticeSession && (
+        <footer className="text-center py-6 text-xs text-stone-400 dark:text-stone-600">
+          {/* Plain <a> (not NavLink) — privacy is a lazy route; full reload is fine for a footer link. */}
+          <a href="/privacy" className="hover:underline">Privacy &amp; cookies</a>
+        </footer>
+      )}
     </div>
   );
 }

@@ -21,6 +21,7 @@ const SeedPage = lazy(() => import('@/pages/SeedPage').then(m => ({ default: m.S
 const MistakesPage = lazy(() => import('@/pages/MistakesPage').then(m => ({ default: m.MistakesPage })));
 const VoicePage = lazy(() => import('@/pages/VoicePage').then(m => ({ default: m.VoicePage })));
 const MockPage = lazy(() => import('@/pages/MockPage').then(m => ({ default: m.MockPage })));
+const PrivacyPolicy = lazy(() => import('@/pages/PrivacyPolicy').then(m => ({ default: m.PrivacyPolicy })));
 
 // Wrapper to extract curriculumId from URL params
 const CurriculumRoute = () => {
@@ -107,6 +108,13 @@ function App() {
             <Route path="/mock" element={
               <Suspense fallback={<BlankFallback />}>
                 <MockPage />
+              </Suspense>
+            } />
+
+            {/* Privacy & cookies — lazy, accessible by URL + footer link */}
+            <Route path="/privacy" element={
+              <Suspense fallback={<BlankFallback />}>
+                <PrivacyPolicy />
               </Suspense>
             } />
 
