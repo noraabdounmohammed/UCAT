@@ -19,7 +19,7 @@ export function RejectReasonModal({
   return (
     <div className="fixed inset-0 bg-black/40 flex items-end sm:items-center justify-center z-50">
       <div className="bg-white w-full sm:max-w-md rounded-t-2xl sm:rounded-2xl p-6 space-y-4">
-        <h3 className="text-lg font-semibold">Reject this atom</h3>
+        <h3 className="text-lg font-semibold">Reject this question</h3>
         <div className="space-y-2">
           {PRESET_REASONS.map(r => (
             <button

@@ -58,7 +58,7 @@ export function MockPage() {
       <MainLayout currentPage="mock">
         <AuthGate
           title="Sign in to take a mock"
-          subtitle="A 30-minute, 20-atom timed UKMLA-style mock exam."
+          subtitle="A 30-minute, 20-question timed UKMLA-style mock exam."
         />
       </MainLayout>
     );
@@ -75,7 +75,7 @@ export function MockPage() {
           <div className="text-stone-500 text-center py-12">Loading…</div>
         )}
         {session.status === 'empty' && (
-          <div className="text-stone-700 text-center py-12">No atoms available.</div>
+          <div className="text-stone-700 text-center py-12">No questions available.</div>
         )}
         {session.status === 'error' && (
           <div className="text-red-700 text-center py-12">{session.errorMessage}</div>

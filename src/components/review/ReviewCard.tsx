@@ -27,7 +27,7 @@ export function ReviewCard({
   if (editing) {
     return (
       <div className="bg-white border border-stone-200 rounded-2xl p-6 max-w-md mx-auto space-y-3">
-        <h3 className="text-sm font-medium text-stone-700">Edit atom</h3>
+        <h3 className="text-sm font-medium text-stone-700">Edit question</h3>
         <label className="block text-sm">
           <span className="text-stone-700">Claim</span>
           <textarea

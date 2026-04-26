@@ -41,7 +41,7 @@ describe('<ReviewPage />', () => {
     (useAuth as any).mockReturnValue({ user: null });
     (useUserRole as any).mockReturnValue({ isCreator: false });
     renderPage();
-    expect(screen.getByRole('heading', { name: /sign in to review atoms/i })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: /sign in to review questions/i })).toBeInTheDocument();
   });
 
   it('shows "Not authorised" when authed but not a creator', () => {

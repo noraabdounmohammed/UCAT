@@ -23,8 +23,8 @@ export function ReviewPage() {
     return (
       <MainLayout currentPage="review">
         <AuthGate
-          title="Sign in to review atoms"
-          subtitle="Approve, edit, or reject draft atoms before they go live."
+          title="Sign in to review questions"
+          subtitle="Approve, edit, or reject draft questions before they go live."
         />
       </MainLayout>
     );

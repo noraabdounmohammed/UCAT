@@ -51,7 +51,7 @@ describe('review queue integration', () => {
 
     // Reject second with a reason — open the modal first
     await user.click(screen.getByRole('button', { name: /^reject$/i }));
-    const modalHeading = await screen.findByRole('heading', { name: /reject this atom/i });
+    const modalHeading = await screen.findByRole('heading', { name: /reject this question/i });
     const modal = modalHeading.closest('div')!.parentElement!;
 
     // Pick a preset reason inside the modal
@@ -63,6 +63,6 @@ describe('review queue integration', () => {
     expect(repo.rejectAtom).toHaveBeenCalledWith('a2', 'r1', 'Wrong citation');
 
     // Empty state
-    await waitFor(() => expect(screen.getByText(/no atoms left to review/i)).toBeInTheDocument());
+    await waitFor(() => expect(screen.getByText(/no questions left to review/i)).toBeInTheDocument());
   });
 });

@@ -35,7 +35,7 @@ describe('<ReviewQueueView />', () => {
 
   it('shows empty state when queue is exhausted', () => {
     render(<ReviewQueueView queue={makeQueue({ status: 'empty', currentAtom: null })} />);
-    expect(screen.getByText(/no atoms left to review/i)).toBeInTheDocument();
+    expect(screen.getByText(/no questions left to review/i)).toBeInTheDocument();
   });
 
   it('shows error state with message', () => {

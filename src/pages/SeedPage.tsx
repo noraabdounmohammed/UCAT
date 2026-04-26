@@ -16,15 +16,15 @@ export function SeedPage() {
 
   if (!user) return (
     <MainLayout currentPage="seed">
-      <AuthGate title="Sign in to seed atoms" subtitle="Add new UKMLA atoms to the review queue." />
+      <AuthGate title="Sign in to add questions" subtitle="Add new UKMLA questions to the review queue." />
     </MainLayout>
   );
-  if (!isCreator) return <MainLayout currentPage="seed"><div className="text-center py-12 max-w-md mx-auto"><div className="text-2xl font-medium text-stone-900 mb-2">Not authorised</div><p className="text-sm text-stone-500">Atom seeding is reserved for clinical creators.</p></div></MainLayout>;
+  if (!isCreator) return <MainLayout currentPage="seed"><div className="text-center py-12 max-w-md mx-auto"><div className="text-2xl font-medium text-stone-900 mb-2">Not authorised</div><p className="text-sm text-stone-500">Adding questions is reserved for clinical creators.</p></div></MainLayout>;
 
   return (
     <MainLayout currentPage="seed">
       <div className="max-w-md mx-auto py-6 px-4 space-y-4">
-        <h1 className="text-xl font-semibold text-stone-900">Seed an atom</h1>
+        <h1 className="text-xl font-semibold text-stone-900">Add a question</h1>
         <AtomSeedForm
           onSubmit={(input) => seed.submit(input)}
           status={seed.status}
