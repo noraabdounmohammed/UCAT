@@ -47,12 +47,14 @@ export function createReviewRepository(supabase: SupabaseClient): ReviewReposito
       // Order: AI-flagged "concern" cases first (those need Nora's eye most),
       // then "ok" AI-reviewed (fast-path), then unreviewed (incl. doctor
       // seeds with no AI verdict). Within each band, oldest first.
+      // Postgres alphabetical ascending: 'concern' < 'ok' so ascending=true
+      // gives the desired order; nullsFirst=false keeps unreviewed last.
       const { data, error } = await supabase
         .from('atoms')
         .select('*')
         .eq('exam', exam)
         .eq('status', 'pending_review')
-        .order('ai_review_status', { ascending: false, nullsFirst: false })
+        .order('ai_review_status', { ascending: true, nullsFirst: false })
         .order('created_at', { ascending: true })
         .limit(limit);
       if (error) throw error;
