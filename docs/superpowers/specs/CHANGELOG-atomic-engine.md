@@ -338,3 +338,120 @@ Tests added: ~6 new across batches. **~184 passing total.**
 - Auto-run in CI on `ukmla-akt-version` post-merge.
 - Doesn't cover sign-up / paywall / voice — those need real test accounts and Stripe test mode (deferred).
 - ~13 E2E tests new, all passing.
+
+---
+
+## 2026-04-26 — Plan 12 + Plan 13 + Plan 17 migrations applied to production
+
+**Project:** `uivitzexbtsmnspcitgh` (production, Marberg Services org)
+**Applied via:** Supabase MCP (`apply_migration`)
+**Branch this changelog ships from:** `docs/atomic-engine-prod-apply-2026-04-26` (off `ukmla-akt-version`)
+
+### What was applied (in order)
+
+| # | Source | Migration name (registered) | Applied at (UTC) | Result |
+|---|---|---|---|---|
+| 1 | `supabase/migrations/20260426000000_daily_session_counts.sql` | `daily_session_counts` (`20260426101344`) | 2026-04-26T10:13:44Z | OK |
+| 2 | `supabase/migrations/20260426000100_is_creator_function_and_tightened_atoms_policies.sql` (patched — see deviation below) | `is_creator_function_and_tightened_atoms_policies` (`20260426101518`) | 2026-04-26T10:15:18Z | OK on second attempt |
+| 3 | `supabase/migrations/20260426000200_mock_attempts.sql` | `mock_attempts` (`20260426101533`) | 2026-04-26T10:15:33Z | OK |
+| 4 | `supabase/migrations/20260426010000_atoms_ai_draft_source.sql` | `atoms_ai_draft_source` (`20260426101551`) | 2026-04-26T10:15:51Z | OK |
+| 5 | `supabase/migrations/20260426020000_cohort_leaderboard.sql` | `cohort_leaderboard` (`20260426101611`) | 2026-04-26T10:16:11Z | OK |
+
+### Deviation from spec — migration 2 referenced a column that doesn't exist
+
+**First apply attempt failed atomically** with `ERROR: 42703: column "is_creator" does not exist`. The function body queried `select is_creator from public.profiles`, but the actual `profiles` schema (per `information_schema.columns`) has no such column. The legacy MVP migration `20250115_add_user_roles.sql` added a `role text check (role in ('creator','consumer'))` column, **not** an `is_creator boolean` — the migration's own header comment was wrong about what the legacy migration did.
+
+**Fix (applied in-place to the migration file before re-apply, this PR carries the diff):**
+- Changed function body from `select is_creator from public.profiles where id = uid` to `select role = 'creator' from public.profiles where id = uid`.
+- Updated header comment to reference `profiles.role` text column accurately.
+
+Behaviour is equivalent: `coalesce(<bool> = 'creator', false)` returns `true` only when the user has `role = 'creator'`, which is the existing source of creator-truth (1 row currently — `noraabdounmohammed@gmail.com`, confirmed via `select distinct role from public.profiles`).
+
+### Post-apply verification
+
+| Check | Expected | Actual |
+|---|---|---|
+| `select count(*) from public.daily_session_counts` | 0 | **0** ✓ |
+| `select count(*) from pg_proc where proname='is_creator'` | 1 | **1** ✓ |
+| `select count(*) from public.mock_attempts` | 0 | **0** ✓ |
+| `select count(*) from public.atoms where source_type='ai-draft'` | 0 | **0** ✓ |
+| `select policyname from pg_policies where tablename='atoms'` | 5 rows | **3 rows** — see note ⚠ |
+| `select * from public.cohort_weekly_leaderboard limit 1` | view exists | view exists, 0 rows (no `cohort_school` populated yet) ✓ |
+
+**Note on the 3-vs-5 atoms policies discrepancy:** the handoff brief expected 5 policies on `atoms` after migration 2; actual is 3. Migration 2 `drop policy if exists` removes the two old write policies (`atoms_insert_authed_draft`, `atoms_update_in_review` from `atoms_write_policies_tightened`) and creates two replacements (`atoms_insert_creator_draft`, `atoms_update_creator_in_review`) — net zero change in count. The pre-existing `atoms_read_approved` SELECT policy survives untouched. Final `pg_policies` rows for `atoms`:
+- `atoms_insert_creator_draft` (INSERT) — new, creator-gated
+- `atoms_read_approved` (SELECT) — pre-existing
+- `atoms_update_creator_in_review` (UPDATE) — new, creator-gated
+
+`atom_variants` mirrors this with 3 policies (`atom_variants_insert_creator_draft`, `atom_variants_read_approved`, `atom_variants_update_creator_in_review`). 3 + 3 = 6 across the two tables, which matches the migration's intent (replace 2 + 2, leave 2 reads). The "5 rows" line in the brief looks like an off-by-N typo; the policy set on disk is correct.
+
+### Security advisors (post-apply)
+
+Run via `mcp__supabase__get_advisors(type='security')`. **One new finding from these migrations:**
+
+- **`security_definer_view` (ERROR)** — `public.cohort_weekly_leaderboard` is defined `with (security_invoker = false)`. This is **intentional** per migration 5's spec: "SECURITY DEFINER lets non-owner users read aggregates. Personal `review_events` stays private." Without it, the view would inherit the caller's RLS and only expose the caller's own row. The DEFINER posture is gated by `revoke all from public; grant select to authenticated`, so only authed users can read, and the view exposes only `(cohort_school, user_id, display_name, reviews_this_week)` — no PII beyond what users opt-in to populate via `cohort_school` + `display_name`. Remediation link: https://supabase.com/docs/guides/database/database-linter?lint=0010_security_definer_view. **Decision: accept the warning as a known trade-off; document but do not change.**
+
+Pre-existing findings (not introduced by these migrations): permissive RLS on `curriculum_concepts` + `published_curriculums`, `rls_enabled_no_policy` on `publish_admins`, `function_search_path_mutable` on `update_updated_at_column` + `touch_updated_at`, `auth_leaked_password_protection` disabled.
+
+### Performance advisors (post-apply)
+
+Run via `mcp__supabase__get_advisors(type='performance')`. **Two classes of new findings from these migrations:**
+
+1. **`auth_rls_initplan` (WARN) — 9 new flags.** The new RLS policies call `auth.uid()` per row; Supabase recommends `(select auth.uid())` so Postgres evaluates it once via initplan. Affected policies:
+   - `daily_session_counts_owner_select` / `_owner_insert` / `_owner_update` (3)
+   - `atoms_insert_creator_draft`, `atoms_update_creator_in_review` (2)
+   - `atom_variants_insert_creator_draft`, `atom_variants_update_creator_in_review` (2)
+   - `mock_attempts_owner_select`, `mock_attempts_owner_insert` (2)
+   At current row counts (all 4 tables empty or near-empty) the impact is negligible; deferring the rewrite. Link: https://supabase.com/docs/guides/database/database-linter?lint=0003_auth_rls_initplan. **Follow-up: tracker for "wrap auth.uid() in subselect across all RLS policies on Plan-12+ tables".**
+
+2. **`unused_index` (INFO) — 4 new flags.** Expected for indexes created seconds before the advisor run: `daily_session_counts_user_day_idx`, `mock_attempts_user_finished_idx`, `atoms_source_concept_id_idx`, `profiles_cohort_school_idx`. Will resolve naturally once the queries that use them start running.
+
+Pre-existing findings: 24 prior `auth_rls_initplan` flags on older tables, 17 `multiple_permissive_policies`, 6 `unindexed_foreign_keys` (incl. `atom_variants_reviewed_by_fkey`, `atoms_reviewed_by_fkey` — pre-Plan-12), 16 prior `unused_index` flags.
+
+### Backup posture
+
+Supabase MCP doesn't expose a backups tool. Apply was almost entirely additive: 3 new tables (`daily_session_counts`, `mock_attempts`), 2 new columns on existing tables (`atoms.source_concept_id`, `profiles.cohort_school`, `profiles.display_name`), 1 new view, 2 new functions, 4 new policies replacing 4 old ones. Rollback path:
+
+```sql
+-- migration 5 (cohort_leaderboard)
+drop view public.cohort_weekly_leaderboard;
+drop function public.my_cohort();
+drop index public.profiles_cohort_school_idx;
+alter table public.profiles drop column cohort_school, drop column display_name;
+-- migration 4 (atoms_ai_draft_source) — restore old source_type CHECK without 'ai-draft'
+drop index public.atoms_source_concept_id_idx;
+alter table public.atoms drop column source_concept_id;
+alter table public.atoms drop constraint atoms_source_type_check;
+alter table public.atoms add constraint atoms_source_type_check
+  check (source_type in ('NICE','NHS','BNF','GMC','past_paper','doctor_seed','student_bounty'));
+alter table public.atom_variants drop constraint atom_variants_generated_by_check;
+alter table public.atom_variants add constraint atom_variants_generated_by_check
+  check (generated_by in ('ai-deepseek-v3','ai-openai-gpt4o-mini','human','past_paper'));
+-- migration 3 (mock_attempts)
+drop table public.mock_attempts;
+-- migration 2 (is_creator + tightened atoms policies) — restore the old loose policies
+drop policy "atoms_insert_creator_draft" on public.atoms;
+drop policy "atoms_update_creator_in_review" on public.atoms;
+drop policy "atom_variants_insert_creator_draft" on public.atom_variants;
+drop policy "atom_variants_update_creator_in_review" on public.atom_variants;
+drop function public.is_creator(uuid);
+-- (would need to re-create the old atoms_insert_authed_draft / atoms_update_in_review etc.)
+-- migration 1 (daily_session_counts)
+drop table public.daily_session_counts;
+```
+
+No risk to pre-existing rows — all DDL is additive or replaces an empty constraint with a wider one. `profiles` rows continue to satisfy the new (`cohort_school`, `display_name`) nullable columns; existing `atoms` rows continue to satisfy the widened `source_type` CHECK; existing `atom_variants` rows continue to satisfy the widened `generated_by` CHECK.
+
+### `list_migrations` registered after apply
+
+```
+20260425172540  atomic_engine_schema
+20260425195634  review_event_log
+20260425200503  atoms_write_policies_tightened
+20260425214456  nps_responses
+20260426101344  daily_session_counts                           ← new
+20260426101518  is_creator_function_and_tightened_atoms_policies ← new
+20260426101533  mock_attempts                                  ← new
+20260426101551  atoms_ai_draft_source                          ← new
+20260426101611  cohort_leaderboard                             ← new
+```
