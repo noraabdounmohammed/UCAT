@@ -18,9 +18,9 @@ function makeStub(rows: any[] = []) {
 describe('reviewRepository', () => {
   beforeEach(() => vi.clearAllMocks());
 
-  it('listPendingReview filters status=pending_review for the exam, ordered high-yield first', async () => {
+  it('listPendingReview filters status=pending_review for the exam, ordered AI-concern first', async () => {
     const supabase = makeStub([
-      { id: 'a1', exam: 'UKMLA', status: 'pending_review', high_yield: true, claim: 'fact 1' },
+      { id: 'a1', exam: 'UKMLA', status: 'pending_review', ai_review_status: 'concern', claim: 'fact 1' },
     ]);
     const repo = createReviewRepository(supabase as any);
 
@@ -29,7 +29,10 @@ describe('reviewRepository', () => {
     expect(supabase.from).toHaveBeenCalledWith('atoms');
     expect(supabase._builder.eq).toHaveBeenCalledWith('exam', 'UKMLA');
     expect(supabase._builder.eq).toHaveBeenCalledWith('status', 'pending_review');
-    expect(supabase._builder.order).toHaveBeenCalledWith('high_yield', { ascending: false });
+    // Order changed: AI-flagged 'concern' first (lex < 'ok'), then 'ok',
+    // then null (nullsFirst: false). Within each band, oldest first.
+    expect(supabase._builder.order).toHaveBeenCalledWith('ai_review_status', { ascending: true, nullsFirst: false });
+    expect(supabase._builder.order).toHaveBeenCalledWith('created_at', { ascending: true });
     expect(supabase._builder.limit).toHaveBeenCalledWith(20);
     expect(atoms).toHaveLength(1);
     expect(atoms[0].id).toBe('a1');

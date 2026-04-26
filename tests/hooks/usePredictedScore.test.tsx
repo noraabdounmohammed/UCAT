@@ -7,7 +7,7 @@ const NOW = new Date('2026-04-25T10:00:00Z');
 
 function makeRepos(states: UserAtomState[], totalAtoms: number) {
   return {
-    atomRepo: { countApprovedByExam: vi.fn(async () => totalAtoms) } as any,
+    atomRepo: { countAvailableForExam: vi.fn(async () => totalAtoms) } as any,
     userStateRepo: { listAllForUser: vi.fn(async () => states) } as any,
   };
 }
@@ -51,7 +51,7 @@ describe('usePredictedScore', () => {
   });
 
   it('error path: status=error with message', async () => {
-    const atomRepo = { countApprovedByExam: vi.fn(async () => { throw new Error('boom'); }) } as any;
+    const atomRepo = { countAvailableForExam: vi.fn(async () => { throw new Error('boom'); }) } as any;
     const userStateRepo = { listAllForUser: vi.fn() } as any;
     const { result } = renderHook(() => usePredictedScore({
       userId: 'u1', exam: 'UKMLA', now: () => NOW, atomRepo, userStateRepo,
@@ -74,7 +74,7 @@ describe('usePredictedScore', () => {
       .mockResolvedValueOnce(initialStates)
       .mockResolvedValueOnce(updatedStates);
 
-    const atomRepo = { countApprovedByExam: vi.fn(async () => 200) } as any;
+    const atomRepo = { countAvailableForExam: vi.fn(async () => 200) } as any;
     const userStateRepo = { listAllForUser } as any;
 
     const { result } = renderHook(() => usePredictedScore({
@@ -89,7 +89,7 @@ describe('usePredictedScore', () => {
     });
 
     expect(listAllForUser).toHaveBeenCalledTimes(2);
-    expect(atomRepo.countApprovedByExam).toHaveBeenCalledTimes(2);
+    expect(atomRepo.countAvailableForExam).toHaveBeenCalledTimes(2);
     expect(result.current.atomCount).toBe(2);
     expect(result.current.status).toBe('ready');
   });
