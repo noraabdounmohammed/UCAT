@@ -49,6 +49,16 @@ export interface Atom {
   aiReviewStatus?: AiReviewStatus;
   aiReviewNotes?: string | null;
   aiReviewedAt?: string | null;
+  /**
+   * AI-paraphrased rationale grounded in the citation source. Shown to
+   * the user after they pick an answer (especially valuable on a wrong
+   * pick) so they understand *why* the right answer is right. Original
+   * prose, never verbatim — copyright-compliant under Open Government
+   * Licence for NICE/NHS sources.
+   */
+  explanation?: string | null;
+  explanationSource?: string | null;
+  explanationGeneratedAt?: string | null;
 }
 
 export interface AtomVariant {
