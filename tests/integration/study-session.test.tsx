@@ -49,11 +49,13 @@ describe('study session integration', () => {
     render(<Harness />);
 
     await waitFor(() => expect(screen.getByText(/Stem a1\?/)).toBeInTheDocument());
-    await user.click(screen.getAllByRole('button', { name: /how sure/i })[2]);
-    await user.click(await screen.findByRole('button', { name: /^Good$/i }));
+    // Question 1 (a1) — pick correct, then Next
+    await user.click(screen.getByRole('button', { name: /Answer a1/i }));
+    await user.click(await screen.findByRole('button', { name: /Next question/i }));
 
     await waitFor(() => expect(screen.getByText(/Stem a2\?/)).toBeInTheDocument());
-    await user.click(screen.getAllByRole('button', { name: /how sure/i })[3]);
+    // Question 2 (a2) — pick correct, then Easy
+    await user.click(screen.getByRole('button', { name: /Answer a2/i }));
     await user.click(await screen.findByRole('button', { name: /^Easy$/i }));
 
     await waitFor(() => expect(screen.getByText(/2\s*\/\s*2/)).toBeInTheDocument());

@@ -41,7 +41,8 @@ describe('<FsrsSessionView />', () => {
   it('renders the atom in progress and updates progress label', () => {
     render(<FsrsSessionView session={makeMockHookResult({ progress: { done: 2, total: 5 } })} streakDays={1} />);
     expect(screen.getByText(/Stem text/i)).toBeInTheDocument();
-    expect(screen.getByText(/2\s*\/\s*5/)).toBeInTheDocument();
+    // Progress is 1-indexed in the label: done=2 → "Question 3 of 5".
+    expect(screen.getByText(/Question\s*3\s*of\s*5/i)).toBeInTheDocument();
   });
 
   it('shows summary when status is summary', () => {
@@ -59,12 +60,13 @@ describe('<FsrsSessionView />', () => {
     expect(screen.getByText(/streak day 12/i)).toBeInTheDocument();
   });
 
-  it('clicking confidence then FSRS calls rateAtom', async () => {
+  it('picking the correct option then Next calls rateAtom', async () => {
     const user = userEvent.setup();
     const session = makeMockHookResult();
     render(<FsrsSessionView session={session} streakDays={1} />);
-    await user.click(screen.getAllByRole('button', { name: /how sure/i })[2]);
-    await user.click(await screen.findByRole('button', { name: /^Good$/i }));
+    // Pick the actual answer (text "Answer" per the fixture) — label is "X. Answer"
+    await user.click(screen.getByRole('button', { name: /Answer/i }));
+    await user.click(await screen.findByRole('button', { name: /Next question/i }));
     await waitFor(() => expect(session.rateAtom).toHaveBeenCalledTimes(1));
   });
 });

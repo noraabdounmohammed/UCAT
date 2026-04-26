@@ -19,31 +19,65 @@ const atom: Atom = {
 };
 
 describe('<AtomRenderer />', () => {
-  it('renders the stem and four confidence buttons before reveal', () => {
+  it('renders the stem with 4 lettered options and no answer revealed yet', () => {
     render(<AtomRenderer atom={atom} onRated={vi.fn()} />);
     expect(screen.getByText(/stable exertional angina/i)).toBeInTheDocument();
-    expect(screen.getAllByRole('button', { name: /how sure/i })).toHaveLength(4);
-    expect(screen.queryByText(/beta-blocker/i)).not.toBeInTheDocument();
+    // 4 option buttons (A, B, C, D)
+    const options = screen.getAllByRole('button');
+    expect(options.length).toBeGreaterThanOrEqual(4);
+    // Citation hidden until pick
+    expect(screen.queryByRole('link', { name: /NICE CG126/i })).not.toBeInTheDocument();
   });
 
-  it('reveals the answer + citation after the user picks confidence', async () => {
-    const user = userEvent.setup();
-    render(<AtomRenderer atom={atom} onRated={vi.fn()} />);
-    await user.click(screen.getAllByRole('button', { name: /how sure/i })[3]); // certain
-    expect(await screen.findByText('Beta-blocker')).toBeInTheDocument();
-    expect(screen.getByRole('link', { name: /NICE CG126/i })).toBeInTheDocument();
-  });
-
-  it('calls onRated with confidence + rating + responseMs when an FSRS button is clicked', async () => {
+  it('marks the picked-correct option green, reveals citation, and offers Next + Easy', async () => {
     const user = userEvent.setup();
     const onRated = vi.fn();
     render(<AtomRenderer atom={atom} onRated={onRated} />);
-    await user.click(screen.getAllByRole('button', { name: /how sure/i })[2]); // confident
-    await user.click(await screen.findByRole('button', { name: /^Good$/i }));
+
+    await user.click(screen.getByRole('button', { name: /Beta-blocker/i }));
+
+    expect(await screen.findByText('Correct')).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: /NICE CG126/i })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /Next question/i })).toBeInTheDocument();
+    // Easy override only on correct
+    expect(screen.getByRole('button', { name: /^Easy$/i })).toBeInTheDocument();
+  });
+
+  it('Next after a correct pick fires onRated with rating 3 (Good)', async () => {
+    const user = userEvent.setup();
+    const onRated = vi.fn();
+    render(<AtomRenderer atom={atom} onRated={onRated} />);
+
+    await user.click(screen.getByRole('button', { name: /Beta-blocker/i }));
+    await user.click(await screen.findByRole('button', { name: /Next question/i }));
+
     expect(onRated).toHaveBeenCalledTimes(1);
-    expect(onRated.mock.calls[0][0]).toMatchObject({
-      rating: 3, confidence: 3,
-    });
+    expect(onRated.mock.calls[0][0]).toMatchObject({ rating: 3, confidence: 3 });
     expect(typeof onRated.mock.calls[0][0].responseMs).toBe('number');
+  });
+
+  it('Easy after a correct pick fires onRated with rating 4 (Easy)', async () => {
+    const user = userEvent.setup();
+    const onRated = vi.fn();
+    render(<AtomRenderer atom={atom} onRated={onRated} />);
+
+    await user.click(screen.getByRole('button', { name: /Beta-blocker/i }));
+    await user.click(await screen.findByRole('button', { name: /^Easy$/i }));
+
+    expect(onRated).toHaveBeenCalledTimes(1);
+    expect(onRated.mock.calls[0][0]).toMatchObject({ rating: 4, confidence: 4 });
+  });
+
+  it('marks a wrong pick red and Next fires onRated with rating 1 (Forgot); no Easy override', async () => {
+    const user = userEvent.setup();
+    const onRated = vi.fn();
+    render(<AtomRenderer atom={atom} onRated={onRated} />);
+
+    await user.click(screen.getByRole('button', { name: /ACE inhibitor/i }));
+    expect(await screen.findByText('Not quite')).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /^Easy$/i })).not.toBeInTheDocument();
+
+    await user.click(screen.getByRole('button', { name: /Next question/i }));
+    expect(onRated.mock.calls[0][0]).toMatchObject({ rating: 1, confidence: 1 });
   });
 });
