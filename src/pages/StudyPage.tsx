@@ -103,9 +103,10 @@ export function StudyPage() {
   return (
     <MainLayout currentPage="study">
       <div className="max-w-md mx-auto py-6 px-4 space-y-4">
-        {/* Hide the chrome once a session has started — it's entry-screen
-            stuff, not session chrome. The user found it noisy mid-question. */}
-        {session.status !== 'in_progress' && <StatsSummary userId={user.id} repo={userStateRepo} />}
+        {/* Lifetime stats stays visible mid-session — it's a small counter,
+            not noisy. The PredictedScoreBadge + opt-in toggle hide once a
+            session starts (those ARE noisy and entry-screen-only). */}
+        <StatsSummary userId={user.id} repo={userStateRepo} />
         {session.status !== 'in_progress' && <PredictedScoreBadge {...score} />}
         {session.status !== 'in_progress' && (
           <UnreviewedToggle value={unreviewed.value} onChange={unreviewed.setValue} />

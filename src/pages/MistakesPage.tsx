@@ -95,9 +95,11 @@ export function MistakesPage() {
         <p className="text-xs text-stone-500 dark:text-stone-400">
           Questions you got wrong in the last {LOOKBACK_DAYS} days. Up to {MAX_MISTAKES_PER_SESSION} per session.
         </p>
-        {/* Lifetime stats — answered / mastered / mistakes counters across the whole bank,
-            so the user sees their position even if today's session only surfaces a few. */}
-        {session.status !== 'in_progress' && <StatsSummary userId={user.id} repo={userStateRepo} />}
+        {/* Lifetime stats — answered / mastered / mistakes counters across
+            the whole bank, so the user sees their position even mid-session.
+            (PredictedScoreBadge stays entry-only because it duplicates the
+            session-end summary chrome.) */}
+        <StatsSummary userId={user.id} repo={userStateRepo} />
         {session.status !== 'in_progress' && <PredictedScoreBadge {...score} />}
         <PaywallGate
           kind={paywallKind}
