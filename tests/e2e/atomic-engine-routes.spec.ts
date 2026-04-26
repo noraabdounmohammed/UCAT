@@ -5,8 +5,8 @@ const ROUTES = [
   { path: '/mistakes', heading: /sign in to drill mistakes/i },
   { path: '/mock', heading: /sign in to take a mock/i },
   { path: '/voice', heading: /sign in to use voice mode/i },
-  { path: '/review', heading: /sign in to review atoms/i },
-  { path: '/seed', heading: /sign in to seed atoms/i },
+  { path: '/review', heading: /sign in to review questions/i },
+  { path: '/seed', heading: /sign in to add questions/i },
   { path: '/leaderboard', heading: /sign in to see your cohort/i },
 ];
 
