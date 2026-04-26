@@ -5,6 +5,7 @@ import { MainLayout } from '@/components/layout/MainLayout';
 import { AuthGate } from '@/components/auth/AuthGate';
 import { FsrsSessionView } from '@/components/study/FsrsSessionView';
 import { PredictedScoreBadge } from '@/components/study/PredictedScoreBadge';
+import { StatsSummary } from '@/components/study/StatsSummary';
 import { PaywallGate } from '@/components/paywall/PaywallGate';
 import { NpsPrompt } from '@/components/nps/NpsPrompt';
 import { UnreviewedToggle } from '@/components/study/UnreviewedToggle';
@@ -102,9 +103,9 @@ export function StudyPage() {
   return (
     <MainLayout currentPage="study">
       <div className="max-w-md mx-auto py-6 px-4 space-y-4">
-        {/* Hide the predicted-score badge + opt-in toggle once a session has
-            actually started — they're an entry-screen affordance, not session
-            chrome. The user found it noisy mid-question. */}
+        {/* Hide the chrome once a session has started — it's entry-screen
+            stuff, not session chrome. The user found it noisy mid-question. */}
+        {session.status !== 'in_progress' && <StatsSummary userId={user.id} repo={userStateRepo} />}
         {session.status !== 'in_progress' && <PredictedScoreBadge {...score} />}
         {session.status !== 'in_progress' && (
           <UnreviewedToggle value={unreviewed.value} onChange={unreviewed.setValue} />
