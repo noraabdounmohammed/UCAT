@@ -21,11 +21,32 @@ import type { AtomRated } from './AtomRenderer';
  */
 const TOLERANCE = 0.05; // ±5%
 
-function parseNumeric(raw: string): number | null {
-  // Pull the first number (incl. decimals) out of the string.
-  const m = raw.replace(/,/g, '').match(/-?\d+(\.\d+)?|\.\d+/);
-  if (!m) return null;
-  const n = parseFloat(m[0]);
+/**
+ * Parse a single numeric value from user input. Accepts:
+ *   "5", "5.5", "0.5", ".5", "1500", "1,500"
+ *   "5 mg", "1500 ml", "5.5 mg/kg"  ← number + trailing unit
+ *   "  5 "                          ← surrounding whitespace
+ *
+ * Rejects multi-number expressions (we want the user to commit to one
+ * answer, not "5 to 10"):
+ *   "5 to 10" → null
+ *   "between 5 and 10" → null
+ *   "5 mg + 10 mg" → null
+ *
+ * Used for both user input and the canonical answer string. The
+ * canonical answer should always be a single number (we store
+ * '180', not '180 mg'), so this strictness doesn't bite us.
+ */
+export function parseNumeric(raw: string): number | null {
+  if (typeof raw !== 'string') return null;
+  // Strip thousand separators + leading/trailing whitespace.
+  const cleaned = raw.replace(/,/g, '').trim();
+  if (cleaned.length === 0) return null;
+  // Match number at the start (optionally followed by a unit), OR a number
+  // surrounded only by whitespace. Rejects strings with multiple numbers.
+  const all = cleaned.match(/-?\d+(?:\.\d+)?|\.\d+/g);
+  if (!all || all.length !== 1) return null;
+  const n = parseFloat(all[0]);
   return Number.isFinite(n) ? n : null;
 }
 

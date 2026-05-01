@@ -20,15 +20,25 @@ describe('<UnreviewedAtomChip />', () => {
     expect(container.firstChild).toBeNull();
   });
 
-  it('renders the disclaimer for pending_review + ai-draft atoms', () => {
+  it('renders the strong AI-draft warning for pending_review + ai-draft atoms', () => {
     render(<UnreviewedAtomChip atom={{ ...baseAtom, status: 'pending_review', sourceType: 'ai-draft' }} />);
     expect(screen.getByRole('note', { name: /unreviewed AI draft/i })).toBeInTheDocument();
     expect(screen.getByText(/AI-drafted, not yet reviewed/i)).toBeInTheDocument();
     expect(screen.getByText(/verify against your own sources/i)).toBeInTheDocument();
   });
 
-  it('renders the disclaimer for any non-approved status', () => {
-    render(<UnreviewedAtomChip atom={{ ...baseAtom, status: 'draft' }} />);
-    expect(screen.getByRole('note')).toBeInTheDocument();
+  it('renders the soft "pending sign-off" note for doctor_seed atoms (NOT the AI label)', () => {
+    render(<UnreviewedAtomChip atom={{ ...baseAtom, status: 'pending_review', sourceType: 'doctor_seed' }} />);
+    expect(screen.getByRole('note', { name: /pending clinician sign-off/i })).toBeInTheDocument();
+    expect(screen.getByText(/Pending clinician sign-off/i)).toBeInTheDocument();
+    // CRITICAL: doctor-seeded clinician content must NOT be labelled "AI-drafted".
+    expect(screen.queryByText(/AI-drafted/i)).toBeNull();
+  });
+
+  it('renders a generic "pending review" fallback for other source types', () => {
+    render(<UnreviewedAtomChip atom={{ ...baseAtom, status: 'pending_review', sourceType: 'past_paper' }} />);
+    expect(screen.getByRole('note', { name: /unreviewed content/i })).toBeInTheDocument();
+    expect(screen.queryByText(/AI-drafted/i)).toBeNull();
+    expect(screen.queryByText(/clinician sign-off/i)).toBeNull();
   });
 });

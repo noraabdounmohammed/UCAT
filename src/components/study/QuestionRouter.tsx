@@ -31,6 +31,10 @@ export function pickRenderer(atom: Atom): 'sba' | 'cloze' | 'calc' {
   if (atom.questionKind === 'cloze') return 'cloze';
   // EMQ + SBA both render as multi-option MCQ via <AtomRenderer />.
   if (atom.questionKind === 'sba' || atom.questionKind === 'emq') return 'sba';
+  // Case-bound atoms must keep their author-intended structure. Cloze would
+  // break the case stem (e.g. asking the user to type a phrase from the
+  // vignette). Default to SBA for anything attached to a clinical case.
+  if (atom.caseId) return 'sba';
   // Otherwise hash the id to a stable bucket: cloze or sba.
   const bucket = (hashStr(atom.id) % 100) / 100;
   return bucket < CLOZE_RATIO ? 'cloze' : 'sba';
