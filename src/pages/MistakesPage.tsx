@@ -95,10 +95,18 @@ export function MistakesPage() {
   return (
     <MainLayout currentPage="mistakes">
       <div className="max-w-md mx-auto py-6 px-4 space-y-4">
-        <h1 className="text-xl font-semibold text-stone-900 dark:text-stone-100">Mistake deck</h1>
-        <p className="text-xs text-stone-500 dark:text-stone-400">
-          Questions you got wrong in the last {LOOKBACK_DAYS} days. Up to {MAX_MISTAKES_PER_SESSION} per session.
-        </p>
+        <header className="rounded-2xl bg-gradient-to-br from-stone-900 to-stone-700 dark:from-stone-100 dark:to-white text-white dark:text-stone-900 p-5">
+          <div className="flex items-center gap-2 mb-1 opacity-80">
+            <span className="text-base">🎯</span>
+            <span className="text-[10px] uppercase tracking-widest font-semibold">
+              Mistake deck
+            </span>
+          </div>
+          <h1 className="text-xl font-bold mb-1">Drill what you got wrong</h1>
+          <p className="text-xs opacity-80">
+            Questions from the last {LOOKBACK_DAYS} days · up to {MAX_MISTAKES_PER_SESSION} per session.
+          </p>
+        </header>
         {/* Lifetime stats — answered / mastered / mistakes counters across
             the whole bank, so the user sees their position even mid-session.
             (PredictedScoreBadge stays entry-only because it duplicates the

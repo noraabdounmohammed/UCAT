@@ -87,8 +87,10 @@ describe('<MistakesPage />', () => {
   it('renders the mistake deck UI when authenticated', () => {
     (useAuth as any).mockReturnValue({ user: { id: 'u1', email: 'u@x.com' } });
     renderPage();
-    expect(screen.getByRole('heading', { name: /mistake deck/i })).toBeInTheDocument();
-    expect(screen.getByText(/Questions you got wrong/i)).toBeInTheDocument();
+    // Modernised header: eyebrow + h1 + blurb
+    expect(screen.getByText(/Mistake deck/i)).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: /Drill what you got wrong/i })).toBeInTheDocument();
+    expect(screen.getByText(/last 30 days/i)).toBeInTheDocument();
   });
 
   it('shows the paywall when at the daily limit and not premium', () => {

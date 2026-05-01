@@ -1,11 +1,17 @@
 import { Link } from 'react-router-dom';
 import { Trophy, Clock, Target, ArrowRight, RotateCcw } from 'lucide-react';
+import type { Atom } from '@/atom/types';
 
 export interface MockResultProps {
   correct: number;
   total: number;
   percentage: number;
   timeUsedSec: number;
+  /**
+   * Per-question results — when provided, MockResult also renders a
+   * topic breakdown so the user knows where to focus next.
+   */
+  rated?: { atom: Atom; correct: boolean; answered: boolean }[];
 }
 
 /**
@@ -66,12 +72,28 @@ function bandFor(percentage: number): BandConfig {
   };
 }
 
-export function MockResult({ correct, total, percentage, timeUsedSec }: MockResultProps) {
+export function MockResult({ correct, total, percentage, timeUsedSec, rated }: MockResultProps) {
   const m = Math.floor(timeUsedSec / 60);
   const s = timeUsedSec % 60;
   const avgSecPerQ = total > 0 ? Math.round(timeUsedSec / total) : 0;
   const passed = percentage >= UKMLA_AKT_PASS_MARK;
   const band = bandFor(percentage);
+
+  // Topic breakdown — only when caller supplied per-question rated data.
+  const topicBreakdown = (() => {
+    if (!rated || rated.length === 0) return [];
+    const map = new Map<string, { correct: number; total: number }>();
+    for (const r of rated) {
+      const t = (r.atom.topicPath?.[0] ?? 'Other').trim() || 'Other';
+      if (!map.has(t)) map.set(t, { correct: 0, total: 0 });
+      const e = map.get(t)!;
+      e.total++;
+      if (r.correct) e.correct++;
+    }
+    return Array.from(map.entries())
+      .map(([topic, stats]) => ({ topic, ...stats }))
+      .sort((a, b) => b.total - a.total);
+  })();
 
   return (
     <div className="space-y-4">
@@ -126,6 +148,47 @@ export function MockResult({ correct, total, percentage, timeUsedSec }: MockResu
           </div>
         </div>
       </div>
+
+      {/* Topic breakdown — only when per-question rated data was passed */}
+      {topicBreakdown.length > 0 && (
+        <div className="rounded-2xl bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-800 p-4">
+          <div className="flex items-center gap-1.5 mb-3">
+            <Target className="w-3.5 h-3.5 text-stone-500 dark:text-stone-400" />
+            <span className="text-[11px] uppercase tracking-widest text-stone-500 dark:text-stone-400 font-semibold">
+              By topic
+            </span>
+          </div>
+          <ul className="space-y-2">
+            {topicBreakdown.map((row) => {
+              const pct = row.total > 0 ? (row.correct / row.total) * 100 : 0;
+              return (
+                <li key={row.topic} className="space-y-1">
+                  <div className="flex items-baseline justify-between">
+                    <span className="text-sm font-medium text-stone-900 dark:text-stone-100">
+                      {row.topic}
+                    </span>
+                    <span className="text-xs text-stone-600 dark:text-stone-400 tabular-nums">
+                      {row.correct} / {row.total}
+                    </span>
+                  </div>
+                  <div className="h-1.5 rounded-full bg-stone-100 dark:bg-stone-800 overflow-hidden">
+                    <div
+                      className={[
+                        'h-full transition-all',
+                        pct === 100 ? 'bg-emerald-500'
+                          : pct >= 60 ? 'bg-sky-500'
+                          : pct >= 40 ? 'bg-amber-500'
+                          : 'bg-rose-500',
+                      ].join(' ')}
+                      style={{ width: `${pct}%` }}
+                    />
+                  </div>
+                </li>
+              );
+            })}
+          </ul>
+        </div>
+      )}
 
       {/* Stat row */}
       <div className="grid grid-cols-2 gap-3">
