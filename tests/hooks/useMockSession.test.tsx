@@ -42,7 +42,7 @@ describe('useMockSession', () => {
     expect(result.current.progress).toEqual({ done: 0, total: 3 });
   });
 
-  it('submit advances and tracks correctness', async () => {
+  it('pick records the answer at the current index without auto-advancing', async () => {
     const atomRepo = {
       listApprovedByExam: vi.fn(),
       listAvailableForExam: vi.fn(async () => [makeAtom('a1'), makeAtom('a2')]),
@@ -59,12 +59,14 @@ describe('useMockSession', () => {
     );
     await waitFor(() => expect(result.current.status).toBe('in_progress'));
     const firstAtomId = result.current.currentAtom?.id;
-    act(() => result.current.submit({ correct: true, choiceIndex: 0 }));
-    expect(result.current.currentAtom?.id).not.toBe(firstAtomId);
+    act(() => result.current.pick({ correct: true, choiceIndex: 0 }));
+    // Same atom (no auto-advance) but pick recorded.
+    expect(result.current.currentAtom?.id).toBe(firstAtomId);
     expect(result.current.progress).toEqual({ done: 1, total: 2 });
+    expect(result.current.picks[0]).toEqual({ correct: true, choiceIndex: 0 });
   });
 
-  it('finishing all atoms transitions to status=finished with score', async () => {
+  it('submit() finalizes — flips status to review with score, blanks count as 0', async () => {
     const atomRepo = {
       listApprovedByExam: vi.fn(),
       listAvailableForExam: vi.fn(async () => [makeAtom('a1'), makeAtom('a2')]),
@@ -80,12 +82,37 @@ describe('useMockSession', () => {
       })
     );
     await waitFor(() => expect(result.current.status).toBe('in_progress'));
-    act(() => result.current.submit({ correct: true, choiceIndex: 0 }));
-    act(() => result.current.submit({ correct: false, choiceIndex: 1 }));
-    expect(result.current.status).toBe('finished');
+    act(() => result.current.pick({ correct: true, choiceIndex: 0 }));
+    act(() => result.current.goNext());
+    act(() => result.current.pick({ correct: false, choiceIndex: 1 }));
+    act(() => result.current.submit());
+    expect(result.current.status).toBe('review');
     expect(result.current.score?.correct).toBe(1);
     expect(result.current.score?.total).toBe(2);
     expect(result.current.score?.percentage).toBe(50);
+  });
+
+  it('flag() toggles flagged set for the current question', async () => {
+    const atomRepo = {
+      listApprovedByExam: vi.fn(),
+      listAvailableForExam: vi.fn(async () => [makeAtom('a1'), makeAtom('a2')]),
+      listFreeTier: vi.fn(), getById: vi.fn(), getByIds: vi.fn(), countApprovedByExam: vi.fn(),
+    };
+    const { result } = renderHook(() =>
+      useMockSession({
+        atomRepo: atomRepo as any,
+        exam: 'UKMLA',
+        atomCount: 2,
+        durationSec: 1800,
+        startTimer: () => () => {},
+      })
+    );
+    await waitFor(() => expect(result.current.status).toBe('in_progress'));
+    expect(result.current.flagged.has(0)).toBe(false);
+    act(() => result.current.flag());
+    expect(result.current.flagged.has(0)).toBe(true);
+    act(() => result.current.flag());
+    expect(result.current.flagged.has(0)).toBe(false);
   });
 
   it('empty bank → status=empty', async () => {

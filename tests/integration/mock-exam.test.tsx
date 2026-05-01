@@ -36,14 +36,25 @@ function Harness() {
   });
   if (session.status === 'in_progress' && session.currentAtom) {
     return (
-      <MockQuestion
-        key={session.currentAtom.id}
-        atom={session.currentAtom}
-        onSubmit={(a) => session.submit(a)}
-      />
+      <div>
+        <MockQuestion
+          key={`${session.currentAtom.id}-${session.atomIndex}`}
+          atom={session.currentAtom}
+          onSubmit={(a) => {
+            session.pick(a);
+            // Auto-advance to next unanswered to keep the test linear.
+            const nextIdx = session.atoms.findIndex(
+              (_, i) => i > session.atomIndex && session.picks[i] === undefined,
+            );
+            if (nextIdx !== -1) session.goTo(nextIdx);
+            else if (session.atomIndex < session.atoms.length - 1) session.goNext();
+          }}
+        />
+        <button onClick={() => session.submit()}>End paper</button>
+      </div>
     );
   }
-  if (session.status === 'finished' && session.score) {
+  if (session.status === 'review' && session.score) {
     return (
       <MockResult
         correct={session.score.correct}
@@ -66,17 +77,17 @@ describe('mock exam integration', () => {
     await waitFor(() => {
       expect(screen.queryByText(/Stem a1\?|Stem a2\?/)).toBeInTheDocument();
     });
-    // first answer: click "Right"
+    // first answer: click "Right" (the correct option)
     await user.click(screen.getByText('Right'));
-    // wait for the second stem (the other one)
+    // expect to have auto-advanced to the next stem
     await waitFor(() => {
-      // second atom should now be on screen and 'Right' button still available
       expect(screen.getByText(/Stem a1\?|Stem a2\?/)).toBeInTheDocument();
-      expect(screen.getByText('Right')).toBeInTheDocument();
     });
-    // second answer: click a distractor
+    // second answer: pick a distractor
     await user.click(screen.getByText('Wrong1'));
-    // final result: new MockResult shows "1 of 2 correct" instead of "1 / 2"
+    // user explicitly ends paper
+    await user.click(screen.getByText(/End paper/i));
+    // final result: new MockResult shows "1 of 2 correct"
     await waitFor(() => expect(screen.getByText(/1 of 2 correct/i)).toBeInTheDocument());
   });
 });
