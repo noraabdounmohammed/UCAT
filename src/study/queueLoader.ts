@@ -145,10 +145,43 @@ function interleaveVariety(
 }
 
 /**
+ * Map a user-facing topic key (the dashboard chip) to the set of
+ * `topic_path[0]` values it should match in the bank. Keys are
+ * lowercase. Most topics map to themselves, but a few have synonyms
+ * because the seed scripts used different labels for related concepts.
+ */
+const TOPIC_SYNONYMS: Record<string, string[]> = {
+  cardiology:       ['cardiology', 'cardiovascular'],
+  cardiovascular:   ['cardiology', 'cardiovascular'],
+  endocrinology:    ['endocrinology'],
+  respiratory:      ['respiratory'],
+  gastroenterology: ['gastroenterology'],
+  renal:            ['renal'],
+  neurology:        ['neurology'],
+  haematology:      ['haematology'],
+  paediatrics:      ['paediatrics'],
+  obstetrics:       ['obstetrics'],
+  psychiatry:       ['psychiatry'],
+  infection:        ['infection', 'immunology'],     // anaphylaxis lives in Immunology
+  surgery:          ['surgery', 'orthopaedics'],     // surgical sub-specialties together
+  dermatology:      ['dermatology'],
+  orthopaedics:     ['orthopaedics'],
+  immunology:       ['immunology'],
+  calculations:     ['calculations'],
+};
+
+function topicMatches(filterKey: string, topicPath0: string): boolean {
+  const synonyms = TOPIC_SYNONYMS[filterKey] ?? [filterKey];
+  return synonyms.includes(topicPath0.toLowerCase());
+}
+
+/**
  * Filtered drill: pull a generous pool of unseen atoms via the RPC, filter
- * client-side by topic / kind, take the first maxAtoms. Filters are matched
- * case-insensitively against `topic_path[0]` and against `question_kind`
- * (with the virtual `'case'` value mapping to `case_id IS NOT NULL`).
+ * client-side by topic / kind, take the first maxAtoms.
+ *
+ * Topic match is case-insensitive AND honors a synonym map so e.g. clicking
+ * "Cardiology" returns atoms tagged either "Cardiology" or "Cardiovascular"
+ * (the older EMQ seed used the latter label).
  *
  * Bypasses variety reservation — if the user explicitly chose "calc only"
  * we don't dilute it with EMQs/cases. Bypasses FSRS-due — picking a topic
@@ -166,8 +199,8 @@ async function buildFilteredQueue(deps: BuildQueueDeps): Promise<UserAtomState[]
   const kind = deps.filterKind;
   const matched = fresh.filter(a => {
     if (topic) {
-      const t0 = (a.topicPath?.[0] ?? '').toLowerCase();
-      if (t0 !== topic) return false;
+      const t0 = (a.topicPath?.[0] ?? '');
+      if (!topicMatches(topic, t0)) return false;
     }
     if (kind) {
       if (kind === 'case') {

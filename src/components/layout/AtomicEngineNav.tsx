@@ -11,6 +11,7 @@ interface NavItem {
 
 const PUBLIC_ITEMS: NavItem[] = [
   { to: '/study', label: 'Study' },
+  { to: '/cases', label: 'Cases' },
   { to: '/mistakes', label: 'Mistakes' },
   { to: '/mock', label: 'Mock' },
   { to: '/voice', label: 'Voice' },
