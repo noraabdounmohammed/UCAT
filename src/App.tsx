@@ -21,6 +21,7 @@ const SeedPage = lazy(() => import('@/pages/SeedPage').then(m => ({ default: m.S
 const MistakesPage = lazy(() => import('@/pages/MistakesPage').then(m => ({ default: m.MistakesPage })));
 const VoicePage = lazy(() => import('@/pages/VoicePage').then(m => ({ default: m.VoicePage })));
 const MockPage = lazy(() => import('@/pages/MockPage').then(m => ({ default: m.MockPage })));
+const CasesPage = lazy(() => import('@/pages/CasesPage').then(m => ({ default: m.CasesPage })));
 const PrivacyPolicy = lazy(() => import('@/pages/PrivacyPolicy').then(m => ({ default: m.PrivacyPolicy })));
 const LeaderboardPage = lazy(() => import('@/pages/LeaderboardPage').then(m => ({ default: m.LeaderboardPage })));
 
@@ -102,6 +103,13 @@ function App() {
             <Route path="/mock" element={
               <Suspense fallback={<BlankFallback />}>
                 <MockPage />
+              </Suspense>
+            } />
+
+            {/* Browse-by-clinical-case landing — surfaces chained vignettes */}
+            <Route path="/cases" element={
+              <Suspense fallback={<BlankFallback />}>
+                <CasesPage />
               </Suspense>
             } />
 

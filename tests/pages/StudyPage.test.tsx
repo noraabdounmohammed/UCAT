@@ -30,9 +30,9 @@ import { useStreak } from '@/hooks/useStreak';
 import { useSubscription } from '@/hooks/useSubscription';
 import { useNpsTrigger } from '@/hooks/useNpsTrigger';
 
-function renderPage() {
+function renderPage(initialEntry = '/study') {
   return render(
-    <MemoryRouter>
+    <MemoryRouter initialEntries={[initialEntry]}>
       <StudyPage />
     </MemoryRouter>
   );
@@ -88,23 +88,32 @@ describe('<StudyPage />', () => {
     expect(screen.getByRole('heading', { name: /sign in to study/i })).toBeInTheDocument();
   });
 
-  it('renders the FSRS session view when authenticated', () => {
+  it('renders the discovery dashboard for authenticated users on /study', () => {
     (useAuth as any).mockReturnValue({ user: { id: 'u1', email: 'u@x.com' } });
     renderPage();
-    // Loading state of the FsrsSessionView
-    expect(screen.getByText(/Loading/i)).toBeInTheDocument();
-    // PredictedScoreBadge content from baseScore
+    // Dashboard hero card + at least one section heading (rendered as
+    // uppercase eyebrow text, not a heading role).
+    expect(screen.getByText('Your daily 5')).toBeInTheDocument();
+    expect(screen.getByText(/Drill by topic/i)).toBeInTheDocument();
+    expect(screen.getByText(/Drill by format/i)).toBeInTheDocument();
     expect(screen.queryByRole('heading', { name: /sign in to study/i })).not.toBeInTheDocument();
   });
 
-  it('shows the paywall when at the daily limit and not premium', () => {
+  it('renders the FSRS session view when ?session=daily forces past the dashboard', () => {
+    (useAuth as any).mockReturnValue({ user: { id: 'u1', email: 'u@x.com' } });
+    renderPage('/study?session=daily');
+    // FsrsSessionView 'loading' state.
+    expect(screen.getByText(/Loading/i)).toBeInTheDocument();
+  });
+
+  it('shows the paywall when at the daily limit and not premium (in-session flow)', () => {
     (useAuth as any).mockReturnValue({ user: { id: 'u1', email: 'u@x.com' } });
     (useSubscription as any).mockReturnValue({
       ...baseSub,
       isAtLimit: true,
       dailyQuestionsRemaining: 0,
     });
-    renderPage();
+    renderPage('/study?session=daily');
     expect(screen.getByText(/daily.*free.*limit/i)).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /upgrade/i })).toBeInTheDocument();
   });
