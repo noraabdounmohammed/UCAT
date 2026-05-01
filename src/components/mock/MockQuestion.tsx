@@ -9,6 +9,12 @@ export interface MockQuestionProps {
   /** Optional flag-for-review state — controlled by parent so the flag survives navigation. */
   flagged?: boolean;
   onFlagToggle?: () => void;
+  /**
+   * If the user has already picked an answer for this question (e.g. when
+   * navigating back to it), show that pick highlighted but don't reveal
+   * correctness — real exam allows revising up until submit.
+   */
+  showPick?: { correct: boolean; choiceIndex: number };
 }
 
 /**
@@ -23,9 +29,7 @@ export interface MockQuestionProps {
  *     callers can hook to a per-question flag set, surfaced in the result
  *     screen as "items you flagged".
  */
-export function MockQuestion({ atom, onSubmit, flagged, onFlagToggle }: MockQuestionProps) {
-  const [submitted, setSubmitted] = useState(false);
-
+export function MockQuestion({ atom, onSubmit, flagged, onFlagToggle, showPick }: MockQuestionProps) {
   const options = useMemo(() => {
     const all = [
       { text: atom.answer, isAnswer: true },
@@ -36,10 +40,13 @@ export function MockQuestion({ atom, onSubmit, flagged, onFlagToggle }: MockQues
   }, [atom.id]);
 
   const handleClick = (i: number) => {
-    if (submitted) return;
-    setSubmitted(true);
     onSubmit({ correct: options[i].isAnswer, choiceIndex: i });
   };
+
+  // If the user has already picked, find the choice index in OUR shuffle.
+  // The choiceIndex stored in `showPick` was relative to the previous shuffle
+  // — since we use stable shuffle per atom.id (useMemo), it should still match.
+  const pickedIndex = showPick?.choiceIndex;
 
   return (
     <div className="rounded-2xl bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-800 p-5 sm:p-6 max-w-md mx-auto space-y-4 shadow-sm">
@@ -78,18 +85,38 @@ export function MockQuestion({ atom, onSubmit, flagged, onFlagToggle }: MockQues
       <div className="space-y-2.5" role="group" aria-label="Answer options">
         {options.map((opt, i) => {
           const letter = String.fromCharCode(65 + i);
+          const isPicked = pickedIndex === i;
           return (
             <button
               key={i}
               type="button"
-              disabled={submitted}
               onClick={() => handleClick(i)}
-              className="group flex items-start gap-3 w-full text-left p-3.5 rounded-xl border-2 border-stone-200 dark:border-stone-800 bg-white dark:bg-stone-900 hover:border-stone-400 dark:hover:border-stone-600 hover:bg-stone-50 dark:hover:bg-stone-800/50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              className={[
+                'group flex items-start gap-3 w-full text-left p-3.5 rounded-xl border-2 transition-colors',
+                isPicked
+                  ? 'border-stone-900 dark:border-stone-100 bg-stone-100 dark:bg-stone-800 ring-2 ring-stone-900/10 dark:ring-stone-100/10'
+                  : 'border-stone-200 dark:border-stone-800 bg-white dark:bg-stone-900 hover:border-stone-400 dark:hover:border-stone-600 hover:bg-stone-50 dark:hover:bg-stone-800/50',
+              ].join(' ')}
+              aria-pressed={isPicked || undefined}
             >
-              <span className="flex-shrink-0 w-7 h-7 rounded-lg bg-stone-100 dark:bg-stone-800 text-stone-700 dark:text-stone-300 group-hover:bg-stone-200 dark:group-hover:bg-stone-700 flex items-center justify-center text-xs font-bold transition-colors">
+              <span
+                className={[
+                  'flex-shrink-0 w-7 h-7 rounded-lg flex items-center justify-center text-xs font-bold transition-colors',
+                  isPicked
+                    ? 'bg-stone-900 dark:bg-stone-100 text-white dark:text-stone-900'
+                    : 'bg-stone-100 dark:bg-stone-800 text-stone-700 dark:text-stone-300 group-hover:bg-stone-200 dark:group-hover:bg-stone-700',
+                ].join(' ')}
+              >
                 {letter}
               </span>
-              <span className="flex-1 text-sm leading-relaxed text-stone-800 dark:text-stone-200">
+              <span
+                className={[
+                  'flex-1 text-sm leading-relaxed',
+                  isPicked
+                    ? 'text-stone-900 dark:text-stone-100 font-medium'
+                    : 'text-stone-800 dark:text-stone-200',
+                ].join(' ')}
+              >
                 {opt.text}
               </span>
             </button>
