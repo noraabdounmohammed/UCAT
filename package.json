@@ -13,6 +13,7 @@
     "test:ui": "vitest --ui",
     "test:coverage": "vitest run --coverage",
     "test:e2e": "playwright test",
+    "smoke:queue": "tsx scripts/smoke-test-queue.ts",
     "seed:ukmla": "tsx scripts/generate-atoms-from-ukmla.ts",
     "review:ai": "tsx scripts/ai-review-atoms.ts",
     "explain:ai": "tsx scripts/generate-explanations.ts",
