@@ -9,6 +9,7 @@ import { MockTimer } from '@/components/mock/MockTimer';
 import { MockResult } from '@/components/mock/MockResult';
 import { MockGrid } from '@/components/mock/MockGrid';
 import { MockReview } from '@/components/mock/MockReview';
+import { MockBreak } from '@/components/mock/MockBreak';
 import { UnreviewedToggle } from '@/components/study/UnreviewedToggle';
 import { useMockSession } from '@/hooks/useMockSession';
 import { useUnreviewedToggle } from '@/hooks/useUnreviewedToggle';
@@ -131,6 +132,21 @@ function MockSession({
     includeUnreviewed,
   });
 
+  // Mid-paper break for the 200-Q full mock — fires once when the
+  // user crosses from <100 answered to ≥100 answered. Sticky-flag so
+  // navigating back to Q99 and re-answering doesn't re-trigger it.
+  const [breakShown, setBreakShown] = useState(false);
+  const [breakSeen, setBreakSeen] = useState(false);
+  const answeredCount = Object.keys(session.picks).length;
+  useEffect(() => {
+    if (atomCount < 200) return;
+    if (breakSeen) return;
+    if (answeredCount >= 100 && session.status === 'in_progress') {
+      setBreakShown(true);
+      setBreakSeen(true);
+    }
+  }, [answeredCount, atomCount, breakSeen, session.status]);
+
   // Persist on first transition to review.
   const savedRef = useRef(false);
   useEffect(() => {
@@ -202,6 +218,15 @@ function MockSession({
 
   const isReview = session.status === 'review';
 
+  // Mid-paper break overlay — only for 200-Q full mock at half-way.
+  if (breakShown) {
+    return (
+      <MainLayout currentPage="mock">
+        <MockBreak onResume={() => setBreakShown(false)} />
+      </MainLayout>
+    );
+  }
+
   return (
     <MainLayout currentPage="mock">
       <div className="max-w-md mx-auto py-6 px-4 space-y-4">
@@ -228,6 +253,12 @@ function MockSession({
                 answered: !!pick,
               };
             })}
+            timeStats={{
+              avgTimePerQSec: session.score.avgTimePerQSec,
+              avgTimeCorrectSec: session.score.avgTimeCorrectSec,
+              avgTimeWrongSec: session.score.avgTimeWrongSec,
+              fastAnswers: session.score.fastAnswers,
+            }}
           />
         )}
 

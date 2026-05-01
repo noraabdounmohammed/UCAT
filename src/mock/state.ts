@@ -26,28 +26,44 @@ export interface MockState {
   secondsLeft: number;
   /** Map of atomIndex → user pick. Re-pickable until finalize(). */
   picks: Record<number, MockAnswer>;
+  /**
+   * Map of atomIndex → epoch-ms timestamp when the pick was made (or last
+   * re-picked). Used to derive a rough "time spent per question" stat in
+   * the result screen. Gets noisier with back-navigation (a user revisiting
+   * Q3 after answering Q5 would update Q3's timestamp), which is fine —
+   * we surface aggregate stats not per-question forensics.
+   */
+  pickedAt: Record<number, number>;
   /** Set of atomIndices the user has flagged. */
   flagged: Set<number>;
+  /** Wall-clock when the mock started — anchor for time-per-question math. */
+  startedAt: number;
   status: MockStatus;
 }
 
-export function initialMockState({ atoms, durationSec }: { atoms: Atom[]; durationSec: number }): MockState {
+export function initialMockState({ atoms, durationSec, now }: { atoms: Atom[]; durationSec: number; now?: () => number }): MockState {
+  const startedAt = (now ?? Date.now)();
   return {
     atoms,
     atomIndex: 0,
     secondsLeft: durationSec,
     picks: {},
+    pickedAt: {},
     flagged: new Set(),
+    startedAt,
     status: 'in_progress',
   };
 }
 
-/** Record a pick for the current question. Re-pickable. Does NOT auto-advance. */
-export function pickAnswer(state: MockState, answer: MockAnswer): MockState {
+/** Record a pick for the current question. Re-pickable. Does NOT auto-advance.
+ *  Stamps the pick time so we can compute time-per-question later. */
+export function pickAnswer(state: MockState, answer: MockAnswer, now?: () => number): MockState {
   if (state.status === 'review') return state;
+  const t = (now ?? Date.now)();
   return {
     ...state,
     picks: { ...state.picks, [state.atomIndex]: answer },
+    pickedAt: { ...state.pickedAt, [state.atomIndex]: t },
   };
 }
 
@@ -98,10 +114,55 @@ export function isFinished(state: MockState): boolean {
   return state.status === 'review';
 }
 
-export function computeScore(state: MockState): { correct: number; total: number; percentage: number; answered: number } {
+export interface MockScore {
+  correct: number;
+  total: number;
+  percentage: number;
+  answered: number;
+  /** Average time per answered question (seconds). */
+  avgTimePerQSec: number;
+  /** Avg time on questions you got correct (seconds). */
+  avgTimeCorrectSec: number;
+  /** Avg time on questions you got wrong (seconds). */
+  avgTimeWrongSec: number;
+  /** Number of questions answered in <30 s — proxy for "rushed". */
+  fastAnswers: number;
+}
+
+export function computeScore(state: MockState): MockScore {
   const total = state.atoms.length;
   const pickEntries = Object.entries(state.picks);
   const answered = pickEntries.length;
   const correct = pickEntries.filter(([, a]) => a.correct).length;
-  return { correct, total, percentage: total === 0 ? 0 : (correct / total) * 100, answered };
+
+  // Time-per-question — derived from pickedAt timestamps. The first
+  // answered question's time is measured from session start; subsequent
+  // ones are measured from the previous pick's timestamp. Order is by
+  // pickedAt so back-navigation re-orders correctly.
+  const orderedPicks = pickEntries
+    .map(([idx, ans]) => ({ idx: Number(idx), ans, t: state.pickedAt[Number(idx)] ?? state.startedAt }))
+    .sort((a, b) => a.t - b.t);
+
+  const perQ: { ms: number; correct: boolean }[] = [];
+  let prev = state.startedAt;
+  for (const p of orderedPicks) {
+    const ms = Math.max(0, p.t - prev);
+    perQ.push({ ms, correct: p.ans.correct });
+    prev = p.t;
+  }
+  const totalMs = perQ.reduce((s, p) => s + p.ms, 0);
+  const correctMsList = perQ.filter((p) => p.correct).map((p) => p.ms);
+  const wrongMsList = perQ.filter((p) => !p.correct).map((p) => p.ms);
+  const avg = (xs: number[]) => (xs.length === 0 ? 0 : xs.reduce((s, x) => s + x, 0) / xs.length);
+
+  return {
+    correct,
+    total,
+    percentage: total === 0 ? 0 : (correct / total) * 100,
+    answered,
+    avgTimePerQSec: answered === 0 ? 0 : Math.round(totalMs / answered / 1000),
+    avgTimeCorrectSec: Math.round(avg(correctMsList) / 1000),
+    avgTimeWrongSec: Math.round(avg(wrongMsList) / 1000),
+    fastAnswers: perQ.filter((p) => p.ms < 30_000).length,
+  };
 }

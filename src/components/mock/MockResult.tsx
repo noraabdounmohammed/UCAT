@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom';
-import { Trophy, Clock, Target, ArrowRight, RotateCcw } from 'lucide-react';
+import { Trophy, Clock, Target, ArrowRight, RotateCcw, Timer, Zap } from 'lucide-react';
 import type { Atom } from '@/atom/types';
 
 export interface MockResultProps {
@@ -12,6 +12,17 @@ export interface MockResultProps {
    * topic breakdown so the user knows where to focus next.
    */
   rated?: { atom: Atom; correct: boolean; answered: boolean }[];
+  /**
+   * Time stats from `computeScore()` — when provided, MockResult adds
+   * a "Pacing" card with avg time per question, time on correct vs
+   * wrong, and a count of <30s "fast answers".
+   */
+  timeStats?: {
+    avgTimePerQSec: number;
+    avgTimeCorrectSec: number;
+    avgTimeWrongSec: number;
+    fastAnswers: number;
+  };
 }
 
 /**
@@ -72,7 +83,7 @@ function bandFor(percentage: number): BandConfig {
   };
 }
 
-export function MockResult({ correct, total, percentage, timeUsedSec, rated }: MockResultProps) {
+export function MockResult({ correct, total, percentage, timeUsedSec, rated, timeStats }: MockResultProps) {
   const m = Math.floor(timeUsedSec / 60);
   const s = timeUsedSec % 60;
   const avgSecPerQ = total > 0 ? Math.round(timeUsedSec / total) : 0;
@@ -187,6 +198,64 @@ export function MockResult({ correct, total, percentage, timeUsedSec, rated }: M
               );
             })}
           </ul>
+        </div>
+      )}
+
+      {/* Pacing card — only when time-stats provided */}
+      {timeStats && timeStats.avgTimePerQSec > 0 && (
+        <div className="rounded-2xl bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-800 p-4">
+          <div className="flex items-center gap-1.5 mb-3">
+            <Timer className="w-3.5 h-3.5 text-stone-500 dark:text-stone-400" />
+            <span className="text-[11px] uppercase tracking-widest text-stone-500 dark:text-stone-400 font-semibold">
+              Pacing
+            </span>
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <div className="text-[10px] uppercase tracking-widest text-stone-500 dark:text-stone-400 mb-0.5">
+                Avg / Q
+              </div>
+              <div className="text-lg font-bold text-stone-900 dark:text-stone-100 tabular-nums">
+                {timeStats.avgTimePerQSec}s
+              </div>
+            </div>
+            <div>
+              <div className="text-[10px] uppercase tracking-widest text-stone-500 dark:text-stone-400 mb-0.5 flex items-center gap-1">
+                <Zap className="w-3 h-3" />
+                &lt;30s answers
+              </div>
+              <div className="text-lg font-bold text-stone-900 dark:text-stone-100 tabular-nums">
+                {timeStats.fastAnswers}
+              </div>
+            </div>
+            {timeStats.avgTimeCorrectSec > 0 && (
+              <div>
+                <div className="text-[10px] uppercase tracking-widest text-emerald-600 dark:text-emerald-400 mb-0.5">
+                  When right
+                </div>
+                <div className="text-lg font-bold text-emerald-700 dark:text-emerald-300 tabular-nums">
+                  {timeStats.avgTimeCorrectSec}s
+                </div>
+              </div>
+            )}
+            {timeStats.avgTimeWrongSec > 0 && (
+              <div>
+                <div className="text-[10px] uppercase tracking-widest text-rose-600 dark:text-rose-400 mb-0.5">
+                  When wrong
+                </div>
+                <div className="text-lg font-bold text-rose-700 dark:text-rose-300 tabular-nums">
+                  {timeStats.avgTimeWrongSec}s
+                </div>
+              </div>
+            )}
+          </div>
+          {timeStats.avgTimeWrongSec > 0 && timeStats.avgTimeCorrectSec > 0 && (
+            <div className="mt-3 pt-3 border-t border-stone-200 dark:border-stone-800 text-[11px] text-stone-600 dark:text-stone-400">
+              {timeStats.avgTimeWrongSec < timeStats.avgTimeCorrectSec
+                ? "You're answering wrong questions faster than right ones — slow down on the unfamiliar."
+                : "You're spending more time on wrong questions — overthinking past your first instinct?"}
+            </div>
+          )}
         </div>
       )}
 
