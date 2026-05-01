@@ -65,7 +65,10 @@ describe('<MockPage />', () => {
       secondsLeft: 0,
     });
     renderPage();
-    expect(screen.getByText('14 / 20')).toBeInTheDocument();
-    expect(screen.getByText(/70%/)).toBeInTheDocument();
+    // New MockResult shows "14 of 20 correct" + the big "70" number.
+    expect(screen.getByText(/14 of 20 correct/i)).toBeInTheDocument();
+    expect(screen.getByText('70')).toBeInTheDocument();
+    // And the pass-mark callout for a passing score (specific format with ~63%)
+    expect(screen.getByText(/Above the rough UKMLA cutoff \(~63%\)/i)).toBeInTheDocument();
   });
 });

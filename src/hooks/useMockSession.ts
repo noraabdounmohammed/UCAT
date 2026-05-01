@@ -56,12 +56,23 @@ export function useMockSession(deps: UseMockSessionDeps): UseMockSessionResult {
           includeUnreviewedAiDrafts: !!deps.includeUnreviewed,
         });
         if (cancelled) return;
-        if (all.length === 0) {
+        // Real UKMLA AKT is SBA-only. Filter out calc / EMQ / cloze atoms
+        // (their renderers don't fit MockQuestion's pure-MCQ flow) and
+        // case-bound atoms (they'd be shown without their vignette context,
+        // which is misleading). Atoms without an explicit question_kind
+        // default to 'sba' DB-side so they pass through.
+        const sbaOnly = all.filter((a) => {
+          const kind = a.questionKind ?? 'sba';
+          if (kind !== 'sba') return false;
+          if (a.caseId) return false;
+          return true;
+        });
+        if (sbaOnly.length === 0) {
           setStatus('empty');
           return;
         }
         // Random sample atomCount atoms
-        const shuffled = [...all].sort(() => Math.random() - 0.5);
+        const shuffled = [...sbaOnly].sort(() => Math.random() - 0.5);
         const sampled = shuffled.slice(0, deps.atomCount);
         const fresh = initialMockState({ atoms: sampled, durationSec: deps.durationSec });
         setState(fresh);

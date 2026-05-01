@@ -36,7 +36,7 @@ describe('<AtomRenderer />', () => {
 
     await user.click(screen.getByRole('button', { name: /Beta-blocker/i }));
 
-    expect(await screen.findByText('Correct')).toBeInTheDocument();
+    expect(await screen.findByText(/Nice — that's right/i)).toBeInTheDocument();
     expect(screen.getByRole('link', { name: /NICE CG126/i })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /Next question/i })).toBeInTheDocument();
     // Easy override only on correct
@@ -74,7 +74,7 @@ describe('<AtomRenderer />', () => {
     render(<AtomRenderer atom={atom} onRated={onRated} />);
 
     await user.click(screen.getByRole('button', { name: /ACE inhibitor/i }));
-    expect(await screen.findByText('Not quite')).toBeInTheDocument();
+    expect(await screen.findByText(/Not this one/i)).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: /^Easy$/i })).not.toBeInTheDocument();
 
     await user.click(screen.getByRole('button', { name: /Next question/i }));
