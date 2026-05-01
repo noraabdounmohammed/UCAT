@@ -91,11 +91,11 @@ describe('<StudyPage />', () => {
   it('renders the discovery dashboard for authenticated users on /study', () => {
     (useAuth as any).mockReturnValue({ user: { id: 'u1', email: 'u@x.com' } });
     renderPage();
-    // Dashboard hero card + at least one section heading (rendered as
-    // uppercase eyebrow text, not a heading role).
-    expect(screen.getByText('Your daily 5')).toBeInTheDocument();
-    expect(screen.getByText(/Drill by topic/i)).toBeInTheDocument();
-    expect(screen.getByText(/Drill by format/i)).toBeInTheDocument();
+    // Dashboard hero + section headings (post-modernisation copy).
+    expect(screen.getByText("Today's mission")).toBeInTheDocument();
+    expect(screen.getByText('Daily 5')).toBeInTheDocument();
+    expect(screen.getByText('Pick a system')).toBeInTheDocument();
+    expect(screen.getByText('Pick your format')).toBeInTheDocument();
     expect(screen.queryByRole('heading', { name: /sign in to study/i })).not.toBeInTheDocument();
   });
 
