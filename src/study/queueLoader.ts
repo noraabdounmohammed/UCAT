@@ -1,4 +1,4 @@
-import type { Atom, Exam, UserAtomState } from '@/atom/types';
+import type { Atom, Exam, QuestionKind, UserAtomState } from '@/atom/types';
 import type { AtomRepository } from '@/atom/repository';
 import type { UserStateRepository } from '@/atom/userStateRepository';
 
@@ -16,6 +16,17 @@ export interface BuildQueueDeps {
   includeUnreviewed: boolean;
   atomRepo: AtomRepository;
   userStateRepo: UserStateRepository;
+  /**
+   * Filter to a single top-level topic (e.g. "cardiology") — matches
+   * lowercased `topic_path[0]`. When set, the variety/due/fresh dance is
+   * skipped: every atom in the session matches the filter.
+   */
+  filterTopic?: string;
+  /**
+   * Filter to a single question kind. The virtual value `'case'` means
+   * "any atom attached to a clinical case", regardless of its kind.
+   */
+  filterKind?: QuestionKind | 'case';
 }
 
 /**
@@ -51,6 +62,14 @@ const VARIETY_SLOTS = 2;
  * useFsrsSession seeds them via the FSRS scheduler on first attempt.
  */
 export async function buildStudyQueue(deps: BuildQueueDeps): Promise<UserAtomState[]> {
+  // Filtered drilling: when the user explicitly picks a topic or format,
+  // skip the variety/due dance. Pull the largest reasonable pool of unseen
+  // matching atoms, take the first maxAtoms. Repeats only if they exhaust
+  // the unseen pool — that's a real signal they've covered the filter.
+  if (deps.filterTopic || deps.filterKind) {
+    return buildFilteredQueue(deps);
+  }
+
   // Phase 1: variety reserve.
   const varietyTarget = Math.min(VARIETY_SLOTS, Math.max(0, deps.maxAtoms - 1));
   const varietyPool = varietyTarget > 0
@@ -123,6 +142,47 @@ function interleaveVariety(
     }
   }
   return out;
+}
+
+/**
+ * Filtered drill: pull a generous pool of unseen atoms via the RPC, filter
+ * client-side by topic / kind, take the first maxAtoms. Filters are matched
+ * case-insensitively against `topic_path[0]` and against `question_kind`
+ * (with the virtual `'case'` value mapping to `case_id IS NOT NULL`).
+ *
+ * Bypasses variety reservation — if the user explicitly chose "calc only"
+ * we don't dilute it with EMQs/cases. Bypasses FSRS-due — picking a topic
+ * is a deliberate study choice, not a spaced-repetition session.
+ */
+async function buildFilteredQueue(deps: BuildQueueDeps): Promise<UserAtomState[]> {
+  const POOL_LIMIT = 200; // covers the largest filter (topic with the most atoms)
+  const fresh = await deps.atomRepo.listFreshUnseenForExam({
+    exam: deps.exam,
+    includeUnreviewedAiDrafts: deps.includeUnreviewed,
+    limit: POOL_LIMIT,
+  });
+
+  const topic = deps.filterTopic?.toLowerCase();
+  const kind = deps.filterKind;
+  const matched = fresh.filter(a => {
+    if (topic) {
+      const t0 = (a.topicPath?.[0] ?? '').toLowerCase();
+      if (t0 !== topic) return false;
+    }
+    if (kind) {
+      if (kind === 'case') {
+        if (!a.caseId) return false;
+      } else {
+        const k = a.questionKind ?? 'sba';
+        if (k !== kind) return false;
+      }
+    }
+    return true;
+  });
+
+  return matched
+    .slice(0, deps.maxAtoms)
+    .map(a => atomToPristineState(deps.userId, a, deps.asOf));
 }
 
 function atomToPristineState(userId: string, atom: Atom, asOf: Date): UserAtomState {
