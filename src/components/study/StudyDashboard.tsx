@@ -20,23 +20,27 @@ import type { QuestionKind } from '@/atom/types';
  * the queue loader honours them.
  */
 interface TopicChip {
-  key: string;            // matches lowercased topic_path[0]
+  key: string;            // matches lowercased topic_path[0] via TOPIC_SYNONYMS
   label: string;
 }
 
+// Order: roughly by atom count in the live bank — most-populated topics first.
+// Synonyms (e.g. cardiology + cardiovascular) are merged via the queueLoader
+// TOPIC_SYNONYMS map so clicking one chip surfaces all related atoms.
 const TOPICS: TopicChip[] = [
-  { key: 'cardiology',       label: 'Cardiology' },
-  { key: 'endocrinology',    label: 'Endocrinology' },
-  { key: 'respiratory',      label: 'Respiratory' },
+  { key: 'cardiology',       label: 'Cardiology' },          // + Cardiovascular
+  { key: 'neurology',         label: 'Neurology' },
   { key: 'gastroenterology', label: 'GI' },
   { key: 'renal',            label: 'Renal' },
-  { key: 'neurology',        label: 'Neurology' },
   { key: 'haematology',      label: 'Haematology' },
-  { key: 'paediatrics',      label: 'Paediatrics' },
-  { key: 'obstetrics',       label: 'Obstetrics' },
+  { key: 'infection',         label: 'Infection' },           // + Immunology
+  { key: 'surgery',          label: 'Surgery' },              // + Orthopaedics
+  { key: 'respiratory',      label: 'Respiratory' },
   { key: 'psychiatry',       label: 'Psychiatry' },
-  { key: 'infection',        label: 'Infection' },
-  { key: 'surgery',          label: 'Surgery' },
+  { key: 'dermatology',      label: 'Dermatology' },
+  { key: 'obstetrics',       label: 'Obstetrics' },
+  { key: 'endocrinology',    label: 'Endocrinology' },
+  { key: 'paediatrics',      label: 'Paediatrics' },
 ];
 
 interface FormatChip {
