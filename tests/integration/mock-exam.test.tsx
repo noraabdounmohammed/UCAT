@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import { MemoryRouter } from 'react-router-dom';
 import { MockQuestion } from '@/components/mock/MockQuestion';
 import { MockResult } from '@/components/mock/MockResult';
 import { useMockSession } from '@/hooks/useMockSession';
@@ -60,7 +61,7 @@ describe('mock exam integration', () => {
 
   it('full flow: load → answer 2 → final score', async () => {
     const user = userEvent.setup();
-    render(<Harness />);
+    render(<MemoryRouter><Harness /></MemoryRouter>);
     // wait for first stem (could be a1 or a2 depending on shuffle)
     await waitFor(() => {
       expect(screen.queryByText(/Stem a1\?|Stem a2\?/)).toBeInTheDocument();
@@ -75,7 +76,7 @@ describe('mock exam integration', () => {
     });
     // second answer: click a distractor
     await user.click(screen.getByText('Wrong1'));
-    // final result: 1 / 2
-    await waitFor(() => expect(screen.getByText('1 / 2')).toBeInTheDocument());
+    // final result: new MockResult shows "1 of 2 correct" instead of "1 / 2"
+    await waitFor(() => expect(screen.getByText(/1 of 2 correct/i)).toBeInTheDocument());
   });
 });
