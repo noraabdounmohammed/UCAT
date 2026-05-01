@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import { MemoryRouter } from 'react-router-dom';
 import { FsrsSessionView } from '@/components/study/FsrsSessionView';
 import { useFsrsSession } from '@/hooks/useFsrsSession';
 import type { Atom } from '@/atom/types';
@@ -58,7 +59,7 @@ describe('mistake deck integration', () => {
 
   it('full flow: load mistakes → answer 2 → summary', async () => {
     const user = userEvent.setup();
-    render(<Harness />);
+    render(<MemoryRouter><Harness /></MemoryRouter>);
 
     await waitFor(() => expect(screen.getByText(/Stem m1\?/)).toBeInTheDocument());
     expect(listMistakeAtomsForUser).toHaveBeenCalledTimes(1);

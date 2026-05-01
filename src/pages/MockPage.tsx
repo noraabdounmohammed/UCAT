@@ -220,6 +220,14 @@ function MockSession({
             total={session.score.total}
             percentage={session.score.percentage}
             timeUsedSec={durationSec - session.secondsLeft}
+            rated={session.atoms.map((atom, i) => {
+              const pick = session.picks[i];
+              return {
+                atom,
+                correct: !!pick?.correct,
+                answered: !!pick,
+              };
+            })}
           />
         )}
 

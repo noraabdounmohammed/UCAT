@@ -1,8 +1,13 @@
 import { describe, it, expect, vi } from 'vitest';
 import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import { MemoryRouter } from 'react-router-dom';
 import { FsrsSessionView } from '@/components/study/FsrsSessionView';
 import type { Atom } from '@/atom/types';
+
+function withRouter(ui: React.ReactElement) {
+  return <MemoryRouter>{ui}</MemoryRouter>;
+}
 
 const atom: Atom = {
   id: 'a1', exam: 'UKMLA', topicPath: ['Cardiology'],
@@ -47,17 +52,22 @@ describe('<FsrsSessionView />', () => {
 
   it('shows summary when status is summary', () => {
     render(
-      <FsrsSessionView
-        session={makeMockHookResult({
-          status: 'summary',
-          currentAtom: null,
-          summary: { totalAtoms: 5, ratings: [3, 3, 4, 1, 3], startedAt: new Date(), finishedAt: new Date() },
-        })}
-        streakDays={12}
-      />,
+      withRouter(
+        <FsrsSessionView
+          session={makeMockHookResult({
+            status: 'summary',
+            currentAtom: null,
+            summary: { totalAtoms: 5, ratings: [3, 3, 4, 1, 3], startedAt: new Date(), finishedAt: new Date() },
+          })}
+          streakDays={12}
+        />,
+      ),
     );
-    expect(screen.getByText(/4\s*\/\s*5/)).toBeInTheDocument();
-    expect(screen.getByText(/streak day 12/i)).toBeInTheDocument();
+    // SessionSummary now splits "4 / 5" into separate spans
+    expect(screen.getByText('4')).toBeInTheDocument();
+    expect(screen.getByText(/\/\s*5/)).toBeInTheDocument();
+    // Streak shows "day 12" with a flame icon (was "streak day 12")
+    expect(screen.getByText(/day 12/i)).toBeInTheDocument();
   });
 
   it('picking the correct option then Next calls rateAtom', async () => {

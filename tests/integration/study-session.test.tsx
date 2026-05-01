@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import { MemoryRouter } from 'react-router-dom';
 import { FsrsSessionView } from '@/components/study/FsrsSessionView';
 import { useFsrsSession } from '@/hooks/useFsrsSession';
 import type { Atom } from '@/atom/types';
@@ -47,7 +48,7 @@ describe('study session integration', () => {
 
   it('full flow: load → rate 2 → summary', async () => {
     const user = userEvent.setup();
-    render(<Harness />);
+    render(<MemoryRouter><Harness /></MemoryRouter>);
 
     await waitFor(() => expect(screen.getByText(/Stem a1\?/)).toBeInTheDocument());
     // Question 1 (a1) — pick correct, then Next
