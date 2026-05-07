@@ -1,4 +1,4 @@
-import React, { useState, useEffect, lazy, Suspense } from 'react';
+import React, { useState, useEffect, useRef, lazy, Suspense } from 'react';
 import { useConceptStore, ConceptStoreProvider } from '@/contexts/ConceptStoreContext';
 import { ConceptFilterPanel } from '@/components/concept/ConceptFilterPanel';
 import { TrackDashboard } from '@/components/track/TrackDashboard.loft';
@@ -46,7 +46,8 @@ const ConceptPracticePageLoftContent: React.FC<Omit<ConceptPracticePageLoftProps
   const { isCreator } = useUserRole();
   const { 
     isLoading,
-    loadConcepts, 
+    loadConcepts,
+    concepts,
     filteredConcepts, 
     isPracticing, 
     practiceQuestions,
@@ -60,8 +61,11 @@ const ConceptPracticePageLoftContent: React.FC<Omit<ConceptPracticePageLoftProps
     generatingQuestionCount,
     setPracticeSelection,
     practiceSelection,
-    practiceError
-  } = useConceptStore();
+    practiceError,
+    filterCategories: storeFilterCategories,
+    curriculumId: storeCurriculumId,
+    filterOptions
+  } = useConceptStore() as any;
   
   const [showPracticeConfig, setShowPracticeConfig] = useState(false);
   const [showCreationHub, setShowCreationHub] = useState(false);
@@ -95,6 +99,11 @@ const ConceptPracticePageLoftContent: React.FC<Omit<ConceptPracticePageLoftProps
   const [showAuthPrompt, setShowAuthPrompt] = useState(false);
   const [pendingPracticeConfig, setPendingPracticeConfig] = useState<any>(null);
   const [pendingFilteredConcepts, setPendingFilteredConcepts] = useState<any[]>([]);
+  const [activeSessionFilter, setActiveSessionFilter] = useState<string | null>(null);
+  // Track current practice format for switching during session
+  const [currentFormat, setCurrentFormat] = useState<string>('ukmla_sba');
+  // Show a loading screen immediately on mount so the dashboard never flashes
+  const [pendingAutoStart, setPendingAutoStart] = useState(true);
 
   // Redirect consumers away from concepts view
   useEffect(() => {
@@ -102,6 +111,29 @@ const ConceptPracticePageLoftContent: React.FC<Omit<ConceptPracticePageLoftProps
       setSelectedView('dashboard');
     }
   }, [isCreator, selectedView]);
+
+  // Auto-start: launch 5 UKMLA SBAs as soon as concepts are ready, once per mount
+  const hasAutoStarted = useRef(false);
+  useEffect(() => {
+    if (hasAutoStarted.current) return;
+    if (isPracticing) { hasAutoStarted.current = true; setPendingAutoStart(false); return; }
+    // Use filteredConcepts if available, fall back to all concepts
+    const available = (filteredConcepts && filteredConcepts.length > 0)
+      ? filteredConcepts
+      : concepts;
+    if (available && available.length > 0) {
+      hasAutoStarted.current = true;
+      startPractice({ target_formats: [currentFormat], question_count: 5 });
+      // pendingAutoStart cleared below once isPracticing becomes true
+    }
+  }, [filteredConcepts, concepts, isPracticing, currentFormat]);
+
+  // Clear the pending screen once the session is live or an error surfaces
+  useEffect(() => {
+    if (isPracticing || practiceError) {
+      setPendingAutoStart(false);
+    }
+  }, [isPracticing, practiceError]);
 
   // Close menus when clicking outside
   useEffect(() => {
@@ -118,15 +150,21 @@ const ConceptPracticePageLoftContent: React.FC<Omit<ConceptPracticePageLoftProps
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, [showSortMenu, showCategoryMenu]);
 
-  // Get filter categories from localStorage
-  const curriculumId = curriculum?.id || curriculumName;
+  // Use store's curriculumId so localStorage keys match
+  const curriculumId = storeCurriculumId || curriculum?.id || 'default';
   const filterCategories = React.useMemo(() => {
+    // Prefer store state, fall back to localStorage
+    if (storeFilterCategories && storeFilterCategories.length > 0) return storeFilterCategories;
     try {
-      return JSON.parse(localStorage.getItem(`${curriculumId}_filter_categories`) || '[]');
+      const fromStorage = JSON.parse(localStorage.getItem(`${curriculumId}_filter_categories`) || '[]');
+      if (fromStorage.length > 0) return fromStorage;
+      // Also try with the curriculum name as key (legacy)
+      const legacyKey = curriculum?.id || curriculumName;
+      return JSON.parse(localStorage.getItem(`${legacyKey}_filter_categories`) || '[]');
     } catch {
       return [];
     }
-  }, [curriculumId]);
+  }, [curriculumId, storeFilterCategories, curriculum?.id, curriculumName]);
 
   // Filter and sort concepts
   const getDisplayedConcepts = () => {
@@ -134,7 +172,12 @@ const ConceptPracticePageLoftContent: React.FC<Omit<ConceptPracticePageLoftProps
 
     // Apply category filter
     if (selectedCategory !== 'all') {
-      const filterAssignments = JSON.parse(localStorage.getItem(`${curriculumId}_filter_assignments`) || '{}');
+      let filterAssignments = JSON.parse(localStorage.getItem(`${curriculumId}_filter_assignments`) || '{}');
+      // Fallback: try legacy key if nothing found
+      if (Object.keys(filterAssignments).length === 0) {
+        const legacyKey = curriculum?.id || curriculumName;
+        filterAssignments = JSON.parse(localStorage.getItem(`${legacyKey}_filter_assignments`) || '{}');
+      }
       concepts = concepts.filter(concept => {
         const conceptFilters = concept.custom_filters || [];
         return conceptFilters.some(filter => filterAssignments[filter] === selectedCategory);
@@ -244,8 +287,8 @@ const ConceptPracticePageLoftContent: React.FC<Omit<ConceptPracticePageLoftProps
     setShowPracticeConfig(false);
   };
 
-  // Show generation loading screen
-  if (isLoading && isPracticing) {
+  // Show loading screen while waiting for auto-start or while generating
+  if (pendingAutoStart || (isLoading && isPracticing)) {
     return (
       <GenerationLoadingScreen 
         conceptCount={generatingQuestionCount}
@@ -261,7 +304,25 @@ const ConceptPracticePageLoftContent: React.FC<Omit<ConceptPracticePageLoftProps
           questions={practiceQuestions}
           onComplete={handlePracticeComplete}
           onAnswerSubmit={handleAnswerSubmit}
+          availableFilters={(filterOptions?.custom_filters as string[] | undefined) ?? []}
+          activeFilter={activeSessionFilter}
+          onAnotherFive={(filter?: string) => {
+            const chosen = filter ?? null;
+            setActiveSessionFilter(chosen);
+            if (chosen) {
+              updateFilterState({ custom_filters: [chosen] });
+            } else {
+              updateFilterState({ custom_filters: [] });
+            }
+            startPractice({ target_formats: [currentFormat], question_count: 5 });
+          }}
           section="UKMLA AKT"
+          currentFormat={currentFormat}
+          onChangeFormat={(format: string) => {
+            setCurrentFormat(format);
+            // Restart practice with new format - preserves current filter if any
+            startPractice({ target_formats: [format], question_count: 5 });
+          }}
         />
       </Suspense>
     );
@@ -1168,7 +1229,7 @@ const ConceptPracticePageLoftContent: React.FC<Omit<ConceptPracticePageLoftProps
             />
           ) : (
             <TrackDashboard 
-              curriculumId={curriculum?.id || curriculumName}
+              curriculumId={curriculumId}
               onAddConcepts={() => setShowCreationHub(true)}
             />
           )}

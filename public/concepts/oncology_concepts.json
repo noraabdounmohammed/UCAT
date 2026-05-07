@@ -1,0 +1,1649 @@
+[
+  {
+    "title": "Metastatic disease – Definition of bone metastases",
+    "content": "Bone metastases occur when cancer cells from a primary tumour spread to the bone, most commonly via the blood or lymphatic system. Up to 50% of patients who die from cancer are found to have bone metastases.",
+    "custom_filters": [
+      "Oncology",
+      "Metastatic disease",
+      "Definition"
+    ],
+    "filter_categories": [
+      {
+        "name": "Systems",
+        "color": "#3B82F6",
+        "filters": ["Oncology"]
+      },
+      {
+        "name": "Conditions",
+        "color": "#8B5CF6",
+        "filters": ["Metastatic disease"]
+      },
+      {
+        "name": "Presentations",
+        "color": "#F59E0B",
+        "filters": []
+      },
+      {
+        "name": "Other",
+        "color": "#10B981",
+        "filters": ["Definition"]
+      }
+    ]
+  },
+  {
+    "title": "Metastatic disease – Epidemiology of bone metastases",
+    "content": "The incidence of bone metastases is approximately 100 cases per 100,000 person-years, with a peak incidence in individuals aged 70 years and older. The sex ratio is equal (1:1).",
+    "custom_filters": [
+      "Oncology",
+      "Metastatic disease",
+      "Epidemiology"
+    ],
+    "filter_categories": [
+      {
+        "name": "Systems",
+        "color": "#3B82F6",
+        "filters": ["Oncology"]
+      },
+      {
+        "name": "Conditions",
+        "color": "#8B5CF6",
+        "filters": ["Metastatic disease"]
+      },
+      {
+        "name": "Presentations",
+        "color": "#F59E0B",
+        "filters": []
+      },
+      {
+        "name": "Other",
+        "color": "#10B981",
+        "filters": ["Epidemiology"]
+      }
+    ]
+  },
+  {
+    "title": "Metastatic disease – Classification of bone metastases",
+    "content": "Bone metastases are classified as osteoblastic (new bone deposition, e.g., prostate cancer, Hodgkin's lymphoma), osteolytic (bone destruction, e.g., renal cell cancer, melanoma), or mixed (both processes, e.g., breast and GI cancers).",
+    "custom_filters": [
+      "Oncology",
+      "Metastatic disease",
+      "Pathophysiology"
+    ],
+    "filter_categories": [
+      {
+        "name": "Systems",
+        "color": "#3B82F6",
+        "filters": ["Oncology"]
+      },
+      {
+        "name": "Conditions",
+        "color": "#8B5CF6",
+        "filters": ["Metastatic disease"]
+      },
+      {
+        "name": "Presentations",
+        "color": "#F59E0B",
+        "filters": []
+      },
+      {
+        "name": "Other",
+        "color": "#10B981",
+        "filters": ["Pathophysiology"]
+      }
+    ]
+  },
+  {
+    "title": "Metastatic disease – Common primary cancers causing bone metastases",
+    "content": "The most common primary cancers that metastasise to bone are breast, bronchus (lung), thyroid, prostate, and kidney cancer.",
+    "custom_filters": [
+      "Oncology",
+      "Metastatic disease",
+      "Aetiology/Risk factors"
+    ],
+    "filter_categories": [
+      {
+        "name": "Systems",
+        "color": "#3B82F6",
+        "filters": ["Oncology"]
+      },
+      {
+        "name": "Conditions",
+        "color": "#8B5CF6",
+        "filters": ["Metastatic disease"]
+      },
+      {
+        "name": "Presentations",
+        "color": "#F59E0B",
+        "filters": []
+      },
+      {
+        "name": "Other",
+        "color": "#10B981",
+        "filters": ["Aetiology/Risk factors"]
+      }
+    ]
+  },
+  {
+    "title": "Metastatic disease – Pain characteristics in bone metastases",
+    "content": "Pain from bone metastases is characteristically severe, often described as a 'gnawing' pain similar to a toothache, and frequently wakes the patient from sleep. In one study, 91.6% of patients with metastatic bone disease experienced pain.",
+    "custom_filters": [
+      "Oncology",
+      "Metastatic disease",
+      "Bone pain",
+      "Clinical features"
+    ],
+    "filter_categories": [
+      {
+        "name": "Systems",
+        "color": "#3B82F6",
+        "filters": ["Oncology"]
+      },
+      {
+        "name": "Conditions",
+        "color": "#8B5CF6",
+        "filters": ["Metastatic disease"]
+      },
+      {
+        "name": "Presentations",
+        "color": "#F59E0B",
+        "filters": ["Bone pain"]
+      },
+      {
+        "name": "Other",
+        "color": "#10B981",
+        "filters": ["Clinical features"]
+      }
+    ]
+  },
+  {
+    "title": "Hypercalcaemia of malignancy – Clinical features",
+    "content": "Symptoms of hypercalcaemia, which can be a feature of bone metastases, include bone pain, muscle weakness, thirst, excessive urination, confusion, and malaise. When hypercalcaemia is found, 80% of patients are found to have metastases.",
+    "custom_filters": [
+      "Oncology",
+      "Hypercalcaemia of malignancy",
+      "Electrolyte abnormalities",
+      "Bone pain",
+      "Limb weakness",
+      "Clinical features"
+    ],
+    "filter_categories": [
+      {
+        "name": "Systems",
+        "color": "#3B82F6",
+        "filters": ["Oncology"]
+      },
+      {
+        "name": "Conditions",
+        "color": "#8B5CF6",
+        "filters": ["Hypercalcaemia of malignancy"]
+      },
+      {
+        "name": "Presentations",
+        "color": "#F59E0B",
+        "filters": ["Electrolyte abnormalities", "Bone pain", "Limb weakness"]
+      },
+      {
+        "name": "Other",
+        "color": "#10B981",
+        "filters": ["Clinical features"]
+      }
+    ]
+  },
+  {
+    "title": "Pathological fracture – Presentation in bone metastases",
+    "content": "Bone metastases can lead to pathological fractures, which are fractures that occur in a bone weakened by disease with little or no preceding trauma. An increase in pain intensity may occur shortly before the fracture.",
+    "custom_filters": [
+      "Oncology",
+      "Pathological fracture",
+      "Metastatic disease",
+      "Bone pain",
+      "Clinical features"
+    ],
+    "filter_categories": [
+      {
+        "name": "Systems",
+        "color": "#3B82F6",
+        "filters": ["Oncology"]
+      },
+      {
+        "name": "Conditions",
+        "color": "#8B5CF6",
+        "filters": ["Pathological fracture", "Metastatic disease"]
+      },
+      {
+        "name": "Presentations",
+        "color": "#F59E0B",
+        "filters": ["Bone pain"]
+      },
+      {
+        "name": "Other",
+        "color": "#10B981",
+        "filters": ["Clinical features"]
+      }
+    ]
+  },
+  {
+    "title": "Metastatic disease – Investigations with bone scintigraphy",
+    "content": "Whole-body bone scintigraphy using Technetium-99m is used to visualize areas of increased bone turnover (osteoblastic activity). Asymmetrical or increased uptake can indicate pathological processes like malignancy. Absence of kidney and bladder uptake is a worrying sign suggesting diffuse bone disease.",
+    "custom_filters": [
+      "Oncology",
+      "Metastatic disease",
+      "Investigations"
+    ],
+    "filter_categories": [
+      {
+        "name": "Systems",
+        "color": "#3B82F6",
+        "filters": ["Oncology"]
+      },
+      {
+        "name": "Conditions",
+        "color": "#8B5CF6",
+        "filters": ["Metastatic disease"]
+      },
+      {
+        "name": "Presentations",
+        "color": "#F59E0B",
+        "filters": []
+      },
+      {
+        "name": "Other",
+        "color": "#10B981",
+        "filters": ["Investigations"]
+      }
+    ]
+  },
+  {
+    "title": "Metastatic disease – Role of CT and MRI in bone metastases",
+    "content": "CT or MRI scans are the preferred imaging modalities for suspected bone metastases when there are features of nerve involvement, such as weakness or paralysis, as they provide better visualization of soft tissues and nerve compression.",
+    "custom_filters": [
+      "Oncology",
+      "Metastatic disease",
+      "Spinal cord compression",
+      "Limb weakness",
+      "Investigations"
+    ],
+    "filter_categories": [
+      {
+        "name": "Systems",
+        "color": "#3B82F6",
+        "filters": ["Oncology"]
+      },
+      {
+        "name": "Conditions",
+        "color": "#8B5CF6",
+        "filters": ["Metastatic disease", "Spinal cord compression"]
+      },
+      {
+        "name": "Presentations",
+        "color": "#F59E0B",
+        "filters": ["Limb weakness"]
+      },
+      {
+        "name": "Other",
+        "color": "#10B981",
+        "filters": ["Investigations"]
+      }
+    ]
+  },
+  {
+    "title": "Metastatic disease – Blood tests in suspected bone metastases",
+    "content": "Blood tests for suspected bone metastases include FBC (may show anaemia), U&Es, LFTs, and CRP. A raised Alkaline Phosphatase (ALP) is very likely as it is released during bone breakdown, but an isolated rise is not diagnostic.",
+    "custom_filters": [
+      "Oncology",
+      "Metastatic disease",
+      "Investigations"
+    ],
+    "filter_categories": [
+      {
+        "name": "Systems",
+        "color": "#3B82F6",
+        "filters": ["Oncology"]
+      },
+      {
+        "name": "Conditions",
+        "color": "#8B5CF6",
+        "filters": ["Metastatic disease"]
+      },
+      {
+        "name": "Presentations",
+        "color": "#F59E0B",
+        "filters": []
+      },
+      {
+        "name": "Other",
+        "color": "#10B981",
+        "filters": ["Investigations"]
+      }
+    ]
+  }
+,
+  {
+    "title": "Spinal cord compression – Definition",
+    "content": "Neoplastic spinal cord compression is an oncological emergency affecting up to 5% of cancer patients. It is most commonly caused by extradural compression from vertebral body metastases, particularly from lung, breast, and prostate cancer.",
+    "custom_filters": [
+      "Oncology",
+      "Spinal cord compression",
+      "Definition"
+    ],
+    "filter_categories": [
+      {
+        "name": "Systems",
+        "color": "#3B82F6",
+        "filters": ["Oncology"]
+      },
+      {
+        "name": "Conditions",
+        "color": "#8B5CF6",
+        "filters": ["Spinal cord compression"]
+      },
+      {
+        "name": "Presentations",
+        "color": "#F59E0B",
+        "filters": []
+      },
+      {
+        "name": "Other",
+        "color": "#10B981",
+        "filters": ["Definition"]
+      }
+    ]
+  },
+  {
+    "title": "Spinal cord compression – Epidemiology",
+    "content": "The incidence of neoplastic spinal cord compression is approximately 10 cases per 100,000 person-years. The peak incidence occurs between 60-70 years of age, with an equal male-to-female ratio.",
+    "custom_filters": [
+      "Oncology",
+      "Spinal cord compression",
+      "Epidemiology"
+    ],
+    "filter_categories": [
+      {
+        "name": "Systems",
+        "color": "#3B82F6",
+        "filters": ["Oncology"]
+      },
+      {
+        "name": "Conditions",
+        "color": "#8B5CF6",
+        "filters": ["Spinal cord compression"]
+      },
+      {
+        "name": "Presentations",
+        "color": "#F59E0B",
+        "filters": []
+      },
+      {
+        "name": "Other",
+        "color": "#10B981",
+        "filters": ["Epidemiology"]
+      }
+    ]
+  },
+  {
+    "title": "Spinal cord compression – Aetiology from metastatic deposits",
+    "content": "Metastatic deposits account for up to 90% of masses on spinal imaging in neoplastic cord compression. The most common primary cancers are breast (21%), lung (19%), and prostate (8%).",
+    "custom_filters": [
+      "Oncology",
+      "Spinal cord compression",
+      "Metastatic disease",
+      "Aetiology/Risk factors"
+    ],
+    "filter_categories": [
+      {
+        "name": "Systems",
+        "color": "#3B82F6",
+        "filters": ["Oncology"]
+      },
+      {
+        "name": "Conditions",
+        "color": "#8B5CF6",
+        "filters": ["Spinal cord compression", "Metastatic disease"]
+      },
+      {
+        "name": "Presentations",
+        "color": "#F59E0B",
+        "filters": []
+      },
+      {
+        "name": "Other",
+        "color": "#10B981",
+        "filters": ["Aetiology/Risk factors"]
+      }
+    ]
+  },
+  {
+    "title": "Spinal cord compression – Aetiology from haematological cancers",
+    "content": "Haematological cancers can cause cord compression. Myeloma leads to bone resorption and vertebral collapse. A plasmacytoma (a collection of plasma cells) can also form in vertebrae or soft tissues, causing compression. CNS Lymphoma can also cause cord compression.",
+    "custom_filters": [
+      "Oncology",
+      "Spinal cord compression",
+      "Multiple myeloma",
+      "Lymphoma",
+      "Aetiology/Risk factors"
+    ],
+    "filter_categories": [
+      {
+        "name": "Systems",
+        "color": "#3B82F6",
+        "filters": ["Oncology"]
+      },
+      {
+        "name": "Conditions",
+        "color": "#8B5CF6",
+        "filters": ["Spinal cord compression", "Multiple myeloma", "Lymphoma"]
+      },
+      {
+        "name": "Presentations",
+        "color": "#F59E0B",
+        "filters": []
+      },
+      {
+        "name": "Other",
+        "color": "#10B981",
+        "filters": ["Aetiology/Risk factors"]
+      }
+    ]
+  },
+  {
+    "title": "Spinal cord compression – Pathophysiology of metastatic spread to spine",
+    "content": "Metastases usually spread to the spine via the blood (haematogenous). For prostate and breast cancer, this is often via the paravertebral venous plexus. In contrast, lung cancers typically spread via the arterial system.",
+    "custom_filters": [
+      "Oncology",
+      "Spinal cord compression",
+      "Metastatic disease",
+      "Pathophysiology"
+    ],
+    "filter_categories": [
+      {
+        "name": "Systems",
+        "color": "#3B82F6",
+        "filters": ["Oncology"]
+      },
+      {
+        "name": "Conditions",
+        "color": "#8B5CF6",
+        "filters": ["Spinal cord compression", "Metastatic disease"]
+      },
+      {
+        "name": "Presentations",
+        "color": "#F59E0B",
+        "filters": []
+      },
+      {
+        "name": "Other",
+        "color": "#10B981",
+        "filters": ["Pathophysiology"]
+      }
+    ]
+  },
+  {
+    "title": "Spinal cord compression – Clinical feature of back pain",
+    "content": "Back pain is the earliest and most common symptom of neoplastic spinal cord compression. The pain may be worse on lying down and coughing.",
+    "custom_filters": [
+      "Oncology",
+      "Spinal cord compression",
+      "Bone pain",
+      "Clinical features"
+    ],
+    "filter_categories": [
+      {
+        "name": "Systems",
+        "color": "#3B82F6",
+        "filters": ["Oncology"]
+      },
+      {
+        "name": "Conditions",
+        "color": "#8B5CF6",
+        "filters": ["Spinal cord compression"]
+      },
+      {
+        "name": "Presentations",
+        "color": "#F59E0B",
+        "filters": ["Bone pain"]
+      },
+      {
+        "name": "Other",
+        "color": "#10B981",
+        "filters": ["Clinical features"]
+      }
+    ]
+  },
+  {
+    "title": "Spinal cord compression – Neurological signs by lesion level",
+    "content": "In neoplastic spinal cord compression, neurological signs depend on the lesion level. Lesions above L1 typically cause upper motor neuron (UMN) signs in the legs and a sensory level. Lesions below L1 usually cause lower motor neuron (LMN) signs and perianal numbness.",
+    "custom_filters": [
+      "Oncology",
+      "Spinal cord compression",
+      "Limb weakness",
+      "Clinical features"
+    ],
+    "filter_categories": [
+      {
+        "name": "Systems",
+        "color": "#3B82F6",
+        "filters": ["Oncology"]
+      },
+      {
+        "name": "Conditions",
+        "color": "#8B5CF6",
+        "filters": ["Spinal cord compression"]
+      },
+      {
+        "name": "Presentations",
+        "color": "#F59E0B",
+        "filters": ["Limb weakness"]
+      },
+      {
+        "name": "Other",
+        "color": "#10B981",
+        "filters": ["Clinical features"]
+      }
+    ]
+  },
+  {
+    "title": "Spinal cord compression – Gold standard investigation",
+    "content": "The 2019 NICE guidelines recommend a whole spine MRI within 24 hours of presentation as the gold standard investigation for suspected neoplastic spinal cord compression. MRI has a sensitivity of 44-93% and specificity of 90-98% for this condition.",
+    "custom_filters": [
+      "Oncology",
+      "Spinal cord compression",
+      "Investigations"
+    ],
+    "filter_categories": [
+      {
+        "name": "Systems",
+        "color": "#3B82F6",
+        "filters": ["Oncology"]
+      },
+      {
+        "name": "Conditions",
+        "color": "#8B5CF6",
+        "filters": ["Spinal cord compression"]
+      },
+      {
+        "name": "Presentations",
+        "color": "#F59E0B",
+        "filters": []
+      },
+      {
+        "name": "Other",
+        "color": "#10B981",
+        "filters": ["Investigations"]
+      }
+    ]
+  },
+  {
+    "title": "Spinal cord compression – Initial management with corticosteroids",
+    "content": "Patients with suspected neoplastic spinal cord compression should be started on high-dose oral dexamethasone immediately to reduce cord oedema. Blood glucose monitoring is required due to the risk of steroid-induced diabetes.",
+    "custom_filters": [
+      "Oncology",
+      "Spinal cord compression",
+      "Management"
+    ],
+    "filter_categories": [
+      {
+        "name": "Systems",
+        "color": "#3B82F6",
+        "filters": ["Oncology"]
+      },
+      {
+        "name": "Conditions",
+        "color": "#8B5CF6",
+        "filters": ["Spinal cord compression"]
+      },
+      {
+        "name": "Presentations",
+        "color": "#F59E0B",
+        "filters": []
+      },
+      {
+        "name": "Other",
+        "color": "#10B981",
+        "filters": ["Management"]
+      }
+    ]
+  },
+  {
+    "title": "Spinal cord compression – Definitive treatment options",
+    "content": "Definitive treatment for neoplastic cord compression should begin within 24 hours. Options include surgical decompression and stabilisation (for patients with >3 months expected survival) and radiotherapy (sole treatment or post-operative).",
+    "custom_filters": [
+      "Oncology",
+      "Spinal cord compression",
+      "Management"
+    ],
+    "filter_categories": [
+      {
+        "name": "Systems",
+        "color": "#3B82F6",
+        "filters": ["Oncology"]
+      },
+      {
+        "name": "Conditions",
+        "color": "#8B5CF6",
+        "filters": ["Spinal cord compression"]
+      },
+      {
+        "name": "Presentations",
+        "color": "#F59E0B",
+        "filters": []
+      },
+      {
+        "name": "Other",
+        "color": "#10B981",
+        "filters": ["Management"]
+      }
+    ]
+  },
+  {
+    "title": "Spinal cord compression – Prognosis",
+    "content": "Neoplastic spinal cord compression generally indicates advanced disease and has a poor prognosis, with a median life expectancy of 2-3 months post-diagnosis. The neurological outcome is heavily determined by the deficit at presentation; only 7% of patients who are non-ambulatory at diagnosis regain the ability to walk.",
+    "custom_filters": [
+      "Oncology",
+      "Spinal cord compression",
+      "Prognosis"
+    ],
+    "filter_categories": [
+      {
+        "name": "Systems",
+        "color": "#3B82F6",
+        "filters": ["Oncology"]
+      },
+      {
+        "name": "Conditions",
+        "color": "#8B5CF6",
+        "filters": ["Spinal cord compression"]
+      },
+      {
+        "name": "Presentations",
+        "color": "#F59E0B",
+        "filters": []
+      },
+      {
+        "name": "Other",
+        "color": "#10B981",
+        "filters": ["Prognosis"]
+      }
+    ]
+  }
+,
+  {
+    "title": "Lung cancer – Superior Vena Cava Obstruction definition",
+    "content": "Superior vena cava obstruction (SVCO) is an oncological emergency caused by the partial or complete blockage of the superior vena cava, impairing venous return from the upper body. It is most commonly caused by malignancies like bronchogenic carcinoma (lung cancer) and lymphomas.",
+    "custom_filters": [
+      "Oncology",
+      "Lung cancer",
+      "Lymphoma",
+      "Definition"
+    ],
+    "filter_categories": [
+      {
+        "name": "Systems",
+        "color": "#3B82F6",
+        "filters": ["Oncology"]
+      },
+      {
+        "name": "Conditions",
+        "color": "#8B5CF6",
+        "filters": ["Lung cancer", "Lymphoma"]
+      },
+      {
+        "name": "Presentations",
+        "color": "#F59E0B",
+        "filters": []
+      },
+      {
+        "name": "Other",
+        "color": "#10B981",
+        "filters": ["Definition"]
+      }
+    ]
+  },
+  {
+    "title": "Lung cancer – Aetiology of Superior Vena Cava Obstruction",
+    "content": "The majority of SVCO cases are secondary to malignancy. Lung cancer, particularly small cell and non-small cell lung carcinoma, is the most common cause. Other causes include lymphomas, metastatic cancers, thrombosis (e.g., from central lines), and rare causes like mediastinal fibrosis or infections.",
+    "custom_filters": [
+      "Oncology",
+      "Lung cancer",
+      "Lymphoma",
+      "Aetiology/Risk factors"
+    ],
+    "filter_categories": [
+      {
+        "name": "Systems",
+        "color": "#3B82F6",
+        "filters": ["Oncology"]
+      },
+      {
+        "name": "Conditions",
+        "color": "#8B5CF6",
+        "filters": ["Lung cancer", "Lymphoma"]
+      },
+      {
+        "name": "Presentations",
+        "color": "#F59E0B",
+        "filters": []
+      },
+      {
+        "name": "Other",
+        "color": "#10B981",
+        "filters": ["Aetiology/Risk factors"]
+      }
+    ]
+  },
+  {
+    "title": "Lung cancer – Clinical features of Superior Vena Cava Obstruction",
+    "content": "The most common symptom of SVCO is dyspnoea, which may be worse when lying down (orthopnoea). Other features include swelling of the face, neck, and arms (with conjunctival and periorbital oedema), headache (often worse in the mornings), and pulseless jugular venous distension.",
+    "custom_filters": [
+      "Oncology",
+      "Lung cancer",
+      "Breathlessness",
+      "Headache",
+      "Clinical features"
+    ],
+    "filter_categories": [
+      {
+        "name": "Systems",
+        "color": "#3B82F6",
+        "filters": ["Oncology"]
+      },
+      {
+        "name": "Conditions",
+        "color": "#8B5CF6",
+        "filters": ["Lung cancer"]
+      },
+      {
+        "name": "Presentations",
+        "color": "#F59E0B",
+        "filters": ["Breathlessness", "Headache"]
+      },
+      {
+        "name": "Other",
+        "color": "#10B981",
+        "filters": ["Clinical features"]
+      }
+    ]
+  },
+  {
+    "title": "Lung cancer – Compressive symptoms in Superior Vena Cava Obstruction",
+    "content": "Direct compression from SVCO can cause specific symptoms depending on the structure affected: tracheal compression can cause stridor, oesophageal compression can cause dysphagia, and recurrent laryngeal nerve compression can lead to hoarseness.",
+    "custom_filters": [
+      "Oncology",
+      "Lung cancer",
+      "Breathlessness",
+      "Swallowing problems",
+      "Clinical features"
+    ],
+    "filter_categories": [
+      {
+        "name": "Systems",
+        "color": "#3B82F6",
+        "filters": ["Oncology"]
+      },
+      {
+        "name": "Conditions",
+        "color": "#8B5CF6",
+        "filters": ["Lung cancer"]
+      },
+      {
+        "name": "Presentations",
+        "color": "#F59E0B",
+        "filters": ["Breathlessness", "Swallowing problems"]
+      },
+      {
+        "name": "Other",
+        "color": "#10B981",
+        "filters": ["Clinical features"]
+      }
+    ]
+  },
+  {
+    "title": "Lung cancer – Investigations for Superior Vena Cava Obstruction",
+    "content": "The most useful imaging test for SVCO is a CT of the thorax with intravenous contrast. This helps establish the diagnosis, shows the location and severity of the obstruction, and can identify the underlying pathology. It can also be used to guide a biopsy.",
+    "custom_filters": [
+      "Oncology",
+      "Lung cancer",
+      "Investigations"
+    ],
+    "filter_categories": [
+      {
+        "name": "Systems",
+        "color": "#3B82F6",
+        "filters": ["Oncology"]
+      },
+      {
+        "name": "Conditions",
+        "color": "#8B5CF6",
+        "filters": ["Lung cancer"]
+      },
+      {
+        "name": "Presentations",
+        "color": "#F59E0B",
+        "filters": []
+      },
+      {
+        "name": "Other",
+        "color": "#10B981",
+        "filters": ["Investigations"]
+      }
+    ]
+  },
+  {
+    "title": "Lung cancer – Management of Superior Vena Cava Obstruction",
+    "content": "Management of SVCO involves relieving symptoms (e.g., head elevation, oxygen) and treating the cause. Endovascular stenting is often used for rapid symptom relief. For malignant causes, treatment depends on the tumour type, with radiotherapy and chemotherapy being common options.",
+    "custom_filters": [
+      "Oncology",
+      "Lung cancer",
+      "Management"
+    ],
+    "filter_categories": [
+      {
+        "name": "Systems",
+        "color": "#3B82F6",
+        "filters": ["Oncology"]
+      },
+      {
+        "name": "Conditions",
+        "color": "#8B5CF6",
+        "filters": ["Lung cancer"]
+      },
+      {
+        "name": "Presentations",
+        "color": "#F59E0B",
+        "filters": []
+      },
+      {
+        "name": "Other",
+        "color": "#10B981",
+        "filters": ["Management"]
+      }
+    ]
+  }
+,
+  {
+    "title": "Cancer – Carcinogen associations",
+    "content": "Specific carcinogens are linked to particular cancers: Aflatoxin (Aspergillus) to liver cancer; aniline dyes to bladder cancer; asbestos to mesothelioma and bronchial carcinoma; nitrosamines to oesophageal and gastric cancer; and vinyl chloride to hepatic angiosarcoma.",
+    "custom_filters": [
+      "Oncology",
+      "Oesophageal cancer",
+      "Gastric cancer",
+      "Aetiology/Risk factors"
+    ],
+    "filter_categories": [
+      {
+        "name": "Systems",
+        "color": "#3B82F6",
+        "filters": ["Oncology"]
+      },
+      {
+        "name": "Conditions",
+        "color": "#8B5CF6",
+        "filters": ["Oesophageal cancer", "Gastric cancer"]
+      },
+      {
+        "name": "Presentations",
+        "color": "#F59E0B",
+        "filters": []
+      },
+      {
+        "name": "Other",
+        "color": "#10B981",
+        "filters": ["Aetiology/Risk factors"]
+      }
+    ]
+  },
+  {
+    "title": "Cervical cancer – Role of Human Papilloma Virus (HPV)",
+    "content": "Human papilloma virus (HPV) infection is the most significant risk factor for developing cervical cancer. Subtypes 16, 18, and 33 are particularly carcinogenic, while subtypes 6 and 11 are non-carcinogenic and associated with genital warts.",
+    "custom_filters": [
+      "Oncology",
+      "Cervical cancer",
+      "Aetiology/Risk factors"
+    ],
+    "filter_categories": [
+      {
+        "name": "Systems",
+        "color": "#3B82F6",
+        "filters": ["Oncology"]
+      },
+      {
+        "name": "Conditions",
+        "color": "#8B5CF6",
+        "filters": ["Cervical cancer"]
+      },
+      {
+        "name": "Presentations",
+        "color": "#F59E0B",
+        "filters": []
+      },
+      {
+        "name": "Other",
+        "color": "#10B981",
+        "filters": ["Aetiology/Risk factors"]
+      }
+    ]
+  },
+  {
+    "title": "Cervical cancer – Koilocyte characteristics",
+    "content": "Koilocytes are cells that have undergone changes due to HPV infection. Their characteristics include an enlarged nucleus, an irregular nuclear membrane contour, a nucleus that stains darker than normal (hyperchromasia), and a potential perinuclear halo.",
+    "custom_filters": [
+      "Oncology",
+      "Cervical cancer",
+      "Pathophysiology"
+    ],
+    "filter_categories": [
+      {
+        "name": "Systems",
+        "color": "#3B82F6",
+        "filters": ["Oncology"]
+      },
+      {
+        "name": "Conditions",
+        "color": "#8B5CF6",
+        "filters": ["Cervical cancer"]
+      },
+      {
+        "name": "Presentations",
+        "color": "#F59E0B",
+        "filters": []
+      },
+      {
+        "name": "Other",
+        "color": "#10B981",
+        "filters": ["Pathophysiology"]
+      }
+    ]
+  }
+,
+  {
+    "title": "Cancer – Management of chemotherapy-induced nausea and vomiting",
+    "content": "For patients at low risk of chemotherapy-induced nausea and vomiting, metoclopramide may be used first-line. For high-risk patients (e.g., age < 50, anxiety, certain chemo types), 5HT3 receptor antagonists like ondansetron, often combined with dexamethasone, are effective.",
+    "custom_filters": [
+      "Oncology",
+      "Management"
+    ],
+    "filter_categories": [
+      {
+        "name": "Systems",
+        "color": "#3B82F6",
+        "filters": ["Oncology"]
+      },
+      {
+        "name": "Conditions",
+        "color": "#8B5CF6",
+        "filters": []
+      },
+      {
+        "name": "Presentations",
+        "color": "#F59E0B",
+        "filters": []
+      },
+      {
+        "name": "Other",
+        "color": "#10B981",
+        "filters": ["Management"]
+      }
+    ]
+  },
+  {
+    "title": "Cancer – Cyclophosphamide mechanism and adverse effects",
+    "content": "Cyclophosphamide is an alkylating agent that causes cross-linking in DNA. Its adverse effects include haemorrhagic cystitis (risk reduced by hydration and mesna), myelosuppression, and an increased risk of transitional cell carcinoma.",
+    "custom_filters": [
+      "Oncology",
+      "Bladder cancer",
+      "Management"
+    ],
+    "filter_categories": [
+      {
+        "name": "Systems",
+        "color": "#3B82F6",
+        "filters": ["Oncology"]
+      },
+      {
+        "name": "Conditions",
+        "color": "#8B5CF6",
+        "filters": ["Bladder cancer"]
+      },
+      {
+        "name": "Presentations",
+        "color": "#F59E0B",
+        "filters": []
+      },
+      {
+        "name": "Other",
+        "color": "#10B981",
+        "filters": ["Management"]
+      }
+    ]
+  },
+  {
+    "title": "Cancer – Bleomycin mechanism and adverse effects",
+    "content": "Bleomycin is a cytotoxic antibiotic that works by degrading preformed DNA. Its major dose-limiting side effect is lung fibrosis.",
+    "custom_filters": [
+      "Oncology",
+      "Management"
+    ],
+    "filter_categories": [
+      {
+        "name": "Systems",
+        "color": "#3B82F6",
+        "filters": ["Oncology"]
+      },
+      {
+        "name": "Conditions",
+        "color": "#8B5CF6",
+        "filters": []
+      },
+      {
+        "name": "Presentations",
+        "color": "#F59E0B",
+        "filters": []
+      },
+      {
+        "name": "Other",
+        "color": "#10B981",
+        "filters": ["Management"]
+      }
+    ]
+  },
+  {
+    "title": "Cancer – Anthracyclines (Doxorubicin) mechanism and adverse effects",
+    "content": "Anthracyclines, such as doxorubicin, stabilize the DNA-topoisomerase II complex, which inhibits DNA and RNA synthesis. Their main adverse effect is cardiomyopathy.",
+    "custom_filters": [
+      "Oncology",
+      "Management"
+    ],
+    "filter_categories": [
+      {
+        "name": "Systems",
+        "color": "#3B82F6",
+        "filters": ["Oncology"]
+      },
+      {
+        "name": "Conditions",
+        "color": "#8B5CF6",
+        "filters": []
+      },
+      {
+        "name": "Presentations",
+        "color": "#F59E0B",
+        "filters": []
+      },
+      {
+        "name": "Other",
+        "color": "#10B981",
+        "filters": ["Management"]
+      }
+    ]
+  },
+  {
+    "title": "Cancer – Methotrexate mechanism and adverse effects",
+    "content": "Methotrexate is an antimetabolite that inhibits dihydrofolate reductase and thymidylate synthesis. Its adverse effects include myelosuppression, mucositis, liver fibrosis, and lung fibrosis.",
+    "custom_filters": [
+      "Oncology",
+      "Management"
+    ],
+    "filter_categories": [
+      {
+        "name": "Systems",
+        "color": "#3B82F6",
+        "filters": ["Oncology"]
+      },
+      {
+        "name": "Conditions",
+        "color": "#8B5CF6",
+        "filters": []
+      },
+      {
+        "name": "Presentations",
+        "color": "#F59E0B",
+        "filters": []
+      },
+      {
+        "name": "Other",
+        "color": "#10B981",
+        "filters": ["Management"]
+      }
+    ]
+  },
+  {
+    "title": "Cancer – Vinca alkaloids (Vincristine, Vinblastine) mechanism and adverse effects",
+    "content": "Vinca alkaloids, such as vincristine and vinblastine, inhibit the formation of microtubules. Vincristine typically causes reversible peripheral neuropathy and paralytic ileus, whereas vinblastine is more associated with myelosuppression.",
+    "custom_filters": [
+      "Oncology",
+      "Management"
+    ],
+    "filter_categories": [
+      {
+        "name": "Systems",
+        "color": "#3B82F6",
+        "filters": ["Oncology"]
+      },
+      {
+        "name": "Conditions",
+        "color": "#8B5CF6",
+        "filters": []
+      },
+      {
+        "name": "Presentations",
+        "color": "#F59E0B",
+        "filters": []
+      },
+      {
+        "name": "Other",
+        "color": "#10B981",
+        "filters": ["Management"]
+      }
+    ]
+  },
+  {
+    "title": "Cancer – Cisplatin mechanism and adverse effects",
+    "content": "Cisplatin is a platinum-based chemotherapy agent that causes cross-linking in DNA. Its primary dose-limiting side effect is nephrotoxicity. Other notable adverse effects include ototoxicity, peripheral neuropathy, and hypomagnesaemia.",
+    "custom_filters": [
+      "Oncology",
+      "Management"
+    ],
+    "filter_categories": [
+      {
+        "name": "Systems",
+        "color": "#3B82F6",
+        "filters": ["Oncology"]
+      },
+      {
+        "name": "Conditions",
+        "color": "#8B5CF6",
+        "filters": []
+      },
+      {
+        "name": "Presentations",
+        "color": "#F59E0B",
+        "filters": []
+      },
+      {
+        "name": "Other",
+        "color": "#10B981",
+        "filters": ["Management"]
+      }
+    ]
+  }
+,
+  {
+    "title": "Cancer – Li-Fraumeni Syndrome",
+    "content": "Li-Fraumeni Syndrome is an autosomal dominant condition resulting from germline mutations in the p53 tumour suppressor gene. It is associated with a high incidence of malignancies, particularly sarcomas and leukaemias.",
+    "custom_filters": [
+      "Oncology",
+      "Leukaemia",
+      "Aetiology/Risk factors"
+    ],
+    "filter_categories": [
+      {
+        "name": "Systems",
+        "color": "#3B82F6",
+        "filters": ["Oncology"]
+      },
+      {
+        "name": "Conditions",
+        "color": "#8B5CF6",
+        "filters": ["Leukaemia"]
+      },
+      {
+        "name": "Presentations",
+        "color": "#F59E0B",
+        "filters": []
+      },
+      {
+        "name": "Other",
+        "color": "#10B981",
+        "filters": ["Aetiology/Risk factors"]
+      }
+    ]
+  },
+  {
+    "title": "Breast cancer – BRCA1 and BRCA2 gene mutations",
+    "content": "BRCA1 (chromosome 17) and BRCA2 (chromosome 13) are tumour suppressor genes. Mutations are linked to a 60% lifetime risk of breast cancer. They also increase the risk of ovarian cancer (55% with BRCA1, 25% with BRCA2). BRCA2 mutations are also associated with prostate cancer in men.",
+    "custom_filters": [
+      "Oncology",
+      "Breast cancer",
+      "Ovarian cancer",
+      "Prostate cancer",
+      "Aetiology/Risk factors"
+    ],
+    "filter_categories": [
+      {
+        "name": "Systems",
+        "color": "#3B82F6",
+        "filters": ["Oncology"]
+      },
+      {
+        "name": "Conditions",
+        "color": "#8B5CF6",
+        "filters": ["Breast cancer", "Ovarian cancer", "Prostate cancer"]
+      },
+      {
+        "name": "Presentations",
+        "color": "#F59E0B",
+        "filters": []
+      },
+      {
+        "name": "Other",
+        "color": "#10B981",
+        "filters": ["Aetiology/Risk factors"]
+      }
+    ]
+  },
+  {
+    "title": "Colorectal tumours – Lynch Syndrome (HNPCC)",
+    "content": "Lynch Syndrome, or Hereditary Non-Polyposis Colorectal Cancer (HNPCC), is an autosomal dominant condition that confers a high risk of developing colorectal and endometrial cancer at a young age. Approximately 80% of affected individuals will develop one of these cancers.",
+    "custom_filters": [
+      "Oncology",
+      "Colorectal tumours",
+      "Endometrial cancer",
+      "Aetiology/Risk factors"
+    ],
+    "filter_categories": [
+      {
+        "name": "Systems",
+        "color": "#3B82F6",
+        "filters": ["Oncology"]
+      },
+      {
+        "name": "Conditions",
+        "color": "#8B5CF6",
+        "filters": ["Colorectal tumours", "Endometrial cancer"]
+      },
+      {
+        "name": "Presentations",
+        "color": "#F59E0B",
+        "filters": []
+      },
+      {
+        "name": "Other",
+        "color": "#10B981",
+        "filters": ["Aetiology/Risk factors"]
+      }
+    ]
+  },
+  {
+    "title": "Colorectal tumours – Gardner's Syndrome",
+    "content": "Gardner's syndrome is an autosomal dominant variant of familial adenomatous polyposis (FAP) caused by a mutation in the APC gene. It is characterized by multiple colonic polyps and extra-colonic diseases including skull osteomas, thyroid cancer, and epidermoid cysts.",
+    "custom_filters": [
+      "Oncology",
+      "Colorectal tumours",
+      "Aetiology/Risk factors"
+    ],
+    "filter_categories": [
+      {
+        "name": "Systems",
+        "color": "#3B82F6",
+        "filters": ["Oncology"]
+      },
+      {
+        "name": "Conditions",
+        "color": "#8B5CF6",
+        "filters": ["Colorectal tumours"]
+      },
+      {
+        "name": "Presentations",
+        "color": "#F59E0B",
+        "filters": []
+      },
+      {
+        "name": "Other",
+        "color": "#10B981",
+        "filters": ["Aetiology/Risk factors"]
+      }
+    ]
+  }
+,
+  {
+    "title": "Metastatic disease – Investigations for unknown primary",
+    "content": "For metastatic disease of unknown primary, NICE recommends initial investigations for all patients including FBC, U&E, LFTs, calcium, LDH, urinalysis, chest X-ray, and a CT of the chest, abdomen, and pelvis. AFP and hCG should also be checked.",
+    "custom_filters": [
+      "Oncology",
+      "Metastatic disease",
+      "Investigations"
+    ],
+    "filter_categories": [
+      {
+        "name": "Systems",
+        "color": "#3B82F6",
+        "filters": ["Oncology"]
+      },
+      {
+        "name": "Conditions",
+        "color": "#8B5CF6",
+        "filters": ["Metastatic disease"]
+      },
+      {
+        "name": "Presentations",
+        "color": "#F59E0B",
+        "filters": []
+      },
+      {
+        "name": "Other",
+        "color": "#10B981",
+        "filters": ["Investigations"]
+      }
+    ]
+  },
+  {
+    "title": "Lung cancer – Squamous cell carcinoma features",
+    "content": "Squamous cell lung cancer is typically central and is associated with the secretion of parathyroid hormone-related protein (PTHrP), leading to hypercalcaemia. It is also strongly associated with finger clubbing and may show cavitating lesions.",
+    "custom_filters": [
+      "Oncology",
+      "Lung cancer",
+      "Squamous cell carcinoma",
+      "Hypercalcaemia of malignancy",
+      "Clinical features"
+    ],
+    "filter_categories": [
+      {
+        "name": "Systems",
+        "color": "#3B82F6",
+        "filters": ["Oncology"]
+      },
+      {
+        "name": "Conditions",
+        "color": "#8B5CF6",
+        "filters": ["Lung cancer", "Squamous cell carcinoma", "Hypercalcaemia of malignancy"]
+      },
+      {
+        "name": "Presentations",
+        "color": "#F59E0B",
+        "filters": []
+      },
+      {
+        "name": "Other",
+        "color": "#10B981",
+        "filters": ["Clinical features"]
+      }
+    ]
+  },
+  {
+    "title": "Lung cancer – Adenocarcinoma features",
+    "content": "Adenocarcinoma of the lung is typically located in the periphery of the lungs. It is the most common type of lung cancer found in non-smokers, although the majority of patients who develop it are smokers.",
+    "custom_filters": [
+      "Oncology",
+      "Lung cancer",
+      "Pathophysiology"
+    ],
+    "filter_categories": [
+      {
+        "name": "Systems",
+        "color": "#3B82F6",
+        "filters": ["Oncology"]
+      },
+      {
+        "name": "Conditions",
+        "color": "#8B5CF6",
+        "filters": ["Lung cancer"]
+      },
+      {
+        "name": "Presentations",
+        "color": "#F59E0B",
+        "filters": []
+      },
+      {
+        "name": "Other",
+        "color": "#10B981",
+        "filters": ["Pathophysiology"]
+      }
+    ]
+  },
+  {
+    "title": "Lung cancer – Large cell carcinoma features",
+    "content": "Large cell lung carcinoma is a typically peripheral, anaplastic, and poorly differentiated tumour with a poor prognosis. It may secrete β-hCG.",
+    "custom_filters": [
+      "Oncology",
+      "Lung cancer",
+      "Pathophysiology"
+    ],
+    "filter_categories": [
+      {
+        "name": "Systems",
+        "color": "#3B82F6",
+        "filters": ["Oncology"]
+      },
+      {
+        "name": "Conditions",
+        "color": "#8B5CF6",
+        "filters": ["Lung cancer"]
+      },
+      {
+        "name": "Presentations",
+        "color": "#F59E0B",
+        "filters": []
+      },
+      {
+        "name": "Other",
+        "color": "#10B981",
+        "filters": ["Pathophysiology"]
+      }
+    ]
+  },
+  {
+    "title": "Cancer – Positron Emission Tomography (PET) principle and use",
+    "content": "Positron Emission Tomography (PET) is a nuclear imaging technique using fluorodeoxyglucose (FDG) to create a 3D image of metabolic activity, with glucose uptake as a proxy. It is combined with CT to determine if lesions are metabolically active, primarily for evaluating primary and metastatic disease.",
+    "custom_filters": [
+      "Oncology",
+      "Metastatic disease",
+      "Investigations"
+    ],
+    "filter_categories": [
+      {
+        "name": "Systems",
+        "color": "#3B82F6",
+        "filters": ["Oncology"]
+      },
+      {
+        "name": "Conditions",
+        "color": "#8B5CF6",
+        "filters": ["Metastatic disease"]
+      },
+      {
+        "name": "Presentations",
+        "color": "#F59E0B",
+        "filters": []
+      },
+      {
+        "name": "Other",
+        "color": "#10B981",
+        "filters": ["Investigations"]
+      }
+    ]
+  }
+,
+  {
+    "title": "Cancer – Tumour marker associations (Monoclonal antibodies)",
+    "content": "Certain monoclonal antibody tumour markers are associated with specific cancers: CA 125 with ovarian cancer, CA 19-9 with pancreatic cancer, and CA 15-3 with breast cancer. It is important to note that tumour markers generally have low specificity.",
+    "custom_filters": [
+      "Oncology",
+      "Ovarian cancer",
+      "Pancreatic cancer",
+      "Breast cancer",
+      "Investigations"
+    ],
+    "filter_categories": [
+      {
+        "name": "Systems",
+        "color": "#3B82F6",
+        "filters": ["Oncology"]
+      },
+      {
+        "name": "Conditions",
+        "color": "#8B5CF6",
+        "filters": ["Ovarian cancer", "Pancreatic cancer", "Breast cancer"]
+      },
+      {
+        "name": "Presentations",
+        "color": "#F59E0B",
+        "filters": []
+      },
+      {
+        "name": "Other",
+        "color": "#10B981",
+        "filters": ["Investigations"]
+      }
+    ]
+  },
+  {
+    "title": "Cancer – Tumour marker associations (Tumour antigens)",
+    "content": "Common tumour antigen markers include: Prostate specific antigen (PSA) for prostatic carcinoma; Alpha-fetoprotein (AFP) for hepatocellular carcinoma and teratomas (e.g., testicular cancer); and Carcinoembryonic antigen (CEA) for colorectal cancer.",
+    "custom_filters": [
+      "Oncology",
+      "Prostate cancer",
+      "Testicular cancer",
+      "Colorectal tumours",
+      "Investigations"
+    ],
+    "filter_categories": [
+      {
+        "name": "Systems",
+        "color": "#3B82F6",
+        "filters": ["Oncology"]
+      },
+      {
+        "name": "Conditions",
+        "color": "#8B5CF6",
+        "filters": ["Prostate cancer", "Testicular cancer", "Colorectal tumours"]
+      },
+      {
+        "name": "Presentations",
+        "color": "#F59E0B",
+        "filters": []
+      },
+      {
+        "name": "Other",
+        "color": "#10B981",
+        "filters": ["Investigations"]
+      }
+    ]
+  },
+  {
+    "title": "Malignant melanoma – S-100 tumour marker",
+    "content": "The S-100 protein is a tumour marker associated with melanoma and schwannomas.",
+    "custom_filters": [
+      "Oncology",
+      "Malignant melanoma",
+      "Investigations"
+    ],
+    "filter_categories": [
+      {
+        "name": "Systems",
+        "color": "#3B82F6",
+        "filters": ["Oncology"]
+      },
+      {
+        "name": "Conditions",
+        "color": "#8B5CF6",
+        "filters": ["Malignant melanoma"]
+      },
+      {
+        "name": "Presentations",
+        "color": "#F59E0B",
+        "filters": []
+      },
+      {
+        "name": "Other",
+        "color": "#10B981",
+        "filters": ["Investigations"]
+      }
+    ]
+  },
+  {
+    "title": "Metastatic disease – Causes of raised Alkaline Phosphatase (ALP)",
+    "content": "In an oncology context, a raised alkaline phosphatase (ALP) can be caused by liver neoplasia (primary or metastatic) or bone metastases. Other causes include cholestasis, Paget's disease, and physiological states like pregnancy or healing fractures.",
+    "custom_filters": [
+      "Oncology",
+      "Metastatic disease",
+      "Investigations"
+    ],
+    "filter_categories": [
+      {
+        "name": "Systems",
+        "color": "#3B82F6",
+        "filters": ["Oncology"]
+      },
+      {
+        "name": "Conditions",
+        "color": "#8B5CF6",
+        "filters": ["Metastatic disease"]
+      },
+      {
+        "name": "Presentations",
+        "color": "#F59E0B",
+        "filters": []
+      },
+      {
+        "name": "Other",
+        "color": "#10B981",
+        "filters": ["Investigations"]
+      }
+    ]
+  },
+  {
+    "title": "Hypercalcaemia of malignancy – Management",
+    "content": "The initial management of hypercalcaemia is aggressive rehydration with normal saline (e.g., 3-4 litres/day). Following rehydration, intravenous bisphosphonates are used; they take 2-3 days to work, with a maximal effect at 7 days. Calcitonin has a quicker effect.",
+    "custom_filters": [
+      "Oncology",
+      "Hypercalcaemia of malignancy",
+      "Electrolyte abnormalities",
+      "Management"
+    ],
+    "filter_categories": [
+      {
+        "name": "Systems",
+        "color": "#3B82F6",
+        "filters": ["Oncology"]
+      },
+      {
+        "name": "Conditions",
+        "color": "#8B5CF6",
+        "filters": ["Hypercalcaemia of malignancy"]
+      },
+      {
+        "name": "Presentations",
+        "color": "#F59E0B",
+        "filters": ["Electrolyte abnormalities"]
+      },
+      {
+        "name": "Other",
+        "color": "#10B981",
+        "filters": ["Management"]
+      }
+    ]
+  },
+  {
+    "title": "Lung cancer – SIADH as a paraneoplastic syndrome",
+    "content": "The Syndrome of Inappropriate ADH Secretion (SIADH) can be a paraneoplastic syndrome. The most common malignant cause is small cell lung cancer. Other associated cancers include pancreatic and prostate cancer. It leads to a euvolemic hyponatraemia.",
+    "custom_filters": [
+      "Oncology",
+      "Lung cancer",
+      "Pancreatic cancer",
+      "Prostate cancer",
+      "Electrolyte abnormalities",
+      "Aetiology/Risk factors"
+    ],
+    "filter_categories": [
+      {
+        "name": "Systems",
+        "color": "#3B82F6",
+        "filters": ["Oncology"]
+      },
+      {
+        "name": "Conditions",
+        "color": "#8B5CF6",
+        "filters": ["Lung cancer", "Pancreatic cancer", "Prostate cancer"]
+      },
+      {
+        "name": "Presentations",
+        "color": "#F59E0B",
+        "filters": ["Electrolyte abnormalities"]
+      },
+      {
+        "name": "Other",
+        "color": "#10B981",
+        "filters": ["Aetiology/Risk factors"]
+      }
+    ]
+  }
+]

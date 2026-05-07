@@ -24,6 +24,7 @@ const MockPage = lazy(() => import('@/pages/MockPage').then(m => ({ default: m.M
 const CasesPage = lazy(() => import('@/pages/CasesPage').then(m => ({ default: m.CasesPage })));
 const PrivacyPolicy = lazy(() => import('@/pages/PrivacyPolicy').then(m => ({ default: m.PrivacyPolicy })));
 const LeaderboardPage = lazy(() => import('@/pages/LeaderboardPage').then(m => ({ default: m.LeaderboardPage })));
+const ConceptPracticePage = lazy(() => import('@/pages/ConceptPracticePage.loft').then(m => ({ default: m.ConceptPracticePageLoft })));
 
 // Wrapper to extract curriculumId from URL params
 const CurriculumRoute = () => {
@@ -50,11 +51,12 @@ function App() {
               </Suspense>
             } />
 
-            {/* Legacy concept-practice flow — its question source table no
-                longer exists in this project (atoms is the new source of
-                truth, with 501 questions live). Redirect to /study so users
-                aren't dropped on an empty options list. */}
-            <Route path="/concept-practice" element={<Navigate to="/study" replace />} />
+            {/* Manhattan Loft concept-practice — original polished UI */}
+            <Route path="/concept-practice" element={
+              <Suspense fallback={<BlankFallback />}>
+                <ConceptPracticePage />
+              </Suspense>
+            } />
             <Route path="/curriculum/:curriculumId" element={<Navigate to="/study" replace />} />
 
             {/* Expert Curriculums — lazy, shown rarely */}

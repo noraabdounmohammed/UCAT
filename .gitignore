@@ -43,3 +43,6 @@ coverage/
 # Playwright artefacts
 playwright-report/
 test-results/
+
+# Local Netlify folder
+.netlify

@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { X, Filter, Search, ArrowUpRight } from 'lucide-react';
 import { QUESTION_FORMATS } from '@/components/dashboard/QuestionFormatSelector';
 import { useConceptStore } from '@/contexts/ConceptStoreContext';
+import { getCurriculumStorageParsed } from '@/utils/curriculumStorage';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/lib/supabase';
 import type { QuestionFormat, PracticeConfig } from '@/types/conceptTypes';
@@ -126,10 +127,7 @@ export const PracticeConfigModal: React.FC<PracticeConfigModalProps> = ({
       return result;
     }
 
-    // Get filter assignments to know which category each filter belongs to
-    const filterAssignments = JSON.parse(
-      localStorage.getItem(`${curriculumId}_filter_assignments`) || '{}'
-    );
+    const filterAssignments = getCurriculumStorageParsed<Record<string, string>>(curriculumId, 'filter_assignments', {});
 
     // Group selected custom filters by category
     const selectedByCategory: Record<string, string[]> = {};
@@ -725,10 +723,7 @@ export const PracticeConfigModal: React.FC<PracticeConfigModalProps> = ({
                 {filterCategories && filterCategories.length > 0 ? (
                   <div className="space-y-6">
                     {filterCategories.map((category) => {
-                      // Get filter assignments
-                      const filterAssignments = JSON.parse(
-                        localStorage.getItem(`${curriculumId}_filter_assignments`) || '{}'
-                      );
+                      const filterAssignments = getCurriculumStorageParsed<Record<string, string>>(curriculumId, 'filter_assignments', {});
                       
                       // Get filters for this category
                       const categoryCompatible = compatibleFiltersByCategory[category.id];

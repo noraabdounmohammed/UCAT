@@ -1,5 +1,6 @@
 import React, { useMemo } from 'react';
 import { useConceptStore } from '@/contexts/ConceptStoreContext';
+import { getCurriculumStorageParsed } from '@/utils/curriculumStorage';
 import { WeakestList } from './WeakestList';
 import { SessionsCompletedTable } from './SessionsCompletedTable';
 
@@ -166,9 +167,8 @@ export const TrackDashboard: React.FC<TrackDashboardProps> = ({ curriculumId = '
       .sort((a, b) => a.masteryScore - b.masteryScore)
       .slice(0, 10);
 
-    // Coverage by filter categories
-    const filterAssignments = JSON.parse(localStorage.getItem(`${curriculumId}_filter_assignments`) || '{}');
-    const storedCategories = JSON.parse(localStorage.getItem(`${curriculumId}_filter_categories`) || '[]');
+    const filterAssignments = getCurriculumStorageParsed<Record<string, string>>(curriculumId, 'filter_assignments', {});
+    const storedCategories = getCurriculumStorageParsed<any[]>(curriculumId, 'filter_categories', []);
     
     const coverage: { categoryName: string; items: CoverageBucket[] }[] = [];
 

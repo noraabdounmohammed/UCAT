@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { useConceptStore } from '@/contexts/ConceptStoreContext';
+import { getCurriculumStorageParsed } from '@/utils/curriculumStorage';
 import { SimpleMasteryRing } from './SimpleMasteryRing';
 import { NextSessionCard } from './NextSessionCard';
 import { QuestionFormatSelector } from '@/components/dashboard/QuestionFormatSelector';
@@ -176,8 +177,15 @@ export const CurriculumDashboard: React.FC<CurriculumDashboardProps> = ({
     stats,
     setPracticeSelection,
     filterCategories,
-    isLoading
-  } = useConceptStore();
+    isLoading,
+    curriculumId: storeCurriculumId,
+    getDueConcepts
+  } = useConceptStore() as any;
+
+  const dueCount: number = useMemo(() => {
+    if (typeof getDueConcepts !== 'function') return 0;
+    return getDueConcepts().length;
+  }, [getDueConcepts, concepts]);
 
   const [selectedFormat, setSelectedFormat] = useState<string>('');
 
@@ -191,11 +199,11 @@ export const CurriculumDashboard: React.FC<CurriculumDashboardProps> = ({
   const hasActivity = (stats.by_mastery[1] || 0) + (stats.by_mastery[2] || 0) > 0;
   const { streakCount, weekDays } = useStudyStreak(hasActivity);
 
-  // Parse filter assignments ONCE — not inside render map
-  const filterAssignments = useMemo(
-    () => JSON.parse(localStorage.getItem(`${curriculum?.id}_filter_assignments`) || '{}'),
-    [curriculum?.id]
-  );
+  // Parse filter assignments ONCE using the shared utility (handles ID mismatches)
+  const filterAssignments = useMemo(() => {
+    const cid = storeCurriculumId || curriculum?.id || 'default';
+    return getCurriculumStorageParsed<Record<string, string>>(cid, 'filter_assignments', {});
+  }, [storeCurriculumId, curriculum?.id, concepts]);
 
   // Categories to hide from the dashboard (noise/catch-all buckets)
   const HIDDEN_CATEGORIES = new Set(['other', 'investigation', 'investigations', 'other conditions']);
@@ -203,14 +211,14 @@ export const CurriculumDashboard: React.FC<CurriculumDashboardProps> = ({
   // Build category+filters list once
   const categoryRows = useMemo(() => {
     if (!filterCategories) return [];
-    return filterCategories
-      .map(category => ({
+    return (filterCategories as any[])
+      .map((category: any) => ({
         category,
         filters: Object.entries(filterAssignments)
           .filter(([_, catId]) => catId === category.id)
           .map(([filter]) => filter),
       }))
-      .filter(row =>
+      .filter((row: any) =>
         row.filters.length > 0 &&
         !HIDDEN_CATEGORIES.has(row.category.name.toLowerCase().trim())
       );
@@ -289,6 +297,48 @@ export const CurriculumDashboard: React.FC<CurriculumDashboardProps> = ({
         {/* ── STREAK BANNER ────────────────────────────────── */}
         <StreakBanner streak={streakCount} weekDays={weekDays} />
 
+        {/* ── DUE FOR REVIEW BANNER ────────────────────────── */}
+        {dueCount > 0 && (
+          <div
+            onClick={() => onOpenFilters?.()}
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '10px',
+              padding: '12px 16px',
+              borderRadius: '14px',
+              backgroundColor: '#FFF8F0',
+              border: '1px solid #EDD9C0',
+              marginBottom: '24px',
+              cursor: 'pointer',
+            }}
+          >
+            <span style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              minWidth: '28px',
+              height: '28px',
+              borderRadius: '50%',
+              backgroundColor: '#C47A62',
+              color: '#fff',
+              fontFamily: "'Unbounded', sans-serif",
+              fontSize: '11px',
+              fontWeight: 600,
+            }}>
+              {dueCount}
+            </span>
+            <div>
+              <p style={{ fontFamily: "'Manrope', sans-serif", fontSize: '13px', fontWeight: 500, color: '#1C1814', margin: 0 }}>
+                {dueCount === 1 ? '1 concept due for review' : `${dueCount} concepts due for review`}
+              </p>
+              <p style={{ fontFamily: "'Manrope', sans-serif", fontSize: '11px', fontWeight: 300, color: '#A89880', margin: 0 }}>
+                Start a session to reinforce your memory
+              </p>
+            </div>
+          </div>
+        )}
+
         {/* ── BY FORMAT ────────────────────────────────────── */}
         <QuestionFormatSelector
           selectedFormat={selectedFormat}
@@ -302,12 +352,12 @@ export const CurriculumDashboard: React.FC<CurriculumDashboardProps> = ({
         <div style={{ height: '0.5px', backgroundColor: '#E4DDD4', margin: '0 0 32px' }} />
 
         {/* ── BY CATEGORY (one row per category, divider between each) ── */}
-        {categoryRows.map(({ category, filters }, idx) => (
+        {(categoryRows as any[]).map(({ category, filters }: any, idx: number) => (
           <React.Fragment key={category.id}>
             <PracticeByCategorySelector
               category={category}
               filters={filters}
-              curriculumId={curriculum?.id || ''}
+              curriculumId={storeCurriculumId || curriculum?.id || 'default'}
               concepts={concepts}
               onFilterClick={(filter) => {
                 if (onOpenFilters) onOpenFilters(undefined, filter);

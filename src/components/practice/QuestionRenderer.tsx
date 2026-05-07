@@ -16,6 +16,10 @@ interface QuestionRendererProps {
   title?: string;
   sessionAnswers?: SessionAnswer[];
   onJumpTo?: (index: number) => void;
+  availableFilters?: string[];
+  activeFilter?: string | null;
+  onFilterSelect?: (filter?: string) => void;
+  onChangeFormat?: (format: string) => void;
 }
 
 export const QuestionRenderer: React.FC<QuestionRendererProps> = ({
@@ -29,7 +33,11 @@ export const QuestionRenderer: React.FC<QuestionRendererProps> = ({
   totalCards,
   title,
   sessionAnswers,
-  onJumpTo
+  onJumpTo,
+  availableFilters,
+  activeFilter,
+  onFilterSelect,
+  onChangeFormat
 }) => {
   // Debug logging for mind map rendering
   if (format === 'mindmap' && process.env.NODE_ENV === 'development') {
@@ -55,6 +63,11 @@ export const QuestionRenderer: React.FC<QuestionRendererProps> = ({
           currentIndex={currentIndex}
           totalCards={totalCards}
           title={title}
+          availableFilters={availableFilters}
+          activeFilter={activeFilter}
+          onFilterSelect={onFilterSelect}
+          currentFormat={format}
+          onChangeFormat={onChangeFormat}
         />
       );
     
@@ -72,6 +85,11 @@ export const QuestionRenderer: React.FC<QuestionRendererProps> = ({
           title={title || "UKMLA SBA"}
           sessionAnswers={sessionAnswers}
           onJumpTo={onJumpTo}
+          availableFilters={availableFilters}
+          activeFilter={activeFilter}
+          onFilterSelect={onFilterSelect}
+          currentFormat={format}
+          onChangeFormat={onChangeFormat}
         />
       );
     
@@ -106,6 +124,11 @@ export const QuestionRenderer: React.FC<QuestionRendererProps> = ({
           title={title || "UKMLA SBA"}
           sessionAnswers={sessionAnswers}
           onJumpTo={onJumpTo}
+          availableFilters={availableFilters}
+          activeFilter={activeFilter}
+          onFilterSelect={onFilterSelect}
+          currentFormat={format}
+          onChangeFormat={onChangeFormat}
         />
       );
   }

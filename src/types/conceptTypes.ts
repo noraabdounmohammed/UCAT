@@ -25,8 +25,16 @@ export interface ConceptMasteryData {
   practice_count?: number; // Total practice attempts
   correct_count?: number; // Total correct answers
   bloom_stats?: Record<BloomLevel, BloomMasteryStats>; // Per-Bloom level stats
-  stability?: number; // Memory stability parameter for spaced repetition
-  next_review_at?: string; // ISO date string for next review
+  // FSRS-5 scheduler state (persisted per concept)
+  fsrs_stability?: number;   // memory stability in days
+  fsrs_difficulty?: number;  // 1..10 internal scale
+  fsrs_due_at?: string;      // ISO — next review due date
+  fsrs_last_review?: string; // ISO — when the last review was recorded
+  fsrs_reps?: number;        // total successful reviews
+  fsrs_lapses?: number;      // times forgotten (rating=1)
+  // Legacy aliases kept for read compatibility
+  stability?: number;
+  next_review_at?: string;
 }
 
 // Mind map types (optional per concept)
@@ -206,7 +214,9 @@ export interface PracticeConfig {
 }
 
 export interface ConceptPracticeState {
+  curriculumId: string;
   getCurriculumId: () => string;
+  getDueConcepts: () => ConceptNode[];
   isLoading: boolean;
   filterState: ConceptFilterState;
   filterOptions: ConceptFilterOptions;

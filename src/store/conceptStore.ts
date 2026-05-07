@@ -11,9 +11,35 @@ import {
   FilterCategory
 } from '@/types/conceptTypes';
 import { generateQuestionWithConfig } from '@/services/aiQuestionGenerator';
+import { questionCacheService } from '@/services/questionCacheService';
+import { jsonConceptLoader } from '@/services/jsonConceptLoader';
 import { StorageManager } from '@/utils/storageManager';
 import { supabase } from '@/lib/supabase';
 import { getAllowedQuestionCount, recordQuestionsGenerated, getRemainingQuestions } from '@/utils/questionLimits';
+import { createFsrsScheduler } from '@/fsrs/scheduler';
+import type { FsrsCardState } from '@/fsrs/types';
+
+const fsrsScheduler = createFsrsScheduler();
+
+function fsrsStateFromMastery(md: any): FsrsCardState {
+  if (md?.fsrs_stability != null) {
+    return {
+      stability: md.fsrs_stability,
+      difficulty: md.fsrs_difficulty ?? 5,
+      dueAt: md.fsrs_due_at ? new Date(md.fsrs_due_at) : new Date(),
+      lastReviewAt: md.fsrs_last_review ? new Date(md.fsrs_last_review) : null,
+      reps: md.fsrs_reps ?? 0,
+      lapses: md.fsrs_lapses ?? 0,
+    };
+  }
+  return fsrsScheduler.initialState();
+}
+
+function fsrsRatingFromCorrect(isCorrect: boolean, attempts: number): 1 | 2 | 3 | 4 {
+  if (!isCorrect) return 1; // Again
+  if (attempts <= 1) return 3; // Good on first attempt
+  return 3; // Good — user can manually rate 4 (Easy) in future
+}
 
 // Calculate statistics from filtered concepts
 function calculateStats(concepts: ConceptNode[]): ConceptStats {
@@ -112,7 +138,17 @@ export const createConceptStore = (curriculumId: string = 'default') => {
   persist(
     (set, get) => ({
       isLoading: false,
+      curriculumId, // Expose as plain state field for easy access by consumers
       getCurriculumId: () => curriculumId, // Method to get curriculum ID
+      getDueConcepts: () => {
+        const { concepts } = get();
+        const now = Date.now();
+        return concepts.filter(c => {
+          const dueAt = c.mastery_data?.fsrs_due_at;
+          if (!dueAt) return false; // unseen — not "due", but handled separately
+          return new Date(dueAt).getTime() <= now;
+        });
+      },
       filterState: {
         mastery_levels: [], // Start with no filters selected - show all
         searchQuery: '',
@@ -208,7 +244,7 @@ export const createConceptStore = (curriculumId: string = 'default') => {
         const migrationKey = `${curriculumId}_filter_migrated_v2`;
         
         let storedFilters = localStorage.getItem(customFiltersKey);
-        const storedCategories = localStorage.getItem(categoriesKey);
+        let storedCategories = localStorage.getItem(categoriesKey);
         const alreadyMigrated = localStorage.getItem(migrationKey);
         
         if (!storedFilters) {
@@ -216,6 +252,36 @@ export const createConceptStore = (curriculumId: string = 'default') => {
           if (legacyFilters) {
             storedFilters = legacyFilters;
             localStorage.setItem(customFiltersKey, legacyFilters);
+          }
+        }
+
+        // Fallback: search for filter_categories under a matching key
+        // When curriculumId is 'default' (no prop passed), scan ALL keys and pick any that has data
+        if (!storedCategories) {
+          const baseCurriculumId = curriculumId.replace(/^imported-pub-/, '').split('-')[0];
+          const isGenericId = curriculumId === 'default' || baseCurriculumId === 'default';
+          let bestKey: string | null = null;
+          let bestLen = 0;
+          for (let i = 0; i < localStorage.length; i++) {
+            const key = localStorage.key(i);
+            if (!key || !key.includes('filter_categories')) continue;
+            // If we have a real curriculum ID, prefer keys that contain it
+            if (!isGenericId && !key.includes(baseCurriculumId)) continue;
+            const val = localStorage.getItem(key) || '[]';
+            try {
+              const parsed = JSON.parse(val);
+              if (Array.isArray(parsed) && parsed.length > bestLen) {
+                bestLen = parsed.length;
+                bestKey = key;
+                storedCategories = val;
+              }
+            } catch { /* skip malformed */ }
+          }
+          // Also try to resolve the custom_filters from the same curriculum key
+          if (bestKey && !storedFilters) {
+            const sibling = bestKey.replace('filter_categories', 'custom_filters');
+            const sf = localStorage.getItem(sibling);
+            if (sf) storedFilters = sf;
           }
         }
         
@@ -245,6 +311,50 @@ export const createConceptStore = (curriculumId: string = 'default') => {
           filterCategories,
           isLoading: false 
         });
+
+        // === FALLBACK: load from JSON files if no localStorage concepts ===
+        // This makes /concept-practice work on fresh deploy without any setup
+        if (allConcepts.length === 0) {
+          jsonConceptLoader.loadAllCurriculums().then(curriculums => {
+            const jsonConcepts: ConceptNode[] = [];
+            const allCustomFilters = new Set<string>();
+
+            curriculums.forEach(curr => {
+              curr.concepts.forEach((concept, idx) => {
+                concept.custom_filters?.forEach(f => allCustomFilters.add(f));
+                jsonConcepts.push({
+                  concept_id: `${curr.file}_${idx}`,
+                  title: concept.title,
+                  content: concept.content,
+                  custom_filters: concept.custom_filters || [],
+                  prerequisites: [],
+                  mastery_data: {
+                    mastery_level: 0,
+                    attempts: 0,
+                    correct: 0,
+                    incorrect: 0,
+                    last_practiced: null
+                  }
+                });
+              });
+            });
+
+            if (jsonConcepts.length > 0) {
+              const jsonFilterOptions = extractFilterOptions(jsonConcepts);
+              const jsonFiltered = filterConcepts(jsonConcepts, get().filterState);
+              const jsonStats = calculateStats(jsonFiltered);
+              set({
+                concepts: jsonConcepts,
+                filteredConcepts: jsonFiltered,
+                stats: jsonStats,
+                filterOptions: jsonFilterOptions,
+                isLoading: false
+              });
+            }
+          }).catch(() => {
+            // JSON load failed — page shows empty state, not a crash
+          });
+        }
         
         // === BACKGROUND SUPABASE SYNC (non-blocking, fire-and-forget) ===
         supabase.auth.getUser().then(({ data: { user } }) => {
@@ -699,8 +809,26 @@ export const createConceptStore = (curriculumId: string = 'default') => {
             conceptsToUseLength: conceptsToUse.length
           });
           
-          // Shuffle so every session draws a different random sample from the filtered pool
-          const shuffled = [...conceptsToUse].sort(() => Math.random() - 0.5);
+          // FSRS-aware ordering: due first, then unseen, then not-yet-due
+          // Within each bucket, randomise to avoid repetitive ordering
+          const nowMs = Date.now();
+          const shuffled = [...conceptsToUse].sort((a, b) => {
+            const mdA = a.mastery_data;
+            const mdB = b.mastery_data;
+            const dueA = mdA?.fsrs_due_at ? new Date(mdA.fsrs_due_at).getTime() : null;
+            const dueB = mdB?.fsrs_due_at ? new Date(mdB.fsrs_due_at).getTime() : null;
+            const unseenA = !mdA?.fsrs_due_at && (mdA?.attempts ?? 0) === 0;
+            const unseenB = !mdB?.fsrs_due_at && (mdB?.attempts ?? 0) === 0;
+            const isDueA = dueA !== null && dueA <= nowMs;
+            const isDueB = dueB !== null && dueB <= nowMs;
+            // Priority: overdue > unseen > not-yet-due
+            const priorityA = isDueA ? 0 : unseenA ? 1 : 2;
+            const priorityB = isDueB ? 0 : unseenB ? 1 : 2;
+            if (priorityA !== priorityB) return priorityA - priorityB;
+            // Within the same priority: due→sort by dueAt asc; unseen/not-due→randomise
+            if (priorityA === 0 && dueA !== null && dueB !== null) return dueA - dueB;
+            return Math.random() - 0.5;
+          });
           // Use the specified number of concepts, up to what's available (hard cap: 40 per session)
           const MAX_SESSION_SIZE = 40;
           const conceptsForQuestions = shuffled.slice(0, Math.min(questionCount, shuffled.length, MAX_SESSION_SIZE));
@@ -747,15 +875,88 @@ export const createConceptStore = (curriculumId: string = 'default') => {
             return;
           }
           
+          // Load seen question IDs for this user (per-curriculum, persisted in localStorage)
+          const seenKey = getCurriculumKey(curriculumId, 'seen_question_ids');
+          const seenRaw = localStorage.getItem(seenKey);
+          const seenQuestionIds: Set<string> = new Set(seenRaw ? JSON.parse(seenRaw) : []);
+
+          // Check cache first, generate only if needed
+          const cachedQuestions = await questionCacheService.getQuestionsForConcepts(
+            conceptsForQuestions.map(c => c.concept_id)
+          );
+          
+          // Group cached questions by concept
+          const cachedByConcept: Record<string, any[]> = {};
+          for (const q of cachedQuestions) {
+            if (!cachedByConcept[q.concept_id]) {
+              cachedByConcept[q.concept_id] = [];
+            }
+            cachedByConcept[q.concept_id].push(q);
+          }
+
+          // Track which question IDs we serve this session (to save back)
+          const newlySeenIds: string[] = [];
+          
+          // Generate missing questions
           const questionPromises = conceptsForQuestions.map(async (concept) => {
+            // Check if we have cached questions for this concept
+            const allCachedForConcept = cachedByConcept[concept.concept_id] || [];
+            
+            // Filter out questions the user has already seen
+            const unseenCached = allCachedForConcept.filter(q => !seenQuestionIds.has(q.id));
+            
+            if (unseenCached.length > 0) {
+              // Pick a random unseen cached question
+              const cached = unseenCached[Math.floor(Math.random() * unseenCached.length)];
+              newlySeenIds.push(cached.id);
+              return {
+                id: cached.id,
+                concept_id: cached.concept_id,
+                question_stem: cached.question_stem,
+                question: cached.question_text,
+                options: cached.options,
+                correct_answer: cached.correct_answer,
+                explanation: cached.explanation,
+                format: cached.question_format,
+                key_fact: cached.key_fact,
+                citation_id: cached.citation_id
+              };
+            }
+            
+            // All cached questions seen (or none exist) — generate a fresh one
+            if (allCachedForConcept.length > 0) {
+              console.log(`🔄 All ${allCachedForConcept.length} cached questions seen for "${concept.title}" — generating fresh`);
+            }
+            
+            // Generate with AI and cache
             try {
-              // Use config-based approach to prevent missing parameters
-              return await generateQuestionWithConfig({
+              const generated = await generateQuestionWithConfig({
                 concept,
                 format: targetFormat as 'flashcard' | 'ukmla_sba' | 'sba' | 'emq' | 'true_false' | 'ranking',
                 customPrompt: practiceConfig?.custom_prompt,
                 customFlashcardPrompt: practiceConfig?.custom_flashcard_prompt
               });
+              
+              // Save to cache (fire and forget)
+              questionCacheService.saveQuestion({
+                concept_id: concept.concept_id,
+                concept_title: concept.title,
+                concept_content: concept.content,
+                specialty: curriculumId,
+                custom_filters: concept.custom_filters || [],
+                filter_categories: (concept as any).filter_categories || [],
+                question_stem: (generated as any).question_stem || (generated as any).stem || '',
+                question_text: (generated as any).question || (generated as any).clinical_vignette || '',
+                options: (generated as any).options || [],
+                correct_answer: (generated as any).correct_answer || '',
+                key_fact: (generated as any).key_fact || '',
+                explanation: (generated as any).explanation || '',
+                citation_id: (generated as any).citation_id || null,
+                question_format: targetFormat,
+                difficulty: 'medium'
+              }).catch(err => console.error('Failed to cache question:', err));
+              
+              return generated;
             } catch (error) {
               console.error(`Failed to generate question for concept ${concept.concept_id}:`, error);
               // Return a fallback question
@@ -773,6 +974,14 @@ export const createConceptStore = (curriculumId: string = 'default') => {
           });
 
           const questions = await Promise.all(questionPromises);
+          
+          // Persist newly seen question IDs so user won't get the same q again
+          if (newlySeenIds.length > 0) {
+            const updatedSeen = [...seenQuestionIds, ...newlySeenIds];
+            // Cap at 2000 entries to avoid unbounded growth (oldest dropped first)
+            const capped = updatedSeen.slice(-2000);
+            localStorage.setItem(seenKey, JSON.stringify(capped));
+          }
           
           // Record questions generated for daily limit tracking
           recordQuestionsGenerated(questions.length, userId);
@@ -845,33 +1054,27 @@ export const createConceptStore = (curriculumId: string = 'default') => {
 
       updateMastery: (conceptId: string, isCorrect: boolean) => {
         const currentState = get();
+        const now = new Date();
         
         // Track answer in current session
         const sessionAnswer = {
           questionId: `q_${Date.now()}`,
           conceptId,
           isCorrect,
-          timestamp: new Date().toISOString()
+          timestamp: now.toISOString()
         };
         
         const updatedSessionAnswers = [...currentState.currentSessionAnswers, sessionAnswer];
         
-        // Development logging
-        if (process.env.NODE_ENV === 'development') {
-
-        }
-        
-        // Find the concept first to debug
+        // Find the concept first
         const targetConcept = currentState.concepts.find(c => c.concept_id === conceptId);
         if (!targetConcept) {
           console.error('❌ Concept not found for mastery update:', conceptId);
-
           return;
         }
         
         const updatedConcepts = currentState.concepts.map((concept: ConceptNode) => {
           if (concept.concept_id === conceptId) {
-            // Ensure mastery_data exists
             const masteryData = concept.mastery_data || {
               mastery_level: 0,
               attempts: 0,
@@ -883,27 +1086,20 @@ export const createConceptStore = (curriculumId: string = 'default') => {
             const newAttempts = (masteryData.attempts || 0) + 1;
             const newCorrect = (masteryData.correct || 0) + (isCorrect ? 1 : 0);
             const newIncorrect = (masteryData.incorrect || 0) + (isCorrect ? 0 : 1);
-            
-            // Simplified mastery level: 0 = unseen, 1 = incorrect, 2 = correct
-            let newMastery = 0;
-            
-            if (newAttempts === 0) {
-              // Never attempted
-              newMastery = 0; // Unseen
-            } else {
-              // Based on most recent answer
-              newMastery = isCorrect ? 2 : 1; // Correct or Incorrect
-            }
-            
-            // Development logging
+            const newMastery = isCorrect ? 2 : 1;
+
+            // ── FSRS scheduling ──────────────────────────────────────────
+            const prevFsrs = fsrsStateFromMastery(masteryData);
+            const rating = fsrsRatingFromCorrect(isCorrect, newAttempts);
+            const { newState, intervalDays } = fsrsScheduler.applyReview(prevFsrs, rating, now);
+
             if (process.env.NODE_ENV === 'development') {
-              console.log('📊 Mastery update:', {
+              console.log('📊 FSRS update:', {
                 concept: concept.title,
-                attempts: newAttempts,
-                correct: newCorrect,
-                success_rate: newAttempts > 0 ? (newCorrect / newAttempts * 100).toFixed(1) + '%' : '0%',
-                old_mastery: masteryData.mastery_level || 0,
-                new_mastery: newMastery,
+                rating,
+                intervalDays: intervalDays.toFixed(1),
+                stability: newState.stability.toFixed(2),
+                dueAt: newState.dueAt.toISOString(),
                 isCorrect
               });
             }
@@ -913,10 +1109,17 @@ export const createConceptStore = (curriculumId: string = 'default') => {
               mastery_data: {
                 ...masteryData,
                 mastery_level: newMastery,
-                last_practiced: new Date().toISOString(),
+                last_practiced: now.toISOString(),
                 attempts: newAttempts,
                 correct: newCorrect,
-                incorrect: newIncorrect
+                incorrect: newIncorrect,
+                // FSRS fields
+                fsrs_stability: newState.stability,
+                fsrs_difficulty: newState.difficulty,
+                fsrs_due_at: newState.dueAt.toISOString(),
+                fsrs_last_review: now.toISOString(),
+                fsrs_reps: newState.reps,
+                fsrs_lapses: newState.lapses,
               }
             };
           }

@@ -15,31 +15,20 @@ interface GeneratedQuestion {
   format: 'ukmla_sba' | 'sba' | 'flashcard' | 'emq' | 'true_false' | 'ranking';
 }
 
-// Call OpenAI API to generate questions
+// Call AI via the Netlify serverless proxy (keeps API key server-side)
 async function callOpenAI(prompt: string, systemPrompt?: string): Promise<any> {
-  const apiKey = import.meta.env.VITE_OPENAI_API_KEY;
-  
-  // Development logging
-  if (process.env.NODE_ENV === 'development') {
-    console.log('🔑 API Key status:', apiKey ? 'Present' : 'Missing');
-  }
-  
-  if (!apiKey || apiKey === 'PLACEHOLDER_REPLACE_IN_NETLIFY_DASHBOARD') {
-    console.error('❌ OpenAI API key not configured properly');
-    throw new Error('OpenAI API key not configured');
-  }
-
   const defaultSystemPrompt = 'You are a medical education expert. Generate clinically accurate, challenging questions that test understanding rather than memorization. ALWAYS respond with valid JSON only.';
 
   try {
-    const response = await fetch('https://api.deepseek.com/v1/chat/completions', {
+    const response = await fetch('/.netlify/functions/ai-generate', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${apiKey}`
       },
       body: JSON.stringify({
         model: 'deepseek-chat',
+        temperature: 0.7,
+        max_tokens: 1200,
         messages: [
           {
             role: 'system',
@@ -49,9 +38,7 @@ async function callOpenAI(prompt: string, systemPrompt?: string): Promise<any> {
             role: 'user',
             content: prompt
           }
-        ],
-        temperature: 0.7,
-        max_tokens: 800
+        ]
       })
     });
 

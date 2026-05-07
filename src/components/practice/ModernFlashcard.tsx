@@ -1,10 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import { ArrowLeft, ChevronLeft, ChevronRight, Sun, Moon, Sparkles, X } from 'lucide-react';
+import { ArrowLeft, ChevronLeft, ChevronRight, Sun, Moon, X, Settings2 } from 'lucide-react';
 import type { QuestionData } from './questionTypes';
 import ReactMarkdown from 'react-markdown';
 import { cn } from '@/lib/utils';
 import { motion, useMotionValue, useTransform, PanInfo } from 'framer-motion';
 import { AIHelper } from './AIHelperClean';
+import { PracticeFilterModal } from './PracticeFilterModal';
 
 interface ModernFlashcardProps {
   question: QuestionData;
@@ -15,6 +16,11 @@ interface ModernFlashcardProps {
   currentIndex?: number;
   totalCards?: number;
   title?: string;
+  availableFilters?: string[];
+  activeFilter?: string | null;
+  onFilterSelect?: (filter?: string) => void;
+  currentFormat?: string;
+  onChangeFormat?: (format: string) => void;
 }
 
 // Helper function to convert inline bullet points to proper markdown
@@ -55,7 +61,12 @@ export const ModernFlashcard: React.FC<ModernFlashcardProps> = ({
   onExit,
   currentIndex = 0,
   totalCards = 0,
-  title = "Flashcards"
+  title = "Flashcards",
+  availableFilters = [],
+  activeFilter,
+  onFilterSelect,
+  currentFormat = 'flashcard',
+  onChangeFormat
 }) => {
   const [isFlipped, setIsFlipped] = useState(false);
   const [hasAnswered, setHasAnswered] = useState(false);
@@ -63,10 +74,11 @@ export const ModernFlashcard: React.FC<ModernFlashcardProps> = ({
   const [showTutorial, setShowTutorial] = useState(false);
   const [isExiting, setIsExiting] = useState(false);
   const [exitDirection, setExitDirection] = useState<'left' | 'right' | null>(null);
-  const [isLightMode, setIsLightMode] = useState(false);
+  const [isLightMode, setIsLightMode] = useState(true);
   const [interactionCount, setInteractionCount] = useState(0);
   const [isDragging, setIsDragging] = useState(false);
   const [showAIHelper, setShowAIHelper] = useState(false);
+  const [showConfigPanel, setShowConfigPanel] = useState(false);
 
   // Motion values for swipe
   const x = useMotionValue(0);
@@ -168,6 +180,23 @@ export const ModernFlashcard: React.FC<ModernFlashcardProps> = ({
     }
   }, [currentIndex]);
 
+  // Set body background based on theme
+  useEffect(() => {
+    const prevBodyBg = document.body.style.backgroundColor;
+    const prevHtmlBg = (document.documentElement as HTMLElement).style.backgroundColor;
+    if (isLightMode) {
+      document.body.style.backgroundColor = '#fafafa';
+      (document.documentElement as HTMLElement).style.backgroundColor = '#fafafa';
+    } else {
+      document.body.style.backgroundColor = '#0a0a0a';
+      (document.documentElement as HTMLElement).style.backgroundColor = '#0a0a0a';
+    }
+    return () => {
+      document.body.style.backgroundColor = prevBodyBg;
+      (document.documentElement as HTMLElement).style.backgroundColor = prevHtmlBg;
+    };
+  }, [isLightMode]);
+
 
   const dismissTutorial = () => {
     setShowTutorial(false);
@@ -236,56 +265,72 @@ export const ModernFlashcard: React.FC<ModernFlashcardProps> = ({
   return (
     <div className={cn(
       "fixed inset-0 flex flex-col overflow-hidden",
-      isLightMode ? "bg-zinc-50" : "bg-zinc-900"
+      isLightMode 
+        ? "bg-zinc-50" 
+        : "bg-gradient-to-br from-stone-900 via-stone-800 to-stone-900"
     )}>
       {/* Header */}
       <div className={cn(
-        "flex items-center justify-between px-4 py-4 border-b",
-        isLightMode ? "border-zinc-200" : "border-zinc-800"
+        "flex items-center justify-between px-4 py-4 border-b flex-shrink-0",
+        isLightMode ? "border-zinc-200" : "border-white/10"
       )}>
         <button
           onClick={onExit}
           className={cn(
             "p-2 rounded-lg transition-colors",
-            isLightMode ? "hover:bg-zinc-200" : "hover:bg-zinc-800"
+            isLightMode ? "hover:bg-zinc-200" : "hover:bg-white/5"
           )}
           aria-label="Go back"
         >
-          <ArrowLeft className={cn("h-5 w-5", isLightMode ? "text-zinc-700" : "text-zinc-300")} />
+          <ArrowLeft className={cn("h-5 w-5", isLightMode ? "text-zinc-700" : "text-white/70")} />
         </button>
         <div className="flex-1 text-center">
           <h1 className={cn("text-lg font-semibold", isLightMode ? "text-zinc-900" : "text-white")}>{title}</h1>
           {totalCards > 0 && (
-            <p className={cn("text-sm", isLightMode ? "text-zinc-500" : "text-zinc-400")}>{currentIndex + 1} / {totalCards}</p>
+            <p className={cn("text-sm", isLightMode ? "text-zinc-500" : "text-white/50")}>{currentIndex + 1} / {totalCards}</p>
           )}
         </div>
         <div className="flex items-center gap-2">
+          {/* Configure Practice Button */}
+          <button
+            onClick={() => setShowConfigPanel(true)}
+            className={cn(
+              "flex items-center gap-2 px-3 py-2 rounded-lg transition-colors text-xs font-medium",
+              showConfigPanel
+                ? isLightMode ? "bg-zinc-200 text-stone-900" : "bg-white/15 text-white"
+                : isLightMode ? "hover:bg-zinc-200 text-zinc-700" : "hover:bg-white/5 text-white/70"
+            )}
+            aria-label="Configure practice"
+          >
+            <Settings2 className="h-4 w-4" />
+            <span className="hidden sm:inline">Configure</span>
+          </button>
           <button
             onClick={() => setIsLightMode(!isLightMode)}
             className={cn(
               "p-2 rounded-lg transition-colors",
-              isLightMode ? "hover:bg-zinc-200" : "hover:bg-zinc-800"
+              isLightMode ? "hover:bg-zinc-200" : "hover:bg-white/5"
             )}
             aria-label="Toggle theme"
           >
             {isLightMode ? (
               <Moon className="h-5 w-5 text-zinc-700" />
             ) : (
-              <Sun className="h-5 w-5 text-zinc-300" />
+              <Sun className="h-5 w-5 text-white/70" />
             )}
           </button>
           <button
             onClick={onPrevious}
             disabled={currentIndex === 0}
             className={cn(
-              "p-2 rounded-full transition-colors",
+              "p-2 rounded-lg transition-colors",
               currentIndex === 0
                 ? isLightMode 
-                  ? "bg-zinc-200 text-zinc-400 cursor-not-allowed"
-                  : "bg-zinc-800 text-zinc-600 cursor-not-allowed"
+                  ? "opacity-30 cursor-not-allowed text-zinc-400"
+                  : "opacity-30 cursor-not-allowed text-white/30"
                 : isLightMode
-                  ? "bg-zinc-200 text-zinc-700 hover:bg-zinc-300"
-                  : "bg-zinc-800 text-zinc-300 hover:bg-zinc-700"
+                  ? "hover:bg-zinc-200 text-zinc-700"
+                  : "hover:bg-white/5 text-white/70"
             )}
             aria-label="Previous card"
           >
@@ -295,14 +340,14 @@ export const ModernFlashcard: React.FC<ModernFlashcardProps> = ({
             onClick={onNext}
             disabled={currentIndex === totalCards - 1}
             className={cn(
-              "p-2 rounded-full transition-colors",
+              "p-2 rounded-lg transition-colors",
               currentIndex === totalCards - 1
                 ? isLightMode
-                  ? "bg-zinc-200 text-zinc-400 cursor-not-allowed"
-                  : "bg-zinc-800 text-zinc-600 cursor-not-allowed"
+                  ? "opacity-30 cursor-not-allowed text-zinc-400"
+                  : "opacity-30 cursor-not-allowed text-white/30"
                 : isLightMode
-                  ? "bg-zinc-200 text-zinc-700 hover:bg-zinc-300"
-                  : "bg-zinc-800 text-zinc-300 hover:bg-zinc-700"
+                  ? "hover:bg-zinc-200 text-zinc-700"
+                  : "hover:bg-white/5 text-white/70"
             )}
             aria-label="Next card"
           >
@@ -315,15 +360,15 @@ export const ModernFlashcard: React.FC<ModernFlashcardProps> = ({
       <button
         onClick={() => setShowAIHelper(!showAIHelper)}
         className={cn(
-          "fixed bottom-4 right-4 md:bottom-6 md:right-6 p-3 md:p-4 rounded-full shadow-2xl transition-all duration-300 hover:scale-105",
+          "fixed bottom-4 right-4 md:bottom-6 md:right-6 px-4 py-2.5 md:px-5 md:py-3 rounded-full shadow-2xl transition-all duration-300 hover:scale-105 font-medium text-sm md:text-base",
           showAIHelper ? "z-[60]" : "z-40", // Higher z-index when open to stay above panel
           isLightMode 
-            ? "bg-white/90 backdrop-blur-xl border border-black/[0.08] hover:bg-white" 
-            : "bg-white/[0.08] backdrop-blur-xl border border-white/[0.12] hover:bg-white/[0.12]"
+            ? "bg-white/90 backdrop-blur-xl border border-black/[0.08] hover:bg-white text-stone-900" 
+            : "bg-white/[0.08] backdrop-blur-xl border border-white/[0.12] hover:bg-white/[0.12] text-white"
         )}
-        aria-label={showAIHelper ? "Close AI Helper" : "Open AI Helper"}
+        aria-label={showAIHelper ? "Close AI" : "Open AI"}
       >
-        <Sparkles className={cn("h-4 w-4 md:h-5 md:w-5", isLightMode ? "text-stone-900" : "text-white/80")} />
+        AI
       </button>
 
       {/* AI Helper Side Panel */}
@@ -353,15 +398,12 @@ export const ModernFlashcard: React.FC<ModernFlashcardProps> = ({
             )}>
               <div className="flex items-center gap-2 md:gap-3 min-w-0">
                 <div className={cn(
-                  "p-1.5 md:p-2 rounded-xl border flex-shrink-0",
-                  isLightMode ? "bg-black/[0.03] border-black/[0.06]" : "bg-white/[0.05] border-white/[0.08]"
+                  "px-3 py-1.5 rounded-lg font-bold text-sm flex-shrink-0",
+                  isLightMode ? "bg-stone-900 text-white" : "bg-white text-stone-900"
                 )}>
-                  <Sparkles className={cn("h-4 w-4 md:h-5 md:w-5", isLightMode ? "text-stone-700" : "text-white/70")} />
+                  AI
                 </div>
                 <div className="min-w-0">
-                  <h2 className={cn("text-base md:text-lg font-light truncate", isLightMode ? "text-stone-900" : "text-white/90")} style={{ fontFamily: "'Manrope', sans-serif" }}>
-                    AI Helper
-                  </h2>
                   <p className={cn("text-xs md:text-sm font-light truncate hidden sm:block", isLightMode ? "text-stone-500" : "text-white/50")} style={{ fontFamily: "'Manrope', sans-serif" }}>
                     Ask me anything about this flashcard
                   </p>
@@ -373,7 +415,7 @@ export const ModernFlashcard: React.FC<ModernFlashcardProps> = ({
                   "p-2 rounded-lg transition-colors flex-shrink-0 md:hidden",
                   isLightMode ? "hover:bg-black/[0.05]" : "hover:bg-white/10"
                 )}
-                aria-label="Close AI Helper"
+                aria-label="Close AI"
               >
                 <X className={cn("h-5 w-5", isLightMode ? "text-stone-700" : "text-zinc-300")} />
               </button>
@@ -700,6 +742,19 @@ export const ModernFlashcard: React.FC<ModernFlashcardProps> = ({
         </motion.div>
       </div>
       </div>
+
+      {/* Configure Practice Modal */}
+      {showConfigPanel && (
+        <PracticeFilterModal
+          isLightMode={isLightMode}
+          onClose={() => setShowConfigPanel(false)}
+          currentFormat={currentFormat}
+          onChangeFormat={(format) => {
+            onChangeFormat?.(format);
+            setShowConfigPanel(false);
+          }}
+        />
+      )}
 
       <style dangerouslySetInnerHTML={{ __html: `
         .backface-hidden {

@@ -12,16 +12,26 @@ interface PracticeSessionProps {
   questions: QuestionData[];
   onComplete: () => void;
   onAnswerSubmit?: (questionId: string, isCorrect: boolean) => void;
+  onAnotherFive?: (filter?: string) => void;
+  availableFilters?: string[];
+  activeFilter?: string | null;
   section?: string; // Add section prop to track which section questions belong to
   defaultFormat?: 'flashcard' | 'sba' | 'ukmla_sba' | 'mindmap'; // Default question format if not specified in the question
+  currentFormat?: string; // Current format for the switcher
+  onChangeFormat?: (format: string) => void; // Callback when user switches format
 }
 
 export function ApplePracticeSession({ 
   questions, 
   onComplete, 
-  onAnswerSubmit, 
+  onAnswerSubmit,
+  onAnotherFive,
+  availableFilters = [],
+  activeFilter = null,
   section, 
-  defaultFormat = 'ukmla_sba' 
+  defaultFormat = 'ukmla_sba',
+  currentFormat = 'ukmla_sba',
+  onChangeFormat 
 }: PracticeSessionProps) {
   // State for tracking current question and navigation
   const [currentIndex, setCurrentIndex] = useState(0);
@@ -247,6 +257,7 @@ export function ApplePracticeSession({
         questions={activeQuestions}
         onRetryIncorrect={handleRetryIncorrect}
         onDone={onComplete}
+        onAnotherFive={onAnotherFive}
       />
     );
   }
@@ -366,6 +377,10 @@ export function ApplePracticeSession({
             onExit={() => setShowExitConfirmation(true)}
             currentIndex={currentIndex}
             totalCards={activeQuestions.length}
+            availableFilters={availableFilters}
+            activeFilter={activeFilter}
+            onFilterSelect={onAnotherFive}
+            onChangeFormat={onChangeFormat}
           />
         ) : (
           <QuestionRenderer
@@ -393,6 +408,7 @@ export function ApplePracticeSession({
                 }
               }}
               onNext={handleNextQuestion}
+              onChangeFormat={onChangeFormat}
             />
         )}
       </div>

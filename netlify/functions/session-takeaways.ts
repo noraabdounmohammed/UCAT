@@ -17,18 +17,21 @@ import type { Handler } from '@netlify/functions';
 interface WrongAtom { stem: string; answer: string; topicPath: string[] }
 interface RightAtom { stem: string; topicPath: string[] }
 
-const SYSTEM_PROMPT = `You are a UK clinician-tutor reviewing a UKMLA study session. Identify 2-4 specific takeaways the student should focus on next time, based on which questions they got wrong.
+const SYSTEM_PROMPT = `You are a UK clinician-tutor. Distil the student's misses into 2-4 ultra-short memory rules.
 
-Output STRICT JSON of shape: { "bullets": ["…", "…"] }
+Output STRICT JSON: { "bullets": ["…", "…"] }
 
-Each bullet:
-- ONE sentence, plain readable English (UK).
-- Concrete and actionable. Cite the underlying clinical pattern, NOT individual question facts. Examples:
-  - "First-line antihypertensives split by age and ethnicity — under 55 non-Black: ACEi; over 55 or Black: CCB."
-  - "ECG: irregularly irregular = AF; sawtooth = atrial flutter; long PR with dropped beats = Mobitz."
-- Group related misses if they share a theme.
-- For all-correct sessions, return ONE bullet congratulating + suggesting the next topic to drill.
-- NEVER quote verbatim from any source. Original paraphrased prose.
+Rules for each bullet:
+- MAX 12 words. Telegraph style — no filler words.
+- Pattern → rule format. Examples:
+  - "Unilateral leg weakness + sensory loss = cord, not stroke"
+  - "Orthostatic hypotension + fixed HR = autonomic failure"
+  - "HbA1c very high + long T2DM → start basal-bolus insulin"
+  - "Dyspnoea + mid-systolic murmur increases on expiration = HOCM"
+  - "Age <55 non-Black → ACEi first; >55 or Black → CCB"
+- One rule per clinical pattern. Group related misses.
+- All-correct: ONE bullet = next topic to drill.
+- NO full sentences. NO conjunctions like "which" or "that".
 
 Return JSON ONLY.`;
 

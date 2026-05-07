@@ -3,6 +3,7 @@ import { X, Filter, Search, Settings, Folder, Brain, BarChart3, Play } from 'luc
 import { useConceptStore } from '@/contexts/ConceptStoreContext';
 import { FilterCategoryManager } from './FilterCategoryManager';
 import { FilterCategory } from '@/types/conceptTypes';
+import { getCurriculumStorageParsed } from '@/utils/curriculumStorage';
 
 
 interface MasteryFilterSectionProps {
@@ -139,41 +140,11 @@ const CategorizedCustomFilters: React.FC<CategorizedCustomFiltersProps> = ({
   }, [cascadingMode, selectedFilters, concepts, filterOptions.custom_filters]);
 
   const filterAssignments = React.useMemo(() => {
-    const primaryKey = `${curriculumId}_filter_assignments`;
-    let stored = localStorage.getItem(primaryKey);
-    let usedKey = primaryKey;
+    const assignments = getCurriculumStorageParsed<Record<string, string>>(curriculumId, 'filter_assignments', {});
     
-    // If no assignments found with current curriculum ID, try to find alternative keys
-    if (!stored) {
-      // Extract base curriculum ID (remove import prefixes and suffixes)
-      const baseCurriculumId = curriculumId.replace(/^imported-pub-/, '').split('-')[0];
-      
-      // Look for any assignment keys that contain the base curriculum ID
-      for (let i = 0; i < localStorage.length; i++) {
-        const key = localStorage.key(i);
-        if (key && key.includes('filter_assignments') && key.includes(baseCurriculumId)) {
-          stored = localStorage.getItem(key);
-          usedKey = key;
-          break;
-        }
-      }
-    }
-    
-    const assignments = stored ? JSON.parse(stored) : {};
-    
-    // Debug logging to help troubleshoot
     if (process.env.NODE_ENV === 'development') {
-      console.log('🏷️ Filter Assignments Debug:', {
-        curriculumId,
-        primaryKey,
-        usedKey,
-        foundAssignments: !!stored,
-        assignments,
-        filterCategories: filterCategories.length,
-        availableFilters: filterOptions.custom_filters?.length || 0
-      });
+      console.log('🏷️ Filter Assignments:', { curriculumId, count: Object.keys(assignments).length });
     }
-    
     return assignments;
   }, [curriculumId, refreshKey, filterCategories, filterOptions.custom_filters]); // Re-read when refreshKey changes
 

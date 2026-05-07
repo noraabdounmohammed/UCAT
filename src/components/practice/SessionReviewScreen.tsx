@@ -1,13 +1,16 @@
 import React, { useEffect, useState } from 'react';
-import { CheckCircle2, XCircle, RotateCcw, ArrowRight, Flame, Trophy, Target, TrendingUp } from 'lucide-react';
+import { CheckCircle2, XCircle, RotateCcw, ArrowRight, Flame, Target, Plus, Sun, Moon } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { SessionAnswer } from './SessionProgressDropdown';
+import { useTheme } from '@/contexts/ThemeContext';
+import { PracticeSessionTakeaways } from './PracticeSessionTakeaways';
 
 interface SessionReviewScreenProps {
   answers: SessionAnswer[];
   questions: any[];
   onRetryIncorrect: () => void;
   onDone: () => void;
+  onAnotherFive?: (filter?: string) => void;
 }
 
 // Behavioral science: variable reward messaging based on score
@@ -36,11 +39,13 @@ export const SessionReviewScreen: React.FC<SessionReviewScreenProps> = ({
   questions,
   onRetryIncorrect,
   onDone,
+  onAnotherFive,
 }) => {
   const [visible, setVisible] = useState(false);
+  const { theme, toggleTheme } = useTheme();
+  const light = theme === 'light';
 
   useEffect(() => {
-    // Slight delay for entrance animation
     const t = setTimeout(() => setVisible(true), 50);
     return () => clearTimeout(t);
   }, []);
@@ -59,16 +64,27 @@ export const SessionReviewScreen: React.FC<SessionReviewScreenProps> = ({
 
   return (
     <div className={cn(
-      'fixed inset-0 bg-[#0A0A0A] flex flex-col overflow-y-auto transition-opacity duration-500',
+      'fixed inset-0 flex flex-col overflow-y-auto transition-opacity duration-500',
+      light ? 'bg-zinc-50' : 'bg-[#0A0A0A]',
       visible ? 'opacity-100' : 'opacity-0'
     )}>
-      <div className="max-w-2xl mx-auto w-full px-4 py-10 sm:py-16">
+      {/* Theme toggle */}
+      <div className="sticky top-0 z-10 flex justify-end px-4 pt-4">
+        <button
+          onClick={toggleTheme}
+          className={cn('p-2 rounded-full transition-colors', light ? 'hover:bg-zinc-200 text-zinc-600' : 'hover:bg-white/10 text-white/60')}
+          aria-label="Toggle theme"
+        >
+          {light ? <Moon className="w-4 h-4" /> : <Sun className="w-4 h-4" />}
+        </button>
+      </div>
+      <div className="max-w-2xl mx-auto w-full px-4 pb-10 sm:pb-16">
 
         {/* Score circle */}
         <div className="text-center mb-10">
           <div className="relative inline-flex items-center justify-center w-28 h-28 mb-6">
             <svg className="w-28 h-28 -rotate-90" viewBox="0 0 120 120">
-              <circle cx="60" cy="60" r="52" fill="none" stroke="rgba(255,255,255,0.06)" strokeWidth="8" />
+              <circle cx="60" cy="60" r="52" fill="none" stroke={light ? 'rgba(0,0,0,0.08)' : 'rgba(255,255,255,0.06)'} strokeWidth="8" />
               <circle
                 cx="60" cy="60" r="52" fill="none"
                 stroke={accuracy >= 75 ? '#34d399' : accuracy >= 50 ? '#fbbf24' : '#f87171'}
@@ -80,14 +96,14 @@ export const SessionReviewScreen: React.FC<SessionReviewScreenProps> = ({
               />
             </svg>
             <div className="absolute text-center">
-              <p className="text-3xl font-bold text-white">{accuracy}%</p>
+              <p className={cn('text-3xl font-bold', light ? 'text-zinc-900' : 'text-white')}>{accuracy}%</p>
             </div>
           </div>
 
-          <h1 className="text-2xl sm:text-3xl font-bold text-white mb-2" style={{ fontFamily: "'Unbounded', cursive" }}>
+          <h1 className={cn('text-2xl sm:text-3xl font-bold mb-2', light ? 'text-zinc-900' : 'text-white')} style={{ fontFamily: "'Unbounded', cursive" }}>
             {headline}
           </h1>
-          <p className="text-sm text-white/50 max-w-sm mx-auto" style={{ fontFamily: "'Manrope', sans-serif" }}>
+          <p className={cn('text-sm max-w-sm mx-auto', light ? 'text-zinc-500' : 'text-white/50')} style={{ fontFamily: "'Manrope', sans-serif" }}>
             {sub}
           </p>
         </div>
@@ -102,45 +118,58 @@ export const SessionReviewScreen: React.FC<SessionReviewScreenProps> = ({
             <div key={label} className={cn('rounded-2xl border p-4 text-center', bg)}>
               <div className={cn('flex justify-center mb-1', color)}>{icon}</div>
               <p className={cn('text-xl font-bold', color)}>{value}</p>
-              <p className="text-xs text-white/40 mt-0.5">{label}</p>
+              <p className={cn('text-xs mt-0.5', light ? 'text-zinc-500' : 'text-white/40')}>{label}</p>
             </div>
           ))}
         </div>
 
-        {/* Behavioral science: "Retry incorrect" is primary CTA when there are mistakes */}
         {incorrectQuestions.length > 0 && (
           <div className="mb-4">
             <div className="bg-rose-500/10 border border-rose-500/20 rounded-2xl p-4 mb-4">
               <div className="flex items-start gap-3">
                 <Target className="w-4 h-4 text-rose-400 flex-shrink-0 mt-0.5" />
                 <div>
-                  <p className="text-sm font-semibold text-white/90">
+                  <p className={cn('text-sm font-semibold', light ? 'text-zinc-800' : 'text-white/90')}>
                     {incorrectQuestions.length} question{incorrectQuestions.length > 1 ? 's' : ''} to review
                   </p>
-                  {/* Loss aversion: show what's being left behind */}
-                  <p className="text-xs text-white/40 mt-0.5">
+                  <p className={cn('text-xs mt-0.5', light ? 'text-zinc-500' : 'text-white/40')}>
                     Retrying incorrect questions now is 3× more effective than moving on.
                   </p>
                 </div>
               </div>
             </div>
-            <button
-              onClick={onRetryIncorrect}
-              className="w-full py-3.5 rounded-full bg-white text-stone-900 font-bold text-sm flex items-center justify-center gap-2 hover:bg-stone-100 transition-all"
-              style={{ fontFamily: "'Manrope', sans-serif" }}
-            >
-              <RotateCcw className="w-4 h-4" />
-              Retry {incorrectQuestions.length} incorrect question{incorrectQuestions.length > 1 ? 's' : ''}
-            </button>
+            <div className={cn('flex gap-2', onAnotherFive ? 'flex-row' : 'flex-col')}>
+              {onAnotherFive && (
+                <button
+                  onClick={() => onAnotherFive(undefined)}
+                  className={cn('flex-1 py-3.5 rounded-full font-bold text-sm flex items-center justify-center gap-2 transition-all', light ? 'bg-zinc-900 text-white hover:bg-zinc-700' : 'bg-white text-stone-900 hover:bg-stone-100')}
+                  style={{ fontFamily: "'Manrope', sans-serif" }}
+                >
+                  <Plus className="w-4 h-4" />
+                  Another 5
+                </button>
+              )}
+              <button
+                onClick={onRetryIncorrect}
+                className={cn('flex-1 py-3.5 rounded-full font-bold text-sm flex items-center justify-center gap-2 transition-all border', light ? 'bg-zinc-100 border-zinc-300 text-zinc-700 hover:bg-zinc-200' : 'bg-white/10 border-white/20 text-white hover:bg-white/20')}
+                style={{ fontFamily: "'Manrope', sans-serif" }}
+              >
+                <RotateCcw className="w-4 h-4" />
+                Retry {incorrectQuestions.length}
+              </button>
+            </div>
           </div>
         )}
 
+        {/* AI Takeaways */}
+        <PracticeSessionTakeaways answers={answers} questions={questions} light={light} />
+
         {/* Question breakdown */}
-        <div className="bg-white/5 border border-white/10 rounded-2xl overflow-hidden mb-4">
-          <div className="px-4 py-3 border-b border-white/10">
-            <p className="text-xs font-semibold uppercase tracking-widest text-white/40">Question Breakdown</p>
+        <div className={cn('border rounded-2xl overflow-hidden mb-4', light ? 'bg-white border-zinc-200' : 'bg-white/5 border-white/10')}>
+          <div className={cn('px-4 py-3 border-b', light ? 'border-zinc-200' : 'border-white/10')}>
+            <p className={cn('text-xs font-semibold uppercase tracking-widest', light ? 'text-zinc-400' : 'text-white/40')}>Question Breakdown</p>
           </div>
-          <div className="divide-y divide-white/5">
+          <div className={cn('divide-y', light ? 'divide-zinc-100' : 'divide-white/5')}>
             {questions.map((q, i) => {
               const answer = answers.find(a => a.questionIndex === i);
               const topic = q.title || q.topic || `Question ${i + 1}`;
@@ -150,24 +179,24 @@ export const SessionReviewScreen: React.FC<SessionReviewScreenProps> = ({
                 <div key={i} className="flex items-start gap-3 px-4 py-3">
                   <div className="flex-shrink-0 mt-0.5">
                     {answer?.isCorrect ? (
-                      <CheckCircle2 className="w-4 h-4 text-emerald-400" />
+                      <CheckCircle2 className="w-4 h-4 text-emerald-500" />
                     ) : answer && !answer.isCorrect ? (
-                      <XCircle className="w-4 h-4 text-rose-400" />
+                      <XCircle className="w-4 h-4 text-rose-500" />
                     ) : (
-                      <div className="w-4 h-4 rounded-full border border-white/20" />
+                      <div className={cn('w-4 h-4 rounded-full border', light ? 'border-zinc-300' : 'border-white/20')} />
                     )}
                   </div>
                   <div className="min-w-0 flex-1">
-                    <p className="text-xs font-medium text-white/70 truncate">{topic}</p>
+                    <p className={cn('text-xs font-medium truncate', light ? 'text-zinc-700' : 'text-white/70')}>{topic}</p>
                     {questionPreview && (
-                      <p className="text-xs text-white/30 truncate mt-0.5">{questionPreview}…</p>
+                      <p className={cn('text-xs truncate mt-0.5', light ? 'text-zinc-400' : 'text-white/30')}>{questionPreview}…</p>
                     )}
                   </div>
                   <span className={cn(
                     'text-[10px] font-semibold px-2 py-0.5 rounded-full flex-shrink-0',
-                    answer?.isCorrect ? 'bg-emerald-500/15 text-emerald-400' :
-                    answer ? 'bg-rose-500/15 text-rose-400' :
-                    'bg-white/5 text-white/20'
+                    answer?.isCorrect ? 'bg-emerald-500/15 text-emerald-600' :
+                    answer ? 'bg-rose-500/15 text-rose-600' :
+                    light ? 'bg-zinc-100 text-zinc-400' : 'bg-white/5 text-white/20'
                   )}>
                     {answer?.isCorrect ? 'Correct' : answer ? 'Wrong' : 'Skipped'}
                   </span>
@@ -180,7 +209,7 @@ export const SessionReviewScreen: React.FC<SessionReviewScreenProps> = ({
         {/* Done button */}
         <button
           onClick={onDone}
-          className="w-full py-3.5 rounded-full bg-white/10 border border-white/15 text-white/70 font-semibold text-sm flex items-center justify-center gap-2 hover:bg-white/15 transition-all"
+          className={cn('w-full py-3.5 rounded-full border font-semibold text-sm flex items-center justify-center gap-2 transition-all', light ? 'bg-zinc-100 border-zinc-200 text-zinc-600 hover:bg-zinc-200' : 'bg-white/10 border-white/15 text-white/70 hover:bg-white/15')}
           style={{ fontFamily: "'Manrope', sans-serif" }}
         >
           Back to dashboard

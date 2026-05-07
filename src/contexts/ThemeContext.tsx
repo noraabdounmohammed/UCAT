@@ -11,11 +11,13 @@ const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
 
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
   const [theme, setTheme] = useState<Theme>(() => {
-    // Check localStorage first, then system preference
-    const saved = localStorage.getItem('theme') as Theme;
-    if (saved) return saved;
-    
-    return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+    // Force light mode as default; only respect explicit 'light' saves.
+    // Any previously saved 'dark' preference is ignored (reset to light).
+    const saved = localStorage.getItem('theme');
+    if (saved === 'light') return 'light';
+    // Clear any old dark preference so toggle starts fresh
+    try { localStorage.removeItem('theme'); } catch {}
+    return 'light';
   });
 
   useEffect(() => {
@@ -64,7 +66,7 @@ export function useTheme() {
     try {
       const saved = typeof localStorage !== 'undefined' ? localStorage.getItem('theme') : null;
       if (saved === 'light' || saved === 'dark') theme = saved;
-      else if (typeof window !== 'undefined' && window.matchMedia?.('(prefers-color-scheme: dark)').matches) theme = 'dark';
+      // Default to light; only override if user has explicitly saved a preference
     } catch {
       // localStorage may be unavailable (SSR, private mode); leave as light.
     }

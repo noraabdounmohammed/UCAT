@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { CheckCircle, XCircle, ChevronRight, ArrowLeft, ChevronLeft, Sun, Moon, Sparkles, X, ChevronDown } from 'lucide-react';
+import { CheckCircle, XCircle, ChevronRight, ArrowLeft, ChevronLeft, Sun, Moon, X, ChevronDown, Settings2 } from 'lucide-react';
+import { PracticeFilterModal } from './PracticeFilterModal';
+import { useTheme } from '@/contexts/ThemeContext';
 import type { QuestionData } from './questionTypes';
 import ReactMarkdown from 'react-markdown';
 import { AIHelper } from './AIHelperClean';
@@ -18,6 +20,11 @@ interface UkmlaSBAQuestionProps {
   title?: string;
   sessionAnswers?: SessionAnswer[];
   onJumpTo?: (index: number) => void;
+  availableFilters?: string[];
+  activeFilter?: string | null;
+  onFilterSelect?: (filter?: string) => void;
+  currentFormat?: string;
+  onChangeFormat?: (format: string) => void;
 }
 
 export const UkmlaSBAQuestion: React.FC<UkmlaSBAQuestionProps> = ({
@@ -30,12 +37,19 @@ export const UkmlaSBAQuestion: React.FC<UkmlaSBAQuestionProps> = ({
   totalQuestions = 0,
   title = "UKMLA SBA",
   sessionAnswers,
-  onJumpTo
+  onJumpTo,
+  availableFilters = [],
+  activeFilter = null,
+  onFilterSelect,
+  currentFormat = 'ukmla_sba',
+  onChangeFormat
 }) => {
   const [selectedOption, setSelectedOption] = useState<string | null>(null);
   const [hasSubmitted, setHasSubmitted] = useState(false);
   const [showAIHelper, setShowAIHelper] = useState(false);
-  const [isLightMode, setIsLightMode] = useState(false);
+  const [showConfigPanel, setShowConfigPanel] = useState(false);
+  const { theme, toggleTheme } = useTheme();
+  const isLightMode = theme === 'light';
   const [showFullExplanation, setShowFullExplanation] = useState(false);
   
   // Store answer states in sessionStorage for persistence across navigation
@@ -156,9 +170,38 @@ export const UkmlaSBAQuestion: React.FC<UkmlaSBAQuestionProps> = ({
         </div>
 
         <div className="flex items-center gap-2">
+          {/* Configure Practice Button */}
+          <button
+            onClick={() => setShowConfigPanel(true)}
+            className={cn(
+              'flex items-center gap-2 px-3 py-2 rounded-lg transition-colors text-xs font-medium',
+              showConfigPanel
+                ? isLightMode ? 'bg-zinc-200 text-stone-900' : 'bg-white/15 text-white'
+                : isLightMode ? 'hover:bg-zinc-200 text-zinc-700' : 'hover:bg-white/5 text-white/70'
+            )}
+            aria-label="Configure practice"
+          >
+            <Settings2 className="h-4 w-4" />
+            <span className="hidden sm:inline">Configure</span>
+          </button>
+          {/* AI Helper Button - only show after answer submitted */}
+          {hasSubmitted && (
+            <button
+              onClick={() => setShowAIHelper(!showAIHelper)}
+              className={cn(
+                'px-3 py-1.5 rounded-lg transition-colors text-sm font-medium',
+                showAIHelper
+                  ? isLightMode ? 'bg-zinc-200 text-stone-900' : 'bg-white/15 text-white'
+                  : isLightMode ? 'hover:bg-zinc-200 text-zinc-700' : 'hover:bg-white/5 text-white/70'
+              )}
+              aria-label={showAIHelper ? 'Close AI' : 'Open AI'}
+            >
+              AI
+            </button>
+          )}
           {/* Dark/Light Mode Toggle */}
           <button
-            onClick={() => setIsLightMode(!isLightMode)}
+            onClick={toggleTheme}
             className={`p-2 rounded-lg transition-colors ${
               isLightMode ? 'hover:bg-zinc-200' : 'hover:bg-white/5'
             }`}
@@ -432,21 +475,17 @@ export const UkmlaSBAQuestion: React.FC<UkmlaSBAQuestionProps> = ({
         </div>
       </div>
 
-      {/* AI Helper Floating Button - only show after answer submitted */}
-      {hasSubmitted && (
-        <button
-          onClick={() => setShowAIHelper(!showAIHelper)}
-          className={cn(
-            "fixed bottom-4 right-4 md:bottom-6 md:right-6 p-3 md:p-4 rounded-full shadow-2xl transition-all duration-300 hover:scale-105",
-            showAIHelper ? "z-[60]" : "z-40",
-            isLightMode 
-              ? "bg-white/90 backdrop-blur-xl border border-black/[0.08] hover:bg-white" 
-              : "bg-white/[0.08] backdrop-blur-xl border border-white/[0.12] hover:bg-white/[0.12]"
-          )}
-          aria-label={showAIHelper ? "Close AI Helper" : "Open AI Helper"}
-        >
-          <Sparkles className={cn("h-4 w-4 md:h-5 md:w-5", isLightMode ? "text-stone-900" : "text-white/80")} />
-        </button>
+      {/* Configure Practice Modal */}
+      {showConfigPanel && (
+        <PracticeFilterModal
+          isLightMode={isLightMode}
+          onClose={() => setShowConfigPanel(false)}
+          currentFormat={currentFormat}
+          onChangeFormat={(format) => {
+            onChangeFormat?.(format);
+            setShowConfigPanel(false);
+          }}
+        />
       )}
 
       {/* AI Helper Side Panel */}
@@ -476,15 +515,12 @@ export const UkmlaSBAQuestion: React.FC<UkmlaSBAQuestionProps> = ({
             )}>
               <div className="flex items-center gap-2 md:gap-3 min-w-0">
                 <div className={cn(
-                  "p-1.5 md:p-2 rounded-xl border flex-shrink-0",
-                  isLightMode ? "bg-black/[0.03] border-black/[0.06]" : "bg-white/[0.05] border-white/[0.08]"
+                  "px-3 py-1.5 rounded-lg font-bold text-sm flex-shrink-0",
+                  isLightMode ? "bg-stone-900 text-white" : "bg-white text-stone-900"
                 )}>
-                  <Sparkles className={cn("h-4 w-4 md:h-5 md:w-5", isLightMode ? "text-stone-700" : "text-white/70")} />
+                  AI
                 </div>
                 <div className="min-w-0">
-                  <h2 className={cn("text-base md:text-lg font-light truncate", isLightMode ? "text-stone-900" : "text-white/90")} style={{ fontFamily: "'Manrope', sans-serif" }}>
-                    AI Helper
-                  </h2>
                   <p className={cn("text-xs md:text-sm font-light truncate hidden sm:block", isLightMode ? "text-stone-500" : "text-white/50")} style={{ fontFamily: "'Manrope', sans-serif" }}>
                     Ask me anything about this question
                   </p>
@@ -496,7 +532,7 @@ export const UkmlaSBAQuestion: React.FC<UkmlaSBAQuestionProps> = ({
                   "p-2 rounded-lg transition-colors flex-shrink-0",
                   isLightMode ? "hover:bg-black/[0.05]" : "hover:bg-white/10"
                 )}
-                aria-label="Close AI Helper"
+                aria-label="Close AI"
               >
                 <X className={cn("h-5 w-5", isLightMode ? "text-stone-700" : "text-zinc-300")} />
               </button>

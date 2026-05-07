@@ -1,0 +1,6212 @@
+[
+  {
+    "title": "Acute kidney injury – Definition and epidemiology",
+    "content": "Acute kidney injury (AKI), previously termed acute renal failure, describes a reduction in renal function following an insult to the kidneys. Around 15% of patients admitted to hospital develop AKI. NICE estimate that inpatient mortality of AKI in the UK is typically 25–30% or more.",
+    "custom_filters": [
+      "Renal and urology",
+      "Acute kidney injury",
+      "Oliguria",
+      "Epidemiology"
+    ],
+    "filter_categories": [
+      {
+        "name": "Systems",
+        "color": "#3B82F6",
+        "filters": [
+          "Renal and urology"
+        ]
+      },
+      {
+        "name": "Conditions",
+        "color": "#8B5CF6",
+        "filters": [
+          "Acute kidney injury"
+        ]
+      },
+      {
+        "name": "Presentations",
+        "color": "#F59E0B",
+        "filters": [
+          "Oliguria"
+        ]
+      },
+      {
+        "name": "Other",
+        "color": "#10B981",
+        "filters": [
+          "Epidemiology"
+        ]
+      }
+    ]
+  },
+  {
+    "title": "Acute kidney injury – Prerenal causes",
+    "content": "Prerenal AKI results from ischaemia or inadequate blood flow to the kidneys. Examples include hypovolaemia secondary to diarrhoea/vomiting and renal artery stenosis.",
+    "custom_filters": [
+      "Renal and urology",
+      "Acute kidney injury",
+      "Aetiology/Risk factors"
+    ],
+    "filter_categories": [
+      {
+        "name": "Systems",
+        "color": "#3B82F6",
+        "filters": [
+          "Renal and urology"
+        ]
+      },
+      {
+        "name": "Conditions",
+        "color": "#8B5CF6",
+        "filters": [
+          "Acute kidney injury"
+        ]
+      },
+      {
+        "name": "Presentations",
+        "color": "#F59E0B",
+        "filters": []
+      },
+      {
+        "name": "Other",
+        "color": "#10B981",
+        "filters": [
+          "Aetiology/Risk factors"
+        ]
+      }
+    ]
+  },
+  {
+    "title": "Acute kidney injury – Intrinsic causes",
+    "content": "Intrinsic AKI results from direct damage to the glomeruli, renal tubules or interstitium. Examples include glomerulonephritis, acute tubular necrosis (ATN), acute interstitial nephritis (AIN), rhabdomyolysis and tumour lysis syndrome.",
+    "custom_filters": [
+      "Renal and urology",
+      "Acute kidney injury",
+      "Aetiology/Risk factors"
+    ],
+    "filter_categories": [
+      {
+        "name": "Systems",
+        "color": "#3B82F6",
+        "filters": [
+          "Renal and urology"
+        ]
+      },
+      {
+        "name": "Conditions",
+        "color": "#8B5CF6",
+        "filters": [
+          "Acute kidney injury"
+        ]
+      },
+      {
+        "name": "Presentations",
+        "color": "#F59E0B",
+        "filters": []
+      },
+      {
+        "name": "Other",
+        "color": "#10B981",
+        "filters": [
+          "Aetiology/Risk factors"
+        ]
+      }
+    ]
+  },
+  {
+    "title": "Acute kidney injury – Postrenal causes",
+    "content": "Postrenal AKI results from obstruction to urine outflow from the kidneys. Examples include kidney stones in the ureter or bladder, benign prostatic hyperplasia and external compression of the ureter.",
+    "custom_filters": [
+      "Renal and urology",
+      "Acute kidney injury",
+      "Aetiology/Risk factors"
+    ],
+    "filter_categories": [
+      {
+        "name": "Systems",
+        "color": "#3B82F6",
+        "filters": [
+          "Renal and urology"
+        ]
+      },
+      {
+        "name": "Conditions",
+        "color": "#8B5CF6",
+        "filters": [
+          "Acute kidney injury"
+        ]
+      },
+      {
+        "name": "Presentations",
+        "color": "#F59E0B",
+        "filters": []
+      },
+      {
+        "name": "Other",
+        "color": "#10B981",
+        "filters": [
+          "Aetiology/Risk factors"
+        ]
+      }
+    ]
+  },
+  {
+    "title": "Acute kidney injury – Risk factors",
+    "content": "Risk factors for AKI include: chronic kidney disease, other organ failure (heart failure, liver disease, diabetes mellitus), history of AKI, nephrotoxic drugs (NSAIDs, aminoglycosides, ACE inhibitors, ARBs, diuretics) within the past week, iodinated contrast agents within the past week, age ≥65 years, oliguria (<0.5 ml/kg/hour), and neurological/cognitive impairment limiting fluid access.",
+    "custom_filters": [
+      "Renal and urology",
+      "Acute kidney injury",
+      "Aetiology/Risk factors"
+    ],
+    "filter_categories": [
+      {
+        "name": "Systems",
+        "color": "#3B82F6",
+        "filters": [
+          "Renal and urology"
+        ]
+      },
+      {
+        "name": "Conditions",
+        "color": "#8B5CF6",
+        "filters": [
+          "Acute kidney injury"
+        ]
+      },
+      {
+        "name": "Presentations",
+        "color": "#F59E0B",
+        "filters": []
+      },
+      {
+        "name": "Other",
+        "color": "#10B981",
+        "filters": [
+          "Aetiology/Risk factors"
+        ]
+      }
+    ]
+  },
+  {
+    "title": "Acute kidney injury – Clinical features",
+    "content": "Many patients with early AKI are asymptomatic. As renal failure progresses, features include: reduced urine output (oliguria), pulmonary and peripheral oedema, arrhythmias (secondary to potassium and acid-base changes), and features of uraemia such as pericarditis or encephalopathy.",
+    "custom_filters": [
+      "Renal and urology",
+      "Acute kidney injury",
+      "Oliguria",
+      "Peripheral oedema and ankle swelling",
+      "Clinical features"
+    ],
+    "filter_categories": [
+      {
+        "name": "Systems",
+        "color": "#3B82F6",
+        "filters": [
+          "Renal and urology"
+        ]
+      },
+      {
+        "name": "Conditions",
+        "color": "#8B5CF6",
+        "filters": [
+          "Acute kidney injury"
+        ]
+      },
+      {
+        "name": "Presentations",
+        "color": "#F59E0B",
+        "filters": [
+          "Oliguria",
+          "Peripheral oedema and ankle swelling"
+        ]
+      },
+      {
+        "name": "Other",
+        "color": "#10B981",
+        "filters": [
+          "Clinical features"
+        ]
+      }
+    ]
+  },
+  {
+    "title": "Acute kidney injury – NICE diagnostic criteria",
+    "content": "AKI is diagnosed by any of the following KDIGO/AKIN/pRIFLE criteria: (1) rise in serum creatinine of ≥26 µmol/L within 48 hours; (2) ≥50% rise in serum creatinine within 7 days; (3) fall in urine output to <0.5 ml/kg/hour for >6 hours in adults (>8 hours in children); (4) ≥25% fall in eGFR in children/young adults within 7 days.",
+    "custom_filters": [
+      "Renal and urology",
+      "Acute kidney injury",
+      "Abnormal urinalysis",
+      "Investigations"
+    ],
+    "filter_categories": [
+      {
+        "name": "Systems",
+        "color": "#3B82F6",
+        "filters": [
+          "Renal and urology"
+        ]
+      },
+      {
+        "name": "Conditions",
+        "color": "#8B5CF6",
+        "filters": [
+          "Acute kidney injury"
+        ]
+      },
+      {
+        "name": "Presentations",
+        "color": "#F59E0B",
+        "filters": [
+          "Abnormal urinalysis"
+        ]
+      },
+      {
+        "name": "Other",
+        "color": "#10B981",
+        "filters": [
+          "Investigations"
+        ]
+      }
+    ]
+  },
+  {
+    "title": "Acute kidney injury – KDIGO staging",
+    "content": "KDIGO staging: Stage 1: creatinine 1.5–1.9× baseline, or rise ≥26.5 µmol/L, or urine output <0.5 ml/kg/hr for ≥6 hours. Stage 2: creatinine 2.0–2.9× baseline, or urine output <0.5 ml/kg/hr for ≥12 hours. Stage 3: creatinine ≥3.0× baseline, or ≥353.6 µmol/L, or urine output <0.3 ml/kg/hr for ≥24 hours, or initiation of kidney replacement therapy, or in patients <18 years eGFR <35 ml/min/1.73 m².",
+    "custom_filters": [
+      "Renal and urology",
+      "Acute kidney injury",
+      "Investigations"
+    ],
+    "filter_categories": [
+      {
+        "name": "Systems",
+        "color": "#3B82F6",
+        "filters": [
+          "Renal and urology"
+        ]
+      },
+      {
+        "name": "Conditions",
+        "color": "#8B5CF6",
+        "filters": [
+          "Acute kidney injury"
+        ]
+      },
+      {
+        "name": "Presentations",
+        "color": "#F59E0B",
+        "filters": []
+      },
+      {
+        "name": "Other",
+        "color": "#10B981",
+        "filters": [
+          "Investigations"
+        ]
+      }
+    ]
+  },
+  {
+    "title": "Acute kidney injury – Investigations",
+    "content": "All patients with suspected AKI should have urinalysis. If no identifiable cause or risk of urinary tract obstruction, a renal ultrasound should be performed within 24 hours of assessment. Blood tests include urea, electrolytes, and creatinine.",
+    "custom_filters": [
+      "Renal and urology",
+      "Acute kidney injury",
+      "Abnormal urinalysis",
+      "Investigations"
+    ],
+    "filter_categories": [
+      {
+        "name": "Systems",
+        "color": "#3B82F6",
+        "filters": [
+          "Renal and urology"
+        ]
+      },
+      {
+        "name": "Conditions",
+        "color": "#8B5CF6",
+        "filters": [
+          "Acute kidney injury"
+        ]
+      },
+      {
+        "name": "Presentations",
+        "color": "#F59E0B",
+        "filters": [
+          "Abnormal urinalysis"
+        ]
+      },
+      {
+        "name": "Other",
+        "color": "#10B981",
+        "filters": [
+          "Investigations"
+        ]
+      }
+    ]
+  },
+  {
+    "title": "Acute kidney injury – Drug management (safe vs. stop vs. caution)",
+    "content": "In AKI: Safe to continue: paracetamol, warfarin, statins, aspirin 75mg od, clopidogrel, beta-blockers. Stop (may worsen renal function): NSAIDs (except aspirin 75mg od), aminoglycosides, ACE inhibitors, ARBs, diuretics. May need to stop (increased toxicity risk): metformin, lithium, digoxin.",
+    "custom_filters": [
+      "Renal and urology",
+      "Acute kidney injury",
+      "Management"
+    ],
+    "filter_categories": [
+      {
+        "name": "Systems",
+        "color": "#3B82F6",
+        "filters": [
+          "Renal and urology"
+        ]
+      },
+      {
+        "name": "Conditions",
+        "color": "#8B5CF6",
+        "filters": [
+          "Acute kidney injury"
+        ]
+      },
+      {
+        "name": "Presentations",
+        "color": "#F59E0B",
+        "filters": []
+      },
+      {
+        "name": "Other",
+        "color": "#10B981",
+        "filters": [
+          "Management"
+        ]
+      }
+    ]
+  },
+  {
+    "title": "Acute kidney injury – Hyperkalaemia management",
+    "content": "Hyperkalaemia in AKI requires prompt treatment to prevent life-threatening arrhythmias. Treatment is categorised as: (1) Stabilise cardiac membrane: IV calcium gluconate. (2) Short-term shift K+ into cells: combined insulin/dextrose infusion; nebulised salbutamol. (3) Remove K+ from body: calcium resonium (orally or enema); loop diuretics; dialysis. Routine loop diuretics and low-dose dopamine are NOT recommended.",
+    "custom_filters": [
+      "Renal and urology",
+      "Acute kidney injury",
+      "Electrolyte abnormalities",
+      "Management"
+    ],
+    "filter_categories": [
+      {
+        "name": "Systems",
+        "color": "#3B82F6",
+        "filters": [
+          "Renal and urology"
+        ]
+      },
+      {
+        "name": "Conditions",
+        "color": "#8B5CF6",
+        "filters": [
+          "Acute kidney injury"
+        ]
+      },
+      {
+        "name": "Presentations",
+        "color": "#F59E0B",
+        "filters": [
+          "Electrolyte abnormalities"
+        ]
+      },
+      {
+        "name": "Other",
+        "color": "#10B981",
+        "filters": [
+          "Management"
+        ]
+      }
+    ]
+  },
+  {
+    "title": "Acute kidney injury – Renal replacement therapy indications",
+    "content": "Renal replacement therapy (e.g. haemodialysis) is indicated when a patient is not responding to medical treatment of complications, including hyperkalaemia, pulmonary oedema, acidosis, or uraemia (e.g. pericarditis, encephalopathy).",
+    "custom_filters": [
+      "Renal and urology",
+      "Acute kidney injury",
+      "Management"
+    ],
+    "filter_categories": [
+      {
+        "name": "Systems",
+        "color": "#3B82F6",
+        "filters": [
+          "Renal and urology"
+        ]
+      },
+      {
+        "name": "Conditions",
+        "color": "#8B5CF6",
+        "filters": [
+          "Acute kidney injury"
+        ]
+      },
+      {
+        "name": "Presentations",
+        "color": "#F59E0B",
+        "filters": []
+      },
+      {
+        "name": "Other",
+        "color": "#10B981",
+        "filters": [
+          "Management"
+        ]
+      }
+    ]
+  },
+  {
+    "title": "Acute kidney injury – Referral criteria to nephrologist",
+    "content": "Refer to a nephrologist if any of the following apply: renal transplant; ITU patient with unknown cause; vasculitis/GN/tubulointerstitial nephritis/myeloma; AKI with no known cause; inadequate response to treatment; complications of AKI; Stage 3 AKI; CKD stage 4 or 5; or qualifying for renal replacement therapy (hyperkalaemia, metabolic acidosis, uraemia complications, fluid overload).",
+    "custom_filters": [
+      "Renal and urology",
+      "Acute kidney injury",
+      "Management"
+    ],
+    "filter_categories": [
+      {
+        "name": "Systems",
+        "color": "#3B82F6",
+        "filters": [
+          "Renal and urology"
+        ]
+      },
+      {
+        "name": "Conditions",
+        "color": "#8B5CF6",
+        "filters": [
+          "Acute kidney injury"
+        ]
+      },
+      {
+        "name": "Presentations",
+        "color": "#F59E0B",
+        "filters": []
+      },
+      {
+        "name": "Other",
+        "color": "#10B981",
+        "filters": [
+          "Management"
+        ]
+      }
+    ]
+  },
+  {
+    "title": "Acute kidney injury – ATN vs. prerenal uraemia: urine indices",
+    "content": "Distinguishing prerenal uraemia from ATN: Prerenal: urine Na <20 mmol/L, urine osmolality >500 mOsm/kg, FENa <1%, good response to fluid challenge, raised urea:creatinine ratio, FEurea <35%, urine:plasma osmolality >1.5, urine:plasma urea >10:1, specific gravity >1020, bland urine sediment. ATN: urine Na >40 mmol/L, osmolality <350 mOsm/kg, FENa >1%, poor fluid response, normal urea:creatinine, FEurea >35%, urine:plasma osmolality <1.1, urine:plasma urea <8:1, specific gravity <1010, brown granular casts.",
+    "custom_filters": [
+      "Renal and urology",
+      "Acute kidney injury",
+      "Abnormal urinalysis",
+      "Investigations"
+    ],
+    "filter_categories": [
+      {
+        "name": "Systems",
+        "color": "#3B82F6",
+        "filters": [
+          "Renal and urology"
+        ]
+      },
+      {
+        "name": "Conditions",
+        "color": "#8B5CF6",
+        "filters": [
+          "Acute kidney injury"
+        ]
+      },
+      {
+        "name": "Presentations",
+        "color": "#F59E0B",
+        "filters": [
+          "Abnormal urinalysis"
+        ]
+      },
+      {
+        "name": "Other",
+        "color": "#10B981",
+        "filters": [
+          "Investigations"
+        ]
+      }
+    ]
+  },
+  {
+    "title": "Acute kidney injury – AKI vs. CKD differentiation",
+    "content": "The best way to differentiate AKI from CKD is renal ultrasound — most CKD patients have bilateral small kidneys. Exceptions where kidneys may be normal or large in CKD include: ADPKD, diabetic nephropathy (early stages), amyloidosis, and HIV-associated nephropathy. Hypocalcaemia (due to lack of vitamin D) also suggests CKD rather than AKI.",
+    "custom_filters": [
+      "Renal and urology",
+      "Acute kidney injury",
+      "Chronic kidney disease",
+      "Differential diagnosis"
+    ],
+    "filter_categories": [
+      {
+        "name": "Systems",
+        "color": "#3B82F6",
+        "filters": [
+          "Renal and urology"
+        ]
+      },
+      {
+        "name": "Conditions",
+        "color": "#8B5CF6",
+        "filters": [
+          "Acute kidney injury",
+          "Chronic kidney disease"
+        ]
+      },
+      {
+        "name": "Presentations",
+        "color": "#F59E0B",
+        "filters": []
+      },
+      {
+        "name": "Other",
+        "color": "#10B981",
+        "filters": [
+          "Differential diagnosis"
+        ]
+      }
+    ]
+  },
+  {
+    "title": "Acute kidney injury – NICE risk factors (surgical context)",
+    "content": "NICE guidelines identify additional AKI risk factors in the surgical context: emergency surgery (risk of sepsis or hypovolaemia), intraperitoneal surgery, CKD with eGFR <60, diabetes, heart failure, age >65 years, liver disease, and use of nephrotoxic drugs (NSAIDs, aminoglycosides, ACE inhibitors/ARBs, diuretics).",
+    "custom_filters": [
+      "Renal and urology",
+      "Acute kidney injury",
+      "Aetiology/Risk factors"
+    ],
+    "filter_categories": [
+      {
+        "name": "Systems",
+        "color": "#3B82F6",
+        "filters": [
+          "Renal and urology"
+        ]
+      },
+      {
+        "name": "Conditions",
+        "color": "#8B5CF6",
+        "filters": [
+          "Acute kidney injury"
+        ]
+      },
+      {
+        "name": "Presentations",
+        "color": "#F59E0B",
+        "filters": []
+      },
+      {
+        "name": "Other",
+        "color": "#10B981",
+        "filters": [
+          "Aetiology/Risk factors"
+        ]
+      }
+    ]
+  },
+  {
+    "title": "Acute tubular necrosis – Definition and epidemiology",
+    "content": "Acute tubular necrosis (ATN) is the most common cause of acute kidney injury (AKI) seen in clinical practice. It involves necrosis of renal tubular epithelial cells. In the early stages, ATN is reversible if the cause is removed.",
+    "custom_filters": [
+      "Renal and urology",
+      "Acute kidney injury",
+      "Definition"
+    ],
+    "filter_categories": [
+      {
+        "name": "Systems",
+        "color": "#3B82F6",
+        "filters": [
+          "Renal and urology"
+        ]
+      },
+      {
+        "name": "Conditions",
+        "color": "#8B5CF6",
+        "filters": [
+          "Acute kidney injury"
+        ]
+      },
+      {
+        "name": "Presentations",
+        "color": "#F59E0B",
+        "filters": []
+      },
+      {
+        "name": "Other",
+        "color": "#10B981",
+        "filters": [
+          "Definition"
+        ]
+      }
+    ]
+  },
+  {
+    "title": "Acute tubular necrosis – Causes",
+    "content": "ATN has two main causes: (1) Ischaemia: shock, sepsis. (2) Nephrotoxins: aminoglycosides, myoglobin secondary to rhabdomyolysis, radiocontrast agents, lead.",
+    "custom_filters": [
+      "Renal and urology",
+      "Acute kidney injury",
+      "Aetiology/Risk factors"
+    ],
+    "filter_categories": [
+      {
+        "name": "Systems",
+        "color": "#3B82F6",
+        "filters": [
+          "Renal and urology"
+        ]
+      },
+      {
+        "name": "Conditions",
+        "color": "#8B5CF6",
+        "filters": [
+          "Acute kidney injury"
+        ]
+      },
+      {
+        "name": "Presentations",
+        "color": "#F59E0B",
+        "filters": []
+      },
+      {
+        "name": "Other",
+        "color": "#10B981",
+        "filters": [
+          "Aetiology/Risk factors"
+        ]
+      }
+    ]
+  },
+  {
+    "title": "Acute tubular necrosis – Clinical features",
+    "content": "Features of ATN include raised urea, creatinine and potassium (features of AKI), and muddy brown granular casts in the urine.",
+    "custom_filters": [
+      "Renal and urology",
+      "Acute kidney injury",
+      "Abnormal urinalysis",
+      "Clinical features"
+    ],
+    "filter_categories": [
+      {
+        "name": "Systems",
+        "color": "#3B82F6",
+        "filters": [
+          "Renal and urology"
+        ]
+      },
+      {
+        "name": "Conditions",
+        "color": "#8B5CF6",
+        "filters": [
+          "Acute kidney injury"
+        ]
+      },
+      {
+        "name": "Presentations",
+        "color": "#F59E0B",
+        "filters": [
+          "Abnormal urinalysis"
+        ]
+      },
+      {
+        "name": "Other",
+        "color": "#10B981",
+        "filters": [
+          "Clinical features"
+        ]
+      }
+    ]
+  },
+  {
+    "title": "Acute tubular necrosis – Histopathological features",
+    "content": "Histopathological features of ATN include: tubular epithelium necrosis with loss of nuclei and detachment of tubular cells from the basement membrane; dilatation of the tubules; and obstruction of the tubule lumen by necrotic cells.",
+    "custom_filters": [
+      "Renal and urology",
+      "Acute kidney injury",
+      "Pathophysiology"
+    ],
+    "filter_categories": [
+      {
+        "name": "Systems",
+        "color": "#3B82F6",
+        "filters": [
+          "Renal and urology"
+        ]
+      },
+      {
+        "name": "Conditions",
+        "color": "#8B5CF6",
+        "filters": [
+          "Acute kidney injury"
+        ]
+      },
+      {
+        "name": "Presentations",
+        "color": "#F59E0B",
+        "filters": []
+      },
+      {
+        "name": "Other",
+        "color": "#10B981",
+        "filters": [
+          "Pathophysiology"
+        ]
+      }
+    ]
+  },
+  {
+    "title": "Acute tubular necrosis – Phases",
+    "content": "ATN progresses through three phases: (1) Oliguric phase; (2) Polyuric phase; (3) Recovery phase.",
+    "custom_filters": [
+      "Renal and urology",
+      "Acute kidney injury",
+      "Clinical features"
+    ],
+    "filter_categories": [
+      {
+        "name": "Systems",
+        "color": "#3B82F6",
+        "filters": [
+          "Renal and urology"
+        ]
+      },
+      {
+        "name": "Conditions",
+        "color": "#8B5CF6",
+        "filters": [
+          "Acute kidney injury"
+        ]
+      },
+      {
+        "name": "Presentations",
+        "color": "#F59E0B",
+        "filters": []
+      },
+      {
+        "name": "Other",
+        "color": "#10B981",
+        "filters": [
+          "Clinical features"
+        ]
+      }
+    ]
+  },
+  {
+    "title": "Acute interstitial nephritis – Epidemiology",
+    "content": "Acute interstitial nephritis (AIN) accounts for 25% of drug-induced acute kidney injury.",
+    "custom_filters": [
+      "Renal and urology",
+      "Acute kidney injury",
+      "Epidemiology"
+    ],
+    "filter_categories": [
+      {
+        "name": "Systems",
+        "color": "#3B82F6",
+        "filters": [
+          "Renal and urology"
+        ]
+      },
+      {
+        "name": "Conditions",
+        "color": "#8B5CF6",
+        "filters": [
+          "Acute kidney injury"
+        ]
+      },
+      {
+        "name": "Presentations",
+        "color": "#F59E0B",
+        "filters": []
+      },
+      {
+        "name": "Other",
+        "color": "#10B981",
+        "filters": [
+          "Epidemiology"
+        ]
+      }
+    ]
+  },
+  {
+    "title": "Acute interstitial nephritis – Drug causes",
+    "content": "Drugs are the most common cause of AIN, particularly antibiotics. Causative drugs include: penicillin, rifampicin, NSAIDs, allopurinol, furosemide, and proton pump inhibitors.",
+    "custom_filters": [
+      "Renal and urology",
+      "Acute kidney injury",
+      "Aetiology/Risk factors"
+    ],
+    "filter_categories": [
+      {
+        "name": "Systems",
+        "color": "#3B82F6",
+        "filters": [
+          "Renal and urology"
+        ]
+      },
+      {
+        "name": "Conditions",
+        "color": "#8B5CF6",
+        "filters": [
+          "Acute kidney injury"
+        ]
+      },
+      {
+        "name": "Presentations",
+        "color": "#F59E0B",
+        "filters": []
+      },
+      {
+        "name": "Other",
+        "color": "#10B981",
+        "filters": [
+          "Aetiology/Risk factors"
+        ]
+      }
+    ]
+  },
+  {
+    "title": "Acute interstitial nephritis – Non-drug causes",
+    "content": "Non-drug causes of AIN include: systemic disease (SLE, sarcoidosis, Sjogren's syndrome) and infection (Hanta virus, staphylococci).",
+    "custom_filters": [
+      "Renal and urology",
+      "Acute kidney injury",
+      "Aetiology/Risk factors"
+    ],
+    "filter_categories": [
+      {
+        "name": "Systems",
+        "color": "#3B82F6",
+        "filters": [
+          "Renal and urology"
+        ]
+      },
+      {
+        "name": "Conditions",
+        "color": "#8B5CF6",
+        "filters": [
+          "Acute kidney injury"
+        ]
+      },
+      {
+        "name": "Presentations",
+        "color": "#F59E0B",
+        "filters": []
+      },
+      {
+        "name": "Other",
+        "color": "#10B981",
+        "filters": [
+          "Aetiology/Risk factors"
+        ]
+      }
+    ]
+  },
+  {
+    "title": "Acute interstitial nephritis – Pathophysiology",
+    "content": "Histology of AIN shows marked interstitial oedema and an interstitial infiltrate in the connective tissue between renal tubules.",
+    "custom_filters": [
+      "Renal and urology",
+      "Acute kidney injury",
+      "Pathophysiology"
+    ],
+    "filter_categories": [
+      {
+        "name": "Systems",
+        "color": "#3B82F6",
+        "filters": [
+          "Renal and urology"
+        ]
+      },
+      {
+        "name": "Conditions",
+        "color": "#8B5CF6",
+        "filters": [
+          "Acute kidney injury"
+        ]
+      },
+      {
+        "name": "Presentations",
+        "color": "#F59E0B",
+        "filters": []
+      },
+      {
+        "name": "Other",
+        "color": "#10B981",
+        "filters": [
+          "Pathophysiology"
+        ]
+      }
+    ]
+  },
+  {
+    "title": "Acute interstitial nephritis – Clinical features",
+    "content": "Features of AIN include: fever, rash, arthralgia, eosinophilia, mild renal impairment, and hypertension.",
+    "custom_filters": [
+      "Renal and urology",
+      "Acute kidney injury",
+      "Hypertension",
+      "Clinical features"
+    ],
+    "filter_categories": [
+      {
+        "name": "Systems",
+        "color": "#3B82F6",
+        "filters": [
+          "Renal and urology"
+        ]
+      },
+      {
+        "name": "Conditions",
+        "color": "#8B5CF6",
+        "filters": [
+          "Acute kidney injury"
+        ]
+      },
+      {
+        "name": "Presentations",
+        "color": "#F59E0B",
+        "filters": [
+          "Hypertension"
+        ]
+      },
+      {
+        "name": "Other",
+        "color": "#10B981",
+        "filters": [
+          "Clinical features"
+        ]
+      }
+    ]
+  },
+  {
+    "title": "Acute interstitial nephritis – Investigations",
+    "content": "Investigations in AIN reveal sterile pyuria and white cell casts on urinalysis.",
+    "custom_filters": [
+      "Renal and urology",
+      "Acute kidney injury",
+      "Abnormal urinalysis",
+      "Investigations"
+    ],
+    "filter_categories": [
+      {
+        "name": "Systems",
+        "color": "#3B82F6",
+        "filters": [
+          "Renal and urology"
+        ]
+      },
+      {
+        "name": "Conditions",
+        "color": "#8B5CF6",
+        "filters": [
+          "Acute kidney injury"
+        ]
+      },
+      {
+        "name": "Presentations",
+        "color": "#F59E0B",
+        "filters": [
+          "Abnormal urinalysis"
+        ]
+      },
+      {
+        "name": "Other",
+        "color": "#10B981",
+        "filters": [
+          "Investigations"
+        ]
+      }
+    ]
+  },
+  {
+    "title": "Acute interstitial nephritis – TINU syndrome",
+    "content": "Tubulointerstitial nephritis with uveitis (TINU) usually occurs in young females. Symptoms include fever, weight loss and painful, red eyes. Urinalysis is positive for leukocytes and protein.",
+    "custom_filters": [
+      "Renal and urology",
+      "Acute kidney injury",
+      "Abnormal urinalysis",
+      "Clinical features"
+    ],
+    "filter_categories": [
+      {
+        "name": "Systems",
+        "color": "#3B82F6",
+        "filters": [
+          "Renal and urology"
+        ]
+      },
+      {
+        "name": "Conditions",
+        "color": "#8B5CF6",
+        "filters": [
+          "Acute kidney injury"
+        ]
+      },
+      {
+        "name": "Presentations",
+        "color": "#F59E0B",
+        "filters": [
+          "Abnormal urinalysis"
+        ]
+      },
+      {
+        "name": "Other",
+        "color": "#10B981",
+        "filters": [
+          "Clinical features"
+        ]
+      }
+    ]
+  },
+  {
+    "title": "Rhabdomyolysis – Causes",
+    "content": "Causes of rhabdomyolysis include: seizure, collapse/coma (e.g. elderly patient found after 8 hours), ecstasy, crush injury, McArdle's syndrome, and drugs (statins, especially if co-prescribed with clarithromycin).",
+    "custom_filters": [
+      "Renal and urology",
+      "Acute kidney injury",
+      "Aetiology/Risk factors"
+    ],
+    "filter_categories": [
+      {
+        "name": "Systems",
+        "color": "#3B82F6",
+        "filters": [
+          "Renal and urology"
+        ]
+      },
+      {
+        "name": "Conditions",
+        "color": "#8B5CF6",
+        "filters": [
+          "Acute kidney injury"
+        ]
+      },
+      {
+        "name": "Presentations",
+        "color": "#F59E0B",
+        "filters": []
+      },
+      {
+        "name": "Other",
+        "color": "#10B981",
+        "filters": [
+          "Aetiology/Risk factors"
+        ]
+      }
+    ]
+  },
+  {
+    "title": "Rhabdomyolysis – Clinical features",
+    "content": "Features of rhabdomyolysis include: AKI with disproportionately raised creatinine; elevated CK (≥5× upper limit of normal; 2–4× ULN is not diagnostic); myoglobinuria (dark or reddish-brown urine); hypocalcaemia (myoglobin binds calcium); elevated phosphate (released from myocytes); hyperkalaemia (may precede renal failure); and metabolic acidosis.",
+    "custom_filters": [
+      "Renal and urology",
+      "Acute kidney injury",
+      "Abnormal urinalysis",
+      "Electrolyte abnormalities",
+      "Clinical features"
+    ],
+    "filter_categories": [
+      {
+        "name": "Systems",
+        "color": "#3B82F6",
+        "filters": [
+          "Renal and urology"
+        ]
+      },
+      {
+        "name": "Conditions",
+        "color": "#8B5CF6",
+        "filters": [
+          "Acute kidney injury"
+        ]
+      },
+      {
+        "name": "Presentations",
+        "color": "#F59E0B",
+        "filters": [
+          "Abnormal urinalysis",
+          "Electrolyte abnormalities"
+        ]
+      },
+      {
+        "name": "Other",
+        "color": "#10B981",
+        "filters": [
+          "Clinical features"
+        ]
+      }
+    ]
+  },
+  {
+    "title": "Rhabdomyolysis – Management",
+    "content": "Management of rhabdomyolysis includes IV fluids to maintain good urine output. Urinary alkalinisation is sometimes used.",
+    "custom_filters": [
+      "Renal and urology",
+      "Acute kidney injury",
+      "Management"
+    ],
+    "filter_categories": [
+      {
+        "name": "Systems",
+        "color": "#3B82F6",
+        "filters": [
+          "Renal and urology"
+        ]
+      },
+      {
+        "name": "Conditions",
+        "color": "#8B5CF6",
+        "filters": [
+          "Acute kidney injury"
+        ]
+      },
+      {
+        "name": "Presentations",
+        "color": "#F59E0B",
+        "filters": []
+      },
+      {
+        "name": "Other",
+        "color": "#10B981",
+        "filters": [
+          "Management"
+        ]
+      }
+    ]
+  },
+  {
+    "title": "Benign prostatic hyperplasia – Epidemiology",
+    "content": "BPH is a common condition in older men. Around 50% of 50-year-old men have evidence of BPH and 30% have symptoms. Around 80% of 80-year-old men have evidence of BPH. Ethnicity risk: black > white > Asian.",
+    "custom_filters": [
+      "Renal and urology",
+      "Benign prostatic hyperplasia",
+      "Epidemiology"
+    ],
+    "filter_categories": [
+      {
+        "name": "Systems",
+        "color": "#3B82F6",
+        "filters": [
+          "Renal and urology"
+        ]
+      },
+      {
+        "name": "Conditions",
+        "color": "#8B5CF6",
+        "filters": [
+          "Benign prostatic hyperplasia"
+        ]
+      },
+      {
+        "name": "Presentations",
+        "color": "#F59E0B",
+        "filters": []
+      },
+      {
+        "name": "Other",
+        "color": "#10B981",
+        "filters": [
+          "Epidemiology"
+        ]
+      }
+    ]
+  },
+  {
+    "title": "Benign prostatic hyperplasia – Voiding (obstructive) symptoms",
+    "content": "BPH voiding (obstructive) symptoms include: weak or intermittent urinary flow, straining, hesitancy, terminal dribbling, and incomplete emptying.",
+    "custom_filters": [
+      "Renal and urology",
+      "Benign prostatic hyperplasia",
+      "Urinary symptoms",
+      "Clinical features"
+    ],
+    "filter_categories": [
+      {
+        "name": "Systems",
+        "color": "#3B82F6",
+        "filters": [
+          "Renal and urology"
+        ]
+      },
+      {
+        "name": "Conditions",
+        "color": "#8B5CF6",
+        "filters": [
+          "Benign prostatic hyperplasia"
+        ]
+      },
+      {
+        "name": "Presentations",
+        "color": "#F59E0B",
+        "filters": [
+          "Urinary symptoms"
+        ]
+      },
+      {
+        "name": "Other",
+        "color": "#10B981",
+        "filters": [
+          "Clinical features"
+        ]
+      }
+    ]
+  },
+  {
+    "title": "Benign prostatic hyperplasia – Storage (irritative) symptoms",
+    "content": "BPH storage (irritative) symptoms include: urgency, frequency, urgency incontinence, and nocturia.",
+    "custom_filters": [
+      "Renal and urology",
+      "Benign prostatic hyperplasia",
+      "Urinary symptoms",
+      "Clinical features"
+    ],
+    "filter_categories": [
+      {
+        "name": "Systems",
+        "color": "#3B82F6",
+        "filters": [
+          "Renal and urology"
+        ]
+      },
+      {
+        "name": "Conditions",
+        "color": "#8B5CF6",
+        "filters": [
+          "Benign prostatic hyperplasia"
+        ]
+      },
+      {
+        "name": "Presentations",
+        "color": "#F59E0B",
+        "filters": [
+          "Urinary symptoms"
+        ]
+      },
+      {
+        "name": "Other",
+        "color": "#10B981",
+        "filters": [
+          "Clinical features"
+        ]
+      }
+    ]
+  },
+  {
+    "title": "Benign prostatic hyperplasia – Complications",
+    "content": "Complications of BPH include: urinary tract infection, urinary retention, and obstructive uropathy.",
+    "custom_filters": [
+      "Renal and urology",
+      "Benign prostatic hyperplasia",
+      "Urinary symptoms",
+      "Complications"
+    ],
+    "filter_categories": [
+      {
+        "name": "Systems",
+        "color": "#3B82F6",
+        "filters": [
+          "Renal and urology"
+        ]
+      },
+      {
+        "name": "Conditions",
+        "color": "#8B5CF6",
+        "filters": [
+          "Benign prostatic hyperplasia"
+        ]
+      },
+      {
+        "name": "Presentations",
+        "color": "#F59E0B",
+        "filters": [
+          "Urinary symptoms"
+        ]
+      },
+      {
+        "name": "Other",
+        "color": "#10B981",
+        "filters": [
+          "Complications"
+        ]
+      }
+    ]
+  },
+  {
+    "title": "Benign prostatic hyperplasia – Assessment",
+    "content": "Assessment of BPH includes: urine dipstick, U&Es (especially if chronic retention suspected), PSA (if obstructive symptoms or concern about prostate cancer), urinary frequency-volume chart (≥3 days), and International Prostate Symptom Score (IPSS). IPSS: 0–7 mildly symptomatic; 8–19 moderately symptomatic; 20–35 severely symptomatic.",
+    "custom_filters": [
+      "Renal and urology",
+      "Benign prostatic hyperplasia",
+      "Abnormal urinalysis",
+      "Investigations"
+    ],
+    "filter_categories": [
+      {
+        "name": "Systems",
+        "color": "#3B82F6",
+        "filters": [
+          "Renal and urology"
+        ]
+      },
+      {
+        "name": "Conditions",
+        "color": "#8B5CF6",
+        "filters": [
+          "Benign prostatic hyperplasia"
+        ]
+      },
+      {
+        "name": "Presentations",
+        "color": "#F59E0B",
+        "filters": [
+          "Abnormal urinalysis"
+        ]
+      },
+      {
+        "name": "Other",
+        "color": "#10B981",
+        "filters": [
+          "Investigations"
+        ]
+      }
+    ]
+  },
+  {
+    "title": "Benign prostatic hyperplasia – Alpha-1 antagonist treatment",
+    "content": "Alpha-1 antagonists (e.g. tamsulosin, alfuzosin) decrease smooth muscle tone of the prostate and bladder. They are considered first-line by NICE for moderate-to-severe voiding symptoms (IPSS ≥8) and improve symptoms in around 70% of men. Adverse effects include dizziness, postural hypotension, dry mouth, and depression.",
+    "custom_filters": [
+      "Renal and urology",
+      "Benign prostatic hyperplasia",
+      "Management"
+    ],
+    "filter_categories": [
+      {
+        "name": "Systems",
+        "color": "#3B82F6",
+        "filters": [
+          "Renal and urology"
+        ]
+      },
+      {
+        "name": "Conditions",
+        "color": "#8B5CF6",
+        "filters": [
+          "Benign prostatic hyperplasia"
+        ]
+      },
+      {
+        "name": "Presentations",
+        "color": "#F59E0B",
+        "filters": []
+      },
+      {
+        "name": "Other",
+        "color": "#10B981",
+        "filters": [
+          "Management"
+        ]
+      }
+    ]
+  },
+  {
+    "title": "Benign prostatic hyperplasia – 5-alpha reductase inhibitor treatment",
+    "content": "5-alpha reductase inhibitors (e.g. finasteride) block conversion of testosterone to dihydrotestosterone (DHT), which induces BPH. They are indicated for significantly enlarged prostate with high risk of progression. Unlike alpha-1 antagonists, they reduce prostate volume and may slow disease progression, but symptoms may not improve for 6 months. They may decrease PSA by up to 50%. Adverse effects: erectile dysfunction, reduced libido, ejaculation problems, gynaecomastia.",
+    "custom_filters": [
+      "Renal and urology",
+      "Benign prostatic hyperplasia",
+      "Management"
+    ],
+    "filter_categories": [
+      {
+        "name": "Systems",
+        "color": "#3B82F6",
+        "filters": [
+          "Renal and urology"
+        ]
+      },
+      {
+        "name": "Conditions",
+        "color": "#8B5CF6",
+        "filters": [
+          "Benign prostatic hyperplasia"
+        ]
+      },
+      {
+        "name": "Presentations",
+        "color": "#F59E0B",
+        "filters": []
+      },
+      {
+        "name": "Other",
+        "color": "#10B981",
+        "filters": [
+          "Management"
+        ]
+      }
+    ]
+  },
+  {
+    "title": "Benign prostatic hyperplasia – Combination therapy and antimuscarinics",
+    "content": "Combination therapy (alpha-1 antagonist + 5-alpha reductase inhibitor) is supported by the MTOPS trial and NICE for men with bothersome moderate-to-severe voiding symptoms and prostatic enlargement. If storage symptoms persist after alpha-blocker alone, an antimuscarinic (e.g. tolterodine, darifenacin) may be added. Surgery (TURP) is the main surgical option.",
+    "custom_filters": [
+      "Renal and urology",
+      "Benign prostatic hyperplasia",
+      "Management"
+    ],
+    "filter_categories": [
+      {
+        "name": "Systems",
+        "color": "#3B82F6",
+        "filters": [
+          "Renal and urology"
+        ]
+      },
+      {
+        "name": "Conditions",
+        "color": "#8B5CF6",
+        "filters": [
+          "Benign prostatic hyperplasia"
+        ]
+      },
+      {
+        "name": "Presentations",
+        "color": "#F59E0B",
+        "filters": []
+      },
+      {
+        "name": "Other",
+        "color": "#10B981",
+        "filters": [
+          "Management"
+        ]
+      }
+    ]
+  },
+  {
+    "title": "Benign prostatic hyperplasia – TURP syndrome",
+    "content": "TURP syndrome is a rare, life-threatening complication of TURP surgery. It is caused by systemic absorption of large volumes of hypo-osmolar glycine irrigation fluid when prostatic venous sinuses are opened. This causes hyponatraemia and, when glycine is metabolised to ammonia by the liver, hyperammonaemia and visual disturbances. Risk factors include: surgical time >1 hour, bag height >70 cm, resected tissue >60 g, large blood loss, perforation, large fluid volume used, and poorly controlled cardiac failure.",
+    "custom_filters": [
+      "Renal and urology",
+      "Benign prostatic hyperplasia",
+      "Electrolyte abnormalities",
+      "Complications"
+    ],
+    "filter_categories": [
+      {
+        "name": "Systems",
+        "color": "#3B82F6",
+        "filters": [
+          "Renal and urology"
+        ]
+      },
+      {
+        "name": "Conditions",
+        "color": "#8B5CF6",
+        "filters": [
+          "Benign prostatic hyperplasia"
+        ]
+      },
+      {
+        "name": "Presentations",
+        "color": "#F59E0B",
+        "filters": [
+          "Electrolyte abnormalities"
+        ]
+      },
+      {
+        "name": "Other",
+        "color": "#10B981",
+        "filters": [
+          "Complications"
+        ]
+      }
+    ]
+  },
+  {
+    "title": "Bladder cancer – Epidemiology and histological types",
+    "content": "Bladder cancer is the second most common urological cancer, most commonly affecting males aged 50–80 years. Histological types: urothelial (transitional cell) carcinoma >90% of cases; squamous cell carcinoma 1–7% (more common in schistosomiasis-endemic regions); adenocarcinoma 2%.",
+    "custom_filters": [
+      "Renal and urology",
+      "Bladder cancer",
+      "Haematuria",
+      "Epidemiology"
+    ],
+    "filter_categories": [
+      {
+        "name": "Systems",
+        "color": "#3B82F6",
+        "filters": [
+          "Renal and urology"
+        ]
+      },
+      {
+        "name": "Conditions",
+        "color": "#8B5CF6",
+        "filters": [
+          "Bladder cancer"
+        ]
+      },
+      {
+        "name": "Presentations",
+        "color": "#F59E0B",
+        "filters": [
+          "Haematuria"
+        ]
+      },
+      {
+        "name": "Other",
+        "color": "#10B981",
+        "filters": [
+          "Epidemiology"
+        ]
+      }
+    ]
+  },
+  {
+    "title": "Bladder cancer – Risk factors for TCC",
+    "content": "Risk factors for urothelial (transitional cell) carcinoma of the bladder: smoking (most important in Western countries, accounting for ~50% of cases; hazard ratio ~4); exposure to aniline dyes (e.g. 2-naphthylamine, benzidine; printing and textile industry); rubber manufacture; cyclophosphamide.",
+    "custom_filters": [
+      "Renal and urology",
+      "Bladder cancer",
+      "Aetiology/Risk factors"
+    ],
+    "filter_categories": [
+      {
+        "name": "Systems",
+        "color": "#3B82F6",
+        "filters": [
+          "Renal and urology"
+        ]
+      },
+      {
+        "name": "Conditions",
+        "color": "#8B5CF6",
+        "filters": [
+          "Bladder cancer"
+        ]
+      },
+      {
+        "name": "Presentations",
+        "color": "#F59E0B",
+        "filters": []
+      },
+      {
+        "name": "Other",
+        "color": "#10B981",
+        "filters": [
+          "Aetiology/Risk factors"
+        ]
+      }
+    ]
+  },
+  {
+    "title": "Bladder cancer – Risk factors for SCC",
+    "content": "Risk factors for squamous cell carcinoma of the bladder include schistosomiasis (most important cause of SCC globally) and smoking.",
+    "custom_filters": [
+      "Renal and urology",
+      "Bladder cancer",
+      "Aetiology/Risk factors"
+    ],
+    "filter_categories": [
+      {
+        "name": "Systems",
+        "color": "#3B82F6",
+        "filters": [
+          "Renal and urology"
+        ]
+      },
+      {
+        "name": "Conditions",
+        "color": "#8B5CF6",
+        "filters": [
+          "Bladder cancer"
+        ]
+      },
+      {
+        "name": "Presentations",
+        "color": "#F59E0B",
+        "filters": []
+      },
+      {
+        "name": "Other",
+        "color": "#10B981",
+        "filters": [
+          "Aetiology/Risk factors"
+        ]
+      }
+    ]
+  },
+  {
+    "title": "Bladder cancer – TNM staging",
+    "content": "TNM staging of bladder cancer: T0 = no evidence of tumour; Ta = non-invasive papillary carcinoma; T1 = tumour invades sub-epithelial connective tissue; T2a = invades superficial muscularis propria (inner half); T2b = invades deep muscularis propria (outer half); T3 = tumour extends beyond muscularis propria; T4 = invades adjacent structures. Those with T3 disease or worse have ≥30% risk of regional or distant lymph node metastasis.",
+    "custom_filters": [
+      "Renal and urology",
+      "Bladder cancer",
+      "Investigations"
+    ],
+    "filter_categories": [
+      {
+        "name": "Systems",
+        "color": "#3B82F6",
+        "filters": [
+          "Renal and urology"
+        ]
+      },
+      {
+        "name": "Conditions",
+        "color": "#8B5CF6",
+        "filters": [
+          "Bladder cancer"
+        ]
+      },
+      {
+        "name": "Presentations",
+        "color": "#F59E0B",
+        "filters": []
+      },
+      {
+        "name": "Other",
+        "color": "#10B981",
+        "filters": [
+          "Investigations"
+        ]
+      }
+    ]
+  },
+  {
+    "title": "Bladder cancer – Prognosis by stage",
+    "content": "Five-year survival rates for bladder cancer by stage: T1: 90%; T2: 60%; T3: 35%; T4a: 10–25%; any T with N1–N2: 30%.",
+    "custom_filters": [
+      "Renal and urology",
+      "Bladder cancer",
+      "Prognosis"
+    ],
+    "filter_categories": [
+      {
+        "name": "Systems",
+        "color": "#3B82F6",
+        "filters": [
+          "Renal and urology"
+        ]
+      },
+      {
+        "name": "Conditions",
+        "color": "#8B5CF6",
+        "filters": [
+          "Bladder cancer"
+        ]
+      },
+      {
+        "name": "Presentations",
+        "color": "#F59E0B",
+        "filters": []
+      },
+      {
+        "name": "Other",
+        "color": "#10B981",
+        "filters": [
+          "Prognosis"
+        ]
+      }
+    ]
+  },
+  {
+    "title": "Chronic kidney disease – Common causes",
+    "content": "Common causes of chronic kidney disease include: diabetic nephropathy, chronic glomerulonephritis, chronic pyelonephritis, hypertension, and adult polycystic kidney disease.",
+    "custom_filters": [
+      "Renal and urology",
+      "Chronic kidney disease",
+      "Aetiology/Risk factors"
+    ],
+    "filter_categories": [
+      {
+        "name": "Systems",
+        "color": "#3B82F6",
+        "filters": [
+          "Renal and urology"
+        ]
+      },
+      {
+        "name": "Conditions",
+        "color": "#8B5CF6",
+        "filters": [
+          "Chronic kidney disease"
+        ]
+      },
+      {
+        "name": "Presentations",
+        "color": "#F59E0B",
+        "filters": []
+      },
+      {
+        "name": "Other",
+        "color": "#10B981",
+        "filters": [
+          "Aetiology/Risk factors"
+        ]
+      }
+    ]
+  },
+  {
+    "title": "Chronic kidney disease – eGFR estimation",
+    "content": "Serum creatinine alone does not accurately reflect renal function due to differences in muscle mass. The MDRD equation estimates GFR using serum creatinine, age, gender and ethnicity. Factors affecting eGFR accuracy include pregnancy, muscle mass extremes (amputees, bodybuilders), and eating red meat within 12 hours of sampling.",
+    "custom_filters": [
+      "Renal and urology",
+      "Chronic kidney disease",
+      "Investigations"
+    ],
+    "filter_categories": [
+      {
+        "name": "Systems",
+        "color": "#3B82F6",
+        "filters": [
+          "Renal and urology"
+        ]
+      },
+      {
+        "name": "Conditions",
+        "color": "#8B5CF6",
+        "filters": [
+          "Chronic kidney disease"
+        ]
+      },
+      {
+        "name": "Presentations",
+        "color": "#F59E0B",
+        "filters": []
+      },
+      {
+        "name": "Other",
+        "color": "#10B981",
+        "filters": [
+          "Investigations"
+        ]
+      }
+    ]
+  },
+  {
+    "title": "Chronic kidney disease – eGFR staging",
+    "content": "CKD staging by eGFR: Stage 1: >90 ml/min with kidney damage signs; Stage 2: 60–90 ml/min with kidney damage signs; Stage 3a: 45–59 ml/min; Stage 3b: 30–44 ml/min; Stage 4: 15–29 ml/min (severe reduction); Stage 5: <15 ml/min (established kidney failure — dialysis or transplant may be needed).",
+    "custom_filters": [
+      "Renal and urology",
+      "Chronic kidney disease",
+      "Investigations"
+    ],
+    "filter_categories": [
+      {
+        "name": "Systems",
+        "color": "#3B82F6",
+        "filters": [
+          "Renal and urology"
+        ]
+      },
+      {
+        "name": "Conditions",
+        "color": "#8B5CF6",
+        "filters": [
+          "Chronic kidney disease"
+        ]
+      },
+      {
+        "name": "Presentations",
+        "color": "#F59E0B",
+        "filters": []
+      },
+      {
+        "name": "Other",
+        "color": "#10B981",
+        "filters": [
+          "Investigations"
+        ]
+      }
+    ]
+  },
+  {
+    "title": "Chronic kidney disease – Clinical features",
+    "content": "CKD is usually asymptomatic and diagnosed incidentally on abnormal U&Es. Late-stage features include: oedema (ankle swelling, weight gain), polyuria, lethargy, pruritus (secondary to uraemia), anorexia/weight loss, insomnia, nausea and vomiting, and hypertension.",
+    "custom_filters": [
+      "Renal and urology",
+      "Chronic kidney disease",
+      "Peripheral oedema and ankle swelling",
+      "Hypertension",
+      "Chronic kidney disease",
+      "Clinical features"
+    ],
+    "filter_categories": [
+      {
+        "name": "Systems",
+        "color": "#3B82F6",
+        "filters": [
+          "Renal and urology"
+        ]
+      },
+      {
+        "name": "Conditions",
+        "color": "#8B5CF6",
+        "filters": [
+          "Chronic kidney disease"
+        ]
+      },
+      {
+        "name": "Presentations",
+        "color": "#F59E0B",
+        "filters": [
+          "Peripheral oedema and ankle swelling",
+          "Hypertension",
+          "Chronic kidney disease"
+        ]
+      },
+      {
+        "name": "Other",
+        "color": "#10B981",
+        "filters": [
+          "Clinical features"
+        ]
+      }
+    ]
+  },
+  {
+    "title": "Chronic kidney disease – Hypertension management",
+    "content": "Most CKD patients require more than two antihypertensive drugs. ACE inhibitors are first-line, particularly in proteinuric renal disease. An eGFR fall of up to 25% or creatinine rise of up to 30% is acceptable; greater rises may indicate renovascular disease. Furosemide is useful when GFR falls below 45 ml/min (NKF K/DOQI suggests <30 ml/min) — it lowers serum potassium but should be withheld if dehydration risk.",
+    "custom_filters": [
+      "Renal and urology",
+      "Chronic kidney disease",
+      "Hypertension",
+      "Management"
+    ],
+    "filter_categories": [
+      {
+        "name": "Systems",
+        "color": "#3B82F6",
+        "filters": [
+          "Renal and urology"
+        ]
+      },
+      {
+        "name": "Conditions",
+        "color": "#8B5CF6",
+        "filters": [
+          "Chronic kidney disease"
+        ]
+      },
+      {
+        "name": "Presentations",
+        "color": "#F59E0B",
+        "filters": [
+          "Hypertension"
+        ]
+      },
+      {
+        "name": "Other",
+        "color": "#10B981",
+        "filters": [
+          "Management"
+        ]
+      }
+    ]
+  },
+  {
+    "title": "Chronic kidney disease – Anaemia: causes",
+    "content": "Anaemia in CKD is usually normochromic normocytic and becomes apparent when GFR <35 ml/min. Causes include: reduced erythropoietin production (most significant); reduced iron absorption (elevated hepcidin levels in CKD impair gut iron absorption and macrophage iron release); uraemia toxicity on bone marrow; anorexia/nausea; reduced RBC survival (especially on haemodialysis); blood loss from capillary fragility and poor platelet function; and stress ulceration. Anaemia in CKD predisposes to left ventricular hypertrophy — associated with a threefold increase in mortality.",
+    "custom_filters": [
+      "Renal and urology",
+      "Chronic kidney disease",
+      "Aetiology/Risk factors"
+    ],
+    "filter_categories": [
+      {
+        "name": "Systems",
+        "color": "#3B82F6",
+        "filters": [
+          "Renal and urology"
+        ]
+      },
+      {
+        "name": "Conditions",
+        "color": "#8B5CF6",
+        "filters": [
+          "Chronic kidney disease"
+        ]
+      },
+      {
+        "name": "Presentations",
+        "color": "#F59E0B",
+        "filters": []
+      },
+      {
+        "name": "Other",
+        "color": "#10B981",
+        "filters": [
+          "Aetiology/Risk factors"
+        ]
+      }
+    ]
+  },
+  {
+    "title": "Chronic kidney disease – Anaemia: management",
+    "content": "NICE 2011 guidelines suggest a target haemoglobin of 10–12 g/dl. Iron status should be optimised before starting erythropoiesis-stimulating agents (ESAs). Oral iron is offered to patients not on ESAs or haemodialysis; if target Hb not reached within 3 months, switch to IV iron. Patients on ESAs or haemodialysis generally require IV iron. ESAs (erythropoietin, darbepoetin) are used in those likely to benefit in terms of quality of life and physical function.",
+    "custom_filters": [
+      "Renal and urology",
+      "Chronic kidney disease",
+      "Management"
+    ],
+    "filter_categories": [
+      {
+        "name": "Systems",
+        "color": "#3B82F6",
+        "filters": [
+          "Renal and urology"
+        ]
+      },
+      {
+        "name": "Conditions",
+        "color": "#8B5CF6",
+        "filters": [
+          "Chronic kidney disease"
+        ]
+      },
+      {
+        "name": "Presentations",
+        "color": "#F59E0B",
+        "filters": []
+      },
+      {
+        "name": "Other",
+        "color": "#10B981",
+        "filters": [
+          "Management"
+        ]
+      }
+    ]
+  },
+  {
+    "title": "Chronic kidney disease – Bone disease: pathophysiology",
+    "content": "In CKD: reduced 1-alpha hydroxylation → low vitamin D; reduced phosphate excretion → high phosphate. High phosphate drags calcium from bones (renal osteodystrophy); low calcium results from lack of vitamin D and high phosphate (phosphate binds free calcium). Secondary hyperparathyroidism develops due to low calcium, high phosphate and low vitamin D, leading to bone resorption and vascular calcification.",
+    "custom_filters": [
+      "Renal and urology",
+      "Chronic kidney disease",
+      "Pathophysiology"
+    ],
+    "filter_categories": [
+      {
+        "name": "Systems",
+        "color": "#3B82F6",
+        "filters": [
+          "Renal and urology"
+        ]
+      },
+      {
+        "name": "Conditions",
+        "color": "#8B5CF6",
+        "filters": [
+          "Chronic kidney disease"
+        ]
+      },
+      {
+        "name": "Presentations",
+        "color": "#F59E0B",
+        "filters": []
+      },
+      {
+        "name": "Other",
+        "color": "#10B981",
+        "filters": [
+          "Pathophysiology"
+        ]
+      }
+    ]
+  },
+  {
+    "title": "Chronic kidney disease – Bone disease: clinical manifestations",
+    "content": "Clinical manifestations of CKD-related bone disease include: osteitis fibrosa cystica (hyperparathyroid bone disease); adynamic bone disease (reduced osteoblast/osteoclast activity, may be due to over-treatment with vitamin D); osteomalacia (due to low vitamin D); osteosclerosis; and osteoporosis.",
+    "custom_filters": [
+      "Renal and urology",
+      "Chronic kidney disease",
+      "Clinical features"
+    ],
+    "filter_categories": [
+      {
+        "name": "Systems",
+        "color": "#3B82F6",
+        "filters": [
+          "Renal and urology"
+        ]
+      },
+      {
+        "name": "Conditions",
+        "color": "#8B5CF6",
+        "filters": [
+          "Chronic kidney disease"
+        ]
+      },
+      {
+        "name": "Presentations",
+        "color": "#F59E0B",
+        "filters": []
+      },
+      {
+        "name": "Other",
+        "color": "#10B981",
+        "filters": [
+          "Clinical features"
+        ]
+      }
+    ]
+  },
+  {
+    "title": "Chronic kidney disease – Bone disease: phosphate binders",
+    "content": "Phosphate binders used in CKD: calcium-based binders are first-line if serum calcium is normal or low with no significant vascular calcification risk (risk of hypercalcaemia). Sevelamer (non-calcium based) is used if hypercalcaemic or vascular calcification risk — it also reduces uric acid and improves lipid profiles. Other non-calcium options include lanthanum carbonate and ferric citrate. Aluminium-based binders are less commonly used.",
+    "custom_filters": [
+      "Renal and urology",
+      "Chronic kidney disease",
+      "Management"
+    ],
+    "filter_categories": [
+      {
+        "name": "Systems",
+        "color": "#3B82F6",
+        "filters": [
+          "Renal and urology"
+        ]
+      },
+      {
+        "name": "Conditions",
+        "color": "#8B5CF6",
+        "filters": [
+          "Chronic kidney disease"
+        ]
+      },
+      {
+        "name": "Presentations",
+        "color": "#F59E0B",
+        "filters": []
+      },
+      {
+        "name": "Other",
+        "color": "#10B981",
+        "filters": [
+          "Management"
+        ]
+      }
+    ]
+  },
+  {
+    "title": "Chronic kidney disease – Bone disease: vitamin D therapy",
+    "content": "In early CKD (stages 1–3), native vitamin D (ergocalciferol/cholecalciferol) is used first to correct deficiency, as some renal 1-alpha hydroxylase activity remains. In advanced CKD (stages 4–5), active analogues alfacalcidol or calcitriol are used to suppress PTH in secondary hyperparathyroidism, as the kidneys can no longer activate vitamin D. Doses should be titrated to minimise hypercalcaemia and adynamic bone disease.",
+    "custom_filters": [
+      "Renal and urology",
+      "Chronic kidney disease",
+      "Management"
+    ],
+    "filter_categories": [
+      {
+        "name": "Systems",
+        "color": "#3B82F6",
+        "filters": [
+          "Renal and urology"
+        ]
+      },
+      {
+        "name": "Conditions",
+        "color": "#8B5CF6",
+        "filters": [
+          "Chronic kidney disease"
+        ]
+      },
+      {
+        "name": "Presentations",
+        "color": "#F59E0B",
+        "filters": []
+      },
+      {
+        "name": "Other",
+        "color": "#10B981",
+        "filters": [
+          "Management"
+        ]
+      }
+    ]
+  },
+  {
+    "title": "Chronic kidney disease – Bone disease: parathyroidectomy",
+    "content": "Parathyroidectomy may be considered in patients with refractory secondary hyperparathyroidism despite optimal medical management, typically when PTH remains persistently elevated with associated symptoms or complications.",
+    "custom_filters": [
+      "Renal and urology",
+      "Chronic kidney disease",
+      "Management"
+    ],
+    "filter_categories": [
+      {
+        "name": "Systems",
+        "color": "#3B82F6",
+        "filters": [
+          "Renal and urology"
+        ]
+      },
+      {
+        "name": "Conditions",
+        "color": "#8B5CF6",
+        "filters": [
+          "Chronic kidney disease"
+        ]
+      },
+      {
+        "name": "Presentations",
+        "color": "#F59E0B",
+        "filters": []
+      },
+      {
+        "name": "Other",
+        "color": "#10B981",
+        "filters": [
+          "Management"
+        ]
+      }
+    ]
+  },
+  {
+    "title": "Chronic kidney disease – Proteinuria: ACR measurement",
+    "content": "NICE recommend the albumin:creatinine ratio (ACR) over protein:creatinine ratio (PCR) for identifying proteinuria, as it has greater sensitivity. ACR should be a first-pass morning urine specimen. If initial ACR is 3–70 mg/mmol, confirm with a subsequent early morning sample. If ≥70 mg/mmol, repeat is not needed. A confirmed ACR ≥3 mg/mmol is clinically important proteinuria. Approximate equivalents: ACR 30 ≈ PCR 50 ≈ 0.5 g/24h; ACR 70 ≈ PCR 100 ≈ 1 g/24h.",
+    "custom_filters": [
+      "Renal and urology",
+      "Chronic kidney disease",
+      "Abnormal urinalysis",
+      "Investigations"
+    ],
+    "filter_categories": [
+      {
+        "name": "Systems",
+        "color": "#3B82F6",
+        "filters": [
+          "Renal and urology"
+        ]
+      },
+      {
+        "name": "Conditions",
+        "color": "#8B5CF6",
+        "filters": [
+          "Chronic kidney disease"
+        ]
+      },
+      {
+        "name": "Presentations",
+        "color": "#F59E0B",
+        "filters": [
+          "Abnormal urinalysis"
+        ]
+      },
+      {
+        "name": "Other",
+        "color": "#10B981",
+        "filters": [
+          "Investigations"
+        ]
+      }
+    ]
+  },
+  {
+    "title": "Chronic kidney disease – Proteinuria: referral criteria",
+    "content": "NICE referral criteria to nephrologist for proteinuria: ACR ≥70 mg/mmol (unless caused by diabetes and already treated); ACR ≥30 mg/mmol with persistent haematuria (2/3 dipstick tests showing 1+ blood after UTI excluded); consider referral for ACR 3–29 mg/mmol with persistent haematuria and other risk factors (declining eGFR, cardiovascular disease).",
+    "custom_filters": [
+      "Renal and urology",
+      "Chronic kidney disease",
+      "Abnormal urinalysis",
+      "Haematuria",
+      "Management"
+    ],
+    "filter_categories": [
+      {
+        "name": "Systems",
+        "color": "#3B82F6",
+        "filters": [
+          "Renal and urology"
+        ]
+      },
+      {
+        "name": "Conditions",
+        "color": "#8B5CF6",
+        "filters": [
+          "Chronic kidney disease"
+        ]
+      },
+      {
+        "name": "Presentations",
+        "color": "#F59E0B",
+        "filters": [
+          "Abnormal urinalysis",
+          "Haematuria"
+        ]
+      },
+      {
+        "name": "Other",
+        "color": "#10B981",
+        "filters": [
+          "Management"
+        ]
+      }
+    ]
+  },
+  {
+    "title": "Chronic kidney disease – Proteinuria: management with ACE inhibitors and SGLT-2 inhibitors",
+    "content": "ACE inhibitors (or ARBs) are key in proteinuria management: first-line in CKD with hypertension if ACR >30 mg/mmol; indicated regardless of blood pressure if ACR >70 mg/mmol. SGLT-2 inhibitors benefit patients with proteinuric CKD (with or without diabetes) by blocking proximal tubule glucose reabsorption → glycosuria, reducing sodium reabsorption → natriuresis, and normalising tubuloglomerular feedback to reduce intraglomerular pressure.",
+    "custom_filters": [
+      "Renal and urology",
+      "Chronic kidney disease",
+      "Abnormal urinalysis",
+      "Management"
+    ],
+    "filter_categories": [
+      {
+        "name": "Systems",
+        "color": "#3B82F6",
+        "filters": [
+          "Renal and urology"
+        ]
+      },
+      {
+        "name": "Conditions",
+        "color": "#8B5CF6",
+        "filters": [
+          "Chronic kidney disease"
+        ]
+      },
+      {
+        "name": "Presentations",
+        "color": "#F59E0B",
+        "filters": [
+          "Abnormal urinalysis"
+        ]
+      },
+      {
+        "name": "Other",
+        "color": "#10B981",
+        "filters": [
+          "Management"
+        ]
+      }
+    ]
+  },
+  {
+    "title": "ADPKD – Genetics and epidemiology",
+    "content": "Autosomal dominant polycystic kidney disease (ADPKD) is the most common inherited kidney disease, affecting 1 in 1,000 Caucasians. Two disease loci: PKD1 (chromosome 16, polycystin-1) accounts for 85% of cases and presents with renal failure earlier; PKD2 (chromosome 4, polycystin-2) accounts for 15% of cases.",
+    "custom_filters": [
+      "Renal and urology",
+      "Chronic kidney disease",
+      "Epidemiology"
+    ],
+    "filter_categories": [
+      {
+        "name": "Systems",
+        "color": "#3B82F6",
+        "filters": [
+          "Renal and urology"
+        ]
+      },
+      {
+        "name": "Conditions",
+        "color": "#8B5CF6",
+        "filters": [
+          "Chronic kidney disease"
+        ]
+      },
+      {
+        "name": "Presentations",
+        "color": "#F59E0B",
+        "filters": []
+      },
+      {
+        "name": "Other",
+        "color": "#10B981",
+        "filters": [
+          "Epidemiology"
+        ]
+      }
+    ]
+  },
+  {
+    "title": "ADPKD – Ultrasound diagnostic criteria",
+    "content": "Ultrasound diagnostic criteria for ADPKD in patients with positive family history: aged <30 years: ≥2 cysts (unilateral or bilateral); aged 30–59 years: ≥2 cysts in both kidneys; aged >60 years: ≥4 cysts in both kidneys.",
+    "custom_filters": [
+      "Renal and urology",
+      "Chronic kidney disease",
+      "Investigations"
+    ],
+    "filter_categories": [
+      {
+        "name": "Systems",
+        "color": "#3B82F6",
+        "filters": [
+          "Renal and urology"
+        ]
+      },
+      {
+        "name": "Conditions",
+        "color": "#8B5CF6",
+        "filters": [
+          "Chronic kidney disease"
+        ]
+      },
+      {
+        "name": "Presentations",
+        "color": "#F59E0B",
+        "filters": []
+      },
+      {
+        "name": "Other",
+        "color": "#10B981",
+        "filters": [
+          "Investigations"
+        ]
+      }
+    ]
+  },
+  {
+    "title": "ADPKD – Management with tolvaptan",
+    "content": "Tolvaptan (vasopressin receptor 2 antagonist) may slow cyst development and renal insufficiency in ADPKD. NICE recommend it only if: CKD stage 2 or 3 at start of treatment; evidence of rapidly progressing disease; and the company provides it with the agreed patient access scheme discount.",
+    "custom_filters": [
+      "Renal and urology",
+      "Chronic kidney disease",
+      "Management"
+    ],
+    "filter_categories": [
+      {
+        "name": "Systems",
+        "color": "#3B82F6",
+        "filters": [
+          "Renal and urology"
+        ]
+      },
+      {
+        "name": "Conditions",
+        "color": "#8B5CF6",
+        "filters": [
+          "Chronic kidney disease"
+        ]
+      },
+      {
+        "name": "Presentations",
+        "color": "#F59E0B",
+        "filters": []
+      },
+      {
+        "name": "Other",
+        "color": "#10B981",
+        "filters": [
+          "Management"
+        ]
+      }
+    ]
+  },
+  {
+    "title": "Diabetic nephropathy – Epidemiology",
+    "content": "Diabetic nephropathy is the commonest cause of end-stage renal disease (ESRD) in the western world. 33% of patients with type 1 diabetes mellitus have diabetic nephropathy by age 40 years. Approximately 5–10% of patients with type 1 DM develop ESRD.",
+    "custom_filters": [
+      "Renal and urology",
+      "Diabetic nephropathy",
+      "Epidemiology"
+    ],
+    "filter_categories": [
+      {
+        "name": "Systems",
+        "color": "#3B82F6",
+        "filters": [
+          "Renal and urology"
+        ]
+      },
+      {
+        "name": "Conditions",
+        "color": "#8B5CF6",
+        "filters": [
+          "Diabetic nephropathy"
+        ]
+      },
+      {
+        "name": "Presentations",
+        "color": "#F59E0B",
+        "filters": []
+      },
+      {
+        "name": "Other",
+        "color": "#10B981",
+        "filters": [
+          "Epidemiology"
+        ]
+      }
+    ]
+  },
+  {
+    "title": "Diabetic nephropathy – Pathophysiology and histology",
+    "content": "Pathophysiology involves haemodynamic changes in the glomerulus leading to increased glomerular capillary pressure, and non-enzymatic glycosylation of the basement membrane. Histological changes include: basement membrane thickening, capillary obliteration, mesangial widening, and nodular hyaline areas (Kimmelstiel-Wilson nodules).",
+    "custom_filters": [
+      "Renal and urology",
+      "Diabetic nephropathy",
+      "Pathophysiology"
+    ],
+    "filter_categories": [
+      {
+        "name": "Systems",
+        "color": "#3B82F6",
+        "filters": [
+          "Renal and urology"
+        ]
+      },
+      {
+        "name": "Conditions",
+        "color": "#8B5CF6",
+        "filters": [
+          "Diabetic nephropathy"
+        ]
+      },
+      {
+        "name": "Presentations",
+        "color": "#F59E0B",
+        "filters": []
+      },
+      {
+        "name": "Other",
+        "color": "#10B981",
+        "filters": [
+          "Pathophysiology"
+        ]
+      }
+    ]
+  },
+  {
+    "title": "Diabetic nephropathy – Risk factors",
+    "content": "Modifiable risk factors for diabetic nephropathy: hypertension, hyperlipidaemia, smoking, poor glycaemic control, raised dietary protein. Non-modifiable risk factors: male sex, duration of diabetes, genetic predisposition (e.g. ACE gene polymorphisms).",
+    "custom_filters": [
+      "Renal and urology",
+      "Diabetic nephropathy",
+      "Aetiology/Risk factors"
+    ],
+    "filter_categories": [
+      {
+        "name": "Systems",
+        "color": "#3B82F6",
+        "filters": [
+          "Renal and urology"
+        ]
+      },
+      {
+        "name": "Conditions",
+        "color": "#8B5CF6",
+        "filters": [
+          "Diabetic nephropathy"
+        ]
+      },
+      {
+        "name": "Presentations",
+        "color": "#F59E0B",
+        "filters": []
+      },
+      {
+        "name": "Other",
+        "color": "#10B981",
+        "filters": [
+          "Aetiology/Risk factors"
+        ]
+      }
+    ]
+  },
+  {
+    "title": "Diabetic nephropathy – Stages 1–5",
+    "content": "Stage 1: hyperfiltration (increased GFR), may be reversible. Stage 2 (silent/latent): most patients do not develop microalbuminuria for 10 years; GFR remains elevated. Stage 3 (incipient nephropathy): microalbuminuria (albumin excretion 30–300 mg/day, dipstick negative). Stage 4 (overt nephropathy): persistent proteinuria (>300 mg/day, dipstick positive); hypertension in most; diffuse and focal glomerulosclerosis (Kimmelstiel-Wilson nodules). Stage 5: ESRD, GFR typically <10 ml/min; renal replacement therapy needed.",
+    "custom_filters": [
+      "Renal and urology",
+      "Diabetic nephropathy",
+      "Abnormal urinalysis",
+      "Clinical features"
+    ],
+    "filter_categories": [
+      {
+        "name": "Systems",
+        "color": "#3B82F6",
+        "filters": [
+          "Renal and urology"
+        ]
+      },
+      {
+        "name": "Conditions",
+        "color": "#8B5CF6",
+        "filters": [
+          "Diabetic nephropathy"
+        ]
+      },
+      {
+        "name": "Presentations",
+        "color": "#F59E0B",
+        "filters": [
+          "Abnormal urinalysis"
+        ]
+      },
+      {
+        "name": "Other",
+        "color": "#10B981",
+        "filters": [
+          "Clinical features"
+        ]
+      }
+    ]
+  },
+  {
+    "title": "Diabetic nephropathy – Screening",
+    "content": "All patients with diabetes should be screened annually using urinary ACR (early morning specimen). ACR ≥3.0 mg/mmol indicates clinically significant albuminuria. ACR >2.5 mg/mmol in men or >3.5 mg/mmol in women suggests abnormal excretion and should be confirmed with repeat testing.",
+    "custom_filters": [
+      "Renal and urology",
+      "Diabetic nephropathy",
+      "Abnormal urinalysis",
+      "Investigations"
+    ],
+    "filter_categories": [
+      {
+        "name": "Systems",
+        "color": "#3B82F6",
+        "filters": [
+          "Renal and urology"
+        ]
+      },
+      {
+        "name": "Conditions",
+        "color": "#8B5CF6",
+        "filters": [
+          "Diabetic nephropathy"
+        ]
+      },
+      {
+        "name": "Presentations",
+        "color": "#F59E0B",
+        "filters": [
+          "Abnormal urinalysis"
+        ]
+      },
+      {
+        "name": "Other",
+        "color": "#10B981",
+        "filters": [
+          "Investigations"
+        ]
+      }
+    ]
+  },
+  {
+    "title": "Diabetic nephropathy – Management",
+    "content": "Management of diabetic nephropathy: tight glycaemic control to slow progression; BP target <130/80 mmHg if ACR ≥3.0 mg/mmol, or <140/90 mmHg if ACR <3.0 mg/mmol; ACE inhibitor or ARB if urinary ACR ≥3.0 mg/mmol regardless of blood pressure (dual RAS blockade should NOT be used); statin therapy for dyslipidaemia; dietary protein restriction not routinely recommended.",
+    "custom_filters": [
+      "Renal and urology",
+      "Diabetic nephropathy",
+      "Hypertension",
+      "Management"
+    ],
+    "filter_categories": [
+      {
+        "name": "Systems",
+        "color": "#3B82F6",
+        "filters": [
+          "Renal and urology"
+        ]
+      },
+      {
+        "name": "Conditions",
+        "color": "#8B5CF6",
+        "filters": [
+          "Diabetic nephropathy"
+        ]
+      },
+      {
+        "name": "Presentations",
+        "color": "#F59E0B",
+        "filters": [
+          "Hypertension"
+        ]
+      },
+      {
+        "name": "Other",
+        "color": "#10B981",
+        "filters": [
+          "Management"
+        ]
+      }
+    ]
+  },
+  {
+    "title": "Diabetes insipidus – Definition and types",
+    "content": "Diabetes insipidus (DI) is characterised by a deficiency in the action of antidiuretic hormone (ADH/AVP). Cranial (central) DI (AVP-D) results from deficient ADH secretion. Nephrogenic DI (AVP-R) results from renal insensitivity to ADH. ADH is synthesised in the supraoptic and paraventricular nuclei of the hypothalamus and stored in the posterior pituitary.",
+    "custom_filters": [
+      "Renal and urology",
+      "Diabetes insipidus",
+      "Definition"
+    ],
+    "filter_categories": [
+      {
+        "name": "Systems",
+        "color": "#3B82F6",
+        "filters": [
+          "Renal and urology"
+        ]
+      },
+      {
+        "name": "Conditions",
+        "color": "#8B5CF6",
+        "filters": [
+          "Diabetes insipidus"
+        ]
+      },
+      {
+        "name": "Presentations",
+        "color": "#F59E0B",
+        "filters": []
+      },
+      {
+        "name": "Other",
+        "color": "#10B981",
+        "filters": [
+          "Definition"
+        ]
+      }
+    ]
+  },
+  {
+    "title": "Diabetes insipidus – Causes of cranial DI",
+    "content": "Causes of cranial DI include: idiopathic, post head injury, pituitary surgery, craniopharyngiomas, infiltrative disease (histiocytosis X, sarcoidosis). DIDMOAD (Wolfram's syndrome) is the association of cranial Diabetes Insipidus, Diabetes Mellitus, Optic Atrophy and Deafness.",
+    "custom_filters": [
+      "Renal and urology",
+      "Diabetes insipidus",
+      "Aetiology/Risk factors"
+    ],
+    "filter_categories": [
+      {
+        "name": "Systems",
+        "color": "#3B82F6",
+        "filters": [
+          "Renal and urology"
+        ]
+      },
+      {
+        "name": "Conditions",
+        "color": "#8B5CF6",
+        "filters": [
+          "Diabetes insipidus"
+        ]
+      },
+      {
+        "name": "Presentations",
+        "color": "#F59E0B",
+        "filters": []
+      },
+      {
+        "name": "Other",
+        "color": "#10B981",
+        "filters": [
+          "Aetiology/Risk factors"
+        ]
+      }
+    ]
+  },
+  {
+    "title": "Diabetes insipidus – Causes of nephrogenic DI",
+    "content": "Causes of nephrogenic DI: genetic (more common form: ADH receptor mutation; less common: aquaporin-2 channel mutation); electrolyte disturbances (hypercalcaemia, hypokalaemia); lithium (desensitises collecting duct response to ADH); demeclocycline; tubulo-interstitial disease (obstruction, sickle-cell, pyelonephritis); haemochromatosis.",
+    "custom_filters": [
+      "Renal and urology",
+      "Diabetes insipidus",
+      "Aetiology/Risk factors"
+    ],
+    "filter_categories": [
+      {
+        "name": "Systems",
+        "color": "#3B82F6",
+        "filters": [
+          "Renal and urology"
+        ]
+      },
+      {
+        "name": "Conditions",
+        "color": "#8B5CF6",
+        "filters": [
+          "Diabetes insipidus"
+        ]
+      },
+      {
+        "name": "Presentations",
+        "color": "#F59E0B",
+        "filters": []
+      },
+      {
+        "name": "Other",
+        "color": "#10B981",
+        "filters": [
+          "Aetiology/Risk factors"
+        ]
+      }
+    ]
+  },
+  {
+    "title": "Diabetes insipidus – Clinical features",
+    "content": "Clinical features of diabetes insipidus are polyuria and polydipsia.",
+    "custom_filters": [
+      "Renal and urology",
+      "Diabetes insipidus",
+      "Urinary symptoms",
+      "Clinical features"
+    ],
+    "filter_categories": [
+      {
+        "name": "Systems",
+        "color": "#3B82F6",
+        "filters": [
+          "Renal and urology"
+        ]
+      },
+      {
+        "name": "Conditions",
+        "color": "#8B5CF6",
+        "filters": [
+          "Diabetes insipidus"
+        ]
+      },
+      {
+        "name": "Presentations",
+        "color": "#F59E0B",
+        "filters": [
+          "Urinary symptoms"
+        ]
+      },
+      {
+        "name": "Other",
+        "color": "#10B981",
+        "filters": [
+          "Clinical features"
+        ]
+      }
+    ]
+  },
+  {
+    "title": "Diabetes insipidus – Investigations",
+    "content": "Investigations for DI: high plasma osmolality (often >295 mOsm/kg) with low urine osmolality (often <300 mOsm/kg); urine osmolality >700 mOsm/kg generally excludes DI. Water deprivation test is used to confirm diagnosis. A desmopressin test differentiates cranial from nephrogenic DI — an increase in urine osmolality after desmopressin suggests cranial DI.",
+    "custom_filters": [
+      "Renal and urology",
+      "Diabetes insipidus",
+      "Abnormal urinalysis",
+      "Investigations"
+    ],
+    "filter_categories": [
+      {
+        "name": "Systems",
+        "color": "#3B82F6",
+        "filters": [
+          "Renal and urology"
+        ]
+      },
+      {
+        "name": "Conditions",
+        "color": "#8B5CF6",
+        "filters": [
+          "Diabetes insipidus"
+        ]
+      },
+      {
+        "name": "Presentations",
+        "color": "#F59E0B",
+        "filters": [
+          "Abnormal urinalysis"
+        ]
+      },
+      {
+        "name": "Other",
+        "color": "#10B981",
+        "filters": [
+          "Investigations"
+        ]
+      }
+    ]
+  },
+  {
+    "title": "Diabetes insipidus – Management",
+    "content": "Management of nephrogenic DI: thiazide diuretics and low salt/protein diet. Management of cranial DI: desmopressin (synthetic ADH analogue).",
+    "custom_filters": [
+      "Renal and urology",
+      "Diabetes insipidus",
+      "Management"
+    ],
+    "filter_categories": [
+      {
+        "name": "Systems",
+        "color": "#3B82F6",
+        "filters": [
+          "Renal and urology"
+        ]
+      },
+      {
+        "name": "Conditions",
+        "color": "#8B5CF6",
+        "filters": [
+          "Diabetes insipidus"
+        ]
+      },
+      {
+        "name": "Presentations",
+        "color": "#F59E0B",
+        "filters": []
+      },
+      {
+        "name": "Other",
+        "color": "#10B981",
+        "filters": [
+          "Management"
+        ]
+      }
+    ]
+  },
+  {
+    "title": "Dehydration – Clinical features",
+    "content": "Dehydration is a common presentation in the elderly. Examination findings have poor sensitivity and specificity. Features include: dry mucous membranes, loss of skin turgor, sunken eyes; in severe dehydration: tachycardia, hypotension and delirium.",
+    "custom_filters": [
+      "Renal and urology",
+      "Dehydration",
+      "Dehydration",
+      "Clinical features"
+    ],
+    "filter_categories": [
+      {
+        "name": "Systems",
+        "color": "#3B82F6",
+        "filters": [
+          "Renal and urology"
+        ]
+      },
+      {
+        "name": "Conditions",
+        "color": "#8B5CF6",
+        "filters": [
+          "Dehydration"
+        ]
+      },
+      {
+        "name": "Presentations",
+        "color": "#F59E0B",
+        "filters": [
+          "Dehydration"
+        ]
+      },
+      {
+        "name": "Other",
+        "color": "#10B981",
+        "filters": [
+          "Clinical features"
+        ]
+      }
+    ]
+  },
+  {
+    "title": "Dehydration – Adult IV fluid maintenance requirements",
+    "content": "NICE 2013 maintenance fluid requirements for adults: 25–30 ml/kg/day of water; approximately 1 mmol/kg/day of potassium, sodium and chloride; approximately 50–100 g/day of glucose (to limit starvation ketosis). For a 80 kg patient this equates to approximately 2 litres of water and 80 mmol potassium per 24 hours.",
+    "custom_filters": [
+      "Renal and urology",
+      "Dehydration",
+      "Dehydration",
+      "Management"
+    ],
+    "filter_categories": [
+      {
+        "name": "Systems",
+        "color": "#3B82F6",
+        "filters": [
+          "Renal and urology"
+        ]
+      },
+      {
+        "name": "Conditions",
+        "color": "#8B5CF6",
+        "filters": [
+          "Dehydration"
+        ]
+      },
+      {
+        "name": "Presentations",
+        "color": "#F59E0B",
+        "filters": [
+          "Dehydration"
+        ]
+      },
+      {
+        "name": "Other",
+        "color": "#10B981",
+        "filters": [
+          "Management"
+        ]
+      }
+    ]
+  },
+  {
+    "title": "Dehydration – IV fluid types and electrolyte composition",
+    "content": "Electrolyte concentrations (mmol/L): Plasma: Na+ 135–145, Cl- 98–105, K+ 3.5–5, HCO3- 22–28. 0.9% saline: Na+ 154, Cl- 154. 5% glucose: glucose 50 g/L. 0.18% saline with 4% glucose: Na+ 30, Cl- 30, glucose 40 g/L. Hartmann's solution: Na+ 131, Cl- 111, K+ 5, HCO3- 29. Large volumes of 0.9% saline increase risk of hyperchloraemic metabolic acidosis.",
+    "custom_filters": [
+      "Renal and urology",
+      "Dehydration",
+      "Dehydration",
+      "Management"
+    ],
+    "filter_categories": [
+      {
+        "name": "Systems",
+        "color": "#3B82F6",
+        "filters": [
+          "Renal and urology"
+        ]
+      },
+      {
+        "name": "Conditions",
+        "color": "#8B5CF6",
+        "filters": [
+          "Dehydration"
+        ]
+      },
+      {
+        "name": "Presentations",
+        "color": "#F59E0B",
+        "filters": [
+          "Dehydration"
+        ]
+      },
+      {
+        "name": "Other",
+        "color": "#10B981",
+        "filters": [
+          "Management"
+        ]
+      }
+    ]
+  },
+  {
+    "title": "Dehydration – Paediatric IV fluid indications and requirements",
+    "content": "IV fluids in children are required if >10% dehydrated, or 5–10% dehydrated with oral/enteral rehydration not tolerated. Fluid requirements (Holliday-Segar): <10 kg: 100 ml/kg/24h; 10–20 kg: 100 ml/kg for first 10 kg + 50 ml/kg for each kg over 10 kg; >20 kg: 100 + 50 + 20 ml/kg for each kg over 20 kg (max 2 L in females, 2.5 L in males). Fluid type: 0.9% NaCl + 5% dextrose, with potassium added as required.",
+    "custom_filters": [
+      "Renal and urology",
+      "Dehydration",
+      "Dehydration",
+      "Management"
+    ],
+    "filter_categories": [
+      {
+        "name": "Systems",
+        "color": "#3B82F6",
+        "filters": [
+          "Renal and urology"
+        ]
+      },
+      {
+        "name": "Conditions",
+        "color": "#8B5CF6",
+        "filters": [
+          "Dehydration"
+        ]
+      },
+      {
+        "name": "Presentations",
+        "color": "#F59E0B",
+        "filters": [
+          "Dehydration"
+        ]
+      },
+      {
+        "name": "Other",
+        "color": "#10B981",
+        "filters": [
+          "Management"
+        ]
+      }
+    ]
+  },
+  {
+    "title": "Epididymitis and orchitis – Definition and causes",
+    "content": "Epididymo-orchitis is an infection of the epididymis +/- testes. In sexually active younger adults, it is caused by Chlamydia trachomatis and Neisseria gonorrhoeae (local spread from genital tract). In older adults with low-risk sexual history, E. coli (spread from bladder) is the typical cause.",
+    "custom_filters": [
+      "Renal and urology",
+      "Epididymitis and orchitis",
+      "Scrotal/testicular pain and/or lump/swelling",
+      "Aetiology/Risk factors"
+    ],
+    "filter_categories": [
+      {
+        "name": "Systems",
+        "color": "#3B82F6",
+        "filters": [
+          "Renal and urology"
+        ]
+      },
+      {
+        "name": "Conditions",
+        "color": "#8B5CF6",
+        "filters": [
+          "Epididymitis and orchitis"
+        ]
+      },
+      {
+        "name": "Presentations",
+        "color": "#F59E0B",
+        "filters": [
+          "Scrotal/testicular pain and/or lump/swelling"
+        ]
+      },
+      {
+        "name": "Other",
+        "color": "#10B981",
+        "filters": [
+          "Aetiology/Risk factors"
+        ]
+      }
+    ]
+  },
+  {
+    "title": "Epididymitis and orchitis – Clinical features",
+    "content": "Features of epididymo-orchitis: unilateral testicular pain and swelling; urethral discharge may be present but urethritis is often asymptomatic. The most important differential is testicular torsion, which should be excluded urgently. Features suggesting torsion: age <20 years, severe pain, acute onset.",
+    "custom_filters": [
+      "Renal and urology",
+      "Epididymitis and orchitis",
+      "Scrotal/testicular pain and/or lump/swelling",
+      "Clinical features"
+    ],
+    "filter_categories": [
+      {
+        "name": "Systems",
+        "color": "#3B82F6",
+        "filters": [
+          "Renal and urology"
+        ]
+      },
+      {
+        "name": "Conditions",
+        "color": "#8B5CF6",
+        "filters": [
+          "Epididymitis and orchitis"
+        ]
+      },
+      {
+        "name": "Presentations",
+        "color": "#F59E0B",
+        "filters": [
+          "Scrotal/testicular pain and/or lump/swelling"
+        ]
+      },
+      {
+        "name": "Other",
+        "color": "#10B981",
+        "filters": [
+          "Clinical features"
+        ]
+      }
+    ]
+  },
+  {
+    "title": "Epididymitis and orchitis – Management: STI cause",
+    "content": "If STI is the most likely cause, urgent referral to a sexual health clinic is advised. If organism unknown, BASHH recommend: ceftriaxone 500 mg intramuscularly as a single dose, plus doxycycline 100 mg orally twice daily for 10–14 days.",
+    "custom_filters": [
+      "Renal and urology",
+      "Epididymitis and orchitis",
+      "Management"
+    ],
+    "filter_categories": [
+      {
+        "name": "Systems",
+        "color": "#3B82F6",
+        "filters": [
+          "Renal and urology"
+        ]
+      },
+      {
+        "name": "Conditions",
+        "color": "#8B5CF6",
+        "filters": [
+          "Epididymitis and orchitis"
+        ]
+      },
+      {
+        "name": "Presentations",
+        "color": "#F59E0B",
+        "filters": []
+      },
+      {
+        "name": "Other",
+        "color": "#10B981",
+        "filters": [
+          "Management"
+        ]
+      }
+    ]
+  },
+  {
+    "title": "Epididymitis and orchitis – Management: enteric cause",
+    "content": "If enteric organisms are the most likely cause (older adults, low-risk sexual history), send a mid-stream urine (MSU) for microscopy and culture, and treat empirically with an oral quinolone for 2 weeks (e.g. ofloxacin). Further investigations following treatment may be recommended to exclude structural abnormalities.",
+    "custom_filters": [
+      "Renal and urology",
+      "Epididymitis and orchitis",
+      "Management"
+    ],
+    "filter_categories": [
+      {
+        "name": "Systems",
+        "color": "#3B82F6",
+        "filters": [
+          "Renal and urology"
+        ]
+      },
+      {
+        "name": "Conditions",
+        "color": "#8B5CF6",
+        "filters": [
+          "Epididymitis and orchitis"
+        ]
+      },
+      {
+        "name": "Presentations",
+        "color": "#F59E0B",
+        "filters": []
+      },
+      {
+        "name": "Other",
+        "color": "#10B981",
+        "filters": [
+          "Management"
+        ]
+      }
+    ]
+  },
+  {
+    "title": "Multiple myeloma – Definition and epidemiology",
+    "content": "Multiple myeloma (MM) is a haematological malignancy characterised by plasma cell proliferation arising from genetic mutations during B-lymphocyte differentiation. It is the second most common haematological malignancy. Median age at presentation is 70 years.",
+    "custom_filters": [
+      "Renal and urology",
+      "Multiple myeloma",
+      "Epidemiology"
+    ],
+    "filter_categories": [
+      {
+        "name": "Systems",
+        "color": "#3B82F6",
+        "filters": [
+          "Renal and urology"
+        ]
+      },
+      {
+        "name": "Conditions",
+        "color": "#8B5CF6",
+        "filters": [
+          "Multiple myeloma"
+        ]
+      },
+      {
+        "name": "Presentations",
+        "color": "#F59E0B",
+        "filters": []
+      },
+      {
+        "name": "Other",
+        "color": "#10B981",
+        "filters": [
+          "Epidemiology"
+        ]
+      }
+    ]
+  },
+  {
+    "title": "Multiple myeloma – CRABBI features: Calcium",
+    "content": "Hypercalcaemia in myeloma is primarily due to increased osteoclastic bone resorption caused by local cytokines (IL-1, TNF) released by myeloma cells. Less common contributing factors include impaired renal function, increased renal tubular calcium reabsorption and elevated PTH-rP. Symptoms: constipation, nausea, anorexia and confusion.",
+    "custom_filters": [
+      "Renal and urology",
+      "Multiple myeloma",
+      "Electrolyte abnormalities",
+      "Clinical features"
+    ],
+    "filter_categories": [
+      {
+        "name": "Systems",
+        "color": "#3B82F6",
+        "filters": [
+          "Renal and urology"
+        ]
+      },
+      {
+        "name": "Conditions",
+        "color": "#8B5CF6",
+        "filters": [
+          "Multiple myeloma"
+        ]
+      },
+      {
+        "name": "Presentations",
+        "color": "#F59E0B",
+        "filters": [
+          "Electrolyte abnormalities"
+        ]
+      },
+      {
+        "name": "Other",
+        "color": "#10B981",
+        "filters": [
+          "Clinical features"
+        ]
+      }
+    ]
+  },
+  {
+    "title": "Multiple myeloma – CRABBI features: Renal",
+    "content": "Renal involvement in myeloma results from monoclonal immunoglobulin light chain deposition within renal tubules, causing renal damage presenting as dehydration and increasing thirst. Other causes of renal impairment in myeloma include amyloidosis, nephrocalcinosis and nephrolithiasis.",
+    "custom_filters": [
+      "Renal and urology",
+      "Multiple myeloma",
+      "Acute kidney injury",
+      "Clinical features"
+    ],
+    "filter_categories": [
+      {
+        "name": "Systems",
+        "color": "#3B82F6",
+        "filters": [
+          "Renal and urology"
+        ]
+      },
+      {
+        "name": "Conditions",
+        "color": "#8B5CF6",
+        "filters": [
+          "Multiple myeloma"
+        ]
+      },
+      {
+        "name": "Presentations",
+        "color": "#F59E0B",
+        "filters": [
+          "Acute kidney injury"
+        ]
+      },
+      {
+        "name": "Other",
+        "color": "#10B981",
+        "filters": [
+          "Clinical features"
+        ]
+      }
+    ]
+  },
+  {
+    "title": "Multiple myeloma – CRABBI features: Anaemia, Bleeding, Bones, Infection",
+    "content": "Anaemia: bone marrow crowding suppresses erythropoiesis → fatigue, pallor. Bleeding: thrombocytopenia from bone marrow crowding → increased bruising/bleeding risk. Bones: lytic lesions from plasma cell infiltration and cytokine-mediated osteoclast overactivity → back pain, pathological fractures. Infection: reduced normal immunoglobulin production → increased susceptibility to infection.",
+    "custom_filters": [
+      "Renal and urology",
+      "Multiple myeloma",
+      "Clinical features"
+    ],
+    "filter_categories": [
+      {
+        "name": "Systems",
+        "color": "#3B82F6",
+        "filters": [
+          "Renal and urology"
+        ]
+      },
+      {
+        "name": "Conditions",
+        "color": "#8B5CF6",
+        "filters": [
+          "Multiple myeloma"
+        ]
+      },
+      {
+        "name": "Presentations",
+        "color": "#F59E0B",
+        "filters": []
+      },
+      {
+        "name": "Other",
+        "color": "#10B981",
+        "filters": [
+          "Clinical features"
+        ]
+      }
+    ]
+  },
+  {
+    "title": "Multiple myeloma – Other clinical features",
+    "content": "Other features of myeloma include: amyloidosis (e.g. macroglossia), carpal tunnel syndrome, peripheral neuropathy, and hyperviscosity.",
+    "custom_filters": [
+      "Renal and urology",
+      "Multiple myeloma",
+      "Clinical features"
+    ],
+    "filter_categories": [
+      {
+        "name": "Systems",
+        "color": "#3B82F6",
+        "filters": [
+          "Renal and urology"
+        ]
+      },
+      {
+        "name": "Conditions",
+        "color": "#8B5CF6",
+        "filters": [
+          "Multiple myeloma"
+        ]
+      },
+      {
+        "name": "Presentations",
+        "color": "#F59E0B",
+        "filters": []
+      },
+      {
+        "name": "Other",
+        "color": "#10B981",
+        "filters": [
+          "Clinical features"
+        ]
+      }
+    ]
+  },
+  {
+    "title": "Multiple myeloma – Investigations",
+    "content": "Investigations for myeloma: FBC (anaemia); peripheral blood film (rouleaux formation); U&E (renal failure); bone profile (hypercalcaemia); protein electrophoresis (monoclonal IgA/IgG in serum; Bence Jones proteins in urine); bone marrow aspiration (significantly raised plasma cells confirms diagnosis); imaging: whole-body MRI (recommended by 2016 NICE guidelines); X-ray: 'raindrop skull'.",
+    "custom_filters": [
+      "Renal and urology",
+      "Multiple myeloma",
+      "Abnormal urinalysis",
+      "Investigations"
+    ],
+    "filter_categories": [
+      {
+        "name": "Systems",
+        "color": "#3B82F6",
+        "filters": [
+          "Renal and urology"
+        ]
+      },
+      {
+        "name": "Conditions",
+        "color": "#8B5CF6",
+        "filters": [
+          "Multiple myeloma"
+        ]
+      },
+      {
+        "name": "Presentations",
+        "color": "#F59E0B",
+        "filters": [
+          "Abnormal urinalysis"
+        ]
+      },
+      {
+        "name": "Other",
+        "color": "#10B981",
+        "filters": [
+          "Investigations"
+        ]
+      }
+    ]
+  },
+  {
+    "title": "Multiple myeloma – Diagnostic criteria",
+    "content": "Diagnostic criteria for myeloma require one major and one minor criterion, or three minor criteria, in a symptomatic patient. Major criteria: plasmacytoma on biopsy; ≥30% plasma cells in bone marrow; elevated M protein in blood or urine. Minor criteria: 10–30% plasma cells in bone marrow; minor M protein elevation; osteolytic lesions on imaging; low levels of normal antibodies in blood.",
+    "custom_filters": [
+      "Renal and urology",
+      "Multiple myeloma",
+      "Investigations"
+    ],
+    "filter_categories": [
+      {
+        "name": "Systems",
+        "color": "#3B82F6",
+        "filters": [
+          "Renal and urology"
+        ]
+      },
+      {
+        "name": "Conditions",
+        "color": "#8B5CF6",
+        "filters": [
+          "Multiple myeloma"
+        ]
+      },
+      {
+        "name": "Presentations",
+        "color": "#F59E0B",
+        "filters": []
+      },
+      {
+        "name": "Other",
+        "color": "#10B981",
+        "filters": [
+          "Investigations"
+        ]
+      }
+    ]
+  },
+  {
+    "title": "Multiple myeloma – Induction therapy",
+    "content": "Myeloma is currently incurable; management aims to control symptoms, reduce complications and prolong survival. Induction therapy uses a combination of: targeted drugs (thalidomide, lenalidomide, bortezomib, daratumumab); chemotherapy (cyclophosphamide or melphalan); and steroids (prednisolone or dexamethasone). The combination depends on suitability for autologous haematopoietic cell transplantation.",
+    "custom_filters": [
+      "Renal and urology",
+      "Multiple myeloma",
+      "Management"
+    ],
+    "filter_categories": [
+      {
+        "name": "Systems",
+        "color": "#3B82F6",
+        "filters": [
+          "Renal and urology"
+        ]
+      },
+      {
+        "name": "Conditions",
+        "color": "#8B5CF6",
+        "filters": [
+          "Multiple myeloma"
+        ]
+      },
+      {
+        "name": "Presentations",
+        "color": "#F59E0B",
+        "filters": []
+      },
+      {
+        "name": "Other",
+        "color": "#10B981",
+        "filters": [
+          "Management"
+        ]
+      }
+    ]
+  },
+  {
+    "title": "Multiple myeloma – Autologous HSCT",
+    "content": "Autologous haematopoietic cell transplantation (HSCT) involves removal of the patient's own stem cells prior to chemotherapy, then replacement after chemotherapy. It prolongs both event-free and overall survival compared to non-transplant strategies. It is typically offered to younger, healthier patients. Allogenic HSCT is not commonly used due to high overall mortality and graft-versus-host disease; currently only used in clinical trials.",
+    "custom_filters": [
+      "Renal and urology",
+      "Multiple myeloma",
+      "Management"
+    ],
+    "filter_categories": [
+      {
+        "name": "Systems",
+        "color": "#3B82F6",
+        "filters": [
+          "Renal and urology"
+        ]
+      },
+      {
+        "name": "Conditions",
+        "color": "#8B5CF6",
+        "filters": [
+          "Multiple myeloma"
+        ]
+      },
+      {
+        "name": "Presentations",
+        "color": "#F59E0B",
+        "filters": []
+      },
+      {
+        "name": "Other",
+        "color": "#10B981",
+        "filters": [
+          "Management"
+        ]
+      }
+    ]
+  },
+  {
+    "title": "Multiple myeloma – Complications management",
+    "content": "Complications management in myeloma: pain: WHO analgesic ladder; pathological fractures: zoledronic acid to prevent/manage osteoporosis and fragility fractures; infection: annual influenza vaccination, immunoglobulin replacement therapy; VTE prophylaxis; fatigue: treat underlying causes, consider erythropoietin analogue if symptoms persist.",
+    "custom_filters": [
+      "Renal and urology",
+      "Multiple myeloma",
+      "Complications"
+    ],
+    "filter_categories": [
+      {
+        "name": "Systems",
+        "color": "#3B82F6",
+        "filters": [
+          "Renal and urology"
+        ]
+      },
+      {
+        "name": "Conditions",
+        "color": "#8B5CF6",
+        "filters": [
+          "Multiple myeloma"
+        ]
+      },
+      {
+        "name": "Presentations",
+        "color": "#F59E0B",
+        "filters": []
+      },
+      {
+        "name": "Other",
+        "color": "#10B981",
+        "filters": [
+          "Complications"
+        ]
+      }
+    ]
+  },
+  {
+    "title": "Nephrotic syndrome – Definition and causes",
+    "content": "Nephrotic syndrome is characterised by a triad of: proteinuria (>3 g/24hr), hypoalbuminaemia (<30 g/L), and oedema. Primary causes include minimal change disease, FSGS, and membranous nephropathy. Secondary causes include diabetes mellitus, SLE, amyloidosis, infections (HIV, hepatitis B and C), and drugs (NSAIDs, gold therapy).",
+    "custom_filters": [
+      "Renal and urology",
+      "Nephrotic syndrome",
+      "Peripheral oedema and ankle swelling",
+      "Abnormal urinalysis",
+      "Definition"
+    ],
+    "filter_categories": [
+      {
+        "name": "Systems",
+        "color": "#3B82F6",
+        "filters": [
+          "Renal and urology"
+        ]
+      },
+      {
+        "name": "Conditions",
+        "color": "#8B5CF6",
+        "filters": [
+          "Nephrotic syndrome"
+        ]
+      },
+      {
+        "name": "Presentations",
+        "color": "#F59E0B",
+        "filters": [
+          "Peripheral oedema and ankle swelling",
+          "Abnormal urinalysis"
+        ]
+      },
+      {
+        "name": "Other",
+        "color": "#10B981",
+        "filters": [
+          "Definition"
+        ]
+      }
+    ]
+  },
+  {
+    "title": "Nephrotic syndrome – Pathophysiology",
+    "content": "Nephrotic syndrome pathophysiology: damage to the glomerular basement membrane and podocytes → increased protein permeability → proteinuria → hypoalbuminaemia → reduced plasma oncotic pressure → oedema. Loss of antithrombin-III, proteins C and S, and rise in fibrinogen → thrombosis risk. Loss of thyroxine-binding globulin → low total (but not free) thyroxine.",
+    "custom_filters": [
+      "Renal and urology",
+      "Nephrotic syndrome",
+      "Pathophysiology"
+    ],
+    "filter_categories": [
+      {
+        "name": "Systems",
+        "color": "#3B82F6",
+        "filters": [
+          "Renal and urology"
+        ]
+      },
+      {
+        "name": "Conditions",
+        "color": "#8B5CF6",
+        "filters": [
+          "Nephrotic syndrome"
+        ]
+      },
+      {
+        "name": "Presentations",
+        "color": "#F59E0B",
+        "filters": []
+      },
+      {
+        "name": "Other",
+        "color": "#10B981",
+        "filters": [
+          "Pathophysiology"
+        ]
+      }
+    ]
+  },
+  {
+    "title": "Nephrotic syndrome – Investigations",
+    "content": "Initial investigations in nephrotic syndrome: urine dipstick (proteinuria; check for microscopic haematuria); MSU to exclude UTI; quantify proteinuria using early morning protein:creatinine ratio or ACR; FBC and coagulation screen; urea and electrolytes.",
+    "custom_filters": [
+      "Renal and urology",
+      "Nephrotic syndrome",
+      "Abnormal urinalysis",
+      "Investigations"
+    ],
+    "filter_categories": [
+      {
+        "name": "Systems",
+        "color": "#3B82F6",
+        "filters": [
+          "Renal and urology"
+        ]
+      },
+      {
+        "name": "Conditions",
+        "color": "#8B5CF6",
+        "filters": [
+          "Nephrotic syndrome"
+        ]
+      },
+      {
+        "name": "Presentations",
+        "color": "#F59E0B",
+        "filters": [
+          "Abnormal urinalysis"
+        ]
+      },
+      {
+        "name": "Other",
+        "color": "#10B981",
+        "filters": [
+          "Investigations"
+        ]
+      }
+    ]
+  },
+  {
+    "title": "Nephrotic syndrome – Complications",
+    "content": "Complications of nephrotic syndrome: thromboembolism (DVT, PE, renal vein thrombosis) due to loss of antithrombin III and plasminogen; hyperlipidaemia (increased risk of ACS, stroke); chronic kidney disease; increased infection risk (urinary immunoglobulin loss); hypocalcaemia (vitamin D and binding protein lost in urine).",
+    "custom_filters": [
+      "Renal and urology",
+      "Nephrotic syndrome",
+      "Peripheral oedema and ankle swelling",
+      "Complications"
+    ],
+    "filter_categories": [
+      {
+        "name": "Systems",
+        "color": "#3B82F6",
+        "filters": [
+          "Renal and urology"
+        ]
+      },
+      {
+        "name": "Conditions",
+        "color": "#8B5CF6",
+        "filters": [
+          "Nephrotic syndrome"
+        ]
+      },
+      {
+        "name": "Presentations",
+        "color": "#F59E0B",
+        "filters": [
+          "Peripheral oedema and ankle swelling"
+        ]
+      },
+      {
+        "name": "Other",
+        "color": "#10B981",
+        "filters": [
+          "Complications"
+        ]
+      }
+    ]
+  },
+  {
+    "title": "Minimal change disease – Epidemiology and causes",
+    "content": "Minimal change disease accounts for 75% of nephrotic syndrome in children and 25% in adults. The majority of cases are idiopathic. In around 10–20% a cause is found: drugs (NSAIDs, rifampicin), Hodgkin's lymphoma, thymoma, or infectious mononucleosis.",
+    "custom_filters": [
+      "Renal and urology",
+      "Nephrotic syndrome",
+      "Peripheral oedema and ankle swelling",
+      "Epidemiology"
+    ],
+    "filter_categories": [
+      {
+        "name": "Systems",
+        "color": "#3B82F6",
+        "filters": [
+          "Renal and urology"
+        ]
+      },
+      {
+        "name": "Conditions",
+        "color": "#8B5CF6",
+        "filters": [
+          "Nephrotic syndrome"
+        ]
+      },
+      {
+        "name": "Presentations",
+        "color": "#F59E0B",
+        "filters": [
+          "Peripheral oedema and ankle swelling"
+        ]
+      },
+      {
+        "name": "Other",
+        "color": "#10B981",
+        "filters": [
+          "Epidemiology"
+        ]
+      }
+    ]
+  },
+  {
+    "title": "Minimal change disease – Pathophysiology",
+    "content": "Minimal change disease pathophysiology: T-cell and cytokine-mediated damage to the glomerular basement membrane → polyanion loss → reduced electrostatic charge → increased glomerular permeability to serum albumin.",
+    "custom_filters": [
+      "Renal and urology",
+      "Nephrotic syndrome",
+      "Pathophysiology"
+    ],
+    "filter_categories": [
+      {
+        "name": "Systems",
+        "color": "#3B82F6",
+        "filters": [
+          "Renal and urology"
+        ]
+      },
+      {
+        "name": "Conditions",
+        "color": "#8B5CF6",
+        "filters": [
+          "Nephrotic syndrome"
+        ]
+      },
+      {
+        "name": "Presentations",
+        "color": "#F59E0B",
+        "filters": []
+      },
+      {
+        "name": "Other",
+        "color": "#10B981",
+        "filters": [
+          "Pathophysiology"
+        ]
+      }
+    ]
+  },
+  {
+    "title": "Minimal change disease – Features and biopsy findings",
+    "content": "Features: nephrotic syndrome; normotension (hypertension is rare); highly selective proteinuria (only albumin and transferrin leak). Renal biopsy: normal glomeruli on light microscopy; electron microscopy shows fusion of podocytes and effacement of foot processes.",
+    "custom_filters": [
+      "Renal and urology",
+      "Nephrotic syndrome",
+      "Peripheral oedema and ankle swelling",
+      "Abnormal urinalysis",
+      "Clinical features"
+    ],
+    "filter_categories": [
+      {
+        "name": "Systems",
+        "color": "#3B82F6",
+        "filters": [
+          "Renal and urology"
+        ]
+      },
+      {
+        "name": "Conditions",
+        "color": "#8B5CF6",
+        "filters": [
+          "Nephrotic syndrome"
+        ]
+      },
+      {
+        "name": "Presentations",
+        "color": "#F59E0B",
+        "filters": [
+          "Peripheral oedema and ankle swelling",
+          "Abnormal urinalysis"
+        ]
+      },
+      {
+        "name": "Other",
+        "color": "#10B981",
+        "filters": [
+          "Clinical features"
+        ]
+      }
+    ]
+  },
+  {
+    "title": "Minimal change disease – Management and prognosis",
+    "content": "Management: oral corticosteroids (80% of cases are steroid-responsive); cyclophosphamide is the next step for steroid-resistant cases. Prognosis is overall good but relapse is common: approximately 1/3 have one episode; 1/3 have infrequent relapses; 1/3 have frequent relapses that stop before adulthood.",
+    "custom_filters": [
+      "Renal and urology",
+      "Nephrotic syndrome",
+      "Management"
+    ],
+    "filter_categories": [
+      {
+        "name": "Systems",
+        "color": "#3B82F6",
+        "filters": [
+          "Renal and urology"
+        ]
+      },
+      {
+        "name": "Conditions",
+        "color": "#8B5CF6",
+        "filters": [
+          "Nephrotic syndrome"
+        ]
+      },
+      {
+        "name": "Presentations",
+        "color": "#F59E0B",
+        "filters": []
+      },
+      {
+        "name": "Other",
+        "color": "#10B981",
+        "filters": [
+          "Management"
+        ]
+      }
+    ]
+  },
+  {
+    "title": "Prostate cancer – Epidemiology",
+    "content": "Prostate cancer is the most common cancer in adult males in the UK and the second most common cause of cancer death in men after lung cancer. Up to 30,000 men are diagnosed each year; up to 9,000 die from the condition per year in the UK.",
+    "custom_filters": [
+      "Renal and urology",
+      "Prostate cancer",
+      "Epidemiology"
+    ],
+    "filter_categories": [
+      {
+        "name": "Systems",
+        "color": "#3B82F6",
+        "filters": [
+          "Renal and urology"
+        ]
+      },
+      {
+        "name": "Conditions",
+        "color": "#8B5CF6",
+        "filters": [
+          "Prostate cancer"
+        ]
+      },
+      {
+        "name": "Presentations",
+        "color": "#F59E0B",
+        "filters": []
+      },
+      {
+        "name": "Other",
+        "color": "#10B981",
+        "filters": [
+          "Epidemiology"
+        ]
+      }
+    ]
+  },
+  {
+    "title": "Prostate cancer – Risk factors",
+    "content": "Risk factors for prostate cancer: increasing age, obesity, Afro-Caribbean ethnicity, family history (around 5–10% of cases have a strong family history), and BRCA mutations.",
+    "custom_filters": [
+      "Renal and urology",
+      "Prostate cancer",
+      "Aetiology/Risk factors"
+    ],
+    "filter_categories": [
+      {
+        "name": "Systems",
+        "color": "#3B82F6",
+        "filters": [
+          "Renal and urology"
+        ]
+      },
+      {
+        "name": "Conditions",
+        "color": "#8B5CF6",
+        "filters": [
+          "Prostate cancer"
+        ]
+      },
+      {
+        "name": "Presentations",
+        "color": "#F59E0B",
+        "filters": []
+      },
+      {
+        "name": "Other",
+        "color": "#10B981",
+        "filters": [
+          "Aetiology/Risk factors"
+        ]
+      }
+    ]
+  },
+  {
+    "title": "Prostate cancer – Clinical features",
+    "content": "Localised prostate cancer is often asymptomatic (cancers develop in the peripheral zone and do not cause early obstructive symptoms). Features may include: bladder outlet obstruction (hesitancy, urinary retention); haematuria, haematospermia; back, perineal or testicular pain; DRE: asymmetrical, hard, nodular enlargement with loss of median sulcus. Metastatic disease may present as bone pain.",
+    "custom_filters": [
+      "Renal and urology",
+      "Prostate cancer",
+      "Urinary symptoms",
+      "Haematuria",
+      "Clinical features"
+    ],
+    "filter_categories": [
+      {
+        "name": "Systems",
+        "color": "#3B82F6",
+        "filters": [
+          "Renal and urology"
+        ]
+      },
+      {
+        "name": "Conditions",
+        "color": "#8B5CF6",
+        "filters": [
+          "Prostate cancer"
+        ]
+      },
+      {
+        "name": "Presentations",
+        "color": "#F59E0B",
+        "filters": [
+          "Urinary symptoms",
+          "Haematuria"
+        ]
+      },
+      {
+        "name": "Other",
+        "color": "#10B981",
+        "filters": [
+          "Clinical features"
+        ]
+      }
+    ]
+  },
+  {
+    "title": "Prostate cancer – PSA and pathology",
+    "content": "Normal upper limit for PSA is 4 ng/ml. False positives: prostatitis, UTI, BPH, vigorous DRE. Free:total PSA <20% is suggestive of cancer and biopsy is advised. Pathology: 95% adenocarcinoma; often multifocal; 70% lie in the peripheral zone. Graded using Gleason score (sum of two grades, each 1–5; score 2 = best prognosis, 10 = worst). Lymphatic spread occurs first to obturator nodes.",
+    "custom_filters": [
+      "Renal and urology",
+      "Prostate cancer",
+      "Investigations"
+    ],
+    "filter_categories": [
+      {
+        "name": "Systems",
+        "color": "#3B82F6",
+        "filters": [
+          "Renal and urology"
+        ]
+      },
+      {
+        "name": "Conditions",
+        "color": "#8B5CF6",
+        "filters": [
+          "Prostate cancer"
+        ]
+      },
+      {
+        "name": "Presentations",
+        "color": "#F59E0B",
+        "filters": []
+      },
+      {
+        "name": "Other",
+        "color": "#10B981",
+        "filters": [
+          "Investigations"
+        ]
+      }
+    ]
+  },
+  {
+    "title": "Prostate cancer – Active surveillance criteria",
+    "content": "NICE recommends active surveillance as the preferred option for low-risk prostate cancer. Suitable for: clinical stage T1c, Gleason score 3+3, PSA density <0.15 ng/ml/ml, cancer in <50% of biopsy cores, <10 mm of any core involved. Candidates should have ≥10 biopsy cores taken and ≥1 re-biopsy. If disease progression is evident, offer radical treatment.",
+    "custom_filters": [
+      "Renal and urology",
+      "Prostate cancer",
+      "Management"
+    ],
+    "filter_categories": [
+      {
+        "name": "Systems",
+        "color": "#3B82F6",
+        "filters": [
+          "Renal and urology"
+        ]
+      },
+      {
+        "name": "Conditions",
+        "color": "#8B5CF6",
+        "filters": [
+          "Prostate cancer"
+        ]
+      },
+      {
+        "name": "Presentations",
+        "color": "#F59E0B",
+        "filters": []
+      },
+      {
+        "name": "Other",
+        "color": "#10B981",
+        "filters": [
+          "Management"
+        ]
+      }
+    ]
+  },
+  {
+    "title": "Prostate cancer – Treatment options",
+    "content": "Treatment options for prostate cancer: watchful waiting (elderly, multiple comorbidities, low Gleason score); external beam radiotherapy (curative and palliative; similar survival to surgery; radiation proctitis risk; brachytherapy); radical prostatectomy (robotic preferred; obturator lymph nodes removed; erectile dysfunction common complication); hormonal therapy (testosterone dependence; bilateral orchidectomy; LHRH analogues; anti-androgens; used in metastatic disease or as neoadjuvant therapy).",
+    "custom_filters": [
+      "Renal and urology",
+      "Prostate cancer",
+      "Management"
+    ],
+    "filter_categories": [
+      {
+        "name": "Systems",
+        "color": "#3B82F6",
+        "filters": [
+          "Renal and urology"
+        ]
+      },
+      {
+        "name": "Conditions",
+        "color": "#8B5CF6",
+        "filters": [
+          "Prostate cancer"
+        ]
+      },
+      {
+        "name": "Presentations",
+        "color": "#F59E0B",
+        "filters": []
+      },
+      {
+        "name": "Other",
+        "color": "#10B981",
+        "filters": [
+          "Management"
+        ]
+      }
+    ]
+  },
+  {
+    "title": "Testicular cancer – Epidemiology and types",
+    "content": "Testicular cancer is the most common malignancy in men aged 20–30 years. 95% of testicular tumours are germ cell tumours (GCTs). Types: seminomas; non-seminomas (embryonal carcinoma, yolk sac tumour, teratoma, choriocarcinoma); non-germ cell tumours (Leydig cell tumours, sarcomas). Peak incidence: teratomas at 25 years; seminomas at 35 years.",
+    "custom_filters": [
+      "Renal and urology",
+      "Testicular cancer",
+      "Scrotal/testicular pain and/or lump/swelling",
+      "Epidemiology"
+    ],
+    "filter_categories": [
+      {
+        "name": "Systems",
+        "color": "#3B82F6",
+        "filters": [
+          "Renal and urology"
+        ]
+      },
+      {
+        "name": "Conditions",
+        "color": "#8B5CF6",
+        "filters": [
+          "Testicular cancer"
+        ]
+      },
+      {
+        "name": "Presentations",
+        "color": "#F59E0B",
+        "filters": [
+          "Scrotal/testicular pain and/or lump/swelling"
+        ]
+      },
+      {
+        "name": "Other",
+        "color": "#10B981",
+        "filters": [
+          "Epidemiology"
+        ]
+      }
+    ]
+  },
+  {
+    "title": "Testicular cancer – Risk factors",
+    "content": "Risk factors for testicular cancer: infertility (3× increased risk); cryptorchidism (undescended testes); family history; Klinefelter's syndrome; mumps orchitis.",
+    "custom_filters": [
+      "Renal and urology",
+      "Testicular cancer",
+      "Aetiology/Risk factors"
+    ],
+    "filter_categories": [
+      {
+        "name": "Systems",
+        "color": "#3B82F6",
+        "filters": [
+          "Renal and urology"
+        ]
+      },
+      {
+        "name": "Conditions",
+        "color": "#8B5CF6",
+        "filters": [
+          "Testicular cancer"
+        ]
+      },
+      {
+        "name": "Presentations",
+        "color": "#F59E0B",
+        "filters": []
+      },
+      {
+        "name": "Other",
+        "color": "#10B981",
+        "filters": [
+          "Aetiology/Risk factors"
+        ]
+      }
+    ]
+  },
+  {
+    "title": "Testicular cancer – Clinical features",
+    "content": "Most common presentation is a painless lump. Pain is present in a minority. Hydrocele may be present. Gynaecomastia may occur due to an increased oestrogen:androgen ratio — germ cell tumours produce hCG, which stimulates Leydig cells and disrupts the normal testosterone:oestrogen balance.",
+    "custom_filters": [
+      "Renal and urology",
+      "Testicular cancer",
+      "Scrotal/testicular pain and/or lump/swelling",
+      "Clinical features"
+    ],
+    "filter_categories": [
+      {
+        "name": "Systems",
+        "color": "#3B82F6",
+        "filters": [
+          "Renal and urology"
+        ]
+      },
+      {
+        "name": "Conditions",
+        "color": "#8B5CF6",
+        "filters": [
+          "Testicular cancer"
+        ]
+      },
+      {
+        "name": "Presentations",
+        "color": "#F59E0B",
+        "filters": [
+          "Scrotal/testicular pain and/or lump/swelling"
+        ]
+      },
+      {
+        "name": "Other",
+        "color": "#10B981",
+        "filters": [
+          "Clinical features"
+        ]
+      }
+    ]
+  },
+  {
+    "title": "Testicular cancer – Tumour markers",
+    "content": "Tumour markers in testicular cancer: seminomas: hCG elevated in ~20% (AFP is NOT elevated in pure seminomas); non-seminomas: AFP and/or beta-hCG elevated in 80–85%; LDH elevated in ~40% of all GCTs (marker of tumour bulk). Ultrasound is the first-line investigation.",
+    "custom_filters": [
+      "Renal and urology",
+      "Testicular cancer",
+      "Investigations"
+    ],
+    "filter_categories": [
+      {
+        "name": "Systems",
+        "color": "#3B82F6",
+        "filters": [
+          "Renal and urology"
+        ]
+      },
+      {
+        "name": "Conditions",
+        "color": "#8B5CF6",
+        "filters": [
+          "Testicular cancer"
+        ]
+      },
+      {
+        "name": "Presentations",
+        "color": "#F59E0B",
+        "filters": []
+      },
+      {
+        "name": "Other",
+        "color": "#10B981",
+        "filters": [
+          "Investigations"
+        ]
+      }
+    ]
+  },
+  {
+    "title": "Testicular cancer – Management and prognosis",
+    "content": "Management: orchidectomy is the primary treatment; chemotherapy (BEP: bleomycin, etoposide, cisplatin) and/or radiotherapy depending on stage and histological type. Prognosis: seminoma Stage I: 95% 5-year survival; teratoma Stage I: 85% 5-year survival.",
+    "custom_filters": [
+      "Renal and urology",
+      "Testicular cancer",
+      "Management"
+    ],
+    "filter_categories": [
+      {
+        "name": "Systems",
+        "color": "#3B82F6",
+        "filters": [
+          "Renal and urology"
+        ]
+      },
+      {
+        "name": "Conditions",
+        "color": "#8B5CF6",
+        "filters": [
+          "Testicular cancer"
+        ]
+      },
+      {
+        "name": "Presentations",
+        "color": "#F59E0B",
+        "filters": []
+      },
+      {
+        "name": "Other",
+        "color": "#10B981",
+        "filters": [
+          "Management"
+        ]
+      }
+    ]
+  },
+  {
+    "title": "Urinary incontinence – Epidemiology and risk factors",
+    "content": "Urinary incontinence affects 4–5% of the population and is more common in elderly females. Risk factors: advancing age, pregnancy and childbirth, high BMI, hysterectomy, and family history.",
+    "custom_filters": [
+      "Renal and urology",
+      "Urinary incontinence",
+      "Urinary symptoms",
+      "Epidemiology"
+    ],
+    "filter_categories": [
+      {
+        "name": "Systems",
+        "color": "#3B82F6",
+        "filters": [
+          "Renal and urology"
+        ]
+      },
+      {
+        "name": "Conditions",
+        "color": "#8B5CF6",
+        "filters": [
+          "Urinary incontinence"
+        ]
+      },
+      {
+        "name": "Presentations",
+        "color": "#F59E0B",
+        "filters": [
+          "Urinary symptoms"
+        ]
+      },
+      {
+        "name": "Other",
+        "color": "#10B981",
+        "filters": [
+          "Epidemiology"
+        ]
+      }
+    ]
+  },
+  {
+    "title": "Urinary incontinence – Classification",
+    "content": "Classification of urinary incontinence: overactive bladder (OAB)/urge incontinence (involuntary detrusor contractions); stress incontinence (leakage with increased intra-abdominal pressure, e.g. coughing, sneezing); mixed incontinence (both urge and stress); overflow incontinence (bladder over-distension, e.g. BPH, neurological disease); functional incontinence (physical/cognitive impairment preventing timely toileting).",
+    "custom_filters": [
+      "Renal and urology",
+      "Urinary incontinence",
+      "Urinary symptoms",
+      "Definition"
+    ],
+    "filter_categories": [
+      {
+        "name": "Systems",
+        "color": "#3B82F6",
+        "filters": [
+          "Renal and urology"
+        ]
+      },
+      {
+        "name": "Conditions",
+        "color": "#8B5CF6",
+        "filters": [
+          "Urinary incontinence"
+        ]
+      },
+      {
+        "name": "Presentations",
+        "color": "#F59E0B",
+        "filters": [
+          "Urinary symptoms"
+        ]
+      },
+      {
+        "name": "Other",
+        "color": "#10B981",
+        "filters": [
+          "Definition"
+        ]
+      }
+    ]
+  },
+  {
+    "title": "Urinary incontinence – Investigations",
+    "content": "Investigations for urinary incontinence: bladder diaries (minimum 3 days); vaginal examination; urine dipstick and culture (to exclude UTI); urodynamic studies (if diagnosis unclear or prior to surgery).",
+    "custom_filters": [
+      "Renal and urology",
+      "Urinary incontinence",
+      "Abnormal urinalysis",
+      "Investigations"
+    ],
+    "filter_categories": [
+      {
+        "name": "Systems",
+        "color": "#3B82F6",
+        "filters": [
+          "Renal and urology"
+        ]
+      },
+      {
+        "name": "Conditions",
+        "color": "#8B5CF6",
+        "filters": [
+          "Urinary incontinence"
+        ]
+      },
+      {
+        "name": "Presentations",
+        "color": "#F59E0B",
+        "filters": [
+          "Abnormal urinalysis"
+        ]
+      },
+      {
+        "name": "Other",
+        "color": "#10B981",
+        "filters": [
+          "Investigations"
+        ]
+      }
+    ]
+  },
+  {
+    "title": "Urinary incontinence – Management of urge incontinence",
+    "content": "Management of urge incontinence: first-line: bladder retraining for ≥6 weeks; antimuscarinics: oxybutynin (immediate-release; avoid in frail elderly due to CNS side effects), tolterodine (immediate-release), darifenacin, solifenacin; mirabegron (beta-3 agonist, alternative to antimuscarinics); desmopressin for nocturia; botulinum toxin injection for refractory cases.",
+    "custom_filters": [
+      "Renal and urology",
+      "Urinary incontinence",
+      "Urinary symptoms",
+      "Management"
+    ],
+    "filter_categories": [
+      {
+        "name": "Systems",
+        "color": "#3B82F6",
+        "filters": [
+          "Renal and urology"
+        ]
+      },
+      {
+        "name": "Conditions",
+        "color": "#8B5CF6",
+        "filters": [
+          "Urinary incontinence"
+        ]
+      },
+      {
+        "name": "Presentations",
+        "color": "#F59E0B",
+        "filters": [
+          "Urinary symptoms"
+        ]
+      },
+      {
+        "name": "Other",
+        "color": "#10B981",
+        "filters": [
+          "Management"
+        ]
+      }
+    ]
+  },
+  {
+    "title": "Urinary incontinence – Management of stress incontinence",
+    "content": "Management of stress incontinence: lifestyle modifications (weight loss, reduce caffeine); pelvic floor muscle training (≥8 contractions, 3 sets per day, for ≥3 months); surgical options: mid-urethral tape (tension-free vaginal tape), colposuspension, urethral bulking agents; duloxetine (SNRI) increases noradrenaline and serotonin at the pudendal nerve motor nucleus → urethral sphincter contraction.",
+    "custom_filters": [
+      "Renal and urology",
+      "Urinary incontinence",
+      "Urinary symptoms",
+      "Management"
+    ],
+    "filter_categories": [
+      {
+        "name": "Systems",
+        "color": "#3B82F6",
+        "filters": [
+          "Renal and urology"
+        ]
+      },
+      {
+        "name": "Conditions",
+        "color": "#8B5CF6",
+        "filters": [
+          "Urinary incontinence"
+        ]
+      },
+      {
+        "name": "Presentations",
+        "color": "#F59E0B",
+        "filters": [
+          "Urinary symptoms"
+        ]
+      },
+      {
+        "name": "Other",
+        "color": "#10B981",
+        "filters": [
+          "Management"
+        ]
+      }
+    ]
+  },
+  {
+    "title": "Urinary tract calculi – Types and radiographic appearance",
+    "content": "Types and frequency of urinary tract calculi: calcium oxalate 40%; mixed calcium oxalate/phosphate 25%; triple phosphate (struvite) 10%; calcium phosphate 10%; urate 5–10%; cystine 1%; xanthine <1%. Radiographic appearance: calcium-based stones: radio-opaque; urate and xanthine stones: radiolucent; cystine stones: semi-opaque (ground-glass appearance).",
+    "custom_filters": [
+      "Renal and urology",
+      "Urinary tract calculi",
+      "Haematuria",
+      "Definition"
+    ],
+    "filter_categories": [
+      {
+        "name": "Systems",
+        "color": "#3B82F6",
+        "filters": [
+          "Renal and urology"
+        ]
+      },
+      {
+        "name": "Conditions",
+        "color": "#8B5CF6",
+        "filters": [
+          "Urinary tract calculi"
+        ]
+      },
+      {
+        "name": "Presentations",
+        "color": "#F59E0B",
+        "filters": [
+          "Haematuria"
+        ]
+      },
+      {
+        "name": "Other",
+        "color": "#10B981",
+        "filters": [
+          "Definition"
+        ]
+      }
+    ]
+  },
+  {
+    "title": "Urinary tract calculi – Staghorn calculi",
+    "content": "Staghorn calculi are triple phosphate (struvite) stones that form in alkaline urine, typically in the context of infection with urease-producing organisms such as Ureaplasma urealyticum and Proteus mirabilis. They involve the renal pelvis and at least two calyces.",
+    "custom_filters": [
+      "Renal and urology",
+      "Urinary tract calculi",
+      "Aetiology/Risk factors"
+    ],
+    "filter_categories": [
+      {
+        "name": "Systems",
+        "color": "#3B82F6",
+        "filters": [
+          "Renal and urology"
+        ]
+      },
+      {
+        "name": "Conditions",
+        "color": "#8B5CF6",
+        "filters": [
+          "Urinary tract calculi"
+        ]
+      },
+      {
+        "name": "Presentations",
+        "color": "#F59E0B",
+        "filters": []
+      },
+      {
+        "name": "Other",
+        "color": "#10B981",
+        "filters": [
+          "Aetiology/Risk factors"
+        ]
+      }
+    ]
+  },
+  {
+    "title": "Urinary tract calculi – Risk factors for calcium stones",
+    "content": "Risk factors for calcium stones: dehydration, hypercalciuria, hyperparathyroidism, hypercalcaemia, cystinuria, high dietary oxalate, renal tubular acidosis, medullary sponge kidney, polycystic kidney disease, beryllium and cadmium exposure. Drugs promoting calcium stones: loop diuretics, steroids, acetazolamide, theophylline. Thiazide diuretics reduce calcium stone risk.",
+    "custom_filters": [
+      "Renal and urology",
+      "Urinary tract calculi",
+      "Aetiology/Risk factors"
+    ],
+    "filter_categories": [
+      {
+        "name": "Systems",
+        "color": "#3B82F6",
+        "filters": [
+          "Renal and urology"
+        ]
+      },
+      {
+        "name": "Conditions",
+        "color": "#8B5CF6",
+        "filters": [
+          "Urinary tract calculi"
+        ]
+      },
+      {
+        "name": "Presentations",
+        "color": "#F59E0B",
+        "filters": []
+      },
+      {
+        "name": "Other",
+        "color": "#10B981",
+        "filters": [
+          "Aetiology/Risk factors"
+        ]
+      }
+    ]
+  },
+  {
+    "title": "Urinary tract calculi – Risk factors for urate stones",
+    "content": "Risk factors for urate stones: gout and ileostomy (increased uric acid excretion).",
+    "custom_filters": [
+      "Renal and urology",
+      "Urinary tract calculi",
+      "Aetiology/Risk factors"
+    ],
+    "filter_categories": [
+      {
+        "name": "Systems",
+        "color": "#3B82F6",
+        "filters": [
+          "Renal and urology"
+        ]
+      },
+      {
+        "name": "Conditions",
+        "color": "#8B5CF6",
+        "filters": [
+          "Urinary tract calculi"
+        ]
+      },
+      {
+        "name": "Presentations",
+        "color": "#F59E0B",
+        "filters": []
+      },
+      {
+        "name": "Other",
+        "color": "#10B981",
+        "filters": [
+          "Aetiology/Risk factors"
+        ]
+      }
+    ]
+  },
+  {
+    "title": "Haematuria – Terminology and epidemiology",
+    "content": "Haematuria terminology: non-visible (microscopic) haematuria = blood detected on dipstick or microscopy but not visible to the naked eye; visible (macroscopic/frank) haematuria = blood visible to the naked eye. Non-visible haematuria is found in approximately 2.5% of the population.",
+    "custom_filters": [
+      "Renal and urology",
+      "Haematuria",
+      "Definition"
+    ],
+    "filter_categories": [
+      {
+        "name": "Systems",
+        "color": "#3B82F6",
+        "filters": [
+          "Renal and urology"
+        ]
+      },
+      {
+        "name": "Conditions",
+        "color": "#8B5CF6",
+        "filters": []
+      },
+      {
+        "name": "Presentations",
+        "color": "#F59E0B",
+        "filters": [
+          "Haematuria"
+        ]
+      },
+      {
+        "name": "Other",
+        "color": "#10B981",
+        "filters": [
+          "Definition"
+        ]
+      }
+    ]
+  },
+  {
+    "title": "Haematuria – Causes of transient non-visible haematuria",
+    "content": "Common causes of transient or spurious non-visible haematuria: urinary tract infection, menstruation, vigorous exercise, and recent sexual intercourse.",
+    "custom_filters": [
+      "Renal and urology",
+      "Haematuria",
+      "Aetiology/Risk factors"
+    ],
+    "filter_categories": [
+      {
+        "name": "Systems",
+        "color": "#3B82F6",
+        "filters": [
+          "Renal and urology"
+        ]
+      },
+      {
+        "name": "Conditions",
+        "color": "#8B5CF6",
+        "filters": []
+      },
+      {
+        "name": "Presentations",
+        "color": "#F59E0B",
+        "filters": [
+          "Haematuria"
+        ]
+      },
+      {
+        "name": "Other",
+        "color": "#10B981",
+        "filters": [
+          "Aetiology/Risk factors"
+        ]
+      }
+    ]
+  },
+  {
+    "title": "Haematuria – Causes of persistent non-visible haematuria",
+    "content": "Causes of persistent non-visible haematuria: malignancy (bladder, renal, prostate cancer), urinary tract calculi, BPH, prostatitis, urethritis, IgA nephropathy, and thin basement membrane disease.",
+    "custom_filters": [
+      "Renal and urology",
+      "Haematuria",
+      "Aetiology/Risk factors"
+    ],
+    "filter_categories": [
+      {
+        "name": "Systems",
+        "color": "#3B82F6",
+        "filters": [
+          "Renal and urology"
+        ]
+      },
+      {
+        "name": "Conditions",
+        "color": "#8B5CF6",
+        "filters": []
+      },
+      {
+        "name": "Presentations",
+        "color": "#F59E0B",
+        "filters": [
+          "Haematuria"
+        ]
+      },
+      {
+        "name": "Other",
+        "color": "#10B981",
+        "filters": [
+          "Aetiology/Risk factors"
+        ]
+      }
+    ]
+  },
+  {
+    "title": "Haematuria – Thin basement membrane disease",
+    "content": "Thin basement membrane disease is a hereditary condition characterised by diffuse thinning of the glomerular basement membrane. It is autosomal dominant and affects approximately 1–5% of the population. It is an important cause of persistent non-visible haematuria and carries an excellent prognosis.",
+    "custom_filters": [
+      "Renal and urology",
+      "Haematuria",
+      "Abnormal urinalysis",
+      "Aetiology/Risk factors"
+    ],
+    "filter_categories": [
+      {
+        "name": "Systems",
+        "color": "#3B82F6",
+        "filters": [
+          "Renal and urology"
+        ]
+      },
+      {
+        "name": "Conditions",
+        "color": "#8B5CF6",
+        "filters": []
+      },
+      {
+        "name": "Presentations",
+        "color": "#F59E0B",
+        "filters": [
+          "Haematuria",
+          "Abnormal urinalysis"
+        ]
+      },
+      {
+        "name": "Other",
+        "color": "#10B981",
+        "filters": [
+          "Aetiology/Risk factors"
+        ]
+      }
+    ]
+  },
+  {
+    "title": "Haematuria – Spurious red/orange urine",
+    "content": "Causes of red or orange urine that are not haematuria: foods (beetroot, rhubarb); drugs (rifampicin, doxorubicin). These will be negative on urine dipstick for blood.",
+    "custom_filters": [
+      "Renal and urology",
+      "Haematuria",
+      "Abnormal urinalysis",
+      "Differential diagnosis"
+    ],
+    "filter_categories": [
+      {
+        "name": "Systems",
+        "color": "#3B82F6",
+        "filters": [
+          "Renal and urology"
+        ]
+      },
+      {
+        "name": "Conditions",
+        "color": "#8B5CF6",
+        "filters": []
+      },
+      {
+        "name": "Presentations",
+        "color": "#F59E0B",
+        "filters": [
+          "Haematuria",
+          "Abnormal urinalysis"
+        ]
+      },
+      {
+        "name": "Other",
+        "color": "#10B981",
+        "filters": [
+          "Differential diagnosis"
+        ]
+      }
+    ]
+  },
+  {
+    "title": "Haematuria – Investigation and NICE referral criteria",
+    "content": "Persistent non-visible haematuria is defined as blood detected on 2 out of 3 dipstick tests, 2–3 weeks apart, with UTI excluded. Investigations: renal function, ACR/PCR, blood pressure. NICE urgent referral (2-week wait): age ≥45 with unexplained visible haematuria without UTI, or visible haematuria that persists after UTI treatment; age ≥60 with non-visible haematuria plus dysuria or raised WBC on urinalysis. Non-urgent referral: age ≥60 with recurrent or persistent unexplained UTI.",
+    "custom_filters": [
+      "Renal and urology",
+      "Haematuria",
+      "Abnormal urinalysis",
+      "Investigations"
+    ],
+    "filter_categories": [
+      {
+        "name": "Systems",
+        "color": "#3B82F6",
+        "filters": [
+          "Renal and urology"
+        ]
+      },
+      {
+        "name": "Conditions",
+        "color": "#8B5CF6",
+        "filters": []
+      },
+      {
+        "name": "Presentations",
+        "color": "#F59E0B",
+        "filters": [
+          "Haematuria",
+          "Abnormal urinalysis"
+        ]
+      },
+      {
+        "name": "Other",
+        "color": "#10B981",
+        "filters": [
+          "Investigations"
+        ]
+      }
+    ]
+  },
+  {
+    "title": "Hyperkalaemia – Staging and ECG changes",
+    "content": "Hyperkalaemia staging: mild 5.5–5.9 mmol/L; moderate 6.0–6.4 mmol/L; severe ≥6.5 mmol/L. ECG changes in order of severity: peaked T waves (first change); loss of P waves; broad QRS complex; sinusoidal pattern (pre-cardiac arrest). Hyperkalaemia is a medical emergency when severe or associated with ECG changes.",
+    "custom_filters": [
+      "Renal and urology",
+      "Electrolyte abnormalities",
+      "Investigations"
+    ],
+    "filter_categories": [
+      {
+        "name": "Systems",
+        "color": "#3B82F6",
+        "filters": [
+          "Renal and urology"
+        ]
+      },
+      {
+        "name": "Conditions",
+        "color": "#8B5CF6",
+        "filters": []
+      },
+      {
+        "name": "Presentations",
+        "color": "#F59E0B",
+        "filters": [
+          "Electrolyte abnormalities"
+        ]
+      },
+      {
+        "name": "Other",
+        "color": "#10B981",
+        "filters": [
+          "Investigations"
+        ]
+      }
+    ]
+  },
+  {
+    "title": "Hyperkalaemia – Management",
+    "content": "Management of hyperkalaemia: (1) Cardiac membrane stabilisation: IV calcium gluconate 10 ml of 10% over 5–10 minutes (onset immediate; duration 30–60 min). (2) Shift K+ into cells: combined insulin/dextrose infusion (e.g. 10 units actrapid in 50 ml of 50% glucose over 30 min); nebulised salbutamol 10–20 mg. (3) Remove K+ from body: calcium resonium (oral or enema); loop diuretics; dialysis. Newer agents: sodium zirconium cyclosilicate (selective K+ trapper; better tolerability than resonium).",
+    "custom_filters": [
+      "Renal and urology",
+      "Electrolyte abnormalities",
+      "Acute kidney injury",
+      "Management"
+    ],
+    "filter_categories": [
+      {
+        "name": "Systems",
+        "color": "#3B82F6",
+        "filters": [
+          "Renal and urology"
+        ]
+      },
+      {
+        "name": "Conditions",
+        "color": "#8B5CF6",
+        "filters": [
+          "Acute kidney injury"
+        ]
+      },
+      {
+        "name": "Presentations",
+        "color": "#F59E0B",
+        "filters": [
+          "Electrolyte abnormalities"
+        ]
+      },
+      {
+        "name": "Other",
+        "color": "#10B981",
+        "filters": [
+          "Management"
+        ]
+      }
+    ]
+  },
+  {
+    "title": "Hypokalaemia – Features and ECG changes",
+    "content": "Features of hypokalaemia: muscle weakness, hypotonia, cardiac arrhythmias, increased risk of digoxin toxicity. ECG changes: U waves (most characteristic), small or absent T waves, prolonged PR interval, ST depression.",
+    "custom_filters": [
+      "Renal and urology",
+      "Electrolyte abnormalities",
+      "Clinical features"
+    ],
+    "filter_categories": [
+      {
+        "name": "Systems",
+        "color": "#3B82F6",
+        "filters": [
+          "Renal and urology"
+        ]
+      },
+      {
+        "name": "Conditions",
+        "color": "#8B5CF6",
+        "filters": []
+      },
+      {
+        "name": "Presentations",
+        "color": "#F59E0B",
+        "filters": [
+          "Electrolyte abnormalities"
+        ]
+      },
+      {
+        "name": "Other",
+        "color": "#10B981",
+        "filters": [
+          "Clinical features"
+        ]
+      }
+    ]
+  },
+  {
+    "title": "Hypokalaemia – Causes with alkalosis vs. acidosis",
+    "content": "Hypokalaemia with alkalosis: vomiting, thiazide/loop diuretics, Cushing's syndrome, Conn's syndrome (primary hyperaldosteronism). Hypokalaemia with acidosis: diarrhoea, renal tubular acidosis (types 1 and 2), acetazolamide, partially treated DKA.",
+    "custom_filters": [
+      "Renal and urology",
+      "Electrolyte abnormalities",
+      "Aetiology/Risk factors"
+    ],
+    "filter_categories": [
+      {
+        "name": "Systems",
+        "color": "#3B82F6",
+        "filters": [
+          "Renal and urology"
+        ]
+      },
+      {
+        "name": "Conditions",
+        "color": "#8B5CF6",
+        "filters": []
+      },
+      {
+        "name": "Presentations",
+        "color": "#F59E0B",
+        "filters": [
+          "Electrolyte abnormalities"
+        ]
+      },
+      {
+        "name": "Other",
+        "color": "#10B981",
+        "filters": [
+          "Aetiology/Risk factors"
+        ]
+      }
+    ]
+  },
+  {
+    "title": "Hypokalaemia – Causes with and without hypertension",
+    "content": "Hypokalaemia with hypertension: Cushing's syndrome, Conn's syndrome (primary hyperaldosteronism), Liddle's syndrome, 11-beta hydroxylase deficiency. Hypokalaemia without hypertension: diuretics, GI loss, renal tubular acidosis (types 1 and 2), Bartter's syndrome, Gitelman's syndrome.",
+    "custom_filters": [
+      "Renal and urology",
+      "Electrolyte abnormalities",
+      "Hypertension",
+      "Aetiology/Risk factors"
+    ],
+    "filter_categories": [
+      {
+        "name": "Systems",
+        "color": "#3B82F6",
+        "filters": [
+          "Renal and urology"
+        ]
+      },
+      {
+        "name": "Conditions",
+        "color": "#8B5CF6",
+        "filters": []
+      },
+      {
+        "name": "Presentations",
+        "color": "#F59E0B",
+        "filters": [
+          "Electrolyte abnormalities",
+          "Hypertension"
+        ]
+      },
+      {
+        "name": "Other",
+        "color": "#10B981",
+        "filters": [
+          "Aetiology/Risk factors"
+        ]
+      }
+    ]
+  },
+  {
+    "title": "Hyponatraemia – Causes and classification",
+    "content": "Hyponatraemia causes by urinary sodium: urinary Na >20 mmol/L: diuretics, Addison's disease, SIADH, hypothyroidism. Urinary Na <20 mmol/L: GI loss (vomiting/diarrhoea), heart failure, liver cirrhosis, nephrotic syndrome. Severity: mild 130–134 mmol/L; moderate 120–129 mmol/L; severe <120 mmol/L.",
+    "custom_filters": [
+      "Renal and urology",
+      "Electrolyte abnormalities",
+      "Aetiology/Risk factors"
+    ],
+    "filter_categories": [
+      {
+        "name": "Systems",
+        "color": "#3B82F6",
+        "filters": [
+          "Renal and urology"
+        ]
+      },
+      {
+        "name": "Conditions",
+        "color": "#8B5CF6",
+        "filters": []
+      },
+      {
+        "name": "Presentations",
+        "color": "#F59E0B",
+        "filters": [
+          "Electrolyte abnormalities"
+        ]
+      },
+      {
+        "name": "Other",
+        "color": "#10B981",
+        "filters": [
+          "Aetiology/Risk factors"
+        ]
+      }
+    ]
+  },
+  {
+    "title": "Hyponatraemia – Clinical features",
+    "content": "Early symptoms of hyponatraemia: headache, lethargy, nausea, vomiting, dizziness, confusion, muscle cramps. Late/severe symptoms: seizures, coma, respiratory arrest.",
+    "custom_filters": [
+      "Renal and urology",
+      "Electrolyte abnormalities",
+      "Clinical features"
+    ],
+    "filter_categories": [
+      {
+        "name": "Systems",
+        "color": "#3B82F6",
+        "filters": [
+          "Renal and urology"
+        ]
+      },
+      {
+        "name": "Conditions",
+        "color": "#8B5CF6",
+        "filters": []
+      },
+      {
+        "name": "Presentations",
+        "color": "#F59E0B",
+        "filters": [
+          "Electrolyte abnormalities"
+        ]
+      },
+      {
+        "name": "Other",
+        "color": "#10B981",
+        "filters": [
+          "Clinical features"
+        ]
+      }
+    ]
+  },
+  {
+    "title": "Hyponatraemia – Management",
+    "content": "Management by volume status: hypovolaemic hyponatraemia: 0.9% NaCl IV. Euvolaemic hyponatraemia (e.g. SIADH): fluid restriction 500–1000 ml/day; demeclocycline (ADH antagonist); vaptans (V2 receptor antagonists). Hypervolaemic hyponatraemia (heart failure, cirrhosis, nephrotic syndrome): fluid restriction; loop diuretics; vaptans. Acute severe hyponatraemia (<120 mmol/L with severe symptoms): hypertonic saline (3% NaCl) in HDU setting.",
+    "custom_filters": [
+      "Renal and urology",
+      "Electrolyte abnormalities",
+      "Management"
+    ],
+    "filter_categories": [
+      {
+        "name": "Systems",
+        "color": "#3B82F6",
+        "filters": [
+          "Renal and urology"
+        ]
+      },
+      {
+        "name": "Conditions",
+        "color": "#8B5CF6",
+        "filters": []
+      },
+      {
+        "name": "Presentations",
+        "color": "#F59E0B",
+        "filters": [
+          "Electrolyte abnormalities"
+        ]
+      },
+      {
+        "name": "Other",
+        "color": "#10B981",
+        "filters": [
+          "Management"
+        ]
+      }
+    ]
+  },
+  {
+    "title": "Hyponatraemia – Osmotic demyelination syndrome",
+    "content": "Osmotic demyelination syndrome (ODS) occurs when hyponatraemia is corrected too rapidly. Rapid correction causes osmotic stress in astrocytes and oligodendrocytes → apoptosis → demyelination. Sodium should be raised by no more than 4–6 mmol/L per 24 hours. Symptoms of ODS: dysarthria, dysphagia, paraparesis, seizures, and locked-in syndrome.",
+    "custom_filters": [
+      "Renal and urology",
+      "Electrolyte abnormalities",
+      "Complications"
+    ],
+    "filter_categories": [
+      {
+        "name": "Systems",
+        "color": "#3B82F6",
+        "filters": [
+          "Renal and urology"
+        ]
+      },
+      {
+        "name": "Conditions",
+        "color": "#8B5CF6",
+        "filters": []
+      },
+      {
+        "name": "Presentations",
+        "color": "#F59E0B",
+        "filters": [
+          "Electrolyte abnormalities"
+        ]
+      },
+      {
+        "name": "Other",
+        "color": "#10B981",
+        "filters": [
+          "Complications"
+        ]
+      }
+    ]
+  },
+  {
+    "title": "Hypocalcaemia – Causes, features and management",
+    "content": "Causes of hypocalcaemia: vitamin D deficiency, CKD, hypoparathyroidism, pseudohypoparathyroidism, rhabdomyolysis, magnesium deficiency, massive blood transfusion, acute pancreatitis. Features: tetany, perioral paraesthesia, depression, cataracts; ECG: prolonged QT interval; Trousseau's sign (95% sensitive); Chvostek's sign (70% sensitive). Management of severe hypocalcaemia: IV calcium gluconate 10 ml of 10% solution over 10 minutes with ECG monitoring.",
+    "custom_filters": [
+      "Renal and urology",
+      "Electrolyte abnormalities",
+      "Clinical features"
+    ],
+    "filter_categories": [
+      {
+        "name": "Systems",
+        "color": "#3B82F6",
+        "filters": [
+          "Renal and urology"
+        ]
+      },
+      {
+        "name": "Conditions",
+        "color": "#8B5CF6",
+        "filters": []
+      },
+      {
+        "name": "Presentations",
+        "color": "#F59E0B",
+        "filters": [
+          "Electrolyte abnormalities"
+        ]
+      },
+      {
+        "name": "Other",
+        "color": "#10B981",
+        "filters": [
+          "Clinical features"
+        ]
+      }
+    ]
+  },
+  {
+    "title": "Hypophosphataemia – Causes and consequences",
+    "content": "Causes of hypophosphataemia: alcohol excess, acute liver failure, DKA, refeeding syndrome, primary hyperparathyroidism, osteomalacia. Consequences: RBC haemolysis, WBC and platelet dysfunction, muscle weakness and rhabdomyolysis, CNS dysfunction.",
+    "custom_filters": [
+      "Renal and urology",
+      "Electrolyte abnormalities",
+      "Aetiology/Risk factors"
+    ],
+    "filter_categories": [
+      {
+        "name": "Systems",
+        "color": "#3B82F6",
+        "filters": [
+          "Renal and urology"
+        ]
+      },
+      {
+        "name": "Conditions",
+        "color": "#8B5CF6",
+        "filters": []
+      },
+      {
+        "name": "Presentations",
+        "color": "#F59E0B",
+        "filters": [
+          "Electrolyte abnormalities"
+        ]
+      },
+      {
+        "name": "Other",
+        "color": "#10B981",
+        "filters": [
+          "Aetiology/Risk factors"
+        ]
+      }
+    ]
+  },
+  {
+    "title": "Metabolic acidosis – Anion gap classification",
+    "content": "Anion gap = Na+ + K+ − Cl− − HCO3−; normal range 10–18 mmol/L. Normal anion gap (hyperchloraemic) causes: GI bicarbonate loss (diarrhoea, ureterosigmoidostomy, fistula), renal tubular acidosis, acetazolamide, ammonium chloride, Addison's disease. Raised anion gap causes: lactic acidosis (shock, sepsis, hypoxia, burns; metformin), ketoacidosis (DKA, alcoholic), uraemia (renal failure), acid poisoning (salicylates, methanol).",
+    "custom_filters": [
+      "Renal and urology",
+      "Electrolyte abnormalities",
+      "Aetiology/Risk factors"
+    ],
+    "filter_categories": [
+      {
+        "name": "Systems",
+        "color": "#3B82F6",
+        "filters": [
+          "Renal and urology"
+        ]
+      },
+      {
+        "name": "Conditions",
+        "color": "#8B5CF6",
+        "filters": []
+      },
+      {
+        "name": "Presentations",
+        "color": "#F59E0B",
+        "filters": [
+          "Electrolyte abnormalities"
+        ]
+      },
+      {
+        "name": "Other",
+        "color": "#10B981",
+        "filters": [
+          "Aetiology/Risk factors"
+        ]
+      }
+    ]
+  },
+  {
+    "title": "Renal tubular acidosis – Overview and types",
+    "content": "All types of renal tubular acidosis (RTA) cause hyperchloraemic metabolic acidosis with a normal anion gap. Type 1 (distal): inability to secrete H+ in the distal tubule; hypokalaemia; nephrocalcinosis and renal stones; causes: idiopathic, RA, SLE, Sjogren's, amphotericin B, analgesic nephropathy. Type 2 (proximal): decreased HCO3- reabsorption; hypokalaemia; osteomalacia; causes: idiopathic, Fanconi syndrome, Wilson's disease, cystinosis, outdated tetracyclines, acetazolamide/topiramate. Type 3 (mixed): extremely rare; carbonic anhydrase II deficiency; hypokalaemia. Type 4 (hyperkalaemic): reduced aldosterone → reduced ammonium excretion; hyperkalaemia; causes: hypoaldosteronism, diabetes.",
+    "custom_filters": [
+      "Renal and urology",
+      "Electrolyte abnormalities",
+      "Aetiology/Risk factors"
+    ],
+    "filter_categories": [
+      {
+        "name": "Systems",
+        "color": "#3B82F6",
+        "filters": [
+          "Renal and urology"
+        ]
+      },
+      {
+        "name": "Conditions",
+        "color": "#8B5CF6",
+        "filters": []
+      },
+      {
+        "name": "Presentations",
+        "color": "#F59E0B",
+        "filters": [
+          "Electrolyte abnormalities"
+        ]
+      },
+      {
+        "name": "Other",
+        "color": "#10B981",
+        "filters": [
+          "Aetiology/Risk factors"
+        ]
+      }
+    ]
+  },
+  {
+    "title": "IgA nephropathy – Epidemiology, features and pathophysiology",
+    "content": "IgA nephropathy (Berger's disease) is the most common glomerulonephritis worldwide. It typically presents in a young male with macroscopic haematuria occurring concurrently with (not after) an upper respiratory tract infection. Nephrotic-range proteinuria is rare. Pathophysiology: mesangial deposition of IgA immune complexes; overlaps with Henoch-Schonlein purpura (HSP). Histology: mesangial hypercellularity; IgA and C3 on immunofluorescence.",
+    "custom_filters": [
+      "Renal and urology",
+      "Haematuria",
+      "Abnormal urinalysis",
+      "Aetiology/Risk factors"
+    ],
+    "filter_categories": [
+      {
+        "name": "Systems",
+        "color": "#3B82F6",
+        "filters": [
+          "Renal and urology"
+        ]
+      },
+      {
+        "name": "Conditions",
+        "color": "#8B5CF6",
+        "filters": []
+      },
+      {
+        "name": "Presentations",
+        "color": "#F59E0B",
+        "filters": [
+          "Haematuria",
+          "Abnormal urinalysis"
+        ]
+      },
+      {
+        "name": "Other",
+        "color": "#10B981",
+        "filters": [
+          "Aetiology/Risk factors"
+        ]
+      }
+    ]
+  },
+  {
+    "title": "IgA nephropathy – Differentiation from post-streptococcal GN",
+    "content": "Key differences between IgA nephropathy and post-streptococcal GN: IgA nephropathy: haematuria concurrent with URTI; normal complement; haematuria predominant. Post-streptococcal GN: haematuria 7–14 days after Group A Strep infection; low C3 complement; proteinuria predominant; raised ASOT.",
+    "custom_filters": [
+      "Renal and urology",
+      "Haematuria",
+      "Differential diagnosis"
+    ],
+    "filter_categories": [
+      {
+        "name": "Systems",
+        "color": "#3B82F6",
+        "filters": [
+          "Renal and urology"
+        ]
+      },
+      {
+        "name": "Conditions",
+        "color": "#8B5CF6",
+        "filters": []
+      },
+      {
+        "name": "Presentations",
+        "color": "#F59E0B",
+        "filters": [
+          "Haematuria"
+        ]
+      },
+      {
+        "name": "Other",
+        "color": "#10B981",
+        "filters": [
+          "Differential diagnosis"
+        ]
+      }
+    ]
+  },
+  {
+    "title": "IgA nephropathy – Management and prognosis",
+    "content": "Management of IgA nephropathy: isolated haematuria with normal renal function: no treatment, monitor; persistent proteinuria: ACE inhibitors/ARBs; active disease or failure of ACE inhibitors: corticosteroids. Prognosis: 25% develop end-stage renal failure. Poor prognostic factors: male sex, proteinuria >2 g/day, hypertension, smoking, hyperlipidaemia, ACE DD genotype.",
+    "custom_filters": [
+      "Renal and urology",
+      "Haematuria",
+      "Abnormal urinalysis",
+      "Management"
+    ],
+    "filter_categories": [
+      {
+        "name": "Systems",
+        "color": "#3B82F6",
+        "filters": [
+          "Renal and urology"
+        ]
+      },
+      {
+        "name": "Conditions",
+        "color": "#8B5CF6",
+        "filters": []
+      },
+      {
+        "name": "Presentations",
+        "color": "#F59E0B",
+        "filters": [
+          "Haematuria",
+          "Abnormal urinalysis"
+        ]
+      },
+      {
+        "name": "Other",
+        "color": "#10B981",
+        "filters": [
+          "Management"
+        ]
+      }
+    ]
+  },
+  {
+    "title": "Post-streptococcal glomerulonephritis – Features and investigations",
+    "content": "Post-streptococcal GN occurs 7–14 days after Group A beta-haemolytic Streptococcus (S. pyogenes) infection. Most commonly affects young children. Features: headache, malaise, visible haematuria, proteinuria, oedema, hypertension, oliguria; raised ASOT; low C3 complement. Renal biopsy: acute diffuse proliferative GN; endothelial proliferation with neutrophils; subepithelial 'humps' on electron microscopy; granular 'starry sky' on immunofluorescence (IgG, IgM, C3).",
+    "custom_filters": [
+      "Renal and urology",
+      "Haematuria",
+      "Hypertension",
+      "Abnormal urinalysis",
+      "Clinical features"
+    ],
+    "filter_categories": [
+      {
+        "name": "Systems",
+        "color": "#3B82F6",
+        "filters": [
+          "Renal and urology"
+        ]
+      },
+      {
+        "name": "Conditions",
+        "color": "#8B5CF6",
+        "filters": []
+      },
+      {
+        "name": "Presentations",
+        "color": "#F59E0B",
+        "filters": [
+          "Haematuria",
+          "Hypertension",
+          "Abnormal urinalysis"
+        ]
+      },
+      {
+        "name": "Other",
+        "color": "#10B981",
+        "filters": [
+          "Clinical features"
+        ]
+      }
+    ]
+  },
+  {
+    "title": "Membranous nephropathy – Epidemiology, causes and diagnosis",
+    "content": "Membranous nephropathy is the most common cause of nephrotic syndrome in adults and the third most common cause of ESRD. Causes: idiopathic (anti-PLA2R antibodies in ~70–80%); infections (hepatitis B, malaria, syphilis); malignancy (5–20% of adult cases); drugs (gold, penicillamine, NSAIDs); autoimmune (SLE, thyroiditis, RA). Renal biopsy: 'spike and dome' appearance on electron microscopy (subepithelial immune deposits).",
+    "custom_filters": [
+      "Renal and urology",
+      "Nephrotic syndrome",
+      "Peripheral oedema and ankle swelling",
+      "Aetiology/Risk factors"
+    ],
+    "filter_categories": [
+      {
+        "name": "Systems",
+        "color": "#3B82F6",
+        "filters": [
+          "Renal and urology"
+        ]
+      },
+      {
+        "name": "Conditions",
+        "color": "#8B5CF6",
+        "filters": [
+          "Nephrotic syndrome"
+        ]
+      },
+      {
+        "name": "Presentations",
+        "color": "#F59E0B",
+        "filters": [
+          "Peripheral oedema and ankle swelling"
+        ]
+      },
+      {
+        "name": "Other",
+        "color": "#10B981",
+        "filters": [
+          "Aetiology/Risk factors"
+        ]
+      }
+    ]
+  },
+  {
+    "title": "Membranous nephropathy – Management and prognosis",
+    "content": "Management: ACE inhibitor/ARB for proteinuria; immunosuppression for severe/progressive disease (corticosteroid + cyclophosphamide); anticoagulation for high-risk patients. Prognosis follows the 'rule of thirds': 1/3 spontaneous remission; 1/3 remain proteinuric but stable; 1/3 develop ESRD.",
+    "custom_filters": [
+      "Renal and urology",
+      "Nephrotic syndrome",
+      "Management"
+    ],
+    "filter_categories": [
+      {
+        "name": "Systems",
+        "color": "#3B82F6",
+        "filters": [
+          "Renal and urology"
+        ]
+      },
+      {
+        "name": "Conditions",
+        "color": "#8B5CF6",
+        "filters": [
+          "Nephrotic syndrome"
+        ]
+      },
+      {
+        "name": "Presentations",
+        "color": "#F59E0B",
+        "filters": []
+      },
+      {
+        "name": "Other",
+        "color": "#10B981",
+        "filters": [
+          "Management"
+        ]
+      }
+    ]
+  },
+  {
+    "title": "FSGS – Features and prognosis",
+    "content": "Focal segmental glomerulosclerosis (FSGS) causes nephrotic syndrome. Secondary causes include IgA nephropathy, reflux nephropathy, HIV, heroin use, Alport's syndrome, and sickle-cell disease. Renal biopsy: focal and segmental sclerosis and hyalinosis on light microscopy; foot process effacement on electron microscopy. Prognosis: <10% chance of spontaneous remission; high recurrence rate in renal transplants.",
+    "custom_filters": [
+      "Renal and urology",
+      "Nephrotic syndrome",
+      "Peripheral oedema and ankle swelling",
+      "Aetiology/Risk factors"
+    ],
+    "filter_categories": [
+      {
+        "name": "Systems",
+        "color": "#3B82F6",
+        "filters": [
+          "Renal and urology"
+        ]
+      },
+      {
+        "name": "Conditions",
+        "color": "#8B5CF6",
+        "filters": [
+          "Nephrotic syndrome"
+        ]
+      },
+      {
+        "name": "Presentations",
+        "color": "#F59E0B",
+        "filters": [
+          "Peripheral oedema and ankle swelling"
+        ]
+      },
+      {
+        "name": "Other",
+        "color": "#10B981",
+        "filters": [
+          "Aetiology/Risk factors"
+        ]
+      }
+    ]
+  },
+  {
+    "title": "MPGN – Types and features",
+    "content": "Membranoproliferative (mesangiocapillary) GN (MPGN) presents with nephrotic syndrome, haematuria and proteinuria and has a poor prognosis. Type 1 (90%): associated with cryoglobulinaemia and hepatitis C; tram-track appearance on electron microscopy. Type 2 (dense deposit disease): associated with partial lipodystrophy, factor H deficiency, and alternative complement pathway activation; low C3; C3b nephritic factor in 70%; dense deposits on EM. Type 3: associated with hepatitis B and C. Steroids may be effective.",
+    "custom_filters": [
+      "Renal and urology",
+      "Nephrotic syndrome",
+      "Haematuria",
+      "Aetiology/Risk factors"
+    ],
+    "filter_categories": [
+      {
+        "name": "Systems",
+        "color": "#3B82F6",
+        "filters": [
+          "Renal and urology"
+        ]
+      },
+      {
+        "name": "Conditions",
+        "color": "#8B5CF6",
+        "filters": [
+          "Nephrotic syndrome"
+        ]
+      },
+      {
+        "name": "Presentations",
+        "color": "#F59E0B",
+        "filters": [
+          "Haematuria"
+        ]
+      },
+      {
+        "name": "Other",
+        "color": "#10B981",
+        "filters": [
+          "Aetiology/Risk factors"
+        ]
+      }
+    ]
+  },
+  {
+    "title": "Haemolytic uraemic syndrome – Triad, causes and investigations",
+    "content": "HUS is characterised by the triad of: AKI, microangiopathic haemolytic anaemia (MAHA), and thrombocytopenia. Typical HUS (>90% of childhood cases): Shiga-toxin producing E. coli (STEC) O157:H7; also pneumococcal, HIV, SLE, drugs, cancer. Atypical HUS: complement dysregulation. Investigations: blood film (schistocytes); Hb <8 g/dL; thrombocytopenia; U&E (AKI); stool culture; PCR for Shiga toxins.",
+    "custom_filters": [
+      "Renal and urology",
+      "Acute kidney injury",
+      "Clinical features"
+    ],
+    "filter_categories": [
+      {
+        "name": "Systems",
+        "color": "#3B82F6",
+        "filters": [
+          "Renal and urology"
+        ]
+      },
+      {
+        "name": "Conditions",
+        "color": "#8B5CF6",
+        "filters": [
+          "Acute kidney injury"
+        ]
+      },
+      {
+        "name": "Presentations",
+        "color": "#F59E0B",
+        "filters": []
+      },
+      {
+        "name": "Other",
+        "color": "#10B981",
+        "filters": [
+          "Clinical features"
+        ]
+      }
+    ]
+  },
+  {
+    "title": "Haemolytic uraemic syndrome – Management",
+    "content": "Management of HUS: supportive care (IV fluids, blood transfusion, dialysis); antibiotics should NOT be given (may increase Shiga toxin release); plasma exchange for severe non-diarrhoeal HUS; eculizumab (complement inhibitor) for atypical HUS.",
+    "custom_filters": [
+      "Renal and urology",
+      "Acute kidney injury",
+      "Management"
+    ],
+    "filter_categories": [
+      {
+        "name": "Systems",
+        "color": "#3B82F6",
+        "filters": [
+          "Renal and urology"
+        ]
+      },
+      {
+        "name": "Conditions",
+        "color": "#8B5CF6",
+        "filters": [
+          "Acute kidney injury"
+        ]
+      },
+      {
+        "name": "Presentations",
+        "color": "#F59E0B",
+        "filters": []
+      },
+      {
+        "name": "Other",
+        "color": "#10B981",
+        "filters": [
+          "Management"
+        ]
+      }
+    ]
+  },
+  {
+    "title": "Henoch-Schonlein purpura – Features and management",
+    "content": "HSP is an IgA-mediated small vessel vasculitis that overlaps with IgA nephropathy. It typically follows infection in children. Features: palpable purpuric rash on buttocks and extensor surfaces; abdominal pain; polyarthritis; haematuria and renal failure. Treatment: analgesia; supportive nephropathy management; evidence for steroids and immunosuppressants is inconsistent. Prognosis: usually excellent and self-limiting; 1/3 relapse; monitor BP and urinalysis.",
+    "custom_filters": [
+      "Renal and urology",
+      "Haematuria",
+      "Abnormal urinalysis",
+      "Clinical features"
+    ],
+    "filter_categories": [
+      {
+        "name": "Systems",
+        "color": "#3B82F6",
+        "filters": [
+          "Renal and urology"
+        ]
+      },
+      {
+        "name": "Conditions",
+        "color": "#8B5CF6",
+        "filters": []
+      },
+      {
+        "name": "Presentations",
+        "color": "#F59E0B",
+        "filters": [
+          "Haematuria",
+          "Abnormal urinalysis"
+        ]
+      },
+      {
+        "name": "Other",
+        "color": "#10B981",
+        "filters": [
+          "Clinical features"
+        ]
+      }
+    ]
+  },
+  {
+    "title": "Contrast nephrotoxicity – Definition, risk factors and prevention",
+    "content": "Contrast-induced nephropathy is defined as a 25% rise in serum creatinine within 3 days of intravascular contrast administration (typically occurs 2–5 days after). Risk factors: renal impairment (especially diabetic nephropathy), age >70, dehydration, cardiac failure, nephrotoxic drugs. Prevention: IV 0.9% NaCl at 1 ml/kg/hr for 12 hours before and after procedure; isotonic sodium bicarbonate is an alternative; N-acetylcysteine is NOT effective (no benefit in trials); withhold metformin for ≥48 hours after contrast.",
+    "custom_filters": [
+      "Renal and urology",
+      "Acute kidney injury",
+      "Aetiology/Risk factors"
+    ],
+    "filter_categories": [
+      {
+        "name": "Systems",
+        "color": "#3B82F6",
+        "filters": [
+          "Renal and urology"
+        ]
+      },
+      {
+        "name": "Conditions",
+        "color": "#8B5CF6",
+        "filters": [
+          "Acute kidney injury"
+        ]
+      },
+      {
+        "name": "Presentations",
+        "color": "#F59E0B",
+        "filters": []
+      },
+      {
+        "name": "Other",
+        "color": "#10B981",
+        "filters": [
+          "Aetiology/Risk factors"
+        ]
+      }
+    ]
+  },
+  {
+    "title": "Peritoneal dialysis – Overview and peritonitis management",
+    "content": "Continuous ambulatory peritoneal dialysis (CAPD) involves four 2-litre exchanges per day. The most common complication is peritonitis. Most common causative organism: coagulase-negative Staphylococcus; also S. aureus. Treatment: vancomycin or teicoplanin plus ceftazidime in dialysis fluid; OR vancomycin in dialysis fluid plus ciprofloxacin orally. Aminoglycosides are an alternative for Gram-negative organisms. Sclerosing peritonitis is a rare but serious complication.",
+    "custom_filters": [
+      "Renal and urology",
+      "Chronic kidney disease",
+      "Management"
+    ],
+    "filter_categories": [
+      {
+        "name": "Systems",
+        "color": "#3B82F6",
+        "filters": [
+          "Renal and urology"
+        ]
+      },
+      {
+        "name": "Conditions",
+        "color": "#8B5CF6",
+        "filters": [
+          "Chronic kidney disease"
+        ]
+      },
+      {
+        "name": "Presentations",
+        "color": "#F59E0B",
+        "filters": []
+      },
+      {
+        "name": "Other",
+        "color": "#10B981",
+        "filters": [
+          "Management"
+        ]
+      }
+    ]
+  },
+  {
+    "title": "Erythropoietin – Uses, side effects and failure to respond",
+    "content": "Erythropoietin (EPO) is a haematopoietic growth factor secreted by the kidney in response to hypoxia. Uses: anaemia of CKD; anaemia secondary to cytotoxic therapy. Side effects: accelerated hypertension (25% of patients), bone aches, flu-like symptoms, skin rashes, pure red cell aplasia (rare; darbepoetin has greatly reduced this risk), raised PCV (thrombosis risk), iron deficiency. Failure to respond to EPO: iron deficiency (most common), inadequate dose, infection/inflammation, hyperparathyroid bone disease, aluminium toxicity.",
+    "custom_filters": [
+      "Renal and urology",
+      "Chronic kidney disease",
+      "Hypertension",
+      "Management"
+    ],
+    "filter_categories": [
+      {
+        "name": "Systems",
+        "color": "#3B82F6",
+        "filters": [
+          "Renal and urology"
+        ]
+      },
+      {
+        "name": "Conditions",
+        "color": "#8B5CF6",
+        "filters": [
+          "Chronic kidney disease"
+        ]
+      },
+      {
+        "name": "Presentations",
+        "color": "#F59E0B",
+        "filters": [
+          "Hypertension"
+        ]
+      },
+      {
+        "name": "Other",
+        "color": "#10B981",
+        "filters": [
+          "Management"
+        ]
+      }
+    ]
+  },
+  {
+    "title": "Fanconi syndrome – Definition, features and causes",
+    "content": "Fanconi syndrome is a generalised reabsorptive disorder of the proximal convoluted tubule. Features: type 2 renal tubular acidosis, polyuria, aminoaciduria, glycosuria, phosphaturia, and osteomalacia. Causes: cystinosis (most common in children), Sjogren's syndrome, multiple myeloma, nephrotic syndrome, Wilson's disease.",
+    "custom_filters": [
+      "Renal and urology",
+      "Electrolyte abnormalities",
+      "Urinary symptoms",
+      "Definition"
+    ],
+    "filter_categories": [
+      {
+        "name": "Systems",
+        "color": "#3B82F6",
+        "filters": [
+          "Renal and urology"
+        ]
+      },
+      {
+        "name": "Conditions",
+        "color": "#8B5CF6",
+        "filters": []
+      },
+      {
+        "name": "Presentations",
+        "color": "#F59E0B",
+        "filters": [
+          "Electrolyte abnormalities",
+          "Urinary symptoms"
+        ]
+      },
+      {
+        "name": "Other",
+        "color": "#10B981",
+        "filters": [
+          "Definition"
+        ]
+      }
+    ]
+  },
+  {
+    "title": "Fibromuscular dysplasia – Features and management",
+    "content": "Fibromuscular dysplasia accounts for 10% of renal vascular disease and affects 90% females. Features: hypertension, CKD or acute renal failure, flash pulmonary oedema. Investigations: renal function; Doppler ultrasound (first-line); CT or MR angiography for confirmation. Management: antihypertensives (ACE inhibitors/ARBs); revascularisation (percutaneous angioplasty ± stenting).",
+    "custom_filters": [
+      "Renal and urology",
+      "Hypertension",
+      "Chronic kidney disease",
+      "Clinical features"
+    ],
+    "filter_categories": [
+      {
+        "name": "Systems",
+        "color": "#3B82F6",
+        "filters": [
+          "Renal and urology"
+        ]
+      },
+      {
+        "name": "Conditions",
+        "color": "#8B5CF6",
+        "filters": [
+          "Chronic kidney disease"
+        ]
+      },
+      {
+        "name": "Presentations",
+        "color": "#F59E0B",
+        "filters": [
+          "Hypertension"
+        ]
+      },
+      {
+        "name": "Other",
+        "color": "#10B981",
+        "filters": [
+          "Clinical features"
+        ]
+      }
+    ]
+  },
+  {
+    "title": "Erectile dysfunction – Overview",
+    "content": "Erectile dysfunction (ED) is the inability to achieve or maintain an erection sufficient for satisfactory sexual performance. It is a presentation within the renal and urology system and may be associated with conditions such as BPH, prostate cancer treatment, diabetes, hypertension, and vascular disease.",
+    "custom_filters": [
+      "Renal and urology",
+      "Erectile dysfunction",
+      "Definition"
+    ],
+    "filter_categories": [
+      {
+        "name": "Systems",
+        "color": "#3B82F6",
+        "filters": [
+          "Renal and urology"
+        ]
+      },
+      {
+        "name": "Conditions",
+        "color": "#8B5CF6",
+        "filters": []
+      },
+      {
+        "name": "Presentations",
+        "color": "#F59E0B",
+        "filters": [
+          "Erectile dysfunction"
+        ]
+      },
+      {
+        "name": "Other",
+        "color": "#10B981",
+        "filters": [
+          "Definition"
+        ]
+      }
+    ]
+  },
+  {
+    "title": "Urinary tract infection – Overview and context",
+    "content": "Urinary tract infection (UTI) is a common cause of urinary symptoms and haematuria. It is a complication of BPH and may cause transient non-visible haematuria. UTI should be excluded before diagnosing persistent haematuria. In older adults, E. coli is the most common causative organism in epididymo-orchitis.",
+    "custom_filters": [
+      "Renal and urology",
+      "Urinary tract infection",
+      "Urinary symptoms",
+      "Haematuria",
+      "Abnormal urinalysis",
+      "Clinical features"
+    ],
+    "filter_categories": [
+      {
+        "name": "Systems",
+        "color": "#3B82F6",
+        "filters": [
+          "Renal and urology"
+        ]
+      },
+      {
+        "name": "Conditions",
+        "color": "#8B5CF6",
+        "filters": [
+          "Urinary tract infection"
+        ]
+      },
+      {
+        "name": "Presentations",
+        "color": "#F59E0B",
+        "filters": [
+          "Urinary symptoms",
+          "Haematuria",
+          "Abnormal urinalysis"
+        ]
+      },
+      {
+        "name": "Other",
+        "color": "#10B981",
+        "filters": [
+          "Clinical features"
+        ]
+      }
+    ]
+  },
+  {
+    "title": "Polyuria – Causes by frequency",
+    "content": "Causes of polyuria by frequency: Common: diuretics, caffeine, alcohol, diabetes mellitus, lithium, heart failure. Infrequent: hypercalcaemia, hyperthyroidism. Rare: CKD, primary polydipsia, hypokalaemia. Very rare: diabetes insipidus.",
+    "custom_filters": [
+      "Renal and urology",
+      "Urinary symptoms",
+      "Differential diagnosis"
+    ],
+    "filter_categories": [
+      {
+        "name": "Systems",
+        "color": "#3B82F6",
+        "filters": [
+          "Renal and urology"
+        ]
+      },
+      {
+        "name": "Conditions",
+        "color": "#8B5CF6",
+        "filters": []
+      },
+      {
+        "name": "Presentations",
+        "color": "#F59E0B",
+        "filters": [
+          "Urinary symptoms"
+        ]
+      },
+      {
+        "name": "Other",
+        "color": "#10B981",
+        "filters": [
+          "Differential diagnosis"
+        ]
+      }
+    ]
+  },
+  {
+    "title": "Body fluid compartments",
+    "content": "Distribution of body fluid: intracellular fluid 28 L (60–65% of total body water); extracellular fluid 14 L (35–40%): plasma 3 L (5%), interstitial fluid 10 L (24%), transcellular fluid 1 L (3%).",
+    "custom_filters": [
+      "Renal and urology",
+      "Dehydration",
+      "Definition"
+    ],
+    "filter_categories": [
+      {
+        "name": "Systems",
+        "color": "#3B82F6",
+        "filters": [
+          "Renal and urology"
+        ]
+      },
+      {
+        "name": "Conditions",
+        "color": "#8B5CF6",
+        "filters": [
+          "Dehydration"
+        ]
+      },
+      {
+        "name": "Presentations",
+        "color": "#F59E0B",
+        "filters": []
+      },
+      {
+        "name": "Other",
+        "color": "#10B981",
+        "filters": [
+          "Definition"
+        ]
+      }
+    ]
+  },
+  {
+    "title": "Hyperuricaemia – Causes",
+    "content": "Hyperuricaemia may be asymptomatic and is associated with hyperlipidaemia, hypertension and metabolic syndrome. Causes of increased uric acid synthesis: Lesch-Nyhan syndrome, myeloproliferative disorders, purine-rich diet, exercise, psoriasis, cytotoxic drugs. Causes of decreased uric acid excretion: low-dose aspirin, diuretics, pyrazinamide, pre-eclampsia, alcohol, renal failure, lead toxicity.",
+    "custom_filters": [
+      "Renal and urology",
+      "Urinary tract calculi",
+      "Hypertension",
+      "Aetiology/Risk factors"
+    ],
+    "filter_categories": [
+      {
+        "name": "Systems",
+        "color": "#3B82F6",
+        "filters": [
+          "Renal and urology"
+        ]
+      },
+      {
+        "name": "Conditions",
+        "color": "#8B5CF6",
+        "filters": [
+          "Urinary tract calculi"
+        ]
+      },
+      {
+        "name": "Presentations",
+        "color": "#F59E0B",
+        "filters": [
+          "Hypertension"
+        ]
+      },
+      {
+        "name": "Other",
+        "color": "#10B981",
+        "filters": [
+          "Aetiology/Risk factors"
+        ]
+      }
+    ]
+  },
+  {
+    "title": "Vaptans – Mechanism, uses and cautions",
+    "content": "Vaptans are vasopressin (V2) receptor antagonists that cause selective water diuresis (aquaresis) without sodium loss. Uses: euvolaemic hyponatraemia (SIADH) and hypervolaemic hyponatraemia (heart failure, cirrhosis). Cautions: avoid in hypovolaemic hyponatraemia (worsens volume depletion); hepatotoxic; stimulate thirst (may counteract benefit).",
+    "custom_filters": [
+      "Renal and urology",
+      "Electrolyte abnormalities",
+      "Management"
+    ],
+    "filter_categories": [
+      {
+        "name": "Systems",
+        "color": "#3B82F6",
+        "filters": [
+          "Renal and urology"
+        ]
+      },
+      {
+        "name": "Conditions",
+        "color": "#8B5CF6",
+        "filters": []
+      },
+      {
+        "name": "Presentations",
+        "color": "#F59E0B",
+        "filters": [
+          "Electrolyte abnormalities"
+        ]
+      },
+      {
+        "name": "Other",
+        "color": "#10B981",
+        "filters": [
+          "Management"
+        ]
+      }
+    ]
+  }
+]
