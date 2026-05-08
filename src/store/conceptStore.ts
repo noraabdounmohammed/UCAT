@@ -344,10 +344,38 @@ export const createConceptStore = (curriculumId: string = 'default') => {
           jsonConceptLoader.loadAllCurriculums().then(async curriculums => {
             const jsonConcepts: ConceptNode[] = [];
             const allCustomFilters = new Set<string>();
+            
+            // Extract filter categories and assignments from concept data
+            const categoryMap = new Map<string, { name: string; color: string; id: string }>();
+            const filterAssignments: Record<string, string> = {};
 
             curriculums.forEach(curr => {
-              curr.concepts.forEach((concept, idx) => {
-                concept.custom_filters?.forEach(f => allCustomFilters.add(f));
+              curr.concepts.forEach((concept: any, idx: number) => {
+                concept.custom_filters?.forEach((f: string) => allCustomFilters.add(f));
+                
+                // Extract filter_categories from each concept (embedded in JSON)
+                if (concept.filter_categories && Array.isArray(concept.filter_categories)) {
+                  concept.filter_categories.forEach((cat: any) => {
+                    if (cat.name && !categoryMap.has(cat.name)) {
+                      const catId = cat.name.toLowerCase().replace(/\s+/g, '-');
+                      categoryMap.set(cat.name, {
+                        id: catId,
+                        name: cat.name,
+                        color: cat.color || '#3B82F6'
+                      });
+                    }
+                    // Map each filter to its category
+                    if (cat.filters && Array.isArray(cat.filters)) {
+                      const catId = cat.name.toLowerCase().replace(/\s+/g, '-');
+                      cat.filters.forEach((filter: string) => {
+                        if (!filterAssignments[filter]) {
+                          filterAssignments[filter] = catId;
+                        }
+                      });
+                    }
+                  });
+                }
+                
                 jsonConcepts.push({
                   concept_id: `${curr.file}_${idx}`,
                   title: concept.title,
@@ -370,22 +398,20 @@ export const createConceptStore = (curriculumId: string = 'default') => {
               const jsonFiltered = filterConcepts(jsonConcepts, get().filterState);
               const jsonStats = calculateStats(jsonFiltered);
               
-              // Also try to load filter categories if not already loaded
+              // Use extracted categories from concept JSON files
               let jsonFilterCategories = get().filterCategories;
-              if (jsonFilterCategories.length === 0) {
-                try {
-                  const response = await fetch('/conceptModel.json');
-                  if (response.ok) {
-                    const data = await response.json();
-                    if (data.filter_categories) {
-                      jsonFilterCategories = data.filter_categories;
-                      localStorage.setItem(getCurriculumKey(curriculumId, 'filter_categories'), JSON.stringify(jsonFilterCategories));
-                    }
-                    if (data.filter_assignments) {
-                      localStorage.setItem(getCurriculumKey(curriculumId, 'filter_assignments'), JSON.stringify(data.filter_assignments));
-                    }
-                  }
-                } catch (e) { /* ignore */ }
+              if (jsonFilterCategories.length === 0 && categoryMap.size > 0) {
+                jsonFilterCategories = Array.from(categoryMap.values());
+                localStorage.setItem(getCurriculumKey(curriculumId, 'filter_categories'), JSON.stringify(jsonFilterCategories));
+                console.log('📂 Extracted filter categories from concept JSON:', jsonFilterCategories.length);
+              }
+              
+              // Save filter assignments extracted from concepts
+              const assignmentsKey = getCurriculumKey(curriculumId, 'filter_assignments');
+              const existingAssignments = localStorage.getItem(assignmentsKey);
+              if (!existingAssignments && Object.keys(filterAssignments).length > 0) {
+                localStorage.setItem(assignmentsKey, JSON.stringify(filterAssignments));
+                console.log('📂 Extracted filter assignments from concept JSON:', Object.keys(filterAssignments).length);
               }
               
               set({
