@@ -29,5 +29,10 @@ export interface QuestionData {
   title?: string; // Concept title for mind maps
   custom_filters?: string[]; // Custom filter tags for mind maps
   allConcepts?: any[]; // All concepts for unified mind map
+  // Guideline/Citation fields for reliable sources
+  guideline?: string; // e.g. "NICE CG181: Heart Failure"
+  guideline_url?: string; // e.g. "https://www.nice.org.uk/guidance/cg181"
+  guideline_section?: string; // e.g. "Section 1.3.2 - Diagnosis"
+  source_type?: 'NICE' | 'NHS' | 'BNF' | 'GMC' | 'SIGN' | 'RCP' | 'concept' | 'ai-generated';
   [key: string]: unknown; 
 }

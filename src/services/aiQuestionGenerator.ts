@@ -1,4 +1,5 @@
 import { ConceptNode } from '@/types/conceptTypes';
+import { getGuidelineForConcept } from '@/utils/guidelineLookup';
 
 interface GeneratedQuestion {
   id: string;
@@ -13,6 +14,11 @@ interface GeneratedQuestion {
   correct_answer: string;
   explanation: string;
   format: 'ukmla_sba' | 'sba' | 'flashcard' | 'emq' | 'true_false' | 'ranking';
+  // Guideline citation fields
+  guideline?: string;
+  guideline_url?: string;
+  guideline_section?: string;
+  source_type?: 'NICE' | 'NHS' | 'BNF' | 'GMC' | 'SIGN' | 'RCP' | 'concept' | 'ai-generated';
 }
 
 // Call AI via the Netlify serverless proxy (keeps API key server-side)
@@ -202,6 +208,9 @@ MANDATORY REQUIREMENTS:
     
     // Ensure concept_id is valid
     const conceptId = concept.concept_id || `concept-${Date.now()}`;
+    
+    // Look up reliable guideline for this concept
+    const guidelineInfo = getGuidelineForConcept(concept);
 
     return {
       id: `ai-${conceptId}-${Date.now()}`,
@@ -211,7 +220,14 @@ MANDATORY REQUIREMENTS:
       options: aiResponse.options,
       correct_answer: aiResponse.correct,
       explanation: aiResponse.explanation,
-      format: 'sba' as const
+      format: 'sba' as const,
+      // Include guideline if found
+      ...(guidelineInfo && {
+        guideline: guidelineInfo.guideline,
+        guideline_url: guidelineInfo.guideline_url,
+        source_type: guidelineInfo.source_type
+      }),
+      ...(!guidelineInfo && { source_type: 'ai-generated' as const })
     };
   } catch (error) {
     console.error('🚨 SBA Question Generation Failed:', error);
@@ -228,6 +244,9 @@ function generateSimpleSBATemplate(concept: ConceptNode, optionCount: number = 5
     id: String.fromCharCode(65 + i),
     text: `Option ${String.fromCharCode(65 + i)}`
   }));
+  
+  // Look up reliable guideline for this concept
+  const guidelineInfo = getGuidelineForConcept(concept);
 
   return {
     id: `template-${conceptId}-${Date.now()}`,
@@ -237,7 +256,14 @@ function generateSimpleSBATemplate(concept: ConceptNode, optionCount: number = 5
     options,
     correct_answer: 'A',
     explanation: concept.content || 'Based on the concept content.',
-    format: 'sba' as const
+    format: 'sba' as const,
+    // Include guideline if found
+    ...(guidelineInfo && {
+      guideline: guidelineInfo.guideline,
+      guideline_url: guidelineInfo.guideline_url,
+      source_type: guidelineInfo.source_type
+    }),
+    ...(!guidelineInfo && { source_type: 'concept' as const })
   };
 }
 
@@ -378,6 +404,9 @@ MANDATORY REQUIREMENTS:
       `${aiResponse.vignette}\n\n${aiResponse.question}` : 
       aiResponse.question;
 
+    // Look up reliable guideline for this concept
+    const guidelineInfo = getGuidelineForConcept(concept);
+    
     const generatedQuestion = {
       id: `ai-${conceptId}-${Date.now()}`,
       concept_id: conceptId,
@@ -388,7 +417,14 @@ MANDATORY REQUIREMENTS:
       correct_answer: aiResponse.correct,
       key_fact: aiResponse.key_fact || '',
       explanation: aiResponse.explanation,
-      format: 'ukmla_sba' as const
+      format: 'ukmla_sba' as const,
+      // Include guideline if found
+      ...(guidelineInfo && {
+        guideline: guidelineInfo.guideline,
+        guideline_url: guidelineInfo.guideline_url,
+        source_type: guidelineInfo.source_type
+      }),
+      ...(!guidelineInfo && { source_type: 'ai-generated' as const })
     };
 
     // Development logging
@@ -448,6 +484,9 @@ function generateTemplateQuestion(concept: ConceptNode, requestedOptionCount: nu
     text: baseOptions[i] || `Management option ${String.fromCharCode(65 + i)}`
   }));
   
+  // Look up reliable guideline for this concept
+  const guidelineInfo = getGuidelineForConcept(concept);
+  
   return {
     id: `template-${conceptId}-${Date.now()}`,
     concept_id: conceptId,
@@ -457,7 +496,14 @@ function generateTemplateQuestion(concept: ConceptNode, requestedOptionCount: nu
     options,
     correct_answer: 'A',
     explanation: concept.content || 'Based on current guidelines.',
-    format: 'ukmla_sba' as const
+    format: 'ukmla_sba' as const,
+    // Include guideline if found
+    ...(guidelineInfo && {
+      guideline: guidelineInfo.guideline,
+      guideline_url: guidelineInfo.guideline_url,
+      source_type: guidelineInfo.source_type
+    }),
+    ...(!guidelineInfo && { source_type: 'concept' as const })
   };
 }
 
@@ -551,6 +597,9 @@ Return ONLY valid JSON — no extra text:
       '$1. $2\n'
     );
     
+    // Look up reliable guideline for this concept
+    const guidelineInfo = getGuidelineForConcept(concept);
+    
     return {
       id: `flash-${conceptId}-${Date.now()}`,
       concept_id: conceptId,
@@ -558,11 +607,21 @@ Return ONLY valid JSON — no extra text:
       options: [],
       correct_answer: '',
       explanation: processedExplanation,
-      format: 'flashcard'
+      format: 'flashcard',
+      // Include guideline if found
+      ...(guidelineInfo && {
+        guideline: guidelineInfo.guideline,
+        guideline_url: guidelineInfo.guideline_url,
+        source_type: guidelineInfo.source_type
+      }),
+      ...(!guidelineInfo && { source_type: 'ai-generated' as const })
     };
   } catch (error) {
     // Ensure concept_id is valid for fallback
     const conceptId = concept.concept_id || `concept-${Date.now()}`;
+    
+    // Look up reliable guideline for this concept
+    const guidelineInfo = getGuidelineForConcept(concept);
     
     // Fallback
     return {
@@ -572,7 +631,14 @@ Return ONLY valid JSON — no extra text:
       options: [],
       correct_answer: '',
       explanation: concept.content,
-      format: 'flashcard'
+      format: 'flashcard',
+      // Include guideline if found
+      ...(guidelineInfo && {
+        guideline: guidelineInfo.guideline,
+        guideline_url: guidelineInfo.guideline_url,
+        source_type: guidelineInfo.source_type
+      }),
+      ...(!guidelineInfo && { source_type: 'concept' as const })
     };
   }
 }

@@ -123,7 +123,7 @@ export const SessionReviewScreen: React.FC<SessionReviewScreenProps> = ({
           ))}
         </div>
 
-        {incorrectQuestions.length > 0 && (
+        {incorrectQuestions.length > 0 ? (
           <div className="mb-4">
             <div className="bg-rose-500/10 border border-rose-500/20 rounded-2xl p-4 mb-4">
               <div className="flex items-start gap-3">
@@ -139,6 +139,14 @@ export const SessionReviewScreen: React.FC<SessionReviewScreenProps> = ({
               </div>
             </div>
             <div className={cn('flex gap-2', onAnotherFive ? 'flex-row' : 'flex-col')}>
+              <button
+                onClick={onRetryIncorrect}
+                className={cn('flex-1 py-3.5 rounded-full font-bold text-sm flex items-center justify-center gap-2 transition-all border', light ? 'bg-zinc-100 border-zinc-300 text-zinc-700 hover:bg-zinc-200' : 'bg-white/10 border-white/20 text-white hover:bg-white/20')}
+                style={{ fontFamily: "'Manrope', sans-serif" }}
+              >
+                <RotateCcw className="w-4 h-4" />
+                Retry {incorrectQuestions.length}
+              </button>
               {onAnotherFive && (
                 <button
                   onClick={() => onAnotherFive(undefined)}
@@ -149,15 +157,18 @@ export const SessionReviewScreen: React.FC<SessionReviewScreenProps> = ({
                   Another 5
                 </button>
               )}
-              <button
-                onClick={onRetryIncorrect}
-                className={cn('flex-1 py-3.5 rounded-full font-bold text-sm flex items-center justify-center gap-2 transition-all border', light ? 'bg-zinc-100 border-zinc-300 text-zinc-700 hover:bg-zinc-200' : 'bg-white/10 border-white/20 text-white hover:bg-white/20')}
-                style={{ fontFamily: "'Manrope', sans-serif" }}
-              >
-                <RotateCcw className="w-4 h-4" />
-                Retry {incorrectQuestions.length}
-              </button>
             </div>
+          </div>
+        ) : onAnotherFive && (
+          <div className="mb-4">
+            <button
+              onClick={() => onAnotherFive(undefined)}
+              className={cn('w-full py-3.5 rounded-full font-bold text-sm flex items-center justify-center gap-2 transition-all', light ? 'bg-zinc-900 text-white hover:bg-zinc-700' : 'bg-white text-stone-900 hover:bg-stone-100')}
+              style={{ fontFamily: "'Manrope', sans-serif" }}
+            >
+              <Plus className="w-4 h-4" />
+              Another 5
+            </button>
           </div>
         )}
 

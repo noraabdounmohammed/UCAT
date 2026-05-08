@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { ArrowLeft, ChevronLeft, ChevronRight, Sun, Moon, X, Settings2 } from 'lucide-react';
+import { ArrowLeft, ChevronLeft, ChevronRight, Sun, Moon, X, Settings2, BookOpen, ExternalLink } from 'lucide-react';
 import type { QuestionData } from './questionTypes';
 import ReactMarkdown from 'react-markdown';
 import { cn } from '@/lib/utils';
@@ -600,7 +600,7 @@ export const ModernFlashcard: React.FC<ModernFlashcardProps> = ({
               <div className="text-center">
                 <div 
                   className={cn(
-                    "text-[20px] font-medium leading-[1.4]",
+                    "text-lg sm:text-xl md:text-2xl font-medium leading-snug",
                     isLightMode ? "text-zinc-900" : "text-white"
                   )}
                   style={{ fontFamily: "'Poppins', 'Roboto', sans-serif" }}
@@ -670,7 +670,7 @@ export const ModernFlashcard: React.FC<ModernFlashcardProps> = ({
                     p: ({children}) => (
                       <p 
                         className={cn(
-                          "text-[17px] font-medium leading-[1.3] mb-2",
+                          "text-base sm:text-lg md:text-xl font-medium leading-relaxed mb-3",
                           isLightMode ? "text-zinc-900" : "text-white"
                         )}
                         style={{ fontFamily: "'Poppins', 'Roboto', sans-serif" }}
@@ -691,7 +691,7 @@ export const ModernFlashcard: React.FC<ModernFlashcardProps> = ({
                     li: ({children}) => (
                       <li 
                         className={cn(
-                          "text-[17px] font-medium leading-[1.3] pl-1",
+                          "text-base sm:text-lg md:text-xl font-medium leading-relaxed pl-1",
                           isLightMode ? "text-zinc-900" : "text-white"
                         )}
                         style={{ fontFamily: "'Poppins', 'Roboto', sans-serif" }}
@@ -735,6 +735,56 @@ export const ModernFlashcard: React.FC<ModernFlashcardProps> = ({
                 >
                   {backContent}
                 </ReactMarkdown>
+                
+                {/* Guideline Citation - Always visible when available */}
+                {(question.guideline || question.guideline_url) && (
+                  <div className={cn(
+                    "mt-4 pt-3 border-t",
+                    isLightMode ? "border-zinc-200" : "border-white/10"
+                  )}>
+                    <div className={cn(
+                      "flex items-start gap-2 p-3 rounded-xl",
+                      isLightMode 
+                        ? "bg-blue-50 border border-blue-200" 
+                        : "bg-blue-500/10 border border-blue-500/20"
+                    )}>
+                      <BookOpen className={cn(
+                        "w-4 h-4 flex-shrink-0 mt-0.5",
+                        isLightMode ? "text-blue-600" : "text-blue-400"
+                      )} />
+                      <div className="flex-1 min-w-0">
+                        <div className={cn(
+                          "text-[10px] uppercase tracking-widest font-semibold mb-1",
+                          isLightMode ? "text-blue-700" : "text-blue-300"
+                        )}>
+                          UK Clinical Guideline
+                        </div>
+                        {question.guideline_url ? (
+                          <a
+                            href={question.guideline_url as string}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            onClick={(e) => e.stopPropagation()}
+                            className={cn(
+                              "text-sm font-medium hover:underline inline-flex items-center gap-1.5",
+                              isLightMode ? "text-blue-700" : "text-blue-300"
+                            )}
+                          >
+                            {(question.guideline as string) || 'View guideline'}
+                            <ExternalLink className="w-3.5 h-3.5" />
+                          </a>
+                        ) : (
+                          <span className={cn(
+                            "text-sm font-medium",
+                            isLightMode ? "text-blue-700" : "text-blue-300"
+                          )}>
+                            {question.guideline as string}
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
           </div>

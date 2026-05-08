@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { CheckCircle, XCircle, ChevronRight, ArrowLeft, ChevronLeft, Sun, Moon, X, ChevronDown, Settings2 } from 'lucide-react';
+import { CheckCircle, XCircle, ChevronRight, ArrowLeft, ChevronLeft, Sun, Moon, X, ChevronDown, Settings2, BookOpen, ExternalLink } from 'lucide-react';
 import { PracticeFilterModal } from './PracticeFilterModal';
 import { useTheme } from '@/contexts/ThemeContext';
 import type { QuestionData } from './questionTypes';
@@ -300,7 +300,7 @@ export const UkmlaSBAQuestion: React.FC<UkmlaSBAQuestionProps> = ({
             {/* Question */}
             <div className="mb-5 sm:mb-6 md:mb-8">
               <div className={cn(
-                "text-[14px] sm:text-[15px] md:text-[17px] font-medium leading-[1.5] sm:leading-[1.4]",
+                "text-base sm:text-lg md:text-xl font-medium leading-snug",
                 isLightMode ? "text-zinc-900" : "text-white"
               )}>
                 <ReactMarkdown
@@ -341,7 +341,7 @@ export const UkmlaSBAQuestion: React.FC<UkmlaSBAQuestionProps> = ({
                   </div>
                   <div className="flex-1 min-w-0">
                     <div className={cn(
-                      "text-[13px] sm:text-[14px] md:text-[15px] font-medium leading-[1.4] sm:leading-[1.3] break-words",
+                      "text-sm sm:text-base md:text-lg font-medium leading-relaxed break-words",
                       isLightMode ? "text-zinc-900" : "text-white"
                     )}>
                       <ReactMarkdown>{option.text}</ReactMarkdown>
@@ -409,7 +409,7 @@ export const UkmlaSBAQuestion: React.FC<UkmlaSBAQuestionProps> = ({
                   {/* Key fact */}
                   {keyFact && (
                     <p className={cn(
-                      "text-[13px] sm:text-[14px] leading-snug font-medium",
+                      "text-sm sm:text-base leading-snug font-medium",
                       isLightMode ? "text-zinc-800" : "text-white/90"
                     )}>
                       {keyFact}
@@ -441,10 +441,67 @@ export const UkmlaSBAQuestion: React.FC<UkmlaSBAQuestionProps> = ({
                     isLightMode ? "border-zinc-200" : "border-white/10"
                   )}>
                     <div className={cn(
-                      "text-[13px] sm:text-[14px] md:text-[15px] leading-[1.6]",
+                      "text-sm sm:text-base md:text-lg leading-relaxed",
                       isLightMode ? "text-zinc-700" : "text-white/75"
                     )}>
                       <ReactMarkdown components={{ p: ({ children }) => <p className="mb-3 last:mb-0">{children}</p> }}>{explanation}</ReactMarkdown>
+                    </div>
+                  </div>
+                )}
+
+                {/* Guideline Citation - Always visible when available */}
+                {(question.guideline || question.guideline_url) && (
+                  <div className={cn(
+                    "mt-3 pt-3 border-t",
+                    isLightMode ? "border-zinc-200" : "border-white/10"
+                  )}>
+                    <div className={cn(
+                      "flex items-start gap-2 p-3 rounded-xl",
+                      isLightMode 
+                        ? "bg-blue-50 border border-blue-200" 
+                        : "bg-blue-500/10 border border-blue-500/20"
+                    )}>
+                      <BookOpen className={cn(
+                        "w-4 h-4 flex-shrink-0 mt-0.5",
+                        isLightMode ? "text-blue-600" : "text-blue-400"
+                      )} />
+                      <div className="flex-1 min-w-0">
+                        <div className={cn(
+                          "text-[11px] uppercase tracking-widest font-semibold mb-1",
+                          isLightMode ? "text-blue-700" : "text-blue-300"
+                        )}>
+                          UK Clinical Guideline
+                        </div>
+                        {question.guideline_url ? (
+                          <a
+                            href={question.guideline_url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className={cn(
+                              "text-sm font-medium hover:underline inline-flex items-center gap-1.5",
+                              isLightMode ? "text-blue-700" : "text-blue-300"
+                            )}
+                          >
+                            {question.guideline || 'View guideline'}
+                            <ExternalLink className="w-3.5 h-3.5" />
+                          </a>
+                        ) : (
+                          <span className={cn(
+                            "text-sm font-medium",
+                            isLightMode ? "text-blue-700" : "text-blue-300"
+                          )}>
+                            {question.guideline}
+                          </span>
+                        )}
+                        {question.guideline_section && (
+                          <div className={cn(
+                            "text-xs mt-1",
+                            isLightMode ? "text-blue-600/70" : "text-blue-400/70"
+                          )}>
+                            {question.guideline_section}
+                          </div>
+                        )}
+                      </div>
                     </div>
                   </div>
                 )}
