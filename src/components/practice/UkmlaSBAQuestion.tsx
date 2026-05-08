@@ -297,6 +297,19 @@ export const UkmlaSBAQuestion: React.FC<UkmlaSBAQuestionProps> = ({
           
           {/* Content */}
           <div className="relative p-4 sm:p-6 md:p-8 pb-safe">
+            {/* AI-Generated Disclaimer */}
+            <div className={cn(
+              "rounded-lg px-3 py-2 text-xs mb-4",
+              isLightMode 
+                ? "bg-amber-50 border border-amber-200 text-amber-900" 
+                : "bg-amber-950/30 border border-amber-900 text-amber-200"
+            )}>
+              <span className="font-medium">AI-generated question.</span>{' '}
+              <span className={isLightMode ? "text-amber-800/90" : "text-amber-200/90"}>
+                Created from concept content — verify clinical details against official guidelines.
+              </span>
+            </div>
+            
             {/* Question */}
             <div className="mb-5 sm:mb-6 md:mb-8">
               <div className={cn(

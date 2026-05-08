@@ -596,6 +596,19 @@ export const ModernFlashcard: React.FC<ModernFlashcardProps> = ({
           isFlipped ? "rotate-y-180 invisible" : "rotate-y-0"
         )}>
           <div className="h-full flex flex-col">
+            {/* AI-Generated Disclaimer */}
+            <div className={cn(
+              "rounded-lg px-3 py-2 text-xs mb-4 flex-shrink-0",
+              isLightMode 
+                ? "bg-amber-50 border border-amber-200 text-amber-900" 
+                : "bg-amber-950/30 border border-amber-900 text-amber-200"
+            )}>
+              <span className="font-medium">AI-generated flashcard.</span>{' '}
+              <span className={isLightMode ? "text-amber-800/90" : "text-amber-200/90"}>
+                Verify against official guidelines.
+              </span>
+            </div>
+            
             <div className="flex-1 overflow-auto touch-pan-y flex items-center justify-center">
               <div className="text-center">
                 <div 
