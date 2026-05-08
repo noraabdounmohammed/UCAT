@@ -286,7 +286,7 @@ export const createConceptStore = (curriculumId: string = 'default') => {
         }
         
         const customFilters = storedFilters ? JSON.parse(storedFilters) : [];
-        const filterCategories = storedCategories ? JSON.parse(storedCategories) : [];
+        let filterCategories = storedCategories ? JSON.parse(storedCategories) : [];
         const filterOptions = extractFilterOptions(allConcepts);
         
         let updatedFilterState;
@@ -299,6 +299,32 @@ export const createConceptStore = (curriculumId: string = 'default') => {
         
         const filteredConcepts = filterConcepts(allConcepts, updatedFilterState);
         const stats = calculateStats(filteredConcepts);
+        
+        // === LOAD DEFAULT CATEGORIES FROM JSON IF NONE IN LOCALSTORAGE ===
+        // This ensures filter categories work on fresh deploy or after cache clear
+        if (filterCategories.length === 0) {
+          try {
+            const response = await fetch('/conceptModel.json');
+            if (response.ok) {
+              const data = await response.json();
+              if (data.filter_categories && Array.isArray(data.filter_categories)) {
+                filterCategories = data.filter_categories;
+                // Save to localStorage for future use
+                localStorage.setItem(categoriesKey, JSON.stringify(filterCategories));
+                console.log('📂 Loaded default filter categories from conceptModel.json:', filterCategories.length);
+              }
+              // Also load default filter assignments if not present
+              const assignmentsKey = getCurriculumKey(curriculumId, 'filter_assignments');
+              const existingAssignments = localStorage.getItem(assignmentsKey);
+              if (!existingAssignments && data.filter_assignments) {
+                localStorage.setItem(assignmentsKey, JSON.stringify(data.filter_assignments));
+                console.log('📂 Loaded default filter assignments from conceptModel.json');
+              }
+            }
+          } catch (e) {
+            console.log('Could not load default filter categories from JSON');
+          }
+        }
         
         // === SET STATE IMMEDIATELY (UI renders now) ===
         set({ 
@@ -315,7 +341,7 @@ export const createConceptStore = (curriculumId: string = 'default') => {
         // === FALLBACK: load from JSON files if no localStorage concepts ===
         // This makes /concept-practice work on fresh deploy without any setup
         if (allConcepts.length === 0) {
-          jsonConceptLoader.loadAllCurriculums().then(curriculums => {
+          jsonConceptLoader.loadAllCurriculums().then(async curriculums => {
             const jsonConcepts: ConceptNode[] = [];
             const allCustomFilters = new Set<string>();
 
@@ -343,11 +369,31 @@ export const createConceptStore = (curriculumId: string = 'default') => {
               const jsonFilterOptions = extractFilterOptions(jsonConcepts);
               const jsonFiltered = filterConcepts(jsonConcepts, get().filterState);
               const jsonStats = calculateStats(jsonFiltered);
+              
+              // Also try to load filter categories if not already loaded
+              let jsonFilterCategories = get().filterCategories;
+              if (jsonFilterCategories.length === 0) {
+                try {
+                  const response = await fetch('/conceptModel.json');
+                  if (response.ok) {
+                    const data = await response.json();
+                    if (data.filter_categories) {
+                      jsonFilterCategories = data.filter_categories;
+                      localStorage.setItem(getCurriculumKey(curriculumId, 'filter_categories'), JSON.stringify(jsonFilterCategories));
+                    }
+                    if (data.filter_assignments) {
+                      localStorage.setItem(getCurriculumKey(curriculumId, 'filter_assignments'), JSON.stringify(data.filter_assignments));
+                    }
+                  }
+                } catch (e) { /* ignore */ }
+              }
+              
               set({
                 concepts: jsonConcepts,
                 filteredConcepts: jsonFiltered,
                 stats: jsonStats,
                 filterOptions: jsonFilterOptions,
+                filterCategories: jsonFilterCategories,
                 isLoading: false
               });
             }
