@@ -1,6 +1,8 @@
 import { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import { X, ChevronLeft, ChevronRight } from 'lucide-react';
 import { QuestionRenderer } from './QuestionRenderer';
+import { ModernFlashcard } from './ModernFlashcard';
+import { UkmlaSBAQuestion } from './UkmlaSBAQuestion';
 import { Dialog } from '@/components/ui/dialog';
 import { cn } from '@/lib/utils';
 import './apple-question-styles.css';
@@ -40,6 +42,7 @@ export function ApplePracticeSession({
   const [showReview, setShowReview] = useState(false);
   const [activeQuestions, setActiveQuestions] = useState<QuestionData[]>(questions);
   const [sessionKey, setSessionKey] = useState(0); // incremented on retry to force remount
+  const [reviewingQuestionIndex, setReviewingQuestionIndex] = useState<number | null>(null); // For viewing answered questions from review
 
   // Refs to prevent unnecessary re-renders
   const questionsRef = useRef<QuestionData[]>(questions);
@@ -187,12 +190,13 @@ export function ApplePracticeSession({
   };
 
   // Record an answer for the current question
-  const recordAnswer = (isCorrect: boolean) => {
-    const topic = questionsRef.current[currentIndex]?.title || questionsRef.current[currentIndex]?.topic;
+  const recordAnswer = (isCorrect: boolean, selectedOption?: string) => {
+    const q = questionsRef.current[currentIndex];
+    const topic = (q?.title || q?.topic || '') as string;
     setSessionAnswers(prev => {
       // Overwrite if already answered this index (e.g. user went back)
       const without = prev.filter(a => a.questionIndex !== currentIndex);
-      return [...without, { questionIndex: currentIndex, isCorrect, topic }];
+      return [...without, { questionIndex: currentIndex, isCorrect, topic, selectedOption }];
     });
   };
 
@@ -249,6 +253,18 @@ export function ApplePracticeSession({
     return;
   }, [questionContent.format]);
 
+  // Handle viewing a specific question from review screen
+  const handleViewQuestion = useCallback((questionIndex: number) => {
+    setReviewingQuestionIndex(questionIndex);
+    setShowReview(false);
+  }, []);
+
+  // Handle going back to review from question view
+  const handleBackToReview = useCallback(() => {
+    setReviewingQuestionIndex(null);
+    setShowReview(true);
+  }, []);
+
   // Show review screen at end of session
   if (showReview) {
     return (
@@ -258,7 +274,61 @@ export function ApplePracticeSession({
         onRetryIncorrect={handleRetryIncorrect}
         onDone={onComplete}
         onAnotherFive={onAnotherFive}
+        onViewQuestion={handleViewQuestion}
       />
+    );
+  }
+
+  // If reviewing a specific question from the review screen
+  if (reviewingQuestionIndex !== null) {
+    const reviewQuestion = activeQuestions[reviewingQuestionIndex];
+    const reviewAnswer = sessionAnswers.find(a => a.questionIndex === reviewingQuestionIndex);
+    const format = reviewQuestion.format || defaultFormat;
+    
+    return (
+      <div className="flex flex-col h-screen overflow-hidden bg-gradient-to-br from-stone-900 via-stone-800 to-stone-900">
+        {/* Back button */}
+        <header className="sticky top-0 z-10 bg-black/20 backdrop-blur-xl border-b border-white/10">
+          <div className="max-w-4xl mx-auto px-4 py-3 flex items-center gap-3">
+            <button
+              onClick={handleBackToReview}
+              className="flex items-center gap-2 text-white/70 hover:text-white transition-colors"
+            >
+              <ChevronLeft className="w-5 h-5" />
+              <span className="text-sm font-medium">Back to Review</span>
+            </button>
+            <div className="flex-1" />
+            <span className="text-xs text-white/40">
+              Question {reviewingQuestionIndex + 1} of {activeQuestions.length}
+            </span>
+          </div>
+        </header>
+        
+        {/* Question in answered state */}
+        <div className="flex-1 overflow-y-auto">
+          <div className="max-w-4xl mx-auto px-4 py-6">
+            {(format === 'flashcard') ? (
+              <ModernFlashcard
+                key={`review-${reviewingQuestionIndex}`}
+                question={reviewQuestion}
+                onAnswer={() => {}}
+                onNext={handleBackToReview}
+              />
+            ) : (
+              <UkmlaSBAQuestion
+                key={`review-${reviewingQuestionIndex}`}
+                question={reviewQuestion}
+                onAnswer={() => {}}
+                onNext={handleBackToReview}
+                currentIndex={reviewingQuestionIndex}
+                totalQuestions={activeQuestions.length}
+                preSelectedAnswer={reviewAnswer?.selectedOption}
+                preSubmitted={true}
+              />
+            )}
+          </div>
+        </div>
+      </div>
     );
   }
 

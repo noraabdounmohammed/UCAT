@@ -55,6 +55,13 @@ export const PracticeConfigModal: React.FC<PracticeConfigModalProps> = ({
   // Initialize practice filter state when modal opens - always reset to fresh state
   useEffect(() => {
     if (isOpen) {
+      console.log('📋 PracticeConfigModal opened:', {
+        conceptsLength: concepts.length,
+        filterCategoriesLength: filterCategories?.length,
+        sampleConcept: concepts[0],
+        sampleConceptFilters: concepts[0]?.custom_filters
+      });
+      
       // ALWAYS start fresh - ignore any previous filters
       // Only use preselectedFilter if provided, otherwise start completely empty
       setPracticeFilterState({
@@ -220,9 +227,18 @@ export const PracticeConfigModal: React.FC<PracticeConfigModalProps> = ({
   }, [practiceFilterState.custom_filters, practiceFilterState.mastery_levels, initialConceptIds, concepts.length, filteredPracticeConcepts.length]);
 
   // Calculate counts and mastery stats for each custom filter
+  // Build counts from ALL unique filters found in concepts
   const filterCounts = React.useMemo(() => {
     const counts: Record<string, { total: number; correct: number; incorrect: number }> = {};
-    filterOptions.custom_filters?.forEach((filter: string) => {
+    
+    // First, collect all unique filters from concepts
+    const allFilters = new Set<string>();
+    concepts.forEach((c: any) => {
+      c.custom_filters?.forEach((f: string) => allFilters.add(f));
+    });
+    
+    // Then calculate counts for each filter
+    allFilters.forEach((filter: string) => {
       const filterConcepts = concepts.filter((c: any) => 
         c.custom_filters?.includes(filter)
       );
@@ -235,8 +251,15 @@ export const PracticeConfigModal: React.FC<PracticeConfigModalProps> = ({
         incorrect
       };
     });
+    
+    console.log('🔍 filterCounts:', {
+      conceptsLength: concepts.length,
+      uniqueFilters: allFilters.size,
+      sampleCounts: Object.entries(counts).slice(0, 5)
+    });
+    
     return counts;
-  }, [concepts, filterOptions.custom_filters]);
+  }, [concepts]);
   // Show only active formats (not coming soon)
   const activeFormats: QuestionFormat[] = ['flashcard', 'sba', 'ukmla_sba'];
   

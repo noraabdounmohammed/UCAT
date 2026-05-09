@@ -396,7 +396,16 @@ export const createConceptStore = (curriculumId: string = 'default') => {
             if (jsonConcepts.length > 0) {
               const jsonFilterOptions = extractFilterOptions(jsonConcepts);
               const jsonFiltered = filterConcepts(jsonConcepts, get().filterState);
-              const jsonStats = calculateStats(jsonFiltered);
+              // Calculate stats from ALL concepts, not filtered ones
+              const jsonStats = calculateStats(jsonConcepts);
+              
+              console.log('📊 JSON Concepts loaded:', {
+                total: jsonConcepts.length,
+                customFilters: jsonFilterOptions.custom_filters?.length,
+                sampleFilters: jsonFilterOptions.custom_filters?.slice(0, 5),
+                statsByFilter: Object.keys(jsonStats.by_custom_filter).slice(0, 5),
+                byMastery: jsonStats.by_mastery
+              });
               
               // Use extracted categories from concept JSON files
               let jsonFilterCategories = get().filterCategories;

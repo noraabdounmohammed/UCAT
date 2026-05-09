@@ -25,6 +25,9 @@ interface UkmlaSBAQuestionProps {
   onFilterSelect?: (filter?: string) => void;
   currentFormat?: string;
   onChangeFormat?: (format: string) => void;
+  // Review mode props - show question in already-answered state
+  preSelectedAnswer?: string;
+  preSubmitted?: boolean;
 }
 
 export const UkmlaSBAQuestion: React.FC<UkmlaSBAQuestionProps> = ({
@@ -42,15 +45,18 @@ export const UkmlaSBAQuestion: React.FC<UkmlaSBAQuestionProps> = ({
   activeFilter = null,
   onFilterSelect,
   currentFormat = 'ukmla_sba',
-  onChangeFormat
+  onChangeFormat,
+  preSelectedAnswer,
+  preSubmitted = false
 }) => {
-  const [selectedOption, setSelectedOption] = useState<string | null>(null);
-  const [hasSubmitted, setHasSubmitted] = useState(false);
+  // Initialize from preSelectedAnswer/preSubmitted for review mode
+  const [selectedOption, setSelectedOption] = useState<string | null>(preSelectedAnswer || null);
+  const [hasSubmitted, setHasSubmitted] = useState(preSubmitted);
   const [showAIHelper, setShowAIHelper] = useState(false);
   const [showConfigPanel, setShowConfigPanel] = useState(false);
   const { theme, toggleTheme } = useTheme();
   const isLightMode = theme === 'light';
-  const [showFullExplanation, setShowFullExplanation] = useState(false);
+  const [showFullExplanation, setShowFullExplanation] = useState(preSubmitted); // Show explanation in review mode
   
   // Store answer states in sessionStorage for persistence across navigation
   const getStorageKey = () => `sba_answer_${question.id || question.question?.substring(0, 50)}`;

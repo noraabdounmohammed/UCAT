@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { CheckCircle2, XCircle, RotateCcw, ArrowRight, Flame, Target, Plus, Sun, Moon } from 'lucide-react';
+import { CheckCircle2, XCircle, RotateCcw, ArrowRight, Flame, Target, Plus, Sun, Moon, ChevronRight } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { SessionAnswer } from './SessionProgressDropdown';
 import { useTheme } from '@/contexts/ThemeContext';
@@ -11,6 +11,7 @@ interface SessionReviewScreenProps {
   onRetryIncorrect: () => void;
   onDone: () => void;
   onAnotherFive?: (filter?: string) => void;
+  onViewQuestion?: (questionIndex: number) => void;
 }
 
 // Behavioral science: variable reward messaging based on score
@@ -40,6 +41,7 @@ export const SessionReviewScreen: React.FC<SessionReviewScreenProps> = ({
   onRetryIncorrect,
   onDone,
   onAnotherFive,
+  onViewQuestion,
 }) => {
   const [visible, setVisible] = useState(false);
   const { theme, toggleTheme } = useTheme();
@@ -185,9 +187,19 @@ export const SessionReviewScreen: React.FC<SessionReviewScreenProps> = ({
               const answer = answers.find(a => a.questionIndex === i);
               const topic = q.title || q.topic || `Question ${i + 1}`;
               const questionPreview = (q.question_stem || q.question || q.content || '').slice(0, 80);
+              const isClickable = onViewQuestion && answer; // Only clickable if answered
 
               return (
-                <div key={i} className="flex items-start gap-3 px-4 py-3">
+                <button
+                  key={i}
+                  onClick={() => isClickable && onViewQuestion(i)}
+                  disabled={!isClickable}
+                  className={cn(
+                    'w-full flex items-start gap-3 px-4 py-3 text-left transition-colors',
+                    isClickable && (light ? 'hover:bg-zinc-50 cursor-pointer' : 'hover:bg-white/5 cursor-pointer'),
+                    !isClickable && 'cursor-default'
+                  )}
+                >
                   <div className="flex-shrink-0 mt-0.5">
                     {answer?.isCorrect ? (
                       <CheckCircle2 className="w-4 h-4 text-emerald-500" />
@@ -203,15 +215,20 @@ export const SessionReviewScreen: React.FC<SessionReviewScreenProps> = ({
                       <p className={cn('text-xs truncate mt-0.5', light ? 'text-zinc-400' : 'text-white/30')}>{questionPreview}…</p>
                     )}
                   </div>
-                  <span className={cn(
-                    'text-[10px] font-semibold px-2 py-0.5 rounded-full flex-shrink-0',
-                    answer?.isCorrect ? 'bg-emerald-500/15 text-emerald-600' :
-                    answer ? 'bg-rose-500/15 text-rose-600' :
-                    light ? 'bg-zinc-100 text-zinc-400' : 'bg-white/5 text-white/20'
-                  )}>
-                    {answer?.isCorrect ? 'Correct' : answer ? 'Wrong' : 'Skipped'}
-                  </span>
-                </div>
+                  <div className="flex items-center gap-2 flex-shrink-0">
+                    <span className={cn(
+                      'text-[10px] font-semibold px-2 py-0.5 rounded-full',
+                      answer?.isCorrect ? 'bg-emerald-500/15 text-emerald-600' :
+                      answer ? 'bg-rose-500/15 text-rose-600' :
+                      light ? 'bg-zinc-100 text-zinc-400' : 'bg-white/5 text-white/20'
+                    )}>
+                      {answer?.isCorrect ? 'Correct' : answer ? 'Wrong' : 'Skipped'}
+                    </span>
+                    {isClickable && (
+                      <ChevronRight className={cn('w-4 h-4', light ? 'text-zinc-300' : 'text-white/20')} />
+                    )}
+                  </div>
+                </button>
               );
             })}
           </div>

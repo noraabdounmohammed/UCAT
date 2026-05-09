@@ -6,6 +6,7 @@ export interface SessionAnswer {
   questionIndex: number;
   isCorrect: boolean;
   topic?: string;
+  selectedOption?: string; // The option ID the user selected
 }
 
 interface SessionProgressDropdownProps {
