@@ -319,7 +319,7 @@ export const UkmlaSBAQuestion: React.FC<UkmlaSBAQuestionProps> = ({
             {/* Question */}
             <div className="mb-5 sm:mb-6 md:mb-8">
               <div className={cn(
-                "text-base sm:text-lg md:text-xl font-medium leading-snug",
+                "text-base sm:text-lg md:text-xl font-semibold leading-snug",
                 isLightMode ? "text-zinc-900" : "text-white"
               )}>
                 <ReactMarkdown
@@ -360,7 +360,7 @@ export const UkmlaSBAQuestion: React.FC<UkmlaSBAQuestionProps> = ({
                   </div>
                   <div className="flex-1 min-w-0">
                     <div className={cn(
-                      "text-sm sm:text-base md:text-lg font-medium leading-relaxed break-words",
+                      "text-sm sm:text-base md:text-lg font-semibold leading-relaxed break-words",
                       isLightMode ? "text-zinc-900" : "text-white"
                     )}>
                       <ReactMarkdown>{option.text}</ReactMarkdown>
