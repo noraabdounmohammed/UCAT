@@ -346,7 +346,7 @@ export const createConceptStore = (curriculumId: string = 'default') => {
             const allCustomFilters = new Set<string>();
             
             // Extract filter categories and assignments from concept data
-            const categoryMap = new Map<string, { name: string; color: string; id: string }>();
+            const categoryMap = new Map<string, { name: string; color: string; id: string; created_at: Date }>();
             const filterAssignments: Record<string, string> = {};
 
             curriculums.forEach(curr => {
@@ -361,7 +361,8 @@ export const createConceptStore = (curriculumId: string = 'default') => {
                       categoryMap.set(cat.name, {
                         id: catId,
                         name: cat.name,
-                        color: cat.color || '#3B82F6'
+                        color: cat.color || '#3B82F6',
+                        created_at: new Date()
                       });
                     }
                     // Map each filter to its category
@@ -407,19 +408,16 @@ export const createConceptStore = (curriculumId: string = 'default') => {
                 byMastery: jsonStats.by_mastery
               });
               
-              // Use extracted categories from concept JSON files
-              let jsonFilterCategories = get().filterCategories;
-              if (jsonFilterCategories.length === 0 && categoryMap.size > 0) {
-                jsonFilterCategories = Array.from(categoryMap.values());
+              // Always use categories extracted from JSON (not localStorage) for fresh/incognito sessions
+              let jsonFilterCategories = Array.from(categoryMap.values());
+              if (jsonFilterCategories.length > 0) {
                 localStorage.setItem(getCurriculumKey(curriculumId, 'filter_categories'), JSON.stringify(jsonFilterCategories));
                 console.log('📂 Extracted filter categories from concept JSON:', jsonFilterCategories.length);
               }
               
-              // Save filter assignments extracted from concepts
-              const assignmentsKey = getCurriculumKey(curriculumId, 'filter_assignments');
-              const existingAssignments = localStorage.getItem(assignmentsKey);
-              if (!existingAssignments && Object.keys(filterAssignments).length > 0) {
-                localStorage.setItem(assignmentsKey, JSON.stringify(filterAssignments));
+              // Always save filter assignments extracted from concepts
+              if (Object.keys(filterAssignments).length > 0) {
+                localStorage.setItem(getCurriculumKey(curriculumId, 'filter_assignments'), JSON.stringify(filterAssignments));
                 console.log('📂 Extracted filter assignments from concept JSON:', Object.keys(filterAssignments).length);
               }
               
