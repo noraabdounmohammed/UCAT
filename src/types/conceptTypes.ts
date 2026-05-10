@@ -204,6 +204,8 @@ export interface FilterCategory {
 }
 
 // Practice configuration
+export type StudyMode = 'smart' | 'new_only' | 'review_weak' | 'custom';
+
 export interface PracticeConfig {
   target_bloom_levels?: BloomLevel[];
   target_formats?: QuestionFormat[];
@@ -211,6 +213,8 @@ export interface PracticeConfig {
   question_count?: number;
   custom_prompt?: string;
   custom_flashcard_prompt?: string;
+  study_mode?: StudyMode;
+  target_mastery_levels?: number[];
 }
 
 export interface ConceptPracticeState {

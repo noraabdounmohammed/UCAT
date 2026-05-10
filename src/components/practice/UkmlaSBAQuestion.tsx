@@ -303,17 +303,44 @@ export const UkmlaSBAQuestion: React.FC<UkmlaSBAQuestionProps> = ({
           
           {/* Content */}
           <div className="relative p-4 sm:p-6 md:p-8 pb-safe">
-            {/* AI-Generated Disclaimer */}
-            <div className={cn(
-              "rounded-lg px-3 py-2 text-xs mb-4",
-              isLightMode 
-                ? "bg-amber-50 border border-amber-200 text-amber-900" 
-                : "bg-amber-950/30 border border-amber-900 text-amber-200"
-            )}>
-              <span className="font-medium">AI-generated question.</span>{' '}
-              <span className={isLightMode ? "text-amber-800/90" : "text-amber-200/90"}>
-                Created from concept content — verify clinical details against official guidelines.
-              </span>
+            {/* Study Reason Badge + AI Disclaimer */}
+            <div className="flex flex-wrap items-center gap-2 mb-4">
+              {/* Study reason badge */}
+              {(question as any).study_reason && (
+                <span className={cn(
+                  "inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-medium uppercase tracking-wider",
+                  (question as any).study_reason === 'due' && (isLightMode 
+                    ? "bg-orange-100 text-orange-700 border border-orange-200" 
+                    : "bg-orange-950/40 text-orange-300 border border-orange-800"),
+                  (question as any).study_reason === 'needs_review' && (isLightMode 
+                    ? "bg-amber-100 text-amber-700 border border-amber-200" 
+                    : "bg-amber-950/40 text-amber-300 border border-amber-800"),
+                  (question as any).study_reason === 'new' && (isLightMode 
+                    ? "bg-blue-100 text-blue-700 border border-blue-200" 
+                    : "bg-blue-950/40 text-blue-300 border border-blue-800"),
+                  (question as any).study_reason === 'reinforcement' && (isLightMode 
+                    ? "bg-emerald-100 text-emerald-700 border border-emerald-200" 
+                    : "bg-emerald-950/40 text-emerald-300 border border-emerald-800")
+                )}>
+                  {(question as any).study_reason === 'due' && '📅 Due for review'}
+                  {(question as any).study_reason === 'needs_review' && '🔄 Needs work'}
+                  {(question as any).study_reason === 'new' && '✨ New concept'}
+                  {(question as any).study_reason === 'reinforcement' && '💪 Reinforcement'}
+                </span>
+              )}
+              
+              {/* AI Disclaimer */}
+              <div className={cn(
+                "flex-1 rounded-lg px-3 py-2 text-xs",
+                isLightMode 
+                  ? "bg-amber-50 border border-amber-200 text-amber-900" 
+                  : "bg-amber-950/30 border border-amber-900 text-amber-200"
+              )}>
+                <span className="font-medium">AI-generated.</span>{' '}
+                <span className={isLightMode ? "text-amber-800/90" : "text-amber-200/90"}>
+                  Verify against official guidelines.
+                </span>
+              </div>
             </div>
             
             {/* Question */}

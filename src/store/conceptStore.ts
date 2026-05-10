@@ -73,9 +73,9 @@ function extractFilterOptions(concepts: ConceptNode[]): ConceptFilterOptions {
 
   return {
     mastery_levels: [
-      { level: 0, name: 'Unseen' },
-      { level: 1, name: 'Incorrect' },
-      { level: 2, name: 'Correct' }
+      { level: 0, name: 'New' },
+      { level: 1, name: 'Needs Review' },
+      { level: 2, name: 'Got It' }
     ],
     custom_filters: Array.from(customFilterTags)
   };
@@ -157,9 +157,9 @@ export const createConceptStore = (curriculumId: string = 'default') => {
       },
       filterOptions: {
         mastery_levels: [
-          { level: 0, name: 'Unseen' },
-          { level: 1, name: 'Incorrect' },
-          { level: 2, name: 'Correct' }
+          { level: 0, name: 'New' },
+          { level: 1, name: 'Needs Review' },
+          { level: 2, name: 'Got It' }
         ],
         custom_filters: []
       },
@@ -692,9 +692,9 @@ export const createConceptStore = (curriculumId: string = 'default') => {
         // Reset store state
         const filterOptions = {
           mastery_levels: [
-            { level: 0, name: 'Unseen' },
-            { level: 1, name: 'Incorrect' },
-            { level: 2, name: 'Correct' }
+            { level: 0, name: 'New' },
+            { level: 1, name: 'Needs Review' },
+            { level: 2, name: 'Got It' }
           ],
           custom_filters: []
         };
@@ -880,37 +880,124 @@ export const createConceptStore = (curriculumId: string = 'default') => {
           // Generate questions from concepts
           const questionCount = practiceConfig?.question_count || 10;
           const targetFormat = practiceConfig?.target_formats?.[0] || 'ukmla_sba';
+          const studyMode = practiceConfig?.study_mode || 'smart';
           
           console.log('🎯 Practice Config Debug:', {
             practiceConfig,
             questionCount,
             targetFormat,
+            studyMode,
             conceptsToUseLength: conceptsToUse.length
           });
           
-          // FSRS-aware ordering: due first, then unseen, then not-yet-due
-          // Within each bucket, randomise to avoid repetitive ordering
           const nowMs = Date.now();
-          const shuffled = [...conceptsToUse].sort((a, b) => {
-            const mdA = a.mastery_data;
-            const mdB = b.mastery_data;
-            const dueA = mdA?.fsrs_due_at ? new Date(mdA.fsrs_due_at).getTime() : null;
-            const dueB = mdB?.fsrs_due_at ? new Date(mdB.fsrs_due_at).getTime() : null;
-            const unseenA = !mdA?.fsrs_due_at && (mdA?.attempts ?? 0) === 0;
-            const unseenB = !mdB?.fsrs_due_at && (mdB?.attempts ?? 0) === 0;
-            const isDueA = dueA !== null && dueA <= nowMs;
-            const isDueB = dueB !== null && dueB <= nowMs;
-            // Priority: overdue > unseen > not-yet-due
-            const priorityA = isDueA ? 0 : unseenA ? 1 : 2;
-            const priorityB = isDueB ? 0 : unseenB ? 1 : 2;
-            if (priorityA !== priorityB) return priorityA - priorityB;
-            // Within the same priority: due→sort by dueAt asc; unseen/not-due→randomise
-            if (priorityA === 0 && dueA !== null && dueB !== null) return dueA - dueB;
-            return Math.random() - 0.5;
-          });
-          // Use the specified number of concepts, up to what's available (hard cap: 40 per session)
           const MAX_SESSION_SIZE = 40;
-          const conceptsForQuestions = shuffled.slice(0, Math.min(questionCount, shuffled.length, MAX_SESSION_SIZE));
+          let conceptsForQuestions: ConceptNode[] = [];
+          
+          // Track study reason for each concept (for question badges)
+          type StudyReason = 'due' | 'needs_review' | 'new' | 'reinforcement';
+          const conceptStudyReasons = new Map<string, StudyReason>();
+          
+          // Categorize concepts by their study priority
+          const categorized = {
+            due: [] as ConceptNode[],      // Overdue for review (FSRS due)
+            needsReview: [] as ConceptNode[], // Got wrong last time (mastery_level === 1)
+            unseen: [] as ConceptNode[],   // Never practiced (mastery_level === 0)
+            mastered: [] as ConceptNode[]  // Got right (mastery_level === 2)
+          };
+          
+          conceptsToUse.forEach(c => {
+            const md = c.mastery_data;
+            const dueAt = md?.fsrs_due_at ? new Date(md.fsrs_due_at).getTime() : null;
+            const isDue = dueAt !== null && dueAt <= nowMs;
+            const isUnseen = (md?.attempts ?? 0) === 0;
+            const masteryLevel = md?.mastery_level ?? 0;
+            
+            if (isDue) {
+              categorized.due.push(c);
+              conceptStudyReasons.set(c.concept_id, 'due');
+            } else if (masteryLevel === 1) {
+              categorized.needsReview.push(c);
+              conceptStudyReasons.set(c.concept_id, 'needs_review');
+            } else if (isUnseen || masteryLevel === 0) {
+              categorized.unseen.push(c);
+              conceptStudyReasons.set(c.concept_id, 'new');
+            } else {
+              categorized.mastered.push(c);
+              conceptStudyReasons.set(c.concept_id, 'reinforcement');
+            }
+          });
+          
+          // Shuffle each category
+          const shuffle = (arr: ConceptNode[]) => arr.sort(() => Math.random() - 0.5);
+          shuffle(categorized.due);
+          shuffle(categorized.needsReview);
+          shuffle(categorized.unseen);
+          shuffle(categorized.mastered);
+          
+          console.log('📊 Concept Categories:', {
+            due: categorized.due.length,
+            needsReview: categorized.needsReview.length,
+            unseen: categorized.unseen.length,
+            mastered: categorized.mastered.length
+          });
+          
+          if (studyMode === 'smart') {
+            // Evidence-based smart study: 70% due/review, 20% new, 10% mastered
+            const targetCount = Math.min(questionCount, conceptsToUse.length, MAX_SESSION_SIZE);
+            const dueReviewTarget = Math.ceil(targetCount * 0.7);
+            const newTarget = Math.ceil(targetCount * 0.2);
+            const masteredTarget = Math.max(1, targetCount - dueReviewTarget - newTarget);
+            
+            // Combine due + needsReview for the 70%
+            const dueReviewPool = [...categorized.due, ...categorized.needsReview];
+            const dueReviewPick = dueReviewPool.slice(0, dueReviewTarget);
+            const newPick = categorized.unseen.slice(0, newTarget);
+            const masteredPick = categorized.mastered.slice(0, masteredTarget);
+            
+            // Combine and fill any gaps
+            conceptsForQuestions = [...dueReviewPick, ...newPick, ...masteredPick];
+            
+            // If we don't have enough, fill from any remaining
+            if (conceptsForQuestions.length < targetCount) {
+              const usedIds = new Set(conceptsForQuestions.map(c => c.concept_id));
+              const remaining = conceptsToUse.filter(c => !usedIds.has(c.concept_id));
+              shuffle(remaining);
+              conceptsForQuestions.push(...remaining.slice(0, targetCount - conceptsForQuestions.length));
+            }
+            
+            // Final shuffle to mix categories
+            shuffle(conceptsForQuestions);
+            conceptsForQuestions = conceptsForQuestions.slice(0, targetCount);
+            
+          } else if (studyMode === 'new_only') {
+            // Only unseen concepts, random order
+            conceptsForQuestions = categorized.unseen.slice(0, Math.min(questionCount, MAX_SESSION_SIZE));
+            
+          } else if (studyMode === 'review_weak') {
+            // Only needs review (got wrong), random order
+            conceptsForQuestions = [...categorized.needsReview, ...categorized.due]
+              .slice(0, Math.min(questionCount, MAX_SESSION_SIZE));
+            
+          } else {
+            // Custom mode: use FSRS ordering (original behavior)
+            const shuffled = [...conceptsToUse].sort((a, b) => {
+              const mdA = a.mastery_data;
+              const mdB = b.mastery_data;
+              const dueA = mdA?.fsrs_due_at ? new Date(mdA.fsrs_due_at).getTime() : null;
+              const dueB = mdB?.fsrs_due_at ? new Date(mdB.fsrs_due_at).getTime() : null;
+              const unseenA = !mdA?.fsrs_due_at && (mdA?.attempts ?? 0) === 0;
+              const unseenB = !mdB?.fsrs_due_at && (mdB?.attempts ?? 0) === 0;
+              const isDueA = dueA !== null && dueA <= nowMs;
+              const isDueB = dueB !== null && dueB <= nowMs;
+              const priorityA = isDueA ? 0 : unseenA ? 1 : 2;
+              const priorityB = isDueB ? 0 : unseenB ? 1 : 2;
+              if (priorityA !== priorityB) return priorityA - priorityB;
+              if (priorityA === 0 && dueA !== null && dueB !== null) return dueA - dueB;
+              return Math.random() - 0.5;
+            });
+            conceptsForQuestions = shuffled.slice(0, Math.min(questionCount, MAX_SESSION_SIZE));
+          }
           
           // Update the actual count being generated
           set({ generatingQuestionCount: conceptsForQuestions.length });
@@ -978,6 +1065,9 @@ export const createConceptStore = (curriculumId: string = 'default') => {
           
           // Generate missing questions
           const questionPromises = conceptsForQuestions.map(async (concept) => {
+            // Get the study reason for this concept
+            const studyReason = conceptStudyReasons.get(concept.concept_id) || 'new';
+            
             // Check if we have cached questions for this concept
             const allCachedForConcept = cachedByConcept[concept.concept_id] || [];
             
@@ -998,7 +1088,8 @@ export const createConceptStore = (curriculumId: string = 'default') => {
                 explanation: cached.explanation,
                 format: cached.question_format,
                 key_fact: cached.key_fact,
-                citation_id: cached.citation_id
+                citation_id: cached.citation_id,
+                study_reason: studyReason // Add study reason for badge
               };
             }
             
@@ -1035,7 +1126,8 @@ export const createConceptStore = (curriculumId: string = 'default') => {
                 difficulty: 'medium'
               }).catch(err => console.error('Failed to cache question:', err));
               
-              return generated;
+              // Add study reason to generated question
+              return { ...generated, study_reason: studyReason };
             } catch (error) {
               console.error(`Failed to generate question for concept ${concept.concept_id}:`, error);
               // Return a fallback question
@@ -1047,7 +1139,8 @@ export const createConceptStore = (curriculumId: string = 'default') => {
                 correct_answer: 0,
                 explanation: concept.content || 'No explanation available',
                 bloom_level: 'remember' as const,
-                format: 'mcq' as const
+                format: 'mcq' as const,
+                study_reason: studyReason // Add study reason for badge
               };
             }
           });
