@@ -32,6 +32,7 @@ export const PracticeConfigModal: React.FC<PracticeConfigModalProps> = ({
     stats,
     filterCategories,
     filterOptions,
+    filterState: globalFilterState,
     concepts,
     curriculumId,
     setPracticeSelection
@@ -57,23 +58,31 @@ export const PracticeConfigModal: React.FC<PracticeConfigModalProps> = ({
   const [isAuthenticating, setIsAuthenticating] = useState(false);
   const [authError, setAuthError] = useState<string | null>(null);
 
-  // Initialize practice filter state when modal opens - always reset to fresh state
+  // Initialize practice filter state when modal opens - inherit from dashboard filters
   useEffect(() => {
     if (isOpen) {
       console.log('📋 PracticeConfigModal opened:', {
         conceptsLength: concepts.length,
         filterCategoriesLength: filterCategories?.length,
+        globalFilters: globalFilterState?.custom_filters,
+        globalMastery: globalFilterState?.mastery_levels,
         sampleConcept: concepts[0],
         sampleConceptFilters: concepts[0]?.custom_filters
       });
       
-      // ALWAYS start fresh - ignore any previous filters
-      // Only use preselectedFilter if provided, otherwise start completely empty
+      // Initialize with dashboard's active filters if available
+      // If preselectedFilter is provided, use that instead
+      const inheritedFilters = preselectedFilter 
+        ? [preselectedFilter] 
+        : (globalFilterState?.custom_filters || []);
+      const inheritedMastery = globalFilterState?.mastery_levels || [];
+      const inheritedCascading = globalFilterState?.cascading_mode ?? true;
+      
       setPracticeFilterState({
-        custom_filters: preselectedFilter ? [preselectedFilter] : [],
-        mastery_levels: [],
-        cascading_mode: true, // Default to AND mode (cascading filters)
-        study_mode: 'smart' // Default to smart study
+        custom_filters: inheritedFilters,
+        mastery_levels: inheritedMastery,
+        cascading_mode: inheritedCascading,
+        study_mode: 'smart' // Always default to smart study
       });
     } else {
       // When modal closes, reset to empty state
@@ -84,7 +93,7 @@ export const PracticeConfigModal: React.FC<PracticeConfigModalProps> = ({
         study_mode: 'smart'
       });
     }
-  }, [isOpen, preselectedFilter]);
+  }, [isOpen, preselectedFilter, globalFilterState?.custom_filters, globalFilterState?.mastery_levels, globalFilterState?.cascading_mode]);
 
   // Built-in prompt templates - defined early for use in handleClose
   const builtInSBAPrompts = {
@@ -619,6 +628,71 @@ export const PracticeConfigModal: React.FC<PracticeConfigModalProps> = ({
               <X className="h-5 w-5 text-stone-400" />
             </button>
           </div>
+          
+          {/* Active Filters Banner - show inherited filters from dashboard */}
+          {(practiceFilterState.custom_filters.length > 0 || practiceFilterState.mastery_levels.length > 0) && (
+            <div className="mt-4 p-4 bg-stone-100/80 rounded-xl">
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-[10px] uppercase tracking-widest text-stone-500 font-medium" style={{ fontFamily: "'Unbounded', sans-serif" }}>
+                  Active Filters ({displayConceptCount} concepts)
+                </span>
+                <button
+                  onClick={() => setPracticeFilterState({
+                    ...practiceFilterState,
+                    custom_filters: [],
+                    mastery_levels: []
+                  })}
+                  className="text-[10px] uppercase tracking-widest text-stone-500 hover:text-stone-700 transition-colors"
+                  style={{ fontFamily: "'Unbounded', sans-serif" }}
+                >
+                  Clear All
+                </button>
+              </div>
+              <div className="flex flex-wrap gap-2">
+                {practiceFilterState.mastery_levels.map((level: number) => {
+                  const levelName = level === 0 ? 'New' : level === 1 ? 'Needs Review' : 'Got It';
+                  const levelColor = level === 0 ? 'bg-gray-400' : level === 1 ? 'bg-amber-500' : 'bg-emerald-500';
+                  return (
+                    <span
+                      key={`mastery-${level}`}
+                      className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-white rounded-full text-xs text-stone-700 border border-stone-200"
+                      style={{ fontFamily: "'Manrope', sans-serif" }}
+                    >
+                      <div className={`w-2 h-2 rounded-full ${levelColor}`} />
+                      {levelName}
+                      <button
+                        onClick={() => setPracticeFilterState({
+                          ...practiceFilterState,
+                          mastery_levels: practiceFilterState.mastery_levels.filter((l: number) => l !== level)
+                        })}
+                        className="ml-1 text-stone-400 hover:text-stone-600"
+                      >
+                        <X className="h-3 w-3" />
+                      </button>
+                    </span>
+                  );
+                })}
+                {practiceFilterState.custom_filters.map((filter: string) => (
+                  <span
+                    key={filter}
+                    className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-stone-900 text-white rounded-full text-xs"
+                    style={{ fontFamily: "'Manrope', sans-serif" }}
+                  >
+                    {filter.replace(/-/g, ' ')}
+                    <button
+                      onClick={() => setPracticeFilterState({
+                        ...practiceFilterState,
+                        custom_filters: practiceFilterState.custom_filters.filter((f: string) => f !== filter)
+                      })}
+                      className="ml-1 text-white/60 hover:text-white"
+                    >
+                      <X className="h-3 w-3" />
+                    </button>
+                  </span>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
 
         {/* Content */}
@@ -854,9 +928,10 @@ export const PracticeConfigModal: React.FC<PracticeConfigModalProps> = ({
                   )}
                 </div>
 
-                {/* Custom Filters - Categorized */}
+                {/* Custom Filters - Categorized + Unassigned */}
                 {filterCategories && filterCategories.length > 0 ? (
                   <div className="space-y-6">
+                    {/* Categorized Filters */}
                     {filterCategories.map((category) => {
                       const filterAssignments = getCurriculumStorageParsed<Record<string, string>>(curriculumId, 'filter_assignments', {});
                       
@@ -947,6 +1022,66 @@ export const PracticeConfigModal: React.FC<PracticeConfigModalProps> = ({
                         </div>
                       );
                     })}
+                    
+                    {/* Unassigned Filters */}
+                    {filterOptions.custom_filters && filterOptions.custom_filters.length > 0 && (() => {
+                      const filterAssignments = getCurriculumStorageParsed<Record<string, string>>(curriculumId, 'filter_assignments', {});
+                      const unassignedFilters = filterOptions.custom_filters
+                        .filter((filter: string) => !filterAssignments[filter])
+                        .filter((filter: string) => filter.toLowerCase().includes(searchQuery.toLowerCase()))
+                        .sort((a: string, b: string) => a.toLowerCase().localeCompare(b.toLowerCase()));
+                      
+                      if (unassignedFilters.length === 0) return null;
+                      
+                      return (
+                        <div className="space-y-3">
+                          <div className="flex items-center gap-2 text-[10px] font-medium text-stone-500" style={{ fontFamily: "'Unbounded', sans-serif" }}>
+                            <div className="w-2 h-2 rounded-full bg-stone-400" />
+                            <span className="uppercase tracking-widest">Unassigned</span>
+                            <span className="text-stone-400">({unassignedFilters.length})</span>
+                          </div>
+                          <div className="flex flex-wrap gap-2">
+                            {unassignedFilters.map((filter: string) => {
+                              const isSelected = practiceFilterState.custom_filters.includes(filter);
+                              const stats = filterCounts[filter] || { total: 0, correct: 0, incorrect: 0 };
+                              const correctPercent = stats.total > 0 ? (stats.correct / stats.total) * 100 : 0;
+                              
+                              return (
+                                <button
+                                  key={filter}
+                                  onClick={() => {
+                                    const newFilters = isSelected
+                                      ? practiceFilterState.custom_filters.filter((f: string) => f !== filter)
+                                      : [...practiceFilterState.custom_filters, filter];
+                                    setPracticeFilterState({ ...practiceFilterState, custom_filters: newFilters });
+                                  }}
+                                  className={`relative overflow-hidden inline-flex items-center gap-2 px-4 py-2 rounded-full text-[11px] font-light transition-all ${
+                                    isSelected
+                                      ? 'bg-stone-900 text-white shadow-sm hover:bg-stone-800'
+                                      : 'bg-white/60 backdrop-blur-xl text-stone-900 border border-black/[0.06] hover:border-black/[0.12]'
+                                  }`}
+                                  style={{ fontFamily: "'Manrope', sans-serif" }}
+                                >
+                                  {/* Progress bar background */}
+                                  <div 
+                                    className={`absolute inset-0 transition-all duration-500 ${
+                                      isSelected ? 'bg-white/10' : 'bg-green-500/20'
+                                    }`}
+                                    style={{ width: `${correctPercent}%` }}
+                                  />
+                                  <span className="relative z-10">{filter.replace(/-/g, ' ')}</span>
+                                  <span className={`relative z-10 text-[10px] font-medium ${
+                                    isSelected ? 'text-white/60' : 'text-stone-400'
+                                  }`} style={{ fontFamily: "'Unbounded', sans-serif" }}>
+                                    {stats.total}
+                                  </span>
+                                </button>
+                              );
+                            })}
+                          </div>
+                        </div>
+                      );
+                    })()}
                   </div>
                 ) : filterOptions.custom_filters && filterOptions.custom_filters.length > 0 && (
                   <div className="space-y-3">
