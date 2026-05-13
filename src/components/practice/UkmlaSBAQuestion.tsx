@@ -28,6 +28,8 @@ interface UkmlaSBAQuestionProps {
   // Review mode props - show question in already-answered state
   preSelectedAnswer?: string;
   preSubmitted?: boolean;
+  // Custom button text for review mode
+  nextButtonText?: string;
 }
 
 export const UkmlaSBAQuestion: React.FC<UkmlaSBAQuestionProps> = ({
@@ -47,7 +49,8 @@ export const UkmlaSBAQuestion: React.FC<UkmlaSBAQuestionProps> = ({
   currentFormat = 'ukmla_sba',
   onChangeFormat,
   preSelectedAnswer,
-  preSubmitted = false
+  preSubmitted = false,
+  nextButtonText
 }) => {
   // Initialize from preSelectedAnswer/preSubmitted for review mode
   const [selectedOption, setSelectedOption] = useState<string | null>(preSelectedAnswer || null);
@@ -566,7 +569,7 @@ export const UkmlaSBAQuestion: React.FC<UkmlaSBAQuestionProps> = ({
                         : "bg-white/10 hover:bg-white/20 active:bg-white/15 text-white border-white/20 hover:border-white/30"
                     )}
                   >
-                    <span>Next Question</span>
+                    <span>{nextButtonText || 'Next Question'}</span>
                     <ChevronRight className="h-4 w-4 sm:h-5 sm:w-5" />
                   </button>
                 </div>

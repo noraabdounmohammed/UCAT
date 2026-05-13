@@ -324,6 +324,7 @@ export function ApplePracticeSession({
                 totalQuestions={activeQuestions.length}
                 preSelectedAnswer={reviewAnswer?.selectedOption}
                 preSubmitted={true}
+                nextButtonText="Back to Review"
               />
             )}
           </div>
