@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { CheckCircle, XCircle, ChevronRight, ArrowLeft, ChevronLeft, Sun, Moon, X, ChevronDown, Settings2, BookOpen, ExternalLink } from 'lucide-react';
+import { CheckCircle, XCircle, ChevronRight, ArrowLeft, ChevronLeft, Sun, Moon, X, ChevronDown, Settings2, BookOpen, ExternalLink, Sparkles, Image as ImageIcon, Loader2 } from 'lucide-react';
 import { PracticeFilterModal } from './PracticeFilterModal';
 import { useTheme } from '@/contexts/ThemeContext';
 import type { QuestionData } from './questionTypes';
@@ -8,6 +8,7 @@ import { AIHelper } from './AIHelperClean';
 import { motion } from 'framer-motion';
 import { cn } from '@/lib/utils';
 import { SessionProgressDropdown, SessionAnswer } from './SessionProgressDropdown';
+import { generateVignetteVisual, generateExplanationVisual, getCachedVisual } from '@/services/visualGenerator';
 
 interface UkmlaSBAQuestionProps {
   question: QuestionData;
@@ -61,6 +62,13 @@ export const UkmlaSBAQuestion: React.FC<UkmlaSBAQuestionProps> = ({
   const isLightMode = theme === 'light';
   const [showFullExplanation, setShowFullExplanation] = useState(preSubmitted); // Show explanation in review mode
   
+  // Visual generation state
+  const [vignetteImage, setVignetteImage] = useState<string | null>(null);
+  const [explanationImage, setExplanationImage] = useState<string | null>(null);
+  const [memoryHook, setMemoryHook] = useState<string | null>(null);
+  const [generatingVignette, setGeneratingVignette] = useState(false);
+  const [generatingExplanation, setGeneratingExplanation] = useState(false);
+  
   // Store answer states in sessionStorage for persistence across navigation
   const getStorageKey = () => `sba_answer_${question.id || question.question?.substring(0, 50)}`;
   
@@ -90,6 +98,57 @@ export const UkmlaSBAQuestion: React.FC<UkmlaSBAQuestionProps> = ({
     setShowAIHelper(false);
     setShowFullExplanation(false);
   }, [question.id, question.question, question.question_stem]);
+
+  // Check for cached visuals when question changes
+  useEffect(() => {
+    const questionId = question.id || question.concept_id || `q_${question.question?.substring(0, 30)}`;
+    
+    // Reset visuals for new question
+    setVignetteImage(null);
+    setExplanationImage(null);
+    setMemoryHook(null);
+    
+    // Check cache for existing visuals
+    getCachedVisual(questionId, 'vignette').then(cached => {
+      if (cached) setVignetteImage(cached.image_url);
+    });
+    getCachedVisual(questionId, 'explanation').then(cached => {
+      if (cached) {
+        setExplanationImage(cached.image_url);
+        if (cached.memory_hook) setMemoryHook(cached.memory_hook);
+      }
+    });
+  }, [question.id, question.concept_id, question.question]);
+
+  // Handle vignette visual generation
+  const handleGenerateVignette = async () => {
+    const questionId = question.id || question.concept_id || `q_${question.question?.substring(0, 30)}`;
+    const stem = question.question_stem || question.question || '';
+    
+    setGeneratingVignette(true);
+    const result = await generateVignetteVisual(questionId, stem);
+    if (result) {
+      setVignetteImage(result.image_url);
+    }
+    setGeneratingVignette(false);
+  };
+
+  // Handle explanation visual generation
+  const handleGenerateExplanation = async () => {
+    const questionId = question.id || question.concept_id || `q_${question.question?.substring(0, 30)}`;
+    const title = question.conceptTitle || question.title || 'Medical Concept';
+    const explanation = question.explanation || question.keyFact || '';
+    const correct = question.correctAnswer || question.correct_answer || 'A';
+    const correctText = options.find((o: any) => o.id === correct)?.text || correct;
+    
+    setGeneratingExplanation(true);
+    const result = await generateExplanationVisual(questionId, title, explanation, correctText);
+    if (result) {
+      setExplanationImage(result.image_url);
+      if (result.memory_hook) setMemoryHook(result.memory_hook);
+    }
+    setGeneratingExplanation(false);
+  };
   
   // Process options to ensure they're in the right format
   const options = question.options.map((option: any, index: number) => {
@@ -345,6 +404,43 @@ export const UkmlaSBAQuestion: React.FC<UkmlaSBAQuestionProps> = ({
                 </span>
               </div>
             </div>
+
+            {/* Vignette Visual - Clinical scene (doesn't reveal answer) */}
+            <div className="mb-4">
+              {vignetteImage ? (
+                <div className="rounded-xl overflow-hidden mb-2">
+                  <img 
+                    src={vignetteImage} 
+                    alt="Clinical scenario" 
+                    className="w-full h-auto max-h-64 object-cover"
+                  />
+                </div>
+              ) : (
+                <button
+                  onClick={handleGenerateVignette}
+                  disabled={generatingVignette}
+                  className={cn(
+                    "flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-medium transition-all",
+                    isLightMode
+                      ? "bg-purple-50 text-purple-700 border border-purple-200 hover:bg-purple-100"
+                      : "bg-purple-950/30 text-purple-300 border border-purple-800 hover:bg-purple-900/40",
+                    generatingVignette && "opacity-50 cursor-wait"
+                  )}
+                >
+                  {generatingVignette ? (
+                    <>
+                      <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                      <span>Generating scene...</span>
+                    </>
+                  ) : (
+                    <>
+                      <ImageIcon className="h-3.5 w-3.5" />
+                      <span>Generate Scene Visual</span>
+                    </>
+                  )}
+                </button>
+              )}
+            </div>
             
             {/* Question */}
             <div className="mb-5 sm:mb-6 md:mb-8">
@@ -495,6 +591,61 @@ export const UkmlaSBAQuestion: React.FC<UkmlaSBAQuestionProps> = ({
                     )}>
                       <ReactMarkdown components={{ p: ({ children }) => <p className="mb-3 last:mb-0">{children}</p> }}>{explanation}</ReactMarkdown>
                     </div>
+                  </div>
+                )}
+
+                {/* Explanation Visual - Concept map/flowchart (after answer) */}
+                {hasSubmitted && (
+                  <div className={cn(
+                    "mt-4 pt-4 border-t",
+                    isLightMode ? "border-zinc-200" : "border-white/10"
+                  )}>
+                    {explanationImage ? (
+                      <div>
+                        {memoryHook && (
+                          <div className={cn(
+                            "mb-2 px-3 py-1.5 rounded-full inline-flex items-center gap-1.5 text-xs font-medium",
+                            isLightMode
+                              ? "bg-emerald-50 text-emerald-700 border border-emerald-200"
+                              : "bg-emerald-950/30 text-emerald-300 border border-emerald-800"
+                          )}>
+                            <Sparkles className="h-3 w-3" />
+                            <span>Memory hook: {memoryHook}</span>
+                          </div>
+                        )}
+                        <div className="rounded-xl overflow-hidden">
+                          <img 
+                            src={explanationImage} 
+                            alt="Concept diagram" 
+                            className="w-full h-auto"
+                          />
+                        </div>
+                      </div>
+                    ) : (
+                      <button
+                        onClick={handleGenerateExplanation}
+                        disabled={generatingExplanation}
+                        className={cn(
+                          "flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-medium transition-all",
+                          isLightMode
+                            ? "bg-emerald-50 text-emerald-700 border border-emerald-200 hover:bg-emerald-100"
+                            : "bg-emerald-950/30 text-emerald-300 border border-emerald-800 hover:bg-emerald-900/40",
+                          generatingExplanation && "opacity-50 cursor-wait"
+                        )}
+                      >
+                        {generatingExplanation ? (
+                          <>
+                            <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                            <span>Generating concept map...</span>
+                          </>
+                        ) : (
+                          <>
+                            <Sparkles className="h-3.5 w-3.5" />
+                            <span>Generate Concept Visual</span>
+                          </>
+                        )}
+                      </button>
+                    )}
                   </div>
                 )}
 
