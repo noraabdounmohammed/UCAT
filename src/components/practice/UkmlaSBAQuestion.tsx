@@ -8,7 +8,7 @@ import { AIHelper } from './AIHelperClean';
 import { motion } from 'framer-motion';
 import { cn } from '@/lib/utils';
 import { SessionProgressDropdown, SessionAnswer } from './SessionProgressDropdown';
-import { generateVignetteVisual, generateExplanationVisual, getCachedVisual } from '@/services/visualGenerator';
+import { generateVignetteVisual, generateExplanationVisual, getCachedVisual, isImageGenAvailable } from '@/services/visualGenerator';
 
 interface UkmlaSBAQuestionProps {
   question: QuestionData;
@@ -135,14 +135,13 @@ export const UkmlaSBAQuestion: React.FC<UkmlaSBAQuestionProps> = ({
 
   // Handle explanation visual generation
   const handleGenerateExplanation = async () => {
-    const questionId = question.id || question.concept_id || `q_${question.question?.substring(0, 30)}`;
-    const title = question.conceptTitle || question.title || 'Medical Concept';
-    const explanation = question.explanation || question.keyFact || '';
-    const correct = question.correctAnswer || question.correct_answer || 'A';
-    const correctText = options.find((o: any) => o.id === correct)?.text || correct;
+    const questionId = String(question.id || question.concept_id || `q_${question.question?.substring(0, 30)}`);
+    const conceptTitle = String(question.conceptTitle || question.title || 'Medical Concept');
+    const explanationText = String(question.explanation || question.keyFact || '');
+    const correctAnswer = String(question.correctAnswer ?? question.correct_answer ?? 'A');
     
     setGeneratingExplanation(true);
-    const result = await generateExplanationVisual(questionId, title, explanation, correctText);
+    const result = await generateExplanationVisual(questionId, conceptTitle, explanationText, correctAnswer);
     if (result) {
       setExplanationImage(result.image_url);
       if (result.memory_hook) setMemoryHook(result.memory_hook);
@@ -406,41 +405,43 @@ export const UkmlaSBAQuestion: React.FC<UkmlaSBAQuestionProps> = ({
             </div>
 
             {/* Vignette Visual - Clinical scene (doesn't reveal answer) */}
-            <div className="mb-4">
-              {vignetteImage ? (
-                <div className="rounded-xl overflow-hidden mb-2">
-                  <img 
-                    src={vignetteImage} 
-                    alt="Clinical scenario" 
-                    className="w-full h-auto max-h-64 object-cover"
-                  />
-                </div>
-              ) : (
-                <button
-                  onClick={handleGenerateVignette}
-                  disabled={generatingVignette}
-                  className={cn(
-                    "flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-medium transition-all",
-                    isLightMode
-                      ? "bg-purple-50 text-purple-700 border border-purple-200 hover:bg-purple-100"
-                      : "bg-purple-950/30 text-purple-300 border border-purple-800 hover:bg-purple-900/40",
-                    generatingVignette && "opacity-50 cursor-wait"
-                  )}
-                >
-                  {generatingVignette ? (
-                    <>
-                      <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                      <span>Generating scene...</span>
-                    </>
-                  ) : (
-                    <>
-                      <ImageIcon className="h-3.5 w-3.5" />
-                      <span>Generate Scene Visual</span>
-                    </>
-                  )}
-                </button>
-              )}
-            </div>
+            {(vignetteImage || isImageGenAvailable()) && (
+              <div className="mb-4">
+                {vignetteImage ? (
+                  <div className="rounded-xl overflow-hidden mb-2">
+                    <img 
+                      src={vignetteImage} 
+                      alt="Clinical scenario" 
+                      className="w-full h-auto max-h-64 object-cover"
+                    />
+                  </div>
+                ) : (
+                  <button
+                    onClick={handleGenerateVignette}
+                    disabled={generatingVignette}
+                    className={cn(
+                      "flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-medium transition-all",
+                      isLightMode
+                        ? "bg-purple-50 text-purple-700 border border-purple-200 hover:bg-purple-100"
+                        : "bg-purple-950/30 text-purple-300 border border-purple-800 hover:bg-purple-900/40",
+                      generatingVignette && "opacity-50 cursor-wait"
+                    )}
+                  >
+                    {generatingVignette ? (
+                      <>
+                        <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                        <span>Generating scene...</span>
+                      </>
+                    ) : (
+                      <>
+                        <ImageIcon className="h-3.5 w-3.5" />
+                        <span>Generate Scene Visual</span>
+                      </>
+                    )}
+                  </button>
+                )}
+              </div>
+            )}
             
             {/* Question */}
             <div className="mb-5 sm:mb-6 md:mb-8">

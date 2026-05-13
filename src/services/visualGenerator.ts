@@ -1,15 +1,25 @@
 /**
  * Visual Generator Service
  * Generates and caches question visuals using GPT Image Gen
+ * 
+ * Requires: VITE_OPENAI_IMAGE_KEY in .env (separate from DeepSeek key)
  */
 
 import OpenAI from 'openai';
 import { supabase } from '@/lib/supabase';
 
-const openai = new OpenAI({
-  apiKey: import.meta.env.VITE_OPENAI_API_KEY,
+// Use dedicated OpenAI key for image generation (separate from DeepSeek text API)
+const imageApiKey = import.meta.env.VITE_OPENAI_IMAGE_KEY;
+
+const openai = imageApiKey ? new OpenAI({
+  apiKey: imageApiKey,
   dangerouslyAllowBrowser: true
-});
+}) : null;
+
+// Check if image generation is available
+export function isImageGenAvailable(): boolean {
+  return !!imageApiKey;
+}
 
 export type VisualType = 'vignette' | 'explanation';
 
@@ -46,6 +56,12 @@ export async function generateVignetteVisual(
   questionId: string,
   questionStem: string
 ): Promise<CachedVisual | null> {
+  // Check if OpenAI is configured
+  if (!openai) {
+    console.warn('OpenAI image API not configured. Add VITE_OPENAI_IMAGE_KEY to .env');
+    return null;
+  }
+
   // Check cache first
   const cached = await getCachedVisual(questionId, 'vignette');
   if (cached) return cached;
@@ -111,6 +127,12 @@ export async function generateExplanationVisual(
   explanation: string,
   correctAnswer: string
 ): Promise<CachedVisual | null> {
+  // Check if OpenAI is configured
+  if (!openai) {
+    console.warn('OpenAI image API not configured. Add VITE_OPENAI_IMAGE_KEY to .env');
+    return null;
+  }
+
   // Check cache first
   const cached = await getCachedVisual(questionId, 'explanation');
   if (cached) return cached;
