@@ -38,15 +38,19 @@ export async function getCachedVisual(
   questionId: string, 
   visualType: VisualType
 ): Promise<CachedVisual | null> {
-  const { data, error } = await supabase
-    .from('question_visuals')
-    .select('*')
-    .eq('question_id', questionId)
-    .eq('visual_type', visualType)
-    .single();
-  
-  if (error || !data) return null;
-  return data as CachedVisual;
+  try {
+    const { data, error } = await supabase
+      .from('question_visuals')
+      .select('*')
+      .eq('question_id', questionId)
+      .eq('visual_type', visualType)
+      .maybeSingle(); // Use maybeSingle to avoid 406 when no rows
+    
+    if (error || !data) return null;
+    return data as CachedVisual;
+  } catch {
+    return null;
+  }
 }
 
 /**
@@ -83,15 +87,19 @@ Style: Professional medical education illustration.
     console.log('🎨 Generating vignette visual...');
     
     const response = await openai.images.generate({
-      model: "gpt-image-1",
+      model: "dall-e-3",
       prompt,
       n: 1,
-      size: "1024x1024",
-      quality: "medium"
+      size: "1792x1024", // Wide landscape - better for mobile cards
+      quality: "standard"
     });
 
-    const imageUrl = response.data[0]?.url;
-    if (!imageUrl) throw new Error('No image URL returned');
+    console.log('🎨 OpenAI response:', response);
+    const imageUrl = response.data?.[0]?.url;
+    if (!imageUrl) {
+      console.error('No image URL in response:', response);
+      throw new Error('No image URL returned');
+    }
 
     // Save to Supabase
     const { data, error } = await supabase
@@ -155,15 +163,19 @@ Style: Clean concept map or flowchart.
     console.log('📊 Generating explanation visual...');
 
     const response = await openai.images.generate({
-      model: "gpt-image-1", 
+      model: "dall-e-3", 
       prompt,
       n: 1,
-      size: "1024x1024",
-      quality: "medium"
+      size: "1792x1024", // Wide landscape - better for mobile cards
+      quality: "standard"
     });
 
-    const imageUrl = response.data[0]?.url;
-    if (!imageUrl) throw new Error('No image URL returned');
+    console.log('📊 OpenAI response:', response);
+    const imageUrl = response.data?.[0]?.url;
+    if (!imageUrl) {
+      console.error('No image URL in response:', response);
+      throw new Error('No image URL returned');
+    }
 
     // Generate memory hook
     let memoryHook = conceptTitle;
