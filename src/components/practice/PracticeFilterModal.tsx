@@ -434,7 +434,8 @@ export function PracticeFilterModal({ isLightMode, onClose, currentFormat, onCha
               </div>
             </div>
 
-            {/* Mastery Level Filters */}
+            {/* Mastery Level Filters - Only show in Custom mode */}
+            {studyMode === 'custom' && (
             <div>
               <h4 className={cn('text-[11px] uppercase tracking-widest mb-3', light ? 'text-stone-600' : 'text-white/60')}
                 style={{ fontFamily: "'Unbounded', sans-serif", fontWeight: 500 }}>
@@ -485,6 +486,7 @@ export function PracticeFilterModal({ isLightMode, onClose, currentFormat, onCha
                 })}
               </div>
             </div>
+            )}
 
             {/* Search Bar */}
             <div className="relative">

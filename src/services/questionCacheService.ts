@@ -130,15 +130,21 @@ export const questionCacheService = {
 
   /**
    * Save a newly generated question to cache
+   * Only works for authenticated users - fails silently for anonymous
    */
   async saveQuestion(question: QuestionInsert): Promise<CachedQuestion | null> {
     const { data: { user } } = await supabase.auth.getUser();
+    
+    // Skip caching for anonymous users - RLS requires authentication
+    if (!user) {
+      return null;
+    }
     
     const { data, error } = await supabase
       .from('cached_questions')
       .insert({
         ...question,
-        generated_by: user?.id,
+        generated_by: user.id,
         generated_at: new Date().toISOString(),
         status: 'active'
       })
@@ -151,6 +157,10 @@ export const questionCacheService = {
         const existing = await this.getQuestionsForConcepts([question.concept_id]);
         return existing.find(q => q.question_stem === question.question_stem) || null;
       }
+      // RLS error - user might not have permission, fail silently
+      if (error.code === '42501') {
+        return null;
+      }
       console.error('Error saving question:', error);
       return null;
     }
@@ -160,15 +170,21 @@ export const questionCacheService = {
 
   /**
    * Save multiple questions in batch
+   * Only works for authenticated users - fails silently for anonymous
    */
   async saveQuestions(questions: QuestionInsert[]): Promise<CachedQuestion[]> {
     if (questions.length === 0) return [];
     
     const { data: { user } } = await supabase.auth.getUser();
     
+    // Skip caching for anonymous users - RLS requires authentication
+    if (!user) {
+      return [];
+    }
+    
     const questionsWithMeta = questions.map(q => ({
       ...q,
-      generated_by: user?.id,
+      generated_by: user.id,
       generated_at: new Date().toISOString(),
       status: 'active'
     }));
@@ -182,6 +198,10 @@ export const questionCacheService = {
       .select();
     
     if (error) {
+      // RLS error - fail silently
+      if (error.code === '42501') {
+        return [];
+      }
       console.error('Error batch saving questions:', error);
       return [];
     }
