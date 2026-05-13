@@ -94,9 +94,18 @@ Style: Professional medical education illustration.
     });
 
     console.log('🎨 OpenAI response:', response);
-    const imageUrl = response.data?.[0]?.url;
-    if (!imageUrl) {
-      console.error('No image URL in response:', response);
+    
+    // GPT Image 2 returns b64_json, older models return url
+    const imageData = response.data?.[0];
+    let imageUrl: string;
+    
+    if (imageData?.url) {
+      imageUrl = imageData.url;
+    } else if (imageData?.b64_json) {
+      // Convert base64 to data URL
+      imageUrl = `data:image/png;base64,${imageData.b64_json}`;
+    } else {
+      console.error('No image data in response:', response);
       throw new Error('No image URL returned');
     }
 
@@ -169,9 +178,18 @@ Style: Clean concept map or flowchart.
     });
 
     console.log('📊 OpenAI response:', response);
-    const imageUrl = response.data?.[0]?.url;
-    if (!imageUrl) {
-      console.error('No image URL in response:', response);
+    
+    // GPT Image 2 returns b64_json, older models return url
+    const imageData = response.data?.[0];
+    let imageUrl: string;
+    
+    if (imageData?.url) {
+      imageUrl = imageData.url;
+    } else if (imageData?.b64_json) {
+      // Convert base64 to data URL
+      imageUrl = `data:image/png;base64,${imageData.b64_json}`;
+    } else {
+      console.error('No image data in response:', response);
       throw new Error('No image URL returned');
     }
 
