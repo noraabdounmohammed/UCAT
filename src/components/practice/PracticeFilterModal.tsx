@@ -1,7 +1,9 @@
 import React, { useState, useMemo } from 'react';
-import { X, Search, Filter, BookOpen, ClipboardList, Stethoscope } from 'lucide-react';
+import { X, Search, Filter, BookOpen, ClipboardList, Stethoscope, Brain, Sparkles, RefreshCw, Settings2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useConceptStore } from '@/contexts/ConceptStoreContext';
+
+type StudyMode = 'smart' | 'new_only' | 'review_weak' | 'custom';
 
 interface PracticeFilterModalProps {
   isLightMode: boolean;
@@ -29,10 +31,22 @@ export function PracticeFilterModal({ isLightMode, onClose, currentFormat, onCha
 
   const [searchQuery, setSearchQuery] = useState('');
   const [pendingFormat, setPendingFormat] = useState(currentFormat);
+  const [studyMode, setStudyMode] = useState<StudyMode>('smart');
 
   // Toggle cascading mode (AND vs OR)
   const toggleCascadingMode = () => {
     updateFilterState({ cascading_mode: !filterState.cascading_mode });
+  };
+
+  // Handle study mode change
+  const handleStudyModeChange = (mode: StudyMode) => {
+    setStudyMode(mode);
+    // Update mastery levels based on mode
+    let newMasteryLevels: number[] = [];
+    if (mode === 'new_only') newMasteryLevels = [0];
+    else if (mode === 'review_weak') newMasteryLevels = [1];
+    // smart and custom: empty (smart uses algorithm, custom lets user pick)
+    updateFilterState({ mastery_levels: newMasteryLevels });
   };
 
   // Toggle mastery level
@@ -221,9 +235,118 @@ export function PracticeFilterModal({ isLightMode, onClose, currentFormat, onCha
             </div>
           </div>
 
+          {/* Active Filters Banner */}
+          {((filterState.custom_filters?.length || 0) > 0 || (filterState.mastery_levels?.length || 0) > 0) && (
+            <div className={cn('px-6 py-4 border-b', light ? 'bg-stone-100/80 border-black/[0.06]' : 'bg-white/5 border-white/10')}>
+              <div className="flex items-center justify-between mb-2">
+                <span className={cn('text-[10px] uppercase tracking-widest font-medium', light ? 'text-stone-500' : 'text-white/50')}
+                  style={{ fontFamily: "'Unbounded', sans-serif" }}>
+                  Active Filters ({concepts?.length || 0} concepts)
+                </span>
+                <button
+                  onClick={clearAll}
+                  className={cn('text-[10px] uppercase tracking-widest transition-colors', light ? 'text-stone-500 hover:text-stone-700' : 'text-white/50 hover:text-white/70')}
+                  style={{ fontFamily: "'Unbounded', sans-serif" }}
+                >
+                  Clear All
+                </button>
+              </div>
+              <div className="flex flex-wrap gap-2">
+                {(filterState.mastery_levels || []).map((level: number) => {
+                  const levelName = level === 0 ? 'New' : level === 1 ? 'Needs Review' : 'Mastered';
+                  const levelColor = level === 0 ? 'bg-gray-400' : level === 1 ? 'bg-red-500' : 'bg-green-500';
+                  return (
+                    <span
+                      key={`mastery-${level}`}
+                      className={cn('inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs', 
+                        light ? 'bg-white text-stone-700 border border-stone-200' : 'bg-white/10 text-white border border-white/20')}
+                      style={{ fontFamily: "'Manrope', sans-serif" }}
+                    >
+                      <div className={cn('w-2 h-2 rounded-full', levelColor)} />
+                      {levelName}
+                      <button
+                        onClick={() => toggleMastery(level)}
+                        className={cn('ml-1', light ? 'text-stone-400 hover:text-stone-600' : 'text-white/40 hover:text-white/70')}
+                      >
+                        <X className="h-3 w-3" />
+                      </button>
+                    </span>
+                  );
+                })}
+                {(filterState.custom_filters || []).map((filter: string) => (
+                  <span
+                    key={filter}
+                    className={cn('inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs',
+                      light ? 'bg-stone-900 text-white' : 'bg-white text-stone-900')}
+                    style={{ fontFamily: "'Manrope', sans-serif" }}
+                  >
+                    {filter.replace(/-/g, ' ')}
+                    <button
+                      onClick={() => toggleFilter(filter)}
+                      className={cn('ml-1', light ? 'text-white/60 hover:text-white' : 'text-stone-400 hover:text-stone-600')}
+                    >
+                      <X className="h-3 w-3" />
+                    </button>
+                  </span>
+                ))}
+              </div>
+            </div>
+          )}
+
           {/* Scrollable body */}
           <div className="flex-1 overflow-y-auto px-6 py-6 space-y-6">
             
+            {/* Study Mode Selector */}
+            <div>
+              <h4 className={cn('text-[11px] uppercase tracking-widest mb-3', light ? 'text-stone-600' : 'text-white/60')}
+                style={{ fontFamily: "'Unbounded', sans-serif", fontWeight: 500 }}>
+                Study Mode
+              </h4>
+              <div className="grid grid-cols-2 gap-2">
+                {[
+                  { mode: 'smart' as const, name: 'Smart Study', description: 'Algorithm picks', icon: Brain, recommended: true },
+                  { mode: 'new_only' as const, name: 'New Only', description: 'Fresh concepts', icon: Sparkles, recommended: false },
+                  { mode: 'review_weak' as const, name: 'Review Weak', description: 'Focus on mistakes', icon: RefreshCw, recommended: false },
+                  { mode: 'custom' as const, name: 'Custom', description: 'You choose', icon: Settings2, recommended: false }
+                ].map(({ mode, name, description, icon: Icon, recommended }) => {
+                  const isSelected = studyMode === mode;
+                  return (
+                    <button
+                      key={mode}
+                      onClick={() => handleStudyModeChange(mode)}
+                      className={cn(
+                        'relative p-3 rounded-xl text-left transition-all',
+                        isSelected
+                          ? light ? 'bg-stone-900 text-white shadow-lg' : 'bg-white text-stone-900 shadow-lg'
+                          : light ? 'bg-white/60 backdrop-blur-xl text-stone-900 border border-black/[0.06] hover:border-black/[0.12]' 
+                                  : 'bg-white/5 backdrop-blur-xl text-white border border-white/10 hover:border-white/20'
+                      )}
+                    >
+                      {recommended && (
+                        <span className={cn(
+                          'absolute top-1.5 right-1.5 text-[8px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded',
+                          isSelected 
+                            ? light ? 'bg-white/20 text-white' : 'bg-stone-900/20 text-stone-900'
+                            : 'bg-emerald-100 text-emerald-700'
+                        )}>
+                          Best
+                        </span>
+                      )}
+                      <Icon className={cn('h-4 w-4 mb-1.5', isSelected ? (light ? 'text-white' : 'text-stone-900') : (light ? 'text-stone-600' : 'text-white/60'))} />
+                      <div className={cn('text-xs font-medium mb-0.5', isSelected ? (light ? 'text-white' : 'text-stone-900') : (light ? 'text-stone-900' : 'text-white'))}
+                        style={{ fontFamily: "'Manrope', sans-serif" }}>
+                        {name}
+                      </div>
+                      <div className={cn('text-[10px]', isSelected ? (light ? 'text-white/70' : 'text-stone-500') : (light ? 'text-stone-500' : 'text-white/50'))}
+                        style={{ fontFamily: "'Manrope', sans-serif" }}>
+                        {description}
+                      </div>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
             {/* Format Selection */}
             {onChangeFormat && (
               <div>
@@ -453,6 +576,70 @@ export function PracticeFilterModal({ isLightMode, onClose, currentFormat, onCha
                     </div>
                   </div>
                 ))}
+                
+                {/* Unassigned Filters */}
+                {(() => {
+                  const unassignedFilters = (filterOptions?.custom_filters || [])
+                    .filter((f: string) => !filterAssignments[f])
+                    .filter((f: string) => f.toLowerCase().includes(searchQuery.toLowerCase()))
+                    .sort((a: string, b: string) => a.toLowerCase().localeCompare(b.toLowerCase()));
+                  
+                  if (unassignedFilters.length === 0) return null;
+                  
+                  return (
+                    <div>
+                      <h4 className={cn('text-[11px] uppercase tracking-widest mb-3', light ? 'text-stone-600' : 'text-white/60')}
+                        style={{ fontFamily: "'Unbounded', sans-serif", fontWeight: 500 }}>
+                        Unassigned
+                      </h4>
+                      <div className={cn(
+                        'rounded-xl border overflow-hidden backdrop-blur-xl',
+                        light ? 'bg-white/60 border-black/[0.06]' : 'bg-white/5 border-white/10'
+                      )}>
+                        {unassignedFilters.map((filter: string, index: number) => {
+                          const isSelected = (filterState.custom_filters || []).includes(filter);
+                          const stats = filterCounts[filter] || { total: 0, correct: 0, incorrect: 0 };
+                          const correctPercent = stats.total > 0 ? (stats.correct / stats.total) * 100 : 0;
+                          const incorrectPercent = stats.total > 0 ? (stats.incorrect / stats.total) * 100 : 0;
+                          
+                          return (
+                            <button
+                              key={filter}
+                              onClick={() => toggleFilter(filter)}
+                              className={cn(
+                                'relative w-full flex items-center justify-between px-4 py-3.5 text-sm transition-all overflow-hidden',
+                                index !== unassignedFilters.length - 1 
+                                  ? (light ? 'border-b border-black/[0.04]' : 'border-b border-white/5') 
+                                  : '',
+                                light ? 'hover:bg-black/[0.02]' : 'hover:bg-white/5'
+                              )}
+                            >
+                              <div className="absolute inset-0 flex">
+                                <div className="bg-green-500/20 transition-all duration-300" style={{ width: `${correctPercent}%` }} />
+                                <div className="bg-red-500/20 transition-all duration-300" style={{ width: `${incorrectPercent}%` }} />
+                              </div>
+                              <span className={cn('relative font-light', light ? 'text-stone-900' : 'text-white')}
+                                style={{ fontFamily: "'Manrope', sans-serif" }}>
+                                {filter}
+                              </span>
+                              <div className="relative flex items-center gap-2">
+                                <span className={cn('text-xs', light ? 'text-stone-400' : 'text-white/50')}
+                                  style={{ fontFamily: "'Unbounded', sans-serif" }}>
+                                  {stats.total}
+                                </span>
+                                {isSelected && (
+                                  <svg className={cn('w-4 h-4', light ? 'text-stone-900' : 'text-white')} fill="currentColor" viewBox="0 0 20 20">
+                                    <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                                  </svg>
+                                )}
+                              </div>
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  );
+                })()}
               </div>
             ) : (
               <p className={cn('text-sm text-center py-8 font-light', light ? 'text-stone-400' : 'text-white/40')}
