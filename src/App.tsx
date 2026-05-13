@@ -9,6 +9,9 @@ import { PWAInstallPrompt } from '@/components/PWAInstallPrompt';
 import { PWAUpdateNotification } from '@/components/PWAUpdateNotification';
 import '@/styles/font-sizes.css';
 
+// Import bulk generator to make it available in browser console
+import '@/scripts/bulkGenerateQuestions';
+
 // Eager import for the main app — no spinner on first load
 import { CurriculumApp } from '@/components/CurriculumApp';
 
