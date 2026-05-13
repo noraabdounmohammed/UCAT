@@ -408,12 +408,20 @@ export const UkmlaSBAQuestion: React.FC<UkmlaSBAQuestionProps> = ({
             {(vignetteImage || isImageGenAvailable()) && (
               <div className="mb-4">
                 {vignetteImage ? (
-                  <div className="rounded-xl overflow-hidden mb-2">
+                  <div 
+                    className="rounded-xl overflow-hidden mb-2 cursor-zoom-in relative group"
+                    onClick={() => window.open(vignetteImage, '_blank')}
+                  >
                     <img 
                       src={vignetteImage} 
                       alt="Clinical scenario" 
                       className="w-full h-auto max-h-64 object-cover"
                     />
+                    <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors flex items-center justify-center">
+                      <span className="text-white text-xs bg-black/50 px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity">
+                        Tap to enlarge
+                      </span>
+                    </div>
                   </div>
                 ) : (
                   <button
@@ -614,12 +622,20 @@ export const UkmlaSBAQuestion: React.FC<UkmlaSBAQuestionProps> = ({
                             <span>Memory hook: {memoryHook}</span>
                           </div>
                         )}
-                        <div className="rounded-xl overflow-hidden">
+                        <div 
+                          className="rounded-xl overflow-hidden cursor-zoom-in relative group"
+                          onClick={() => window.open(explanationImage, '_blank')}
+                        >
                           <img 
                             src={explanationImage} 
                             alt="Concept diagram" 
                             className="w-full h-auto"
                           />
+                          <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors flex items-center justify-center">
+                            <span className="text-white text-xs bg-black/50 px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity">
+                              Tap to enlarge
+                            </span>
+                          </div>
                         </div>
                       </div>
                     ) : (
