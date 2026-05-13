@@ -87,11 +87,10 @@ Style: Professional medical education illustration.
     console.log('🎨 Generating vignette visual...');
     
     const response = await openai.images.generate({
-      model: "dall-e-3",
+      model: "dall-e-2",
       prompt,
       n: 1,
-      size: "1792x1024", // Wide landscape - better for mobile cards
-      quality: "standard"
+      size: "1024x1024" // DALL-E 2 only supports square
     });
 
     console.log('🎨 OpenAI response:', response);
@@ -163,11 +162,10 @@ Style: Clean concept map or flowchart.
     console.log('📊 Generating explanation visual...');
 
     const response = await openai.images.generate({
-      model: "dall-e-3", 
+      model: "dall-e-2", 
       prompt,
       n: 1,
-      size: "1792x1024", // Wide landscape - better for mobile cards
-      quality: "standard"
+      size: "1024x1024" // DALL-E 2 only supports square
     });
 
     console.log('📊 OpenAI response:', response);
