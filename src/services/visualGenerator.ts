@@ -71,39 +71,42 @@ export async function generateVignetteVisual(
   if (cached) return cached;
 
   try {
-    // Premium editorial infographic with floating clinical clues
-    const prompt = `Create a premium mobile-first medical editorial infographic illustration for a modern learning app.
+    // Premium editorial infographic - POSITIVE findings only
+    const prompt = `Create a mobile-first medical condition overview infographic in clean cinematic comic style.
 
 CLINICAL CASE: "${questionStem.slice(0, 350)}"
 
 STYLE:
-- Apple-level clean UI, contemporary editorial illustration
-- Luxury educational product, modern medical poster
-- ADHD-friendly visual memory design
-- Semi-realistic editorial illustration with expressive emotional face
-- Stylized anatomy, premium painterly-vector rendering
-- NOT: cluttered infographic, textbook, comic-book, childish cartoon, anime
+- Editorial medical comic, clean Bauhaus-inspired layout
+- Bold visual hierarchy, minimal clutter, strong contrast
+- Modern educational UI, not childish, not overly detailed
+- Color-coded sections for easy scanning
+- Apple-level clean aesthetic
 
-BACKGROUND: Pure white background, strong negative space, no scenery/room/environment, only subtle floating visual elements.
+BACKGROUND: Pure white background, strong negative space.
 
 COMPOSITION:
-- Portrait 2:3 aspect ratio, optimized for phone screens
-- One central patient only, large central figure
-- Floating clinical clue icons surrounding the patient (lab markers, organs, pathology signs, symptom indicators, timing clues)
-- Elegant spacing, clean hierarchy, instant readability
-- Emotionally distressed posture, hypercharacterized clinical signs
+- Portrait 1:2 aspect ratio (very tall/narrow for mobile full-width display)
+- 4-6 vertically stacked sections
+- Large readable typography (2-6 words per phrase)
+- Icons and visual metaphors over text
+- Each section visually distinct with clear headers
+- One central patient figure with floating clinical clues
 
-LABELS: Include concise floating labels ONLY for visible findings.
-Allowed: "Fever", "CRP high", "2 weeks ago", "Swollen knee", "Rash", "New murmur"
-NOT allowed: long explanations, paragraphs, management, treatment, diagnosis
+CONTENT RULES:
+- ONLY show POSITIVE findings (symptoms/signs that ARE present)
+- DO NOT include negative findings (e.g., "no fever", "denies pain")
+- DO NOT include diagnosis, treatment, or management
+- Labels for observable findings only: "Fever", "Rash", "Swollen knee"
 
-TYPOGRAPHY: Clean modern sans-serif, bold readable, high contrast, minimal text, large for mobile.
+VISUAL DESIGN:
+- Giant arrows showing progression/flow
+- Color transitions (red=danger, green=recovery, blue=info, amber=warning)
+- Symbols/icons instead of long explanations
 
-COLOR PALETTE: Restrained premium - warm neutrals, deep navy, muted reds, soft medical tones, avoid oversaturation.
+TYPOGRAPHY: Clean modern sans-serif, bold, high contrast, large for mobile.
 
-GOAL: Visual illness-script memory anchor that emotionally encodes disease presentation, reinforces pattern recognition, reduces cognitive load, maximizes mobile readability, ADHD-friendly recall.
-
-Must be instantly understandable at phone width with zero zooming required.`;
+Must be instantly readable at phone width with zero zooming.`;
 
     console.log('🎨 Generating vignette visual...');
     
@@ -111,7 +114,7 @@ Must be instantly understandable at phone width with zero zooming required.`;
       model: "gpt-image-2",
       prompt,
       n: 1,
-      size: "1024x1536" // Portrait 2:3 for mobile
+      size: "1024x1792" // Very tall portrait 9:16 for mobile full-width
     });
 
     console.log('🎨 OpenAI response:', response);
@@ -222,7 +225,7 @@ NOT: classroom poster, textbook page, dense infographic, desktop slide`;
       model: "gpt-image-2",
       prompt,
       n: 1,
-      size: "1024x1536" // Portrait 9:16 for mobile
+      size: "1024x1792" // Very tall portrait 9:16 - displays larger on mobile
     });
 
     console.log('📊 OpenAI response:', response);
