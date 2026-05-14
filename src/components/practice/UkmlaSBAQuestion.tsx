@@ -415,7 +415,7 @@ export const UkmlaSBAQuestion: React.FC<UkmlaSBAQuestionProps> = ({
                     <img 
                       src={vignetteImage} 
                       alt="Clinical scenario" 
-                      className="w-full h-auto max-h-64 object-cover"
+                      className="w-full h-auto"
                     />
                     <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors flex items-center justify-center">
                       <span className="text-white text-xs bg-black/50 px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity">
