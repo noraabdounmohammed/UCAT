@@ -174,35 +174,43 @@ export async function generateExplanationVisual(
   if (cached) return cached;
 
   try {
-    const prompt = `Create a mobile-first visual medical explanation infographic in a clean cinematic comic style for smartphone viewing.
+    const prompt = `Create a mobile-first comprehensive medical condition overview infographic in a clean cinematic comic style.
 
-TOPIC: "${conceptTitle}"
-KEY POINT: ${correctAnswer}
-MECHANISM: ${explanation.slice(0, 250)}
+CONDITION: "${conceptTitle}"
+THIS QUESTION'S KEY POINT: ${correctAnswer}
+CONTEXT: ${explanation.slice(0, 200)}
+
+PURPOSE: Create a COMPLETE visual summary of this condition covering ALL key aspects a medical student needs to know - not just this one question.
+
+MUST INCLUDE SECTIONS FOR:
+1. DEFINITION - What is this condition? (1-2 phrases)
+2. CAUSES/TRIGGERS - Risk factors, etiology (icons + short labels)
+3. KEY SYMPTOMS - Cardinal signs and presentations (visual patient + labels)
+4. DIAGNOSIS - Key investigations, criteria (icons for tests)
+5. MANAGEMENT - First-line treatment, key interventions (color-coded: red=emergency, green=treatment)
+6. COMPLICATIONS - What happens if untreated (warning icons)
+7. KEY LEARNING POINT - The main takeaway (highlighted box)
 
 STYLE:
 - Editorial medical comic, clean Bauhaus-inspired layout
 - Bold visual hierarchy, minimal clutter, strong contrast
-- Simplified geometry, cinematic but readable
 - Modern educational UI, not childish, not overly detailed
+- Color-coded sections for easy scanning
 
 LAYOUT:
-- Vertical smartphone format (9:16 portrait)
-- 4-5 vertically stacked sections telling a story
+- Vertical smartphone format (2:3 portrait)
+- 5-7 vertically stacked sections
 - Large readable typography (2-6 words per phrase)
-- Huge pathology visuals as main characters
-- Minimal text, no dense paragraphs, no tiny labels
+- Icons and visual metaphors over text
+- Each section visually distinct with clear headers
 
 VISUAL DESIGN:
-- Use visual metaphors and giant arrows
-- Use facial expressions and body language on characters
-- Use color transitions (red=danger, green=recovery, blue=info)
+- Use giant arrows showing progression/flow
+- Use color transitions (red=danger/emergency, green=treatment/recovery, blue=info, amber=warning)
 - Use symbols/icons instead of long explanations
-- Make the physiology visually obvious
+- Make relationships between concepts visually obvious
 
-FLOW: Story progresses vertically downward with overlapping elements (arrows, particles, gradients flowing between sections)
-
-ACCESSIBILITY: Large high-contrast typography, clear shapes, readable without zooming
+ACCESSIBILITY: Large high-contrast typography, clear shapes, readable without zooming on mobile
 
 GOAL: Feel like a medical comic / TikTok-native learning visual / emotionally memorable mechanism explanation
 NOT: classroom poster, textbook page, dense infographic, desktop slide`;
