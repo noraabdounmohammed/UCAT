@@ -154,19 +154,38 @@ export async function generateExplanationVisual(
   if (cached) return cached;
 
   try {
-    const prompt = `Create a clear medical education diagram for: "${conceptTitle}"
+    const prompt = `Create a mobile-first visual medical explanation infographic in a clean cinematic comic style for smartphone viewing.
 
-Key information:
-- Correct answer: ${correctAnswer}
-- ${explanation.slice(0, 300)}
+TOPIC: "${conceptTitle}"
+KEY POINT: ${correctAnswer}
+MECHANISM: ${explanation.slice(0, 250)}
 
-Style: Clean concept map or flowchart.
-- Use boxes connected by arrows
-- Color code: green for correct actions, blue for key facts, amber for warnings
-- Maximum 5-6 main nodes for clarity
-- Include the key learning point prominently
-- Professional medical textbook style
-- White background, high contrast`;
+STYLE:
+- Editorial medical comic, clean Bauhaus-inspired layout
+- Bold visual hierarchy, minimal clutter, strong contrast
+- Simplified geometry, cinematic but readable
+- Modern educational UI, not childish, not overly detailed
+
+LAYOUT:
+- Vertical smartphone format (9:16 portrait)
+- 4-5 vertically stacked sections telling a story
+- Large readable typography (2-6 words per phrase)
+- Huge pathology visuals as main characters
+- Minimal text, no dense paragraphs, no tiny labels
+
+VISUAL DESIGN:
+- Use visual metaphors and giant arrows
+- Use facial expressions and body language on characters
+- Use color transitions (red=danger, green=recovery, blue=info)
+- Use symbols/icons instead of long explanations
+- Make the physiology visually obvious
+
+FLOW: Story progresses vertically downward with overlapping elements (arrows, particles, gradients flowing between sections)
+
+ACCESSIBILITY: Large high-contrast typography, clear shapes, readable without zooming
+
+GOAL: Feel like a medical comic / TikTok-native learning visual / emotionally memorable mechanism explanation
+NOT: classroom poster, textbook page, dense infographic, desktop slide`;
 
     console.log('📊 Generating explanation visual...');
 
@@ -174,7 +193,7 @@ Style: Clean concept map or flowchart.
       model: "gpt-image-2",
       prompt,
       n: 1,
-      size: "1536x1024" // Wide landscape for mobile
+      size: "1024x1536" // Portrait 9:16 for mobile
     });
 
     console.log('📊 OpenAI response:', response);
