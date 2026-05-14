@@ -68,6 +68,7 @@ export const UkmlaSBAQuestion: React.FC<UkmlaSBAQuestionProps> = ({
   const [memoryHook, setMemoryHook] = useState<string | null>(null);
   const [generatingVignette, setGeneratingVignette] = useState(false);
   const [generatingExplanation, setGeneratingExplanation] = useState(false);
+  const [fullscreenImage, setFullscreenImage] = useState<string | null>(null);
   
   // Store answer states in sessionStorage for persistence across navigation
   const getStorageKey = () => `sba_answer_${question.id || question.question?.substring(0, 50)}`;
@@ -313,6 +314,27 @@ export const UkmlaSBAQuestion: React.FC<UkmlaSBAQuestionProps> = ({
         </div>
       </div>
 
+      {/* Thin Banner Strip - AI + Study Reason */}
+      <div className={cn(
+        "flex items-center justify-center gap-3 px-4 py-1.5 text-[10px] border-b flex-shrink-0",
+        isLightMode 
+          ? "bg-amber-50/50 border-amber-100 text-amber-700" 
+          : "bg-amber-950/20 border-amber-900/30 text-amber-300/80"
+      )}>
+        <span>⚡ AI-generated • Verify against guidelines</span>
+        {(question as any).study_reason && (
+          <>
+            <span className="opacity-40">|</span>
+            <span>
+              {(question as any).study_reason === 'due' && '📅 Due'}
+              {(question as any).study_reason === 'needs_review' && '🔄 Review'}
+              {(question as any).study_reason === 'new' && '✨ New'}
+              {(question as any).study_reason === 'reinforcement' && '💪 Reinforce'}
+            </span>
+          </>
+        )}
+      </div>
+
       {/* Scrollable Content Area */}
       <div className="flex-1 overflow-y-auto">
         <div className="flex items-start justify-center p-3 sm:p-4 md:p-6 min-h-full">
@@ -364,53 +386,13 @@ export const UkmlaSBAQuestion: React.FC<UkmlaSBAQuestionProps> = ({
           
           {/* Content */}
           <div className="relative p-4 sm:p-6 md:p-8 pb-safe">
-            {/* Study Reason Badge + AI Disclaimer */}
-            <div className="flex flex-wrap items-center gap-2 mb-4">
-              {/* Study reason badge */}
-              {(question as any).study_reason && (
-                <span className={cn(
-                  "inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-medium uppercase tracking-wider",
-                  (question as any).study_reason === 'due' && (isLightMode 
-                    ? "bg-orange-100 text-orange-700 border border-orange-200" 
-                    : "bg-orange-950/40 text-orange-300 border border-orange-800"),
-                  (question as any).study_reason === 'needs_review' && (isLightMode 
-                    ? "bg-amber-100 text-amber-700 border border-amber-200" 
-                    : "bg-amber-950/40 text-amber-300 border border-amber-800"),
-                  (question as any).study_reason === 'new' && (isLightMode 
-                    ? "bg-blue-100 text-blue-700 border border-blue-200" 
-                    : "bg-blue-950/40 text-blue-300 border border-blue-800"),
-                  (question as any).study_reason === 'reinforcement' && (isLightMode 
-                    ? "bg-emerald-100 text-emerald-700 border border-emerald-200" 
-                    : "bg-emerald-950/40 text-emerald-300 border border-emerald-800")
-                )}>
-                  {(question as any).study_reason === 'due' && '📅 Due for review'}
-                  {(question as any).study_reason === 'needs_review' && '🔄 Needs work'}
-                  {(question as any).study_reason === 'new' && '✨ New concept'}
-                  {(question as any).study_reason === 'reinforcement' && '💪 Reinforcement'}
-                </span>
-              )}
-              
-              {/* AI Disclaimer */}
-              <div className={cn(
-                "flex-1 rounded-lg px-3 py-2 text-xs",
-                isLightMode 
-                  ? "bg-amber-50 border border-amber-200 text-amber-900" 
-                  : "bg-amber-950/30 border border-amber-900 text-amber-200"
-              )}>
-                <span className="font-medium">AI-generated.</span>{' '}
-                <span className={isLightMode ? "text-amber-800/90" : "text-amber-200/90"}>
-                  Verify against official guidelines.
-                </span>
-              </div>
-            </div>
-
             {/* Vignette Visual - Clinical scene (doesn't reveal answer) */}
             {(vignetteImage || isImageGenAvailable()) && (
               <div className="mb-4">
                 {vignetteImage ? (
                   <div 
                     className="rounded-xl overflow-hidden mb-2 cursor-zoom-in relative group"
-                    onClick={() => window.open(vignetteImage, '_blank')}
+                    onClick={() => setFullscreenImage(vignetteImage)}
                   >
                     <img 
                       src={vignetteImage} 
@@ -624,7 +606,7 @@ export const UkmlaSBAQuestion: React.FC<UkmlaSBAQuestionProps> = ({
                         )}
                         <div 
                           className="rounded-xl overflow-hidden cursor-zoom-in relative group"
-                          onClick={() => window.open(explanationImage, '_blank')}
+                          onClick={() => setFullscreenImage(explanationImage)}
                         >
                           <img 
                             src={explanationImage} 
@@ -825,6 +807,29 @@ export const UkmlaSBAQuestion: React.FC<UkmlaSBAQuestionProps> = ({
             </div>
           </motion.div>
         </>
+      )}
+
+      {/* Fullscreen Image Modal */}
+      {fullscreenImage && (
+        <div 
+          className="fixed inset-0 z-50 bg-black/95 flex items-center justify-center p-4"
+          onClick={() => setFullscreenImage(null)}
+        >
+          <button
+            onClick={() => setFullscreenImage(null)}
+            className="absolute top-4 right-4 p-2 rounded-full bg-white/10 hover:bg-white/20 transition-colors"
+            aria-label="Close"
+          >
+            <X className="h-6 w-6 text-white" />
+          </button>
+          <img 
+            src={fullscreenImage} 
+            alt="Enlarged view" 
+            className="max-w-full max-h-full object-contain"
+            onClick={(e) => e.stopPropagation()}
+          />
+          <p className="absolute bottom-4 text-white/60 text-sm">Tap anywhere to close</p>
+        </div>
       )}
     </div>
   );
