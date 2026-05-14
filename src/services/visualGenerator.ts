@@ -71,38 +71,39 @@ export async function generateVignetteVisual(
   if (cached) return cached;
 
   try {
-    // Premium editorial memory anchor prompt
-    const prompt = `Create a mobile-first editorial medical illustration designed as an emotional memory anchor.
+    // Premium editorial infographic with floating clinical clues
+    const prompt = `Create a premium mobile-first medical editorial infographic illustration for a modern learning app.
 
-CLINICAL VIGNETTE: "${questionStem.slice(0, 350)}"
+CLINICAL CASE: "${questionStem.slice(0, 350)}"
 
-STYLE: Premium editorial illustration meets stylized contemporary poster art.
-- Modern editorial medical illustration
-- Minimalist luxury magazine aesthetics
-- Emotionally expressive character design
-- Soft painterly textures, simplified elegant anatomy
-- Bold readable silhouettes
+STYLE:
+- Apple-level clean UI, contemporary editorial illustration
+- Luxury educational product, modern medical poster
+- ADHD-friendly visual memory design
+- Semi-realistic editorial illustration with expressive emotional face
+- Stylized anatomy, premium painterly-vector rendering
+- NOT: cluttered infographic, textbook, comic-book, childish cartoon, anime
+
+BACKGROUND: Pure white background, strong negative space, no scenery/room/environment, only subtle floating visual elements.
 
 COMPOSITION:
-- Portrait / mobile-optimized
-- One single centered patient only
-- Giant focal subject occupying most of frame
-- Strong silhouette, minimal distractions
-- One emotional moment frozen in time
+- Portrait 2:3 aspect ratio, optimized for phone screens
+- One central patient only, large central figure
+- Floating clinical clue icons surrounding the patient (lab markers, organs, pathology signs, symptom indicators, timing clues)
+- Elegant spacing, clean hierarchy, instant readability
+- Emotionally distressed posture, hypercharacterized clinical signs
 
-BACKGROUND: Warm cream / off-white / soft editorial neutral. No complex scenery, no hospital ward details.
+LABELS: Include concise floating labels ONLY for visible findings.
+Allowed: "Fever", "CRP high", "2 weeks ago", "Swollen knee", "Rash", "New murmur"
+NOT allowed: long explanations, paragraphs, management, treatment, diagnosis
 
-PATHOLOGY: Hypercharacterize visible clinical signs for memory retention.
-Exaggerate: swelling, rashes, respiratory effort, eye expression, body posture, tension, asymmetry, skin changes.
-The pathology should feel visually unforgettable while remaining elegant and stylized.
+TYPOGRAPHY: Clean modern sans-serif, bold readable, high contrast, minimal text, large for mobile.
 
-DO NOT INCLUDE: diagnosis labels, treatment, medication, adrenaline pens, ECGs, explanatory text, arrows, flowcharts, explicit answer cues.
+COLOR PALETTE: Restrained premium - warm neutrals, deep navy, muted reds, soft medical tones, avoid oversaturation.
 
-EMOTIONAL GOAL: Communicate escalation, deterioration, instability, urgency, vulnerability - without explicit explanation.
+GOAL: Visual illness-script memory anchor that emotionally encodes disease presentation, reinforces pattern recognition, reduces cognitive load, maximizes mobile readability, ADHD-friendly recall.
 
-VISUAL METAPHORS: Subtle sharp red geometry for danger, flowing blue lines for breathing, collapsing shapes for decompensation. Keep minimal and elegant.
-
-FINAL FEEL: Premium, emotionally charged, minimalist editorial medical vignette - memorable, intelligent, stylish, psychologically sticky, mobile-native.`;
+Must be instantly understandable at phone width with zero zooming required.`;
 
     console.log('🎨 Generating vignette visual...');
     
