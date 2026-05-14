@@ -335,63 +335,17 @@ export const UkmlaSBAQuestion: React.FC<UkmlaSBAQuestionProps> = ({
         )}
       </div>
 
-      {/* Scrollable Content Area */}
+      {/* Scrollable Content Area - Edge to edge on mobile */}
       <div className="flex-1 overflow-y-auto">
-        <div className="flex items-start justify-center p-3 sm:p-4 md:p-6 min-h-full">
-      <div className="relative w-full max-w-2xl mx-auto my-4 sm:my-6 md:my-8">
-        {/* Stacked cards effect - background layers (hidden on mobile for performance) */}
-        <div 
-          className={cn(
-            "hidden sm:block absolute w-full h-full rounded-[24px]",
-            isLightMode ? "bg-zinc-200 shadow-[0_2px_8px_rgba(0,0,0,0.1)]" : "bg-[#2A2A2A] shadow-[0_2px_8px_rgba(0,0,0,0.2)]"
-          )}
-          style={{ 
-            top: '16px',
-            left: '0',
-            zIndex: 1,
-            filter: 'blur(1.5px)',
-            opacity: 0.6
-          }}
-        />
-        <div 
-          className={cn(
-            "hidden sm:block absolute w-full h-full rounded-[24px]",
-            isLightMode ? "bg-zinc-100 shadow-[0_3px_10px_rgba(0,0,0,0.15)]" : "bg-[#252525] shadow-[0_3px_10px_rgba(0,0,0,0.25)]"
-          )}
-          style={{ 
-            top: '8px',
-            left: '0',
-            zIndex: 2,
-            filter: 'blur(0.5px)',
-            opacity: 0.8
-          }}
-        />
-        
-        {/* Main card */}
-        <div className={cn(
-          "relative rounded-2xl sm:rounded-[24px] overflow-visible",
-          isLightMode 
-            ? "bg-white shadow-[0_4px_12px_rgba(0,0,0,0.1)] sm:shadow-[0_6px_20px_rgba(0,0,0,0.15)]" 
-            : "bg-[#1E1E1E] shadow-[0_4px_12px_rgba(0,0,0,0.3)] sm:shadow-[0_6px_20px_rgba(0,0,0,0.35)]"
-        )} style={{ zIndex: 3 }}>
-          {/* Gradient overlays for depth */}
-          <div className={cn(
-            "absolute inset-0 bg-gradient-to-b pointer-events-none rounded-2xl sm:rounded-[24px]",
-            isLightMode ? "from-black/[0.02] to-transparent" : "from-white/[0.03] to-transparent"
-          )} />
-          <div className={cn(
-            "absolute inset-0 bg-gradient-to-t pointer-events-none rounded-2xl sm:rounded-[24px]",
-            isLightMode ? "from-black/[0.03] to-transparent" : "from-black/10 to-transparent"
-          )} />
-          
-          {/* Content */}
-          <div className="relative p-4 sm:p-6 md:p-8 pb-safe">
-            {/* Vignette Visual - Clinical scene (doesn't reveal answer) */}
+        <div className="w-full max-w-2xl mx-auto">
+          {/* Content - no card wrapper, edge-to-edge images */}
+          <div className="px-0 sm:px-4 md:px-6 py-4 pb-safe">
+            {/* Vignette Visual - Edge to edge on mobile */}
             {(vignetteImage || isImageGenAvailable()) && (
-              <div className="mb-4">
+              <div className="-mx-0 sm:mx-0 mb-4">
                 {vignetteImage ? (
                   <div 
-                    className="rounded-xl overflow-hidden mb-2 cursor-zoom-in relative group"
+                    className="overflow-hidden cursor-zoom-in relative group sm:rounded-xl"
                     onClick={() => setFullscreenImage(vignetteImage)}
                   >
                     <img 
@@ -433,6 +387,8 @@ export const UkmlaSBAQuestion: React.FC<UkmlaSBAQuestionProps> = ({
               </div>
             )}
             
+            {/* Text content with padding */}
+            <div className="px-4 sm:px-0">
             {/* Question */}
             <div className="mb-5 sm:mb-6 md:mb-8">
               <div className={cn(
@@ -725,9 +681,8 @@ export const UkmlaSBAQuestion: React.FC<UkmlaSBAQuestionProps> = ({
                 </div>
               </div>
             )}
+            </div>{/* End text content padding */}
           </div>
-        </div>
-      </div>
         </div>
       </div>
 

@@ -71,42 +71,41 @@ export async function generateVignetteVisual(
   if (cached) return cached;
 
   try {
-    // Premium editorial infographic - POSITIVE findings only
-    const prompt = `Create a mobile-first medical condition overview infographic in clean cinematic comic style.
+    // Patient-focused vignette with editorial art style
+    const prompt = `Create a premium mobile-first medical editorial illustration as an emotional memory anchor.
 
 CLINICAL CASE: "${questionStem.slice(0, 350)}"
 
-STYLE:
-- Editorial medical comic, clean Bauhaus-inspired layout
+ART STYLE (match this exactly):
+- Editorial medical comic, clean Bauhaus-inspired
 - Bold visual hierarchy, minimal clutter, strong contrast
 - Modern educational UI, not childish, not overly detailed
-- Color-coded sections for easy scanning
 - Apple-level clean aesthetic
+- Semi-realistic editorial illustration with expressive emotional face
+- Stylized anatomy, premium painterly-vector rendering
 
-BACKGROUND: Light gray background (#FAFAFA / zinc-50), strong negative space.
+BACKGROUND: Light gray (#FAFAFA), strong negative space. No scenery, no room, no environment.
 
-COMPOSITION:
-- Portrait 1:2 aspect ratio (very tall/narrow for mobile full-width display)
-- 4-6 vertically stacked sections
-- Large readable typography (2-6 words per phrase)
-- Icons and visual metaphors over text
-- Each section visually distinct with clear headers
-- One central patient figure with floating clinical clues
+COMPOSITION (PATIENT IS FOCAL POINT):
+- Portrait 9:16 aspect ratio for mobile
+- ONE SINGLE CENTERED PATIENT ONLY - large central figure
+- Patient occupies most of the frame
+- Floating clinical clue icons surrounding the patient (lab markers, organs, symptoms)
+- Emotionally distressed posture, hypercharacterized clinical signs
+- Strong silhouette, minimal distractions
 
 CONTENT RULES:
 - ONLY show POSITIVE findings (symptoms/signs that ARE present)
 - DO NOT include negative findings (e.g., "no fever", "denies pain")
 - DO NOT include diagnosis, treatment, or management
-- Labels for observable findings only: "Fever", "Rash", "Swollen knee"
+- Concise floating labels for observable findings only: "Fever", "Rash", "Swollen knee"
 
 VISUAL DESIGN:
-- Giant arrows showing progression/flow
-- Color transitions (red=danger, green=recovery, blue=info, amber=warning)
+- Color transitions (red=danger, amber=warning, blue=info)
 - Symbols/icons instead of long explanations
+- Hypercharacterize visible clinical signs for memory retention
 
-TYPOGRAPHY: Clean modern sans-serif, bold, high contrast, large for mobile.
-
-Must be instantly readable at phone width with zero zooming.`;
+GOAL: Visual illness-script memory anchor that emotionally encodes disease presentation. The patient should be the emotional center of the image.`;
 
     console.log('🎨 Generating vignette visual...');
     
