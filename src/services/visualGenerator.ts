@@ -71,18 +71,38 @@ export async function generateVignetteVisual(
   if (cached) return cached;
 
   try {
-    // Extract clinical scenario without diagnosis hints
-    const prompt = `Create a medical illustration of a clinical scenario:
+    // Premium editorial memory anchor prompt
+    const prompt = `Create a mobile-first editorial medical illustration designed as an emotional memory anchor.
 
-"${questionStem.slice(0, 400)}"
+CLINICAL VIGNETTE: "${questionStem.slice(0, 350)}"
 
-Style: Professional medical education illustration. 
-- Show the PATIENT and SETTING only (hospital bed, A&E, GP office)
-- Show visible SYMPTOMS (breathless, pale, sweating, posture)
-- DO NOT show any diagnosis, treatment, or medical equipment that reveals the answer
-- DO NOT include any text or labels
-- Warm, empathetic, memorable scene
-- Clean white/light background`;
+STYLE: Premium editorial illustration meets stylized contemporary poster art.
+- Modern editorial medical illustration
+- Minimalist luxury magazine aesthetics
+- Emotionally expressive character design
+- Soft painterly textures, simplified elegant anatomy
+- Bold readable silhouettes
+
+COMPOSITION:
+- Portrait / mobile-optimized
+- One single centered patient only
+- Giant focal subject occupying most of frame
+- Strong silhouette, minimal distractions
+- One emotional moment frozen in time
+
+BACKGROUND: Warm cream / off-white / soft editorial neutral. No complex scenery, no hospital ward details.
+
+PATHOLOGY: Hypercharacterize visible clinical signs for memory retention.
+Exaggerate: swelling, rashes, respiratory effort, eye expression, body posture, tension, asymmetry, skin changes.
+The pathology should feel visually unforgettable while remaining elegant and stylized.
+
+DO NOT INCLUDE: diagnosis labels, treatment, medication, adrenaline pens, ECGs, explanatory text, arrows, flowcharts, explicit answer cues.
+
+EMOTIONAL GOAL: Communicate escalation, deterioration, instability, urgency, vulnerability - without explicit explanation.
+
+VISUAL METAPHORS: Subtle sharp red geometry for danger, flowing blue lines for breathing, collapsing shapes for decompensation. Keep minimal and elegant.
+
+FINAL FEEL: Premium, emotionally charged, minimalist editorial medical vignette - memorable, intelligent, stylish, psychologically sticky, mobile-native.`;
 
     console.log('🎨 Generating vignette visual...');
     
@@ -90,7 +110,7 @@ Style: Professional medical education illustration.
       model: "gpt-image-2",
       prompt,
       n: 1,
-      size: "1536x1024" // Wide landscape for mobile
+      size: "1024x1536" // Portrait 2:3 for mobile
     });
 
     console.log('🎨 OpenAI response:', response);
