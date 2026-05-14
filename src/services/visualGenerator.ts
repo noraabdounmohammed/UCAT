@@ -83,7 +83,7 @@ STYLE:
 - Color-coded sections for easy scanning
 - Apple-level clean aesthetic
 
-BACKGROUND: Pure white background, strong negative space.
+BACKGROUND: Light gray background (#FAFAFA / zinc-50), strong negative space.
 
 COMPOSITION:
 - Portrait 1:2 aspect ratio (very tall/narrow for mobile full-width display)
