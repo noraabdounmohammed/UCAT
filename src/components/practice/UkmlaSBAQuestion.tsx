@@ -548,10 +548,10 @@ export const UkmlaSBAQuestion: React.FC<UkmlaSBAQuestionProps> = ({
                     isLightMode ? "border-zinc-200" : "border-white/10"
                   )}>
                     {explanationImage ? (
-                      <div>
+                      <div className="-mx-4 sm:mx-0">
                         {memoryHook && (
                           <div className={cn(
-                            "mb-2 px-3 py-1.5 rounded-full inline-flex items-center gap-1.5 text-xs font-medium",
+                            "mb-2 mx-4 sm:mx-0 px-3 py-1.5 rounded-full inline-flex items-center gap-1.5 text-xs font-medium",
                             isLightMode
                               ? "bg-emerald-50 text-emerald-700 border border-emerald-200"
                               : "bg-emerald-950/30 text-emerald-300 border border-emerald-800"
@@ -561,7 +561,7 @@ export const UkmlaSBAQuestion: React.FC<UkmlaSBAQuestionProps> = ({
                           </div>
                         )}
                         <div 
-                          className="rounded-xl overflow-hidden cursor-zoom-in relative group"
+                          className="overflow-hidden cursor-zoom-in relative group sm:rounded-xl"
                           onClick={() => setFullscreenImage(explanationImage)}
                         >
                           <img 
