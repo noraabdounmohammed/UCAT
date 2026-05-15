@@ -71,41 +71,56 @@ export async function generateVignetteVisual(
   if (cached) return cached;
 
   try {
-    // Patient-focused vignette with editorial art style
-    const prompt = `Create a premium mobile-first medical editorial illustration as an emotional memory anchor.
+    // Patient-focused vignette - editorial medical illustration style
+    const prompt = `Create a PREMIUM MOBILE CLINICAL VIGNETTE IMAGE - an emotional illness-script memory anchor.
 
 CLINICAL CASE: "${questionStem.slice(0, 350)}"
 
-ART STYLE (match this exactly):
-- Editorial medical comic, clean Bauhaus-inspired
-- Bold visual hierarchy, minimal clutter, strong contrast
-- Modern educational UI, not childish, not overly detailed
-- Apple-level clean aesthetic
-- Semi-realistic editorial illustration with expressive emotional face
-- Stylized anatomy, premium painterly-vector rendering
+CRITICAL: Must be readable at phone width WITHOUT zooming.
 
-BACKGROUND: Light gray (#FAFAFA), strong negative space. No scenery, no room, no environment.
+EXACT STYLE TO MATCH:
+- Clean editorial medical illustration (like medical textbook art, but modern)
+- Semi-realistic patient figure with emotionally expressive face
+- Floating anatomical icons around the patient (hearts, joints, organs, cells)
+- Soft pastel color accents
+- Clean, professional, educational aesthetic
 
-COMPOSITION (PATIENT IS FOCAL POINT):
-- Portrait 9:16 aspect ratio for mobile
-- ONE SINGLE CENTERED PATIENT ONLY - large central figure
-- Patient occupies most of the frame
-- Floating clinical clue icons surrounding the patient (lab markers, organs, symptoms)
-- Emotionally distressed posture, hypercharacterized clinical signs
-- Strong silhouette, minimal distractions
+COMPOSITION:
+- Portrait 9:16 for mobile
+- ONE SINGLE PATIENT as the dominant central figure
+- Patient occupies 60-70% of the frame
+- Patient showing visible clinical signs (rash, swelling, posture of pain)
+- 3-5 floating medical icons around patient showing affected systems
+- Soft pastel background (#FAFAFA light gray)
+
+PATIENT FIGURE:
+- Semi-realistic style (not cartoon, not photorealistic)
+- Emotionally expressive face showing distress/discomfort
+- Visible clinical signs hypercharacterized for memory
+- Warm natural skin tones
+- Simple clothing (hospital gown or casual)
+
+FLOATING ICONS:
+- Simple, clean anatomical illustrations
+- Hearts, lungs, joints, skin cross-sections, cells
+- Connected to patient with subtle lines or proximity
+- Small labels (1-3 words each): "Fever", "Rash", "Joint pain"
 
 CONTENT RULES:
-- ONLY show POSITIVE findings (symptoms/signs that ARE present)
-- DO NOT include negative findings (e.g., "no fever", "denies pain")
-- DO NOT include diagnosis, treatment, or management
-- Concise floating labels for observable findings only: "Fever", "Rash", "Swollen knee"
+- ONLY show POSITIVE findings (symptoms that ARE present)
+- NO negative findings, NO diagnosis, NO treatment
+- 2-4 floating labels MAX
+- LARGE readable typography
 
-VISUAL DESIGN:
-- Color transitions (red=danger, amber=warning, blue=info)
-- Symbols/icons instead of long explanations
-- Hypercharacterize visible clinical signs for memory retention
+COLOR PALETTE:
+- Light gray background (#FAFAFA)
+- Warm skin tones for patient
+- Soft pastels for icons (light blue, light pink, light red)
+- Red accents for inflammation/danger areas
 
-GOAL: Visual illness-script memory anchor that emotionally encodes disease presentation. The patient should be the emotional center of the image.`;
+NOT: Comic book, cartoon, superhero, dense infographic, tiny text.
+
+GOAL: Emotional memory anchor that encodes the disease presentation visually.`;
 
     console.log('🎨 Generating vignette visual...');
     
@@ -177,46 +192,56 @@ export async function generateExplanationVisual(
   if (cached) return cached;
 
   try {
-    const prompt = `Create a mobile-first comprehensive medical condition overview infographic in a clean cinematic comic style.
+    const prompt = `Create a PREMIUM MOBILE MEDICAL EXPLANATION INFOGRAPHIC.
 
-CONDITION: "${conceptTitle}"
-THIS QUESTION'S KEY POINT: ${correctAnswer}
-CONTEXT: ${explanation.slice(0, 200)}
+TOPIC: "${conceptTitle}"
+KEY LEARNING POINT: ${correctAnswer}
+CONTEXT: ${explanation.slice(0, 150)}
 
-PURPOSE: Create a COMPLETE visual summary of this condition covering ALL key aspects a medical student needs to know - not just this one question.
+CRITICAL: Must be readable at phone width WITHOUT zooming.
 
-MUST INCLUDE SECTIONS FOR:
-1. DEFINITION - What is this condition? (1-2 phrases)
-2. CAUSES/TRIGGERS - Risk factors, etiology (icons + short labels)
-3. KEY SYMPTOMS - Cardinal signs and presentations (visual patient + labels)
-4. DIAGNOSIS - Key investigations, criteria (icons for tests)
-5. MANAGEMENT - First-line treatment, key interventions (color-coded: red=emergency, green=treatment)
-6. COMPLICATIONS - What happens if untreated (warning icons)
-7. KEY LEARNING POINT - The main takeaway (highlighted box)
+EXACT STYLE TO MATCH:
+- Clean editorial medical illustration style
+- Semi-realistic patient figure with expressive emotion
+- Numbered sequential sections (1, 2, 3, 4, 5) showing disease progression/mechanism
+- Each section has a soft pastel color-coded background strip
+- Floating anatomical icons (hearts, joints, organs, cells) around patient
+- Bold section headers in dark text
+- Short explanatory text (1-2 lines per section)
+- Vertical narrative flow from top to bottom
 
-STYLE:
-- Editorial medical comic, clean Bauhaus-inspired layout
-- Bold visual hierarchy, minimal clutter, strong contrast
-- Modern educational UI, not childish, not overly detailed
-- Color-coded sections for easy scanning
+STRUCTURE (5 SECTIONS):
+1. THE TRIGGER - What starts it (icon + 1-line explanation)
+2. THE MECHANISM - What happens in the body (patient + floating icons)
+3. THE SIGNS - What you see clinically (patient showing symptoms)
+4. THE KEY FINDING - Most important diagnostic clue
+5. THE TAKEAWAY - One-line summary + treatment hint
 
-LAYOUT:
-- Vertical smartphone format (2:3 portrait)
-- 5-7 vertically stacked sections
-- Large readable typography (2-6 words per phrase)
-- Icons and visual metaphors over text
-- Each section visually distinct with clear headers
+VISUAL ELEMENTS:
+- ONE central patient figure (semi-realistic, emotionally expressive)
+- Floating medical icons (anatomical, simple, clean)
+- Numbered circles for each section (1, 2, 3, 4, 5)
+- Soft pastel section backgrounds (light blue, light pink, light yellow, light green)
+- Bold sans-serif headers
+- Clean arrows showing flow/progression
 
-VISUAL DESIGN:
-- Use giant arrows showing progression/flow
-- Use color transitions (red=danger/emergency, green=treatment/recovery, blue=info, amber=warning)
-- Use symbols/icons instead of long explanations
-- Make relationships between concepts visually obvious
+BACKGROUND: Light gray (#FAFAFA) base with colored section strips.
 
-ACCESSIBILITY: Large high-contrast typography, clear shapes, readable without zooming on mobile
+TYPOGRAPHY:
+- LARGE bold headers (readable without zoom)
+- Short explanatory text (max 8 words per line)
+- High contrast dark text on light backgrounds
 
-GOAL: Feel like a medical comic / TikTok-native learning visual / emotionally memorable mechanism explanation
-NOT: classroom poster, textbook page, dense infographic, desktop slide`;
+COLOR PALETTE:
+- Soft pastels for section backgrounds
+- Rich but not oversaturated accent colors
+- Warm skin tones for patient
+- Red for danger/inflammation, blue for info, green for recovery
+
+NOT: Comic book style, cartoon, childish, dense poster, tiny text.
+
+GOAL: Educational medical infographic that tells a visual story of the disease mechanism.`;
+
 
     console.log('📊 Generating explanation visual...');
 
@@ -224,7 +249,7 @@ NOT: classroom poster, textbook page, dense infographic, desktop slide`;
       model: "gpt-image-2",
       prompt,
       n: 1,
-      size: "1024x1792" // Very tall portrait 9:16 - displays larger on mobile
+      size: "1024x1792" // Tallest portrait (9:16) - maximum vertical space
     });
 
     console.log('📊 OpenAI response:', response);
