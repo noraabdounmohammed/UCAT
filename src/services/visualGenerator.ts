@@ -71,79 +71,56 @@ export async function generateVignetteVisual(
   if (cached) return cached;
 
   try {
-    // Patient-focused vignette - editorial cognitive interface
-    const prompt = `Create a PREMIUM EDITORIAL CLINICAL VIGNETTE - an emotional illness-script memory anchor.
+    // Patient-focused vignette - editorial medical illustration style
+    const prompt = `Create a PREMIUM MOBILE CLINICAL VIGNETTE IMAGE - an emotional illness-script memory anchor.
 
 CLINICAL CASE: "${questionStem.slice(0, 350)}"
 
-DESIGN PHILOSOPHY:
-This is a COGNITIVE INTERFACE for MEMORY ENCODING.
-The user should recognize the clinical presentation in 2-3 seconds.
-Create a strong emotional anchor for this disease pattern.
+CRITICAL: Must be readable at phone width WITHOUT zooming.
 
-ABSOLUTE REQUIREMENTS:
-- Background color: #F6F3EE (warm ivory/stone) - MUST match app exactly
-- The visual must feel EMBEDDED in the app, not an imported poster
-- ONE dominant focal point: THE PATIENT
-- Maximum 2-3 ambient text labels (1-3 words each)
-- Massive negative space (50%+ of image)
-- No floating icon clusters
-- No arrows or numbered sequences
+EXACT STYLE TO MATCH:
+- Clean editorial medical illustration (like medical textbook art, but modern)
+- Semi-realistic patient figure with emotionally expressive face
+- Floating anatomical icons around the patient (hearts, joints, organs, cells)
+- Soft pastel color accents
+- Clean, professional, educational aesthetic
 
-VISUAL STYLE (Editorial Medical):
-- Bauhaus medical poster aesthetic
-- NYT/Monocle editorial portrait illustration
-- Apple Health elegance
-- Semi-flat painterly/vector hybrid
-- Soft editorial illustration with emotional depth
-- Consistent line weight, subtle warm texture
+COMPOSITION:
+- Portrait 9:16 for mobile
+- ONE SINGLE PATIENT as the dominant central figure
+- Patient occupies 60-70% of the frame
+- Patient showing visible clinical signs (rash, swelling, posture of pain)
+- 3-5 floating medical icons around patient showing affected systems
+- Soft pastel background (#FAFAFA light gray)
 
-THE PATIENT (Hero Element):
-- ONE person, large, central, dominant
-- Occupies 60-70% of the frame
-- Semi-realistic editorial illustration style
-- Emotionally expressive face and body language
-- Clinical signs visible but elegantly rendered
+PATIENT FIGURE:
+- Semi-realistic style (not cartoon, not photorealistic)
+- Emotionally expressive face showing distress/discomfort
+- Visible clinical signs hypercharacterized for memory
 - Warm natural skin tones
-- Simple clothing, no distracting details
+- Simple clothing (hospital gown or casual)
 
-CLINICAL SIGNS:
-- Hypercharacterize the KEY visible findings for memory
-- Show through the patient's body/expression, not separate icons
-- If systemic: subtle body map overlay with highlighted areas
-- Minimal floating elements, maximum 2-3
-
-COLOR PALETTE:
-- Background: warm ivory #F6F3EE
-- Warm skin tones
-- Muted terracotta for inflammation/danger
-- Dusty navy for cyanosis/cold
-- Sage for recovery areas
-- NO saturated colors, NO harsh contrasts
-
-TYPOGRAPHY:
-- Maximum 2-3 labels
-- Elegant sans-serif, ambient placement
-- Labels feel like whispers, not shouts
-- NO full sentences
+FLOATING ICONS:
+- Simple, clean anatomical illustrations
+- Hearts, lungs, joints, skin cross-sections, cells
+- Connected to patient with subtle lines or proximity
+- Small labels (1-3 words each): "Fever", "Rash", "Joint pain"
 
 CONTENT RULES:
-- ONLY positive findings (symptoms present)
-- NO diagnosis, NO treatment, NO management
-- Show the illness script, not the answer
+- ONLY show POSITIVE findings (symptoms that ARE present)
+- NO negative findings, NO diagnosis, NO treatment
+- 2-4 floating labels MAX
+- LARGE readable typography
 
-AVOID COMPLETELY:
-- Floating anatomical icon clusters
-- Multiple competing visual elements
-- Dense labels or explanatory text
-- Clinical clipart aesthetic
-- Cartoon or comic book style
-- Hard edges, boxed poster look
+COLOR PALETTE:
+- Light gray background (#FAFAFA)
+- Warm skin tones for patient
+- Soft pastels for icons (light blue, light pink, light red)
+- Red accents for inflammation/danger areas
 
-SUCCESS TEST:
-User should feel the patient's distress and instantly pattern-match the presentation.
-The image should feel printed directly into the interface.
-Calm, elegant, emotionally intelligent, memorable.`;
+NOT: Comic book, cartoon, superhero, dense infographic, tiny text.
+
+GOAL: Emotional memory anchor that encodes the disease presentation visually.`;
 
     console.log('🎨 Generating vignette visual...');
     
@@ -215,91 +192,55 @@ export async function generateExplanationVisual(
   if (cached) return cached;
 
   try {
-    const prompt = `Create a PREMIUM EDITORIAL MEDICAL LEARNING VISUAL.
+    const prompt = `Create a PREMIUM MOBILE MEDICAL EXPLANATION INFOGRAPHIC.
 
-CONCEPT: "${conceptTitle}"
-KEY POINT: ${correctAnswer}
+TOPIC: "${conceptTitle}"
+KEY LEARNING POINT: ${correctAnswer}
+CONTEXT: ${explanation.slice(0, 150)}
 
-DESIGN PHILOSOPHY:
-This is a COGNITIVE INTERFACE for MEMORY ENCODING.
-NOT an information-dense educational graphic.
-The user should understand the gist in 2-5 seconds.
-The image should create a strong compressed mental model.
+CRITICAL: Must be readable at phone width WITHOUT zooming.
 
-ABSOLUTE REQUIREMENTS:
-- Background color: #F6F3EE (warm ivory/stone) - MUST match app exactly
-- The visual must feel EMBEDDED in the app, not an imported poster
-- ONE dominant focal point only
-- Maximum 3 text labels (2-4 words each)
-- Massive negative space (60%+ of image)
-- No colored section boxes or blocks
-- No numbered sequences or step arrows
-- No competing focal points
+EXACT STYLE TO MATCH:
+- Clean editorial medical illustration style
+- Semi-realistic patient figure with expressive emotion
+- Numbered sequential sections (1, 2, 3, 4, 5) showing disease progression/mechanism
+- Each section has a soft pastel color-coded background strip
+- Floating anatomical icons (hearts, joints, organs, cells) around patient
+- Bold section headers in dark text
+- Short explanatory text (1-2 lines per section)
+- Vertical narrative flow from top to bottom
 
-VISUAL STYLE (Editorial Medical):
-- Bauhaus medical poster aesthetic
-- NYT/Monocle editorial science illustration
-- Apple Health onboarding elegance
-- Museum educational signage calm
-- Semi-flat painterly/vector hybrid
-- Soft editorial illustration, NOT clipart
-- Consistent line weight, subtle texture
+STRUCTURE (5 SECTIONS):
+1. THE TRIGGER - What starts it (icon + 1-line explanation)
+2. THE MECHANISM - What happens in the body (patient + floating icons)
+3. THE SIGNS - What you see clinically (patient showing symptoms)
+4. THE KEY FINDING - Most important diagnostic clue
+5. THE TAKEAWAY - One-line summary + treatment hint
 
-COMPOSITION:
-- ONE hero visual element (patient, organ, or mechanism)
-- Visual hierarchy: PRIMARY focal → SECONDARY support → TERTIARY minimal labels
-- Spatial grouping instead of arrows
-- Visual gravity and alignment for flow
-- Generous breathing room around all elements
-- Portrait 9:16 for mobile
+VISUAL ELEMENTS:
+- ONE central patient figure (semi-realistic, emotionally expressive)
+- Floating medical icons (anatomical, simple, clean)
+- Numbered circles for each section (1, 2, 3, 4, 5)
+- Soft pastel section backgrounds (light blue, light pink, light yellow, light green)
+- Bold sans-serif headers
+- Clean arrows showing flow/progression
 
-COLOR PALETTE:
-- Background: warm ivory #F6F3EE
-- Card surfaces: #FBF8F4 with 2% tint
-- Primary text: #1F1F1F
-- Secondary text: #6B6B6B
-- Accent red: muted terracotta
-- Accent green: sage
-- Accent blue: dusty navy
-- NO saturated colors, NO harsh gradients, NO rainbow
+BACKGROUND: Light gray (#FAFAFA) base with colored section strips.
 
 TYPOGRAPHY:
-- Elegant serif for title (ONE only)
-- Restrained sans-serif for labels
-- NO giant bold screaming headers
-- NO full sentences
-- Labels should be ambient/minimal
+- LARGE bold headers (readable without zoom)
+- Short explanatory text (max 8 words per line)
+- High contrast dark text on light backgrounds
 
-WHAT TO SHOW:
-- If mechanism: show trigger → consequence as ONE visual flow
-- If comparison: split-screen mirrored layout
-- If anatomy: minimal labeled spatial diagram
-- If emergency: urgency through composition, not red boxes
-- Make the PERSON the hero when relevant
+COLOR PALETTE:
+- Soft pastels for section backgrounds
+- Rich but not oversaturated accent colors
+- Warm skin tones for patient
+- Red for danger/inflammation, blue for info, green for recovery
 
-EMOTIONAL ENCODING:
-- Leverage emotional salience
-- Create memorable visual anchors
-- Human-centered imagery
-- Elegant restraint, not melodrama
+NOT: Comic book style, cartoon, childish, dense poster, tiny text.
 
-AVOID COMPLETELY:
-- Colored section blocks (pink/blue/green strips)
-- Numbered circles (1, 2, 3, 4, 5)
-- Multiple arrows showing flow
-- Dense explanatory text
-- Floating icon clusters
-- PowerPoint/Canva aesthetic
-- Clinical clipart
-- Photorealistic 3D renders
-- Childish educational poster style
-- Hard edges and boxed poster look
-
-SUCCESS TEST:
-User should feel "I instantly get this" NOT "I need to study this image."
-The image should feel printed directly into the interface.
-Calm, elegant, premium, emotionally intelligent.`;
-
+GOAL: Educational medical infographic that tells a visual story of the disease mechanism.`;
 
 
     console.log('📊 Generating explanation visual...');
