@@ -81,7 +81,7 @@ NOT: Comic book, cartoon, superhero, dense infographic, tiny text.
 GOAL: Emotional memory anchor that encodes the disease presentation visually.`;
 
   const response = await openai.images.generate({
-    model: "gpt-image-1",
+    model: "gpt-image-2",
     prompt,
     n: 1,
     size: "1024x1792",
@@ -148,7 +148,7 @@ NOT: Comic book style, cartoon, childish, dense poster, tiny text.
 GOAL: Educational medical infographic that tells a visual story of the disease mechanism.`;
 
   const response = await openai.images.generate({
-    model: "gpt-image-1",
+    model: "gpt-image-2",
     prompt,
     n: 1,
     size: "1024x1792",
