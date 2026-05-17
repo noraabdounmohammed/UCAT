@@ -6,17 +6,30 @@
 import OpenAI from 'openai';
 import { createClient } from '@supabase/supabase-js';
 import * as dotenv from 'dotenv';
+import * as path from 'path';
 
-dotenv.config();
+// Load from .env.local (Vite convention)
+dotenv.config({ path: path.resolve(process.cwd(), '.env.local') });
+dotenv.config({ path: path.resolve(process.cwd(), '.env') });
+
+const OPENAI_KEY = process.env.VITE_OPENAI_API_KEY || process.env.VITE_OPENAI_IMAGE_KEY || process.env.OPENAI_API_KEY;
+const SUPABASE_URL = process.env.VITE_SUPABASE_URL;
+const SUPABASE_KEY = process.env.VITE_SUPABASE_ANON_KEY;
+
+if (!OPENAI_KEY) {
+  console.error('❌ Missing VITE_OPENAI_IMAGE_KEY or OPENAI_API_KEY in .env.local');
+  process.exit(1);
+}
+if (!SUPABASE_URL || !SUPABASE_KEY) {
+  console.error('❌ Missing VITE_SUPABASE_URL or VITE_SUPABASE_ANON_KEY in .env.local');
+  process.exit(1);
+}
 
 const openai = new OpenAI({
-  apiKey: process.env.VITE_OPENAI_IMAGE_KEY,
+  apiKey: OPENAI_KEY,
 });
 
-const supabase = createClient(
-  process.env.VITE_SUPABASE_URL!,
-  process.env.VITE_SUPABASE_ANON_KEY!
-);
+const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
 
 interface FeaturedQuestion {
   id: string;

@@ -1075,8 +1075,12 @@ export const createConceptStore = (curriculumId: string = 'default') => {
             const unseenCached = allCachedForConcept.filter(q => !seenQuestionIds.has(q.id));
             
             if (unseenCached.length > 0) {
-              // Pick a random unseen cached question
-              const cached = unseenCached[Math.floor(Math.random() * unseenCached.length)];
+              // Prioritize featured questions (they have pre-loaded images)
+              const featuredUnseen = unseenCached.filter(q => q.is_featured);
+              const questionPool = featuredUnseen.length > 0 ? featuredUnseen : unseenCached;
+              
+              // Pick a random question from the pool
+              const cached = questionPool[Math.floor(Math.random() * questionPool.length)];
               newlySeenIds.push(cached.id);
               return {
                 id: cached.id,
@@ -1089,7 +1093,11 @@ export const createConceptStore = (curriculumId: string = 'default') => {
                 format: cached.question_format,
                 key_fact: cached.key_fact,
                 citation_id: cached.citation_id,
-                study_reason: studyReason // Add study reason for badge
+                study_reason: studyReason,
+                // Include pre-loaded images from featured questions
+                vignette_image_url: cached.vignette_image_url,
+                explanation_image_url: cached.explanation_image_url,
+                memory_hook: cached.memory_hook
               };
             }
             
