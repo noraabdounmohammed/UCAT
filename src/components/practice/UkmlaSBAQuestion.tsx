@@ -109,16 +109,30 @@ export const UkmlaSBAQuestion: React.FC<UkmlaSBAQuestionProps> = ({
     setExplanationImage(null);
     setMemoryHook(null);
     
-    // Check cache for existing visuals
-    getCachedVisual(questionId, 'vignette').then(cached => {
-      if (cached) setVignetteImage(cached.image_url);
-    });
-    getCachedVisual(questionId, 'explanation').then(cached => {
-      if (cached) {
-        setExplanationImage(cached.image_url);
-        if (cached.memory_hook) setMemoryHook(cached.memory_hook);
-      }
-    });
+    // First check if question has pre-loaded images (featured questions)
+    const q = question as any;
+    if (q.vignette_image_url) {
+      setVignetteImage(q.vignette_image_url);
+    }
+    if (q.explanation_image_url) {
+      setExplanationImage(q.explanation_image_url);
+      if (q.memory_hook) setMemoryHook(q.memory_hook);
+    }
+    
+    // If no pre-loaded images, check cache for existing visuals
+    if (!q.vignette_image_url) {
+      getCachedVisual(questionId, 'vignette').then(cached => {
+        if (cached) setVignetteImage(cached.image_url);
+      });
+    }
+    if (!q.explanation_image_url) {
+      getCachedVisual(questionId, 'explanation').then(cached => {
+        if (cached) {
+          setExplanationImage(cached.image_url);
+          if (cached.memory_hook) setMemoryHook(cached.memory_hook);
+        }
+      });
+    }
   }, [question.id, question.concept_id, question.question]);
 
   // Handle vignette visual generation

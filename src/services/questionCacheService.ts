@@ -26,6 +26,13 @@ export interface CachedQuestion {
   difficulty: string;
   generated_at: string;
   status: string;
+  // Image fields for featured questions
+  vignette_image_url?: string | null;
+  explanation_image_url?: string | null;
+  memory_hook?: string | null;
+  is_featured?: boolean;
+  priority?: number;
+  condition_name?: string | null;
 }
 
 export interface QuestionInsert {
@@ -274,6 +281,95 @@ export const questionCacheService = {
    */
   async recordQuestionServed(questionId: string): Promise<void> {
     await supabase.rpc('increment_question_served', { question_id: questionId });
+  },
+
+  /**
+   * Get featured questions (pre-generated with images)
+   * These are high-yield showcase questions for instant experience
+   */
+  async getFeaturedQuestions(limit?: number): Promise<CachedQuestion[]> {
+    let query = supabase
+      .from('cached_questions')
+      .select('*')
+      .eq('is_featured', true)
+      .eq('status', 'active')
+      .order('priority', { ascending: false });
+    
+    if (limit) {
+      query = query.limit(limit);
+    }
+    
+    const { data, error } = await query;
+    
+    if (error) {
+      console.error('Error fetching featured questions:', error);
+      return [];
+    }
+    
+    return data || [];
+  },
+
+  /**
+   * Get featured questions by condition/specialty
+   */
+  async getFeaturedByCondition(conditionName: string): Promise<CachedQuestion[]> {
+    const { data, error } = await supabase
+      .from('cached_questions')
+      .select('*')
+      .eq('is_featured', true)
+      .eq('condition_name', conditionName)
+      .eq('status', 'active')
+      .order('priority', { ascending: false });
+    
+    if (error) {
+      console.error('Error fetching featured questions by condition:', error);
+      return [];
+    }
+    
+    return data || [];
+  },
+
+  /**
+   * Get featured questions by specialty
+   */
+  async getFeaturedBySpecialty(specialty: string): Promise<CachedQuestion[]> {
+    const { data, error } = await supabase
+      .from('cached_questions')
+      .select('*')
+      .eq('is_featured', true)
+      .eq('specialty', specialty)
+      .eq('status', 'active')
+      .order('priority', { ascending: false });
+    
+    if (error) {
+      console.error('Error fetching featured questions by specialty:', error);
+      return [];
+    }
+    
+    return data || [];
+  },
+
+  /**
+   * Check if a featured question exists for a concept
+   * Returns the featured question if found, null otherwise
+   */
+  async getFeaturedForConcept(conceptTitle: string): Promise<CachedQuestion | null> {
+    const { data, error } = await supabase
+      .from('cached_questions')
+      .select('*')
+      .eq('is_featured', true)
+      .eq('concept_title', conceptTitle)
+      .eq('status', 'active')
+      .order('priority', { ascending: false })
+      .limit(1)
+      .single();
+    
+    if (error) {
+      // No featured question found - that's fine
+      return null;
+    }
+    
+    return data;
   }
 };
 
