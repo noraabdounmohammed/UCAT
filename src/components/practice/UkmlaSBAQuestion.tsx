@@ -328,22 +328,26 @@ export const UkmlaSBAQuestion: React.FC<UkmlaSBAQuestionProps> = ({
         </div>
       </div>
 
-      {/* Thin Banner Strip - AI + Study Reason */}
+      {/* Thin Banner Strip - AI + Study Reason - Manhattan Loft Style */}
       <div className={cn(
-        "flex items-center justify-center gap-3 px-4 py-1.5 text-[10px] border-b flex-shrink-0",
+        "flex items-center justify-center gap-4 px-4 py-2 text-[10px] uppercase tracking-widest border-b",
         isLightMode 
-          ? "bg-amber-50/50 border-amber-100 text-amber-700" 
-          : "bg-amber-950/20 border-amber-900/30 text-amber-300/80"
-      )}>
-        <span>⚡ AI-generated • Verify against guidelines</span>
+          ? "bg-stone-100/80 border-stone-200 text-stone-500" 
+          : "bg-white/5 border-white/10 text-white/50"
+      )}
+      style={{ fontFamily: 'Unbounded, sans-serif' }}
+      >
+        <span>AI-Generated</span>
         {(question as any).study_reason && (
           <>
-            <span className="opacity-40">|</span>
-            <span>
-              {(question as any).study_reason === 'due' && '📅 Due'}
-              {(question as any).study_reason === 'needs_review' && '🔄 Review'}
-              {(question as any).study_reason === 'new' && '✨ New'}
-              {(question as any).study_reason === 'reinforcement' && '💪 Reinforce'}
+            <span className="w-px h-3 bg-current opacity-30"></span>
+            <span className={cn(
+              isLightMode ? "text-stone-700" : "text-white/70"
+            )}>
+              {(question as any).study_reason === 'due' && 'Due for Review'}
+              {(question as any).study_reason === 'needs_review' && 'Needs Review'}
+              {(question as any).study_reason === 'new' && 'New Concept'}
+              {(question as any).study_reason === 'reinforcement' && 'Reinforcement'}
             </span>
           </>
         )}
@@ -378,22 +382,23 @@ export const UkmlaSBAQuestion: React.FC<UkmlaSBAQuestionProps> = ({
                     onClick={handleGenerateVignette}
                     disabled={generatingVignette}
                     className={cn(
-                      "flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-medium transition-all",
+                      "flex items-center gap-2 px-4 py-2.5 rounded-full text-[11px] uppercase tracking-widest font-medium transition-all duration-300",
                       isLightMode
-                        ? "bg-purple-50 text-purple-700 border border-purple-200 hover:bg-purple-100"
-                        : "bg-purple-950/30 text-purple-300 border border-purple-800 hover:bg-purple-900/40",
+                        ? "bg-stone-900 text-white hover:bg-stone-800"
+                        : "bg-white/10 text-white/90 border border-white/20 hover:bg-white/20",
                       generatingVignette && "opacity-50 cursor-wait"
                     )}
+                    style={{ fontFamily: 'Unbounded, sans-serif' }}
                   >
                     {generatingVignette ? (
                       <>
                         <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                        <span>Generating scene...</span>
+                        <span>Generating...</span>
                       </>
                     ) : (
                       <>
                         <ImageIcon className="h-3.5 w-3.5" />
-                        <span>Generate Scene Visual</span>
+                        <span>Scene Visual</span>
                       </>
                     )}
                   </button>
@@ -595,22 +600,23 @@ export const UkmlaSBAQuestion: React.FC<UkmlaSBAQuestionProps> = ({
                         onClick={handleGenerateExplanation}
                         disabled={generatingExplanation}
                         className={cn(
-                          "flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-medium transition-all",
+                          "flex items-center gap-2 px-4 py-2.5 rounded-full text-[11px] uppercase tracking-widest font-medium transition-all duration-300",
                           isLightMode
-                            ? "bg-emerald-50 text-emerald-700 border border-emerald-200 hover:bg-emerald-100"
-                            : "bg-emerald-950/30 text-emerald-300 border border-emerald-800 hover:bg-emerald-900/40",
+                            ? "bg-stone-900 text-white hover:bg-stone-800"
+                            : "bg-white/10 text-white/90 border border-white/20 hover:bg-white/20",
                           generatingExplanation && "opacity-50 cursor-wait"
                         )}
+                        style={{ fontFamily: 'Unbounded, sans-serif' }}
                       >
                         {generatingExplanation ? (
                           <>
                             <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                            <span>Generating concept map...</span>
+                            <span>Generating...</span>
                           </>
                         ) : (
                           <>
                             <Sparkles className="h-3.5 w-3.5" />
-                            <span>Generate Concept Visual</span>
+                            <span>Concept Visual</span>
                           </>
                         )}
                       </button>
