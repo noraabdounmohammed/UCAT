@@ -357,10 +357,10 @@ export const UkmlaSBAQuestion: React.FC<UkmlaSBAQuestionProps> = ({
       <div className="flex-1 overflow-y-auto">
         <div className="w-full max-w-2xl mx-auto">
           {/* Content - no card wrapper, edge-to-edge images */}
-          <div className="px-0 sm:px-4 md:px-6 py-4 pb-safe">
+          <div className="px-0 sm:px-4 md:px-6 pt-0 pb-4 pb-safe">
             {/* Vignette Visual - Edge to edge on mobile */}
             {(vignetteImage || isImageGenAvailable()) && (
-              <div className="-mx-0 sm:mx-0 mb-4">
+              <div className={cn("-mx-0 sm:mx-0 mb-4", vignetteImage ? "" : "pt-4")}>
                 {vignetteImage ? (
                   <div 
                     className="overflow-hidden cursor-zoom-in relative group sm:rounded-xl"
@@ -683,7 +683,7 @@ export const UkmlaSBAQuestion: React.FC<UkmlaSBAQuestionProps> = ({
 
                 {/* Next button */}
                 <div className={cn(
-                  "pt-3 sm:pt-4 border-t",
+                  "pt-3 sm:pt-4 pb-6 sm:pb-8 border-t",
                   isLightMode ? "border-zinc-200" : "border-white/10"
                 )}>
                   <button

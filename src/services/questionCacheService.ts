@@ -85,6 +85,8 @@ export const questionCacheService = {
   async getQuestionsForConcepts(conceptIds: string[]): Promise<CachedQuestion[]> {
     if (conceptIds.length === 0) return [];
     
+    console.log('🔍 Looking for cached questions for concepts:', conceptIds.slice(0, 3));
+    
     const { data, error } = await supabase
       .from('cached_questions')
       .select('*')
@@ -92,10 +94,11 @@ export const questionCacheService = {
       .eq('status', 'active');
     
     if (error) {
-      console.error('Error fetching cached questions:', error);
+      console.error('❌ Error fetching cached questions:', error);
       return [];
     }
     
+    console.log(`✅ Found ${data?.length || 0} cached questions`);
     return data || [];
   },
 
@@ -151,12 +154,13 @@ export const questionCacheService = {
       .from('cached_questions')
       .insert({
         ...question,
-        generated_by: user.id,
         generated_at: new Date().toISOString(),
         status: 'active'
-      })
+      } as any)
       .select()
       .single();
+    
+    console.log('💾 Saving question to cache:', { concept_id: question.concept_id, title: question.concept_title, error });
     
     if (error) {
       // Duplicate question - that's fine, just fetch existing
@@ -191,14 +195,13 @@ export const questionCacheService = {
     
     const questionsWithMeta = questions.map(q => ({
       ...q,
-      generated_by: user.id,
       generated_at: new Date().toISOString(),
       status: 'active'
     }));
     
     const { data, error } = await supabase
       .from('cached_questions')
-      .upsert(questionsWithMeta, {
+      .upsert(questionsWithMeta as any, {
         onConflict: 'concept_id,question_stem',
         ignoreDuplicates: true
       })

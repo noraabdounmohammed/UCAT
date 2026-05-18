@@ -9,7 +9,7 @@ INSERT INTO cached_questions (
   question_stem, question_text, options, correct_answer,
   explanation, key_fact, is_featured, priority, custom_filters
 ) VALUES (
-  'featured-acs-001',
+  'ukmla-cardio-acs',
   'Acute Coronary Syndrome',
   'Cardiology',
   'Acute Coronary Syndrome',
@@ -23,7 +23,7 @@ INSERT INTO cached_questions (
   ARRAY['cardiology', 'emergency', 'chest-pain']
 ),
 (
-  'featured-acs-002',
+  'ukmla-cardio-acs',
   'Acute Coronary Syndrome',
   'Cardiology',
   'Acute Coronary Syndrome',
@@ -41,7 +41,7 @@ INSERT INTO cached_questions (
 -- HEART FAILURE
 -- ============================================
 (
-  'featured-hf-001',
+  'ukmla-cardio-heart-failure',
   'Heart Failure',
   'Cardiology',
   'Heart Failure',
@@ -55,7 +55,7 @@ INSERT INTO cached_questions (
   ARRAY['cardiology', 'breathlessness']
 ),
 (
-  'featured-hf-002',
+  'ukmla-cardio-heart-failure',
   'Heart Failure',
   'Cardiology',
   'Heart Failure',
@@ -73,7 +73,7 @@ INSERT INTO cached_questions (
 -- ASTHMA
 -- ============================================
 (
-  'featured-asthma-001',
+  'ukmla-resp-asthma',
   'Asthma',
   'Respiratory',
   'Asthma',
@@ -87,7 +87,7 @@ INSERT INTO cached_questions (
   ARRAY['respiratory', 'emergency', 'breathlessness']
 ),
 (
-  'featured-asthma-002',
+  'ukmla-resp-asthma',
   'Asthma',
   'Respiratory',
   'Asthma',

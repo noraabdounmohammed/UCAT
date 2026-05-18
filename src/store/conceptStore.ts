@@ -1046,13 +1046,29 @@ export const createConceptStore = (curriculumId: string = 'default') => {
           const seenRaw = localStorage.getItem(seenKey);
           const seenQuestionIds: Set<string> = new Set(seenRaw ? JSON.parse(seenRaw) : []);
 
-          // Check cache first, generate only if needed
+          // Fetch featured questions first (pre-generated with images)
+          const featuredQuestions = await questionCacheService.getFeaturedQuestions();
+          console.log(`📦 Found ${featuredQuestions.length} featured questions`);
+          
+          // Check cache for concept-specific questions
           const cachedQuestions = await questionCacheService.getQuestionsForConcepts(
             conceptsForQuestions.map(c => c.concept_id)
           );
           
-          // Group cached questions by concept
+          // Group cached questions by concept AND by concept_title (for featured matching)
           const cachedByConcept: Record<string, any[]> = {};
+          const cachedByTitle: Record<string, any[]> = {};
+          
+          // Add featured questions to title-based lookup
+          for (const q of featuredQuestions) {
+            const titleKey = q.concept_title?.toLowerCase() || '';
+            if (!cachedByTitle[titleKey]) {
+              cachedByTitle[titleKey] = [];
+            }
+            cachedByTitle[titleKey].push(q);
+          }
+          
+          // Add regular cached questions
           for (const q of cachedQuestions) {
             if (!cachedByConcept[q.concept_id]) {
               cachedByConcept[q.concept_id] = [];
