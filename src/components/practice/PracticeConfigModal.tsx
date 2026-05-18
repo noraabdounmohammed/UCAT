@@ -446,15 +446,8 @@ export const PracticeConfigModal: React.FC<PracticeConfigModalProps> = ({
       target_mastery_levels: practiceFilterState.mastery_levels
     };
 
-    // Check if user is signed in
-    if (!user) {
-      // Save the config and show sign-in prompt
-      setPendingPracticeConfig(config);
-      setShowSignInPrompt(true);
-      return;
-    }
-
-    // User is signed in, start practice immediately
+    // Start practice (works for both signed in and anonymous users)
+    // Caching only works for signed-in users, but practice works for everyone
     onStartPractice(config);
     handleClose();
   };

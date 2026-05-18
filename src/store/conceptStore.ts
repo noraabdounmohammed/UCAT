@@ -1084,7 +1084,34 @@ export const createConceptStore = (curriculumId: string = 'default') => {
             // Get the study reason for this concept
             const studyReason = conceptStudyReasons.get(concept.concept_id) || 'new';
             
-            // Check if we have cached questions for this concept
+            // Check for featured questions by title first (they have pre-loaded images)
+            const titleKey = concept.title?.toLowerCase() || '';
+            const featuredByTitle = cachedByTitle[titleKey] || [];
+            const unseenFeatured = featuredByTitle.filter(q => !seenQuestionIds.has(q.id));
+            
+            if (unseenFeatured.length > 0) {
+              const featured = unseenFeatured[Math.floor(Math.random() * unseenFeatured.length)];
+              newlySeenIds.push(featured.id);
+              console.log(`⭐ Using featured question for "${concept.title}"`);
+              return {
+                id: featured.id,
+                concept_id: concept.concept_id, // Use user's concept_id
+                question_stem: featured.question_stem,
+                question: featured.question_text,
+                options: featured.options,
+                correct_answer: featured.correct_answer,
+                explanation: featured.explanation,
+                format: featured.question_format || 'ukmla_sba',
+                key_fact: featured.key_fact,
+                citation_id: featured.citation_id,
+                study_reason: studyReason,
+                vignette_image_url: featured.vignette_image_url,
+                explanation_image_url: featured.explanation_image_url,
+                memory_hook: featured.memory_hook
+              };
+            }
+            
+            // Check if we have cached questions for this concept by ID
             const allCachedForConcept = cachedByConcept[concept.concept_id] || [];
             
             // Filter out questions the user has already seen
