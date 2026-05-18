@@ -436,10 +436,9 @@ export const PracticeConfigModal: React.FC<PracticeConfigModalProps> = ({
     // Persist the exact selection to the store so downstream startPractice uses it
     setPracticeSelection(selectedIds);
 
-    const MAX_QUESTIONS_PER_SESSION = 40;
     const config = {
       target_formats: selectedFormat ? [selectedFormat] : undefined,
-      question_count: Math.min(selectedIds.length, MAX_QUESTIONS_PER_SESSION),
+      question_count: selectedIds.length,
       custom_prompt: finalPrompt,
       custom_flashcard_prompt: finalFlashcardPrompt,
       study_mode: practiceFilterState.study_mode,
