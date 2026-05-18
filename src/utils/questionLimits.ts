@@ -6,6 +6,17 @@
 const DAILY_LIMIT = 100;
 const STORAGE_KEY = 'daily_question_count';
 
+// Users with unlimited access (no daily limit)
+const UNLIMITED_USERS = [
+  'noraabdounmohammed@gmail.com'
+];
+
+// Check if email has unlimited access
+export function hasUnlimitedAccess(email?: string): boolean {
+  if (!email) return false;
+  return UNLIMITED_USERS.includes(email.toLowerCase());
+}
+
 interface DailyUsage {
   date: string; // YYYY-MM-DD format
   count: number;

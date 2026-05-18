@@ -15,7 +15,7 @@ import { questionCacheService } from '@/services/questionCacheService';
 import { jsonConceptLoader } from '@/services/jsonConceptLoader';
 import { StorageManager } from '@/utils/storageManager';
 import { supabase } from '@/lib/supabase';
-import { getAllowedQuestionCount, recordQuestionsGenerated, getRemainingQuestions } from '@/utils/questionLimits';
+import { getAllowedQuestionCount, recordQuestionsGenerated, getRemainingQuestions, hasUnlimitedAccess } from '@/utils/questionLimits';
 import { createFsrsScheduler } from '@/fsrs/scheduler';
 import type { FsrsCardState } from '@/fsrs/types';
 
@@ -827,22 +827,31 @@ export const createConceptStore = (curriculumId: string = 'default') => {
         // Check daily limit - get user ID if available
         const { data: { user } } = await supabase.auth.getUser();
         const userId = user?.id;
-        const remaining = getRemainingQuestions(userId);
+        const userEmail = user?.email;
+        const isUnlimited = hasUnlimitedAccess(userEmail);
         
-        if (remaining === 0) {
-          console.warn('⚠️ Daily question limit reached (100/day)');
-          set({ 
-            isLoading: false, 
-            isPracticing: false,
-            practiceError: 'You\'ve reached your daily limit of 100 questions. Come back tomorrow!'
-          });
-          return;
-        }
-        
-        // Cap to remaining allowance
-        const questionCount = getAllowedQuestionCount(requestedCount, userId);
-        if (questionCount < requestedCount) {
-          console.log(`📊 Limiting questions from ${requestedCount} to ${questionCount} (daily limit)`);
+        // Skip limit check for unlimited users
+        let questionCount = requestedCount;
+        if (!isUnlimited) {
+          const remaining = getRemainingQuestions(userId);
+          
+          if (remaining === 0) {
+            console.warn('⚠️ Daily question limit reached (100/day)');
+            set({ 
+              isLoading: false, 
+              isPracticing: false,
+              practiceError: 'You\'ve reached your daily limit of 100 questions. Come back tomorrow!'
+            });
+            return;
+          }
+          
+          // Cap to remaining allowance
+          questionCount = getAllowedQuestionCount(requestedCount, userId);
+          if (questionCount < requestedCount) {
+            console.log(`📊 Limiting questions from ${requestedCount} to ${questionCount} (daily limit)`);
+          }
+        } else {
+          console.log('👑 Unlimited access - no daily limit');
         }
         
         set({ isLoading: true, isPracticing: true, currentSessionAnswers: [], sessionStartTime: startTime, generatingQuestionCount: questionCount });
