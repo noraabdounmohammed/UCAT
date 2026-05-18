@@ -143,19 +143,10 @@ export const questionCacheService = {
    * Only works for authenticated users - fails silently for anonymous
    */
   async saveQuestion(question: QuestionInsert): Promise<CachedQuestion | null> {
-    const { data: { user }, error: authError } = await supabase.auth.getUser();
-    
-    console.log('💾 saveQuestion auth check:', { 
-      hasUser: !!user, 
-      userId: user?.id?.slice(0, 8),
-      authError: authError?.message 
+    console.log('💾 Attempting to save question to cache:', { 
+      concept_id: question.concept_id, 
+      title: question.concept_title 
     });
-    
-    // Skip caching for anonymous users - RLS requires authentication
-    if (!user) {
-      console.log('⚠️ Skipping cache save - no authenticated user');
-      return null;
-    }
     
     const { data, error } = await supabase
       .from('cached_questions')
@@ -167,7 +158,7 @@ export const questionCacheService = {
       .select()
       .single();
     
-    console.log('💾 Saving question to cache:', { concept_id: question.concept_id, title: question.concept_title, error });
+    console.log('💾 Save result:', { success: !error, error: error?.message, code: error?.code });
     
     if (error) {
       // Duplicate question - that's fine, just fetch existing
