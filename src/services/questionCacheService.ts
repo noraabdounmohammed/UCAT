@@ -143,10 +143,17 @@ export const questionCacheService = {
    * Only works for authenticated users - fails silently for anonymous
    */
   async saveQuestion(question: QuestionInsert): Promise<CachedQuestion | null> {
-    const { data: { user } } = await supabase.auth.getUser();
+    const { data: { user }, error: authError } = await supabase.auth.getUser();
+    
+    console.log('💾 saveQuestion auth check:', { 
+      hasUser: !!user, 
+      userId: user?.id?.slice(0, 8),
+      authError: authError?.message 
+    });
     
     // Skip caching for anonymous users - RLS requires authentication
     if (!user) {
+      console.log('⚠️ Skipping cache save - no authenticated user');
       return null;
     }
     
