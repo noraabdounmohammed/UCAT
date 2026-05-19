@@ -166,8 +166,8 @@ export function ApplePracticeSession({
     // Extract explanation
     const explanation = q.explanation || q.worked_solution || '';
     
-    // Determine question format - Force UKMLA SBA format for all questions
-    const format = q.format || defaultFormat;
+    // Use the currentFormat (user's selected format) - ignore question's stored format
+    const format = currentFormat || defaultFormat;
     
     return {
       id: q.id,
@@ -178,7 +178,7 @@ export function ApplePracticeSession({
       explanation,
       format
     };
-  }, [currentQuestion, defaultFormat]);
+  }, [currentQuestion, defaultFormat, currentFormat]);
 
   // Handle next question navigation
   const handleNextQuestion = () => {
