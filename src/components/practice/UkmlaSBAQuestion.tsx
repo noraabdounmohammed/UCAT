@@ -26,6 +26,7 @@ interface UkmlaSBAQuestionProps {
   onFilterSelect?: (filter?: string) => void;
   currentFormat?: string;
   onChangeFormat?: (format: string) => void;
+  onRestartWithFilters?: () => void; // Called when user applies new filters from config modal
   // Review mode props - show question in already-answered state
   preSelectedAnswer?: string;
   preSubmitted?: boolean;
@@ -49,6 +50,7 @@ export const UkmlaSBAQuestion: React.FC<UkmlaSBAQuestionProps> = ({
   onFilterSelect,
   currentFormat = 'ukmla_sba',
   onChangeFormat,
+  onRestartWithFilters,
   preSelectedAnswer,
   preSubmitted = false,
   nextButtonText
@@ -714,6 +716,10 @@ export const UkmlaSBAQuestion: React.FC<UkmlaSBAQuestionProps> = ({
           currentFormat={currentFormat}
           onChangeFormat={(format) => {
             onChangeFormat?.(format);
+            setShowConfigPanel(false);
+          }}
+          onApplyFilters={() => {
+            onRestartWithFilters?.();
             setShowConfigPanel(false);
           }}
         />

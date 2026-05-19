@@ -323,6 +323,10 @@ const ConceptPracticePageLoftContent: React.FC<Omit<ConceptPracticePageLoftProps
             // Restart practice with new format - preserves current filter if any
             startPractice({ target_formats: [format], question_count: 5 });
           }}
+          onRestartWithFilters={() => {
+            // Restart practice with current filters from filterState
+            startPractice({ target_formats: [currentFormat], question_count: 5 });
+          }}
         />
       </Suspense>
     );

@@ -10,6 +10,7 @@ interface PracticeFilterModalProps {
   onClose: () => void;
   currentFormat?: string;
   onChangeFormat?: (format: string) => void;
+  onApplyFilters?: () => void; // Called when user wants to restart practice with new filters
 }
 
 const FORMATS = [
@@ -18,7 +19,7 @@ const FORMATS = [
   { id: 'ukmla_sba', name: 'UKMLA AKT', icon: Stethoscope, description: 'Clinical scenarios' },
 ];
 
-export function PracticeFilterModal({ isLightMode, onClose, currentFormat, onChangeFormat }: PracticeFilterModalProps) {
+export function PracticeFilterModal({ isLightMode, onClose, currentFormat, onChangeFormat, onApplyFilters }: PracticeFilterModalProps) {
   const {
     filterState,
     updateFilterState,
@@ -661,6 +662,8 @@ export function PracticeFilterModal({ isLightMode, onClose, currentFormat, onCha
                 if (pendingFormat && pendingFormat !== currentFormat) {
                   onChangeFormat?.(pendingFormat);
                 }
+                // Apply filters and restart practice with new selection
+                onApplyFilters?.();
                 onClose();
               }}
               className={cn(

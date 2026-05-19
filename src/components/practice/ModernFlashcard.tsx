@@ -21,6 +21,7 @@ interface ModernFlashcardProps {
   onFilterSelect?: (filter?: string) => void;
   currentFormat?: string;
   onChangeFormat?: (format: string) => void;
+  onRestartWithFilters?: () => void;
 }
 
 // Helper function to convert inline bullet points to proper markdown
@@ -66,7 +67,8 @@ export const ModernFlashcard: React.FC<ModernFlashcardProps> = ({
   activeFilter,
   onFilterSelect,
   currentFormat = 'flashcard',
-  onChangeFormat
+  onChangeFormat,
+  onRestartWithFilters
 }) => {
   const [isFlipped, setIsFlipped] = useState(false);
   const [hasAnswered, setHasAnswered] = useState(false);
@@ -814,6 +816,10 @@ export const ModernFlashcard: React.FC<ModernFlashcardProps> = ({
           currentFormat={currentFormat}
           onChangeFormat={(format) => {
             onChangeFormat?.(format);
+            setShowConfigPanel(false);
+          }}
+          onApplyFilters={() => {
+            onRestartWithFilters?.();
             setShowConfigPanel(false);
           }}
         />

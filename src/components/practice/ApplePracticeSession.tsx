@@ -21,6 +21,7 @@ interface PracticeSessionProps {
   defaultFormat?: 'flashcard' | 'sba' | 'ukmla_sba' | 'mindmap'; // Default question format if not specified in the question
   currentFormat?: string; // Current format for the switcher
   onChangeFormat?: (format: string) => void; // Callback when user switches format
+  onRestartWithFilters?: () => void; // Callback when user applies new filters from config modal
 }
 
 export function ApplePracticeSession({ 
@@ -33,7 +34,8 @@ export function ApplePracticeSession({
   section, 
   defaultFormat = 'ukmla_sba',
   currentFormat = 'ukmla_sba',
-  onChangeFormat 
+  onChangeFormat,
+  onRestartWithFilters
 }: PracticeSessionProps) {
   // State for tracking current question and navigation
   const [currentIndex, setCurrentIndex] = useState(0);
@@ -452,6 +454,7 @@ export function ApplePracticeSession({
             activeFilter={activeFilter}
             onFilterSelect={onAnotherFive}
             onChangeFormat={onChangeFormat}
+            onRestartWithFilters={onRestartWithFilters}
           />
         ) : (
           <QuestionRenderer

@@ -20,6 +20,7 @@ interface QuestionRendererProps {
   activeFilter?: string | null;
   onFilterSelect?: (filter?: string) => void;
   onChangeFormat?: (format: string) => void;
+  onRestartWithFilters?: () => void;
 }
 
 export const QuestionRenderer: React.FC<QuestionRendererProps> = ({
@@ -37,7 +38,8 @@ export const QuestionRenderer: React.FC<QuestionRendererProps> = ({
   availableFilters,
   activeFilter,
   onFilterSelect,
-  onChangeFormat
+  onChangeFormat,
+  onRestartWithFilters
 }) => {
   // Debug logging for mind map rendering
   if (format === 'mindmap' && process.env.NODE_ENV === 'development') {
@@ -68,6 +70,7 @@ export const QuestionRenderer: React.FC<QuestionRendererProps> = ({
           onFilterSelect={onFilterSelect}
           currentFormat={format}
           onChangeFormat={onChangeFormat}
+          onRestartWithFilters={onRestartWithFilters}
         />
       );
     
@@ -90,6 +93,7 @@ export const QuestionRenderer: React.FC<QuestionRendererProps> = ({
           onFilterSelect={onFilterSelect}
           currentFormat={format}
           onChangeFormat={onChangeFormat}
+          onRestartWithFilters={onRestartWithFilters}
         />
       );
     
@@ -129,6 +133,7 @@ export const QuestionRenderer: React.FC<QuestionRendererProps> = ({
           onFilterSelect={onFilterSelect}
           currentFormat={format}
           onChangeFormat={onChangeFormat}
+          onRestartWithFilters={onRestartWithFilters}
         />
       );
   }
