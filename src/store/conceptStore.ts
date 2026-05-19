@@ -17,7 +17,6 @@ import { StorageManager } from '@/utils/storageManager';
 import { supabase } from '@/lib/supabase';
 import { getAllowedQuestionCount, recordQuestionsGenerated, getRemainingQuestions, hasUnlimitedAccess } from '@/utils/questionLimits';
 import { createFsrsScheduler } from '@/fsrs/scheduler';
-import { ENABLE_AI_GENERATION } from '@/config/featureFlags';
 import type { FsrsCardState } from '@/fsrs/types';
 
 const fsrsScheduler = createFsrsScheduler();
@@ -1065,12 +1064,8 @@ export const createConceptStore = (curriculumId: string = 'default') => {
           const cachedByConcept: Record<string, any[]> = {};
           const cachedByTitle: Record<string, any[]> = {};
           
-          // Add featured questions to title-based lookup (filtered by target format)
+          // Add featured questions to title-based lookup
           for (const q of featuredQuestions) {
-            // Only include questions matching the target format
-            if (q.question_format && q.question_format !== targetFormat) {
-              continue;
-            }
             const titleKey = q.concept_title?.toLowerCase() || '';
             if (!cachedByTitle[titleKey]) {
               cachedByTitle[titleKey] = [];
@@ -1078,19 +1073,13 @@ export const createConceptStore = (curriculumId: string = 'default') => {
             cachedByTitle[titleKey].push(q);
           }
           
-          // Add regular cached questions (filtered by target format)
+          // Add regular cached questions
           for (const q of cachedQuestions) {
-            // Only include questions matching the target format
-            if (q.question_format && q.question_format !== targetFormat) {
-              continue;
-            }
             if (!cachedByConcept[q.concept_id]) {
               cachedByConcept[q.concept_id] = [];
             }
             cachedByConcept[q.concept_id].push(q);
           }
-          
-          console.log(`🎯 Filtering for format: ${targetFormat}`);
 
           // Track which question IDs we serve this session (to save back)
           const newlySeenIds: string[] = [];
@@ -1122,11 +1111,11 @@ export const createConceptStore = (curriculumId: string = 'default') => {
           
           console.log(`⚡ Cache check: ${cachedCount} cached, ${needsGenerationCount} need generation`);
           
-          // Only show generating UI if AI generation is enabled AND we need to generate questions
-          if (ENABLE_AI_GENERATION && needsGenerationCount > 0) {
+          // Only show generating UI if we actually need to generate questions
+          if (needsGenerationCount > 0) {
             set({ generatingQuestionCount: needsGenerationCount });
           } else {
-            // All questions are cached OR AI generation is disabled - no generating UI needed
+            // All questions are cached - no generating UI needed
             set({ generatingQuestionCount: 0 });
           }
           
@@ -1195,14 +1184,7 @@ export const createConceptStore = (curriculumId: string = 'default') => {
               };
             }
             
-            // All cached questions seen (or none exist)
-            // Check feature flag - if AI generation is disabled, skip this concept
-            if (!ENABLE_AI_GENERATION) {
-              console.log(`⏭️ No cached question for "${concept.title}" — skipping (AI generation disabled)`);
-              return null; // Will be filtered out
-            }
-            
-            // AI generation is enabled - generate a fresh question
+            // All cached questions seen (or none exist) — generate a fresh one
             if (allCachedForConcept.length > 0) {
               console.log(`🔄 All ${allCachedForConcept.length} cached questions seen for "${concept.title}" — generating fresh`);
             }
@@ -1254,23 +1236,7 @@ export const createConceptStore = (curriculumId: string = 'default') => {
             }
           });
 
-          const allResults = await Promise.all(questionPromises);
-          
-          // Filter out null values (concepts without cached questions when AI generation is disabled)
-          const questions = allResults.filter((q): q is NonNullable<typeof q> => q !== null);
-          
-          // Check if we have any questions to show
-          if (questions.length === 0) {
-            console.warn('⚠️ No questions available for the selected concepts');
-            set({ 
-              isLoading: false, 
-              isPracticing: false,
-              practiceError: 'No questions available for the selected topics. Try selecting different filters.'
-            });
-            return;
-          }
-          
-          console.log(`✅ Loaded ${questions.length} questions (${allResults.length - questions.length} concepts skipped)`);
+          const questions = await Promise.all(questionPromises);
           
           // Persist newly seen question IDs so user won't get the same q again
           if (newlySeenIds.length > 0) {
