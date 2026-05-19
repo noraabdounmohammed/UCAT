@@ -211,29 +211,13 @@ export function PracticeFilterModal({ isLightMode, onClose, currentFormat, onCha
                 style={{ fontFamily: "'Unbounded', sans-serif", fontWeight: 500 }}>
                 Configure Practice
               </h2>
-              <p className={cn('text-sm font-light mt-0.5', light ? 'text-stone-600' : 'text-white/60')}
-                style={{ fontFamily: "'Manrope', sans-serif" }}>
-                Ready to practice {concepts?.length || 0} concepts
-              </p>
             </div>
-            <div className="flex items-center gap-2">
-              {activeCount > 0 && (
-                <button
-                  onClick={clearAll}
-                  className={cn('text-xs font-medium transition-colors px-3 py-1.5 rounded-full',
-                    light ? 'text-stone-600 hover:bg-stone-100' : 'text-white/60 hover:bg-white/10')}
-                  style={{ fontFamily: "'Unbounded', sans-serif" }}
-                >
-                  Clear
-                </button>
-              )}
-              <button 
-                onClick={onClose} 
-                className={cn('p-2 rounded-full transition-colors', light ? 'hover:bg-stone-100 text-stone-400' : 'hover:bg-white/10 text-white/50')}
-              >
-                <X className="h-5 w-5" />
-              </button>
-            </div>
+            <button 
+              onClick={onClose} 
+              className={cn('p-2 rounded-full transition-colors', light ? 'hover:bg-stone-100 text-stone-400' : 'hover:bg-white/10 text-white/50')}
+            >
+              <X className="h-5 w-5" />
+            </button>
           </div>
 
           {/* Active Filters Banner */}
@@ -348,8 +332,8 @@ export function PracticeFilterModal({ isLightMode, onClose, currentFormat, onCha
               </div>
             </div>
 
-            {/* Format Selection */}
-            {onChangeFormat && (
+            {/* Format Selection - hidden for now, will bring back later */}
+            {/* {onChangeFormat && (
               <div>
                 <h4 className={cn('text-[11px] uppercase tracking-widest mb-3', light ? 'text-stone-600' : 'text-white/60')}
                   style={{ fontFamily: "'Unbounded', sans-serif", fontWeight: 500 }}>
@@ -400,7 +384,7 @@ export function PracticeFilterModal({ isLightMode, onClose, currentFormat, onCha
                   })}
                 </div>
               </div>
-            )}
+            )} */}
 
             {/* Filter Mode Toggle */}
             <div className={cn(
@@ -532,45 +516,50 @@ export function PracticeFilterModal({ isLightMode, onClose, currentFormat, onCha
                         const isSelected = (filterState.custom_filters || []).includes(filter);
                         const stats = filterCounts[filter] || { total: 0, correct: 0, incorrect: 0 };
                         const correctPercent = stats.total > 0 ? (stats.correct / stats.total) * 100 : 0;
-                        const incorrectPercent = stats.total > 0 ? (stats.incorrect / stats.total) * 100 : 0;
                         
                         return (
                           <button
                             key={filter}
                             onClick={() => toggleFilter(filter)}
                             className={cn(
-                              'relative w-full flex items-center justify-between px-4 py-3.5 text-sm transition-all overflow-hidden',
+                              'relative w-full flex flex-col items-start px-4 py-3.5 text-sm transition-all overflow-hidden',
                               index !== category.filters.length - 1 
                                 ? (light ? 'border-b border-black/[0.04]' : 'border-b border-white/5') 
                                 : '',
                               light ? 'hover:bg-black/[0.02]' : 'hover:bg-white/5'
                             )}
                           >
-                            {/* Progress bar background */}
-                            <div className="absolute inset-0 flex">
-                              <div 
-                                className="bg-green-500/20 transition-all duration-300"
-                                style={{ width: `${correctPercent}%` }}
-                              />
-                              <div 
-                                className="bg-red-500/20 transition-all duration-300"
-                                style={{ width: `${incorrectPercent}%` }}
-                              />
-                            </div>
+                            {/* Progress bar - always visible at bottom */}
+                            <div 
+                              className={cn('absolute bottom-0 left-0 h-1 transition-all duration-300',
+                                light ? 'bg-emerald-500/60' : 'bg-emerald-400/60'
+                              )}
+                              style={{ width: `${correctPercent}%`, zIndex: 1 }}
+                            />
+                            {/* Empty progress track - always visible */}
+                            <div className={cn('absolute bottom-0 left-0 right-0 h-1',
+                              light ? 'bg-stone-200' : 'bg-white/10'
+                            )} />
                             
-                            <span className={cn('relative font-light', light ? 'text-stone-900' : 'text-white')}
-                              style={{ fontFamily: "'Manrope', sans-serif" }}>
-                              {filter}
-                            </span>
-                            <div className="relative flex items-center gap-2">
-                              <span className={cn('text-xs', light ? 'text-stone-400' : 'text-white/50')}
-                                style={{ fontFamily: "'Unbounded', sans-serif" }}>
-                                {stats.total}
+                            <div className="relative w-full flex items-center justify-between">
+                              <span className={cn('font-medium', light ? 'text-stone-900' : 'text-white')}
+                                style={{ fontFamily: "'Manrope', sans-serif" }}>
+                                {filter.replace(/-/g, ' ')}
                               </span>
                               {isSelected && (
                                 <svg className={cn('w-4 h-4', light ? 'text-stone-900' : 'text-white')} fill="currentColor" viewBox="0 0 20 20">
                                   <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
                                 </svg>
+                              )}
+                            </div>
+                            <div className="relative flex items-center gap-2 mt-1">
+                              <span className={cn('text-[10px]', light ? 'text-stone-500' : 'text-white/50')}>
+                                {stats.total} concept{stats.total !== 1 ? 's' : ''}
+                              </span>
+                              {stats.total > 0 && stats.correct + stats.incorrect > 0 && (
+                                <span className={cn('text-[10px] font-medium', light ? 'text-emerald-600' : 'text-emerald-400')}>
+                                  {Math.round(correctPercent)}% accuracy
+                                </span>
                               )}
                             </div>
                           </button>
@@ -603,37 +592,50 @@ export function PracticeFilterModal({ isLightMode, onClose, currentFormat, onCha
                           const isSelected = (filterState.custom_filters || []).includes(filter);
                           const stats = filterCounts[filter] || { total: 0, correct: 0, incorrect: 0 };
                           const correctPercent = stats.total > 0 ? (stats.correct / stats.total) * 100 : 0;
-                          const incorrectPercent = stats.total > 0 ? (stats.incorrect / stats.total) * 100 : 0;
                           
                           return (
                             <button
                               key={filter}
                               onClick={() => toggleFilter(filter)}
                               className={cn(
-                                'relative w-full flex items-center justify-between px-4 py-3.5 text-sm transition-all overflow-hidden',
+                                'relative w-full flex flex-col items-start px-4 py-3.5 text-sm transition-all overflow-hidden',
                                 index !== unassignedFilters.length - 1 
                                   ? (light ? 'border-b border-black/[0.04]' : 'border-b border-white/5') 
                                   : '',
                                 light ? 'hover:bg-black/[0.02]' : 'hover:bg-white/5'
                               )}
                             >
-                              <div className="absolute inset-0 flex">
-                                <div className="bg-green-500/20 transition-all duration-300" style={{ width: `${correctPercent}%` }} />
-                                <div className="bg-red-500/20 transition-all duration-300" style={{ width: `${incorrectPercent}%` }} />
-                              </div>
-                              <span className={cn('relative font-light', light ? 'text-stone-900' : 'text-white')}
-                                style={{ fontFamily: "'Manrope', sans-serif" }}>
-                                {filter}
-                              </span>
-                              <div className="relative flex items-center gap-2">
-                                <span className={cn('text-xs', light ? 'text-stone-400' : 'text-white/50')}
-                                  style={{ fontFamily: "'Unbounded', sans-serif" }}>
-                                  {stats.total}
+                              {/* Progress bar - always visible at bottom */}
+                              <div 
+                                className={cn('absolute bottom-0 left-0 h-1 transition-all duration-300',
+                                  light ? 'bg-emerald-500/60' : 'bg-emerald-400/60'
+                                )}
+                                style={{ width: `${correctPercent}%`, zIndex: 1 }}
+                              />
+                              {/* Empty progress track - always visible */}
+                              <div className={cn('absolute bottom-0 left-0 right-0 h-1',
+                                light ? 'bg-stone-200' : 'bg-white/10'
+                              )} />
+                              
+                              <div className="relative w-full flex items-center justify-between">
+                                <span className={cn('font-medium', light ? 'text-stone-900' : 'text-white')}
+                                  style={{ fontFamily: "'Manrope', sans-serif" }}>
+                                  {filter.replace(/-/g, ' ')}
                                 </span>
                                 {isSelected && (
                                   <svg className={cn('w-4 h-4', light ? 'text-stone-900' : 'text-white')} fill="currentColor" viewBox="0 0 20 20">
                                     <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
                                   </svg>
+                                )}
+                              </div>
+                              <div className="relative flex items-center gap-2 mt-1">
+                                <span className={cn('text-[10px]', light ? 'text-stone-500' : 'text-white/50')}>
+                                  {stats.total} concept{stats.total !== 1 ? 's' : ''}
+                                </span>
+                                {stats.total > 0 && stats.correct + stats.incorrect > 0 && (
+                                  <span className={cn('text-[10px] font-medium', light ? 'text-emerald-600' : 'text-emerald-400')}>
+                                    {Math.round(correctPercent)}% accuracy
+                                  </span>
                                 )}
                               </div>
                             </button>
@@ -674,7 +676,7 @@ export function PracticeFilterModal({ isLightMode, onClose, currentFormat, onCha
               )}
               style={{ fontFamily: "'Unbounded', sans-serif" }}
             >
-              Set Practice
+              Set Practice ({concepts?.length || 0} concepts)
             </button>
           </div>
         </div>
