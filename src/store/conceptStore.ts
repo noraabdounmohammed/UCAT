@@ -854,7 +854,8 @@ export const createConceptStore = (curriculumId: string = 'default') => {
           console.log('👑 Unlimited access - no daily limit');
         }
         
-        set({ isLoading: true, isPracticing: true, currentSessionAnswers: [], sessionStartTime: startTime, generatingQuestionCount: questionCount });
+        // Don't set generatingQuestionCount yet - we'll determine it after checking cache
+        set({ isLoading: true, isPracticing: true, currentSessionAnswers: [], sessionStartTime: startTime, generatingQuestionCount: 0 });
         
         const currentState = get();
         
@@ -1008,11 +1009,6 @@ export const createConceptStore = (curriculumId: string = 'default') => {
             conceptsForQuestions = shuffled.slice(0, Math.min(questionCount, conceptsToUse.length));
           }
           
-          // Update the actual count being generated
-          set({ generatingQuestionCount: conceptsForQuestions.length });
-          
-
-          
           // For mind maps, create a single unified mind map from all concepts
           if (targetFormat === 'mindmap') {
             console.log('🗺️ Creating unified mind map from concepts:', {
@@ -1087,6 +1083,41 @@ export const createConceptStore = (curriculumId: string = 'default') => {
 
           // Track which question IDs we serve this session (to save back)
           const newlySeenIds: string[] = [];
+          
+          // FAST PATH: Check how many questions we can serve from cache
+          // This determines if we need to show "generating" UI at all
+          let cachedCount = 0;
+          let needsGenerationCount = 0;
+          
+          for (const concept of conceptsForQuestions) {
+            const titleKey = concept.title?.toLowerCase() || '';
+            const featuredByTitle = cachedByTitle[titleKey] || [];
+            const unseenFeatured = featuredByTitle.filter(q => !seenQuestionIds.has(q.id));
+            
+            if (unseenFeatured.length > 0) {
+              cachedCount++;
+              continue;
+            }
+            
+            const allCachedForConcept = cachedByConcept[concept.concept_id] || [];
+            const unseenCached = allCachedForConcept.filter(q => !seenQuestionIds.has(q.id));
+            
+            if (unseenCached.length > 0) {
+              cachedCount++;
+            } else {
+              needsGenerationCount++;
+            }
+          }
+          
+          console.log(`⚡ Cache check: ${cachedCount} cached, ${needsGenerationCount} need generation`);
+          
+          // Only show generating UI if we actually need to generate questions
+          if (needsGenerationCount > 0) {
+            set({ generatingQuestionCount: needsGenerationCount });
+          } else {
+            // All questions are cached - no generating UI needed
+            set({ generatingQuestionCount: 0 });
+          }
           
           // Generate missing questions
           const questionPromises = conceptsForQuestions.map(async (concept) => {
