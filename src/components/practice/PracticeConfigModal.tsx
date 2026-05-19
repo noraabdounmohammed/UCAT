@@ -302,10 +302,12 @@ export const PracticeConfigModal: React.FC<PracticeConfigModalProps> = ({
     return counts;
   }, [concepts]);
   // Show only active formats (not coming soon)
-  const activeFormats: QuestionFormat[] = ['flashcard', 'sba', 'ukmla_sba'];
+  // Note: 'flashcard' and 'sba' temporarily removed - can be re-added later by uncommenting
+  const activeFormats: QuestionFormat[] = [/* 'flashcard', 'sba', */ 'ukmla_sba'];
   
   // Formats that are coming soon (disabled)
-  const comingSoonFormats: QuestionFormat[] = ['emq', 'true_false', 'ranking'];
+  // Note: 'flashcard' and 'sba' can be moved back to activeFormats when ready
+  const comingSoonFormats: QuestionFormat[] = ['flashcard', 'sba', 'emq', 'true_false', 'ranking'];
   const [selectedFormat, setSelectedFormat] = useState<QuestionFormat | null>(
     preselectedFormat as QuestionFormat || null
   );

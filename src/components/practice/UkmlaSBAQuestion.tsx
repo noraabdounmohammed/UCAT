@@ -395,50 +395,24 @@ export const UkmlaSBAQuestion: React.FC<UkmlaSBAQuestionProps> = ({
         <div className="w-full max-w-2xl mx-auto">
           {/* Content - no card wrapper, edge-to-edge images */}
           <div className="px-0 sm:px-4 md:px-6 pt-0 pb-4 pb-safe">
-            {/* Vignette Visual - Edge to edge on mobile */}
-            {(vignetteImage || isImageGenAvailable()) && (
-              <div className={cn("-mx-0 sm:mx-0 mb-4", vignetteImage ? "" : "pt-4")}>
-                {vignetteImage ? (
-                  <div 
-                    className="overflow-hidden cursor-zoom-in relative group sm:rounded-xl"
-                    onClick={() => setFullscreenImage(vignetteImage)}
-                  >
-                    <img 
-                      src={vignetteImage} 
-                      alt="Clinical scenario" 
-                      className="w-full h-auto"
-                    />
-                    <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors flex items-center justify-center">
-                      <span className="text-white text-xs bg-black/50 px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity">
-                        Tap to enlarge
-                      </span>
-                    </div>
+            {/* Vignette Visual - Edge to edge on mobile (only show if image exists) */}
+            {vignetteImage && (
+              <div className="-mx-0 sm:mx-0 mb-4">
+                <div 
+                  className="overflow-hidden cursor-zoom-in relative group sm:rounded-xl"
+                  onClick={() => setFullscreenImage(vignetteImage)}
+                >
+                  <img 
+                    src={vignetteImage} 
+                    alt="Clinical scenario" 
+                    className="w-full h-auto"
+                  />
+                  <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors flex items-center justify-center">
+                    <span className="text-white text-xs bg-black/50 px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity">
+                      Tap to enlarge
+                    </span>
                   </div>
-                ) : (
-                  <button
-                    onClick={handleGenerateVignette}
-                    disabled={generatingVignette}
-                    className={cn(
-                      "inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all duration-200",
-                      isLightMode
-                        ? "bg-zinc-100 text-zinc-600 hover:bg-zinc-200 hover:text-zinc-800 border border-zinc-200"
-                        : "bg-white/5 text-white/60 hover:bg-white/10 hover:text-white/80 border border-white/10",
-                      generatingVignette && "opacity-50 cursor-wait"
-                    )}
-                  >
-                    {generatingVignette ? (
-                      <>
-                        <Loader2 className="h-3 w-3 animate-spin" />
-                        <span>Creating...</span>
-                      </>
-                    ) : (
-                      <>
-                        <ImageIcon className="h-3 w-3" />
-                        <span>Visualize scene</span>
-                      </>
-                    )}
-                  </button>
-                )}
+                </div>
               </div>
             )}
             
@@ -615,14 +589,15 @@ export const UkmlaSBAQuestion: React.FC<UkmlaSBAQuestionProps> = ({
                   </div>
                 )}
 
-                {/* Explanation Visual - Concept map/flowchart (after answer) */}
+                {/* Visual Generation Buttons & Generated Images (after answer) */}
                 {hasSubmitted && (
                   <div className={cn(
                     "mt-4 pt-4 border-t",
                     isLightMode ? "border-zinc-200" : "border-white/10"
                   )}>
-                    {explanationImage ? (
-                      <div className="-mx-4 sm:mx-0">
+                    {/* Show generated images if they exist */}
+                    {explanationImage && (
+                      <div className="-mx-4 sm:mx-0 mb-4">
                         {memoryHook && (
                           <div className={cn(
                             "mb-2 mx-4 sm:mx-0 px-3 py-1.5 rounded-full inline-flex items-center gap-1.5 text-xs font-medium",
@@ -650,30 +625,62 @@ export const UkmlaSBAQuestion: React.FC<UkmlaSBAQuestionProps> = ({
                           </div>
                         </div>
                       </div>
-                    ) : (
-                      <button
-                        onClick={handleGenerateExplanation}
-                        disabled={generatingExplanation}
-                        className={cn(
-                          "inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all duration-200",
-                          isLightMode
-                            ? "bg-indigo-50 text-indigo-600 hover:bg-indigo-100 hover:text-indigo-700 border border-indigo-200"
-                            : "bg-indigo-500/10 text-indigo-300 hover:bg-indigo-500/20 hover:text-indigo-200 border border-indigo-500/20",
-                          generatingExplanation && "opacity-50 cursor-wait"
+                    )}
+                    
+                    {/* Visual generation buttons - inline, same grey styling */}
+                    {isImageGenAvailable() && (!vignetteImage || !explanationImage) && (
+                      <div className="flex items-center justify-center gap-3">
+                        {!vignetteImage && (
+                          <button
+                            onClick={handleGenerateVignette}
+                            disabled={generatingVignette}
+                            className={cn(
+                              "inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all duration-200",
+                              isLightMode
+                                ? "bg-zinc-100 text-zinc-600 hover:bg-zinc-200 hover:text-zinc-800 border border-zinc-200"
+                                : "bg-white/5 text-white/60 hover:bg-white/10 hover:text-white/80 border border-white/10",
+                              generatingVignette && "opacity-50 cursor-wait"
+                            )}
+                          >
+                            {generatingVignette ? (
+                              <>
+                                <Loader2 className="h-3 w-3 animate-spin" />
+                                <span>Creating...</span>
+                              </>
+                            ) : (
+                              <>
+                                <ImageIcon className="h-3 w-3" />
+                                <span>Visualize scene</span>
+                              </>
+                            )}
+                          </button>
                         )}
-                      >
-                        {generatingExplanation ? (
-                          <>
-                            <Loader2 className="h-3 w-3 animate-spin" />
-                            <span>Creating...</span>
-                          </>
-                        ) : (
-                          <>
-                            <Sparkles className="h-3 w-3" />
-                            <span>Visualize concept</span>
-                          </>
+                        {!explanationImage && (
+                          <button
+                            onClick={handleGenerateExplanation}
+                            disabled={generatingExplanation}
+                            className={cn(
+                              "inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all duration-200",
+                              isLightMode
+                                ? "bg-zinc-100 text-zinc-600 hover:bg-zinc-200 hover:text-zinc-800 border border-zinc-200"
+                                : "bg-white/5 text-white/60 hover:bg-white/10 hover:text-white/80 border border-white/10",
+                              generatingExplanation && "opacity-50 cursor-wait"
+                            )}
+                          >
+                            {generatingExplanation ? (
+                              <>
+                                <Loader2 className="h-3 w-3 animate-spin" />
+                                <span>Creating...</span>
+                              </>
+                            ) : (
+                              <>
+                                <Sparkles className="h-3 w-3" />
+                                <span>Visualize concept</span>
+                              </>
+                            )}
+                          </button>
                         )}
-                      </button>
+                      </div>
                     )}
                   </div>
                 )}
