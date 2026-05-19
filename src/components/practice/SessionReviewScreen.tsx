@@ -234,15 +234,15 @@ export const SessionReviewScreen: React.FC<SessionReviewScreenProps> = ({
           </div>
         </div>
 
-        {/* Done button */}
-        <button
+        {/* Done button - hidden for now, will add later */}
+        {/* <button
           onClick={onDone}
           className={cn('w-full py-3.5 rounded-full border font-semibold text-sm flex items-center justify-center gap-2 transition-all', light ? 'bg-zinc-100 border-zinc-200 text-zinc-600 hover:bg-zinc-200' : 'bg-white/10 border-white/15 text-white/70 hover:bg-white/15')}
           style={{ fontFamily: "'Manrope', sans-serif" }}
         >
           Back to dashboard
           <ArrowRight className="w-4 h-4" />
-        </button>
+        </button> */}
 
       </div>
     </div>

@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { CheckCircle, XCircle, ChevronRight, ArrowLeft, ChevronLeft, Sun, Moon, X, ChevronDown, Settings2, BookOpen, ExternalLink, Sparkles, Image as ImageIcon, Loader2 } from 'lucide-react';
+import React, { useState, useEffect, useMemo } from 'react';
+import { CheckCircle, XCircle, ChevronRight, ArrowLeft, ChevronLeft, Sun, Moon, X, ChevronDown, Settings2, BookOpen, ExternalLink, Sparkles, Image as ImageIcon, Loader2, BarChart2 } from 'lucide-react';
 import { PracticeFilterModal } from './PracticeFilterModal';
 import { useTheme } from '@/contexts/ThemeContext';
 import type { QuestionData } from './questionTypes';
@@ -9,6 +9,7 @@ import { motion } from 'framer-motion';
 import { cn } from '@/lib/utils';
 import { SessionProgressDropdown, SessionAnswer } from './SessionProgressDropdown';
 import { generateVignetteVisual, generateExplanationVisual, getCachedVisual, isImageGenAvailable } from '@/services/visualGenerator';
+import { useConceptStore } from '@/contexts/ConceptStoreContext';
 
 interface UkmlaSBAQuestionProps {
   question: QuestionData;
@@ -63,6 +64,30 @@ export const UkmlaSBAQuestion: React.FC<UkmlaSBAQuestionProps> = ({
   const { theme, toggleTheme } = useTheme();
   const isLightMode = theme === 'light';
   const [showFullExplanation, setShowFullExplanation] = useState(preSubmitted); // Show explanation in review mode
+  
+  // Get concept mastery stats from store
+  let concepts: any[] = [];
+  try {
+    const store = useConceptStore();
+    concepts = store.concepts || [];
+  } catch {
+    // Context not available (e.g., in review mode outside provider)
+    concepts = [];
+  }
+  
+  const conceptStats = useMemo(() => {
+    const conceptId = question.concept_id;
+    if (!conceptId || concepts.length === 0) return null;
+    
+    const concept = concepts.find((c: any) => c.concept_id === conceptId);
+    if (!concept?.mastery_data) return null;
+    
+    const { attempts, correct } = concept.mastery_data;
+    if (attempts === 0) return null;
+    
+    const accuracy = Math.round((correct / attempts) * 100);
+    return { attempts, correct, accuracy };
+  }, [question.concept_id, concepts]);
   
   // Visual generation state
   const [vignetteImage, setVignetteImage] = useState<string | null>(null);
@@ -214,8 +239,8 @@ export const UkmlaSBAQuestion: React.FC<UkmlaSBAQuestionProps> = ({
     .replace(/\s{2,}/g, ' ')
     .trim();
 
-  // Format question content
-  const questionContent = question.question || question.question_stem || '';
+  // Format question content - prefer question_stem as it contains the full vignette
+  const questionContent = question.question_stem || question.question || '';
   const explanation = sanitiseExplanation(question.explanation || question.worked_solution || '');
   const keyFact = sanitiseExplanation((question as any).key_fact || '');
   const isCorrect = hasSubmitted && selectedOption === correctAnswerId;
@@ -226,7 +251,8 @@ export const UkmlaSBAQuestion: React.FC<UkmlaSBAQuestionProps> = ({
       <div className={`flex items-center justify-between px-4 py-4 border-b flex-shrink-0 ${
         isLightMode ? 'border-zinc-200' : 'border-white/10'
       }`}>
-        <button
+        {/* Back button - hidden for now, will add later */}
+        {/* <button
           onClick={onExit}
           className={`p-2 rounded-lg transition-colors ${
             isLightMode ? 'hover:bg-zinc-200' : 'hover:bg-white/5'
@@ -234,7 +260,8 @@ export const UkmlaSBAQuestion: React.FC<UkmlaSBAQuestionProps> = ({
           aria-label="Go back"
         >
           <ArrowLeft className={`h-5 w-5 ${isLightMode ? 'text-zinc-700' : 'text-white/70'}`} />
-        </button>
+        </button> */}
+        <div className="w-9" /> {/* Spacer to maintain layout */}
 
         {/* Center: progress pill (replaces static title) */}
         <div className="flex-1 flex justify-center">
@@ -518,6 +545,25 @@ export const UkmlaSBAQuestion: React.FC<UkmlaSBAQuestionProps> = ({
                       </span>
                     )}
                   </div>
+
+                  {/* Concept test stats */}
+                  {conceptStats && (
+                    <div className={cn(
+                      "flex items-center gap-2 text-[12px]",
+                      isLightMode ? "text-zinc-500" : "text-white/50"
+                    )}>
+                      <BarChart2 className="h-3.5 w-3.5" />
+                      <span>
+                        Tested <strong className={isLightMode ? "text-zinc-700" : "text-white/80"}>{conceptStats.attempts}×</strong> on this concept
+                        {' · '}
+                        <strong className={cn(
+                          conceptStats.accuracy >= 70 ? (isLightMode ? "text-emerald-600" : "text-emerald-400") :
+                          conceptStats.accuracy >= 50 ? (isLightMode ? "text-amber-600" : "text-amber-400") :
+                          (isLightMode ? "text-rose-600" : "text-rose-400")
+                        )}>{conceptStats.accuracy}%</strong> accuracy
+                      </span>
+                    </div>
+                  )}
 
                   {/* Key fact */}
                   {keyFact && (

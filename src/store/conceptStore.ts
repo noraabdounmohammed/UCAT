@@ -854,8 +854,10 @@ export const createConceptStore = (curriculumId: string = 'default') => {
           console.log('👑 Unlimited access - no daily limit');
         }
         
-        // Don't set generatingQuestionCount yet - we'll determine it after checking cache
-        set({ isLoading: true, isPracticing: true, currentSessionAnswers: [], sessionStartTime: startTime, generatingQuestionCount: 0 });
+        // Set generatingQuestionCount to the requested question count for the loading screen
+        // This shows "Crafting X questions" where X is what the user will see, not what's being AI-generated
+        const requestedQuestionCount = practiceConfig?.question_count || 10;
+        set({ isLoading: true, isPracticing: true, currentSessionAnswers: [], sessionStartTime: startTime, generatingQuestionCount: requestedQuestionCount });
         
         const currentState = get();
         
@@ -1111,13 +1113,9 @@ export const createConceptStore = (curriculumId: string = 'default') => {
           
           console.log(`⚡ Cache check: ${cachedCount} cached, ${needsGenerationCount} need generation`);
           
-          // Only show generating UI if we actually need to generate questions
-          if (needsGenerationCount > 0) {
-            set({ generatingQuestionCount: needsGenerationCount });
-          } else {
-            // All questions are cached - no generating UI needed
-            set({ generatingQuestionCount: 0 });
-          }
+          // Note: generatingQuestionCount is already set to the user's requested count
+          // We don't update it here - the loading screen should show "Crafting X questions"
+          // where X is the number of questions the user will see, not the number being AI-generated
           
           // Generate missing questions
           const questionPromises = conceptsForQuestions.map(async (concept) => {

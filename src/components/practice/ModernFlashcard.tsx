@@ -276,7 +276,8 @@ export const ModernFlashcard: React.FC<ModernFlashcardProps> = ({
         "flex items-center justify-between px-4 py-4 border-b flex-shrink-0",
         isLightMode ? "border-zinc-200" : "border-white/10"
       )}>
-        <button
+        {/* Back button - hidden for now, will add later */}
+        {/* <button
           onClick={onExit}
           className={cn(
             "p-2 rounded-lg transition-colors",
@@ -285,7 +286,8 @@ export const ModernFlashcard: React.FC<ModernFlashcardProps> = ({
           aria-label="Go back"
         >
           <ArrowLeft className={cn("h-5 w-5", isLightMode ? "text-zinc-700" : "text-white/70")} />
-        </button>
+        </button> */}
+        <div className="w-9" /> {/* Spacer to maintain layout */}
         <div className="flex-1 text-center">
           <h1 className={cn("text-lg font-semibold", isLightMode ? "text-zinc-900" : "text-white")}>{title}</h1>
           {totalCards > 0 && (
