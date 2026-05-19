@@ -17,6 +17,7 @@ import { StorageManager } from '@/utils/storageManager';
 import { supabase } from '@/lib/supabase';
 import { getAllowedQuestionCount, recordQuestionsGenerated, getRemainingQuestions, hasUnlimitedAccess } from '@/utils/questionLimits';
 import { createFsrsScheduler } from '@/fsrs/scheduler';
+import { ENABLE_AI_GENERATION } from '@/config/featureFlags';
 import type { FsrsCardState } from '@/fsrs/types';
 
 const fsrsScheduler = createFsrsScheduler();
@@ -1111,11 +1112,11 @@ export const createConceptStore = (curriculumId: string = 'default') => {
           
           console.log(`⚡ Cache check: ${cachedCount} cached, ${needsGenerationCount} need generation`);
           
-          // Only show generating UI if we actually need to generate questions
-          if (needsGenerationCount > 0) {
+          // Only show generating UI if AI generation is enabled AND we need to generate questions
+          if (ENABLE_AI_GENERATION && needsGenerationCount > 0) {
             set({ generatingQuestionCount: needsGenerationCount });
           } else {
-            // All questions are cached - no generating UI needed
+            // All questions are cached OR AI generation is disabled - no generating UI needed
             set({ generatingQuestionCount: 0 });
           }
           
@@ -1184,7 +1185,14 @@ export const createConceptStore = (curriculumId: string = 'default') => {
               };
             }
             
-            // All cached questions seen (or none exist) — generate a fresh one
+            // All cached questions seen (or none exist)
+            // Check feature flag - if AI generation is disabled, skip this concept
+            if (!ENABLE_AI_GENERATION) {
+              console.log(`⏭️ No cached question for "${concept.title}" — skipping (AI generation disabled)`);
+              return null; // Will be filtered out
+            }
+            
+            // AI generation is enabled - generate a fresh question
             if (allCachedForConcept.length > 0) {
               console.log(`🔄 All ${allCachedForConcept.length} cached questions seen for "${concept.title}" — generating fresh`);
             }
@@ -1236,7 +1244,23 @@ export const createConceptStore = (curriculumId: string = 'default') => {
             }
           });
 
-          const questions = await Promise.all(questionPromises);
+          const allResults = await Promise.all(questionPromises);
+          
+          // Filter out null values (concepts without cached questions when AI generation is disabled)
+          const questions = allResults.filter((q): q is NonNullable<typeof q> => q !== null);
+          
+          // Check if we have any questions to show
+          if (questions.length === 0) {
+            console.warn('⚠️ No questions available for the selected concepts');
+            set({ 
+              isLoading: false, 
+              isPracticing: false,
+              practiceError: 'No questions available for the selected topics. Try selecting different filters.'
+            });
+            return;
+          }
+          
+          console.log(`✅ Loaded ${questions.length} questions (${allResults.length - questions.length} concepts skipped)`);
           
           // Persist newly seen question IDs so user won't get the same q again
           if (newlySeenIds.length > 0) {
