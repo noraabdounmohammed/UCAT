@@ -1065,8 +1065,12 @@ export const createConceptStore = (curriculumId: string = 'default') => {
           const cachedByConcept: Record<string, any[]> = {};
           const cachedByTitle: Record<string, any[]> = {};
           
-          // Add featured questions to title-based lookup
+          // Add featured questions to title-based lookup (filtered by target format)
           for (const q of featuredQuestions) {
+            // Only include questions matching the target format
+            if (q.question_format && q.question_format !== targetFormat) {
+              continue;
+            }
             const titleKey = q.concept_title?.toLowerCase() || '';
             if (!cachedByTitle[titleKey]) {
               cachedByTitle[titleKey] = [];
@@ -1074,13 +1078,19 @@ export const createConceptStore = (curriculumId: string = 'default') => {
             cachedByTitle[titleKey].push(q);
           }
           
-          // Add regular cached questions
+          // Add regular cached questions (filtered by target format)
           for (const q of cachedQuestions) {
+            // Only include questions matching the target format
+            if (q.question_format && q.question_format !== targetFormat) {
+              continue;
+            }
             if (!cachedByConcept[q.concept_id]) {
               cachedByConcept[q.concept_id] = [];
             }
             cachedByConcept[q.concept_id].push(q);
           }
+          
+          console.log(`🎯 Filtering for format: ${targetFormat}`);
 
           // Track which question IDs we serve this session (to save back)
           const newlySeenIds: string[] = [];
