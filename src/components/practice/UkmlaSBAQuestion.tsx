@@ -627,9 +627,9 @@ export const UkmlaSBAQuestion: React.FC<UkmlaSBAQuestionProps> = ({
                       </div>
                     )}
                     
-                    {/* Visual generation buttons - inline, same grey styling */}
+                    {/* Visual generation buttons - stacked vertically, left-aligned */}
                     {isImageGenAvailable() && (!vignetteImage || !explanationImage) && (
-                      <div className="flex items-center justify-center gap-3">
+                      <div className="flex flex-col items-start gap-2">
                         {!vignetteImage && (
                           <button
                             onClick={handleGenerateVignette}
