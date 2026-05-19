@@ -605,15 +605,9 @@ export const PracticeConfigModal: React.FC<PracticeConfigModalProps> = ({
         <div className="px-6 md:px-12 py-6 md:py-8 border-b border-black/[0.06]">
           <div className="flex items-start justify-between">
             <div>
-              <h2 className="text-2xl md:text-3xl font-medium text-stone-900 mb-2 tracking-tight" style={{ fontFamily: "'Unbounded', sans-serif", fontWeight: 500 }}>
-                {preselectedFormat ? 'Configure Practice' : 'Choose Format'}
+              <h2 className="text-2xl md:text-3xl font-medium text-stone-900 tracking-tight" style={{ fontFamily: "'Unbounded', sans-serif", fontWeight: 500 }}>
+                Configure Practice
               </h2>
-              <p className="text-sm text-stone-600 font-light" style={{ fontFamily: "'Manrope', sans-serif", fontWeight: 300 }}>
-                {preselectedFormat 
-                  ? `Ready to practice ${displayConceptCount} concept${displayConceptCount !== 1 ? 's' : ''}`
-                  : `Select how you want to practice ${displayConceptCount} concept${displayConceptCount !== 1 ? 's' : ''}`
-                }
-              </p>
             </div>
             <button
               onClick={handleClose}
@@ -692,7 +686,8 @@ export const PracticeConfigModal: React.FC<PracticeConfigModalProps> = ({
         {/* Content */}
         <div className="px-6 md:px-12 py-6 md:py-8 overflow-y-auto flex-1">
             
-            {!preselectedFormat && (
+            {/* Format selection section - hidden for now, will bring back later */}
+            {/* {!preselectedFormat && (
             <div className="grid grid-cols-3 gap-3 mb-8">
               {activeFormats.map(format => {
                 const fmt = QUESTION_FORMATS.find(f => f.id === format);
@@ -708,7 +703,6 @@ export const PracticeConfigModal: React.FC<PracticeConfigModalProps> = ({
                     style={{ height: '160px', backgroundColor: bg }}
                   >
                     <div className="h-full flex flex-col justify-between p-4">
-                      {/* Top row */}
                       <div className="flex items-start justify-between">
                         {Icon && (
                           <Icon
@@ -721,7 +715,6 @@ export const PracticeConfigModal: React.FC<PracticeConfigModalProps> = ({
                           style={{ color: fg }}
                         />
                       </div>
-                      {/* Bottom text */}
                       <div>
                         <p
                           className="text-[10px] uppercase tracking-[0.12em] mb-1.5"
@@ -741,16 +734,9 @@ export const PracticeConfigModal: React.FC<PracticeConfigModalProps> = ({
                 );
               })}
             </div>
-            )}
-            
-            {!preselectedFormat && selectedFormat === null && (
-              <p className="text-sm text-stone-500 font-light mt-6 text-center" style={{ fontFamily: "'Manrope', sans-serif" }}>
-                Select a format to continue
-              </p>
-            )}
+            )} */}
 
-            {/* Concept filtering section - shown when format is selected */}
-            {(selectedFormat || preselectedFormat) && (
+            {/* Concept filtering section */}
               <div className="space-y-6">
                 {/* Filter Mode Toggle - hidden when a category filter is preselected */}
                 {!preselectedFilter && (
@@ -989,26 +975,41 @@ export const PracticeConfigModal: React.FC<PracticeConfigModalProps> = ({
                                       : [...practiceFilterState.custom_filters, filter];
                                     setPracticeFilterState({ ...practiceFilterState, custom_filters: newFilters });
                                   }}
-                                  className={`relative overflow-hidden inline-flex items-center gap-2 px-4 py-2 rounded-full text-[11px] font-light transition-all ${
+                                  className={`relative overflow-hidden inline-flex flex-col items-start px-4 py-2.5 rounded-xl text-[11px] font-light transition-all min-w-[140px] ${
                                     isSelected
                                       ? 'bg-stone-900 text-white shadow-sm hover:bg-stone-800'
                                       : 'bg-white/60 backdrop-blur-xl text-stone-900 border border-black/[0.06] hover:border-black/[0.12]'
                                   }`}
                                   style={{ fontFamily: "'Manrope', sans-serif" }}
                                 >
-                                  {/* Progress bar background */}
+                                  {/* Progress bar - always visible at bottom */}
                                   <div 
-                                    className={`absolute inset-0 transition-all duration-500 ${
-                                      isSelected ? 'bg-white/10' : 'bg-green-500/20'
+                                    className={`absolute bottom-0 left-0 h-1 rounded-b-xl transition-all duration-500 ${
+                                      isSelected ? 'bg-white/30' : 'bg-emerald-500/60'
                                     }`}
-                                    style={{ width: `${correctPercent}%` }}
+                                    style={{ width: `${correctPercent}%`, zIndex: 1 }}
                                   />
-                                  <span className="relative z-10">{filter.replace(/-/g, ' ')}</span>
-                                  <span className={`relative z-10 text-[10px] font-medium ${
-                                    isSelected ? 'text-white/60' : 'text-stone-400'
-                                  }`} style={{ fontFamily: "'Unbounded', sans-serif" }}>
-                                    {stats.total}
-                                  </span>
+                                  {/* Empty progress track - always visible */}
+                                  <div 
+                                    className={`absolute bottom-0 left-0 right-0 h-1 rounded-b-xl ${
+                                      isSelected ? 'bg-white/10' : 'bg-stone-200'
+                                    }`}
+                                  />
+                                  <span className="relative z-10 font-medium">{filter.replace(/-/g, ' ')}</span>
+                                  <div className="relative z-10 flex items-center gap-2 mt-1">
+                                    <span className={`text-[10px] ${
+                                      isSelected ? 'text-white/60' : 'text-stone-500'
+                                    }`}>
+                                      {stats.total} concept{stats.total !== 1 ? 's' : ''}
+                                    </span>
+                                    {stats.total > 0 && stats.correct + stats.incorrect > 0 && (
+                                      <span className={`text-[10px] font-medium ${
+                                        isSelected ? 'text-white/80' : 'text-emerald-600'
+                                      }`}>
+                                        {Math.round(correctPercent)}% accuracy
+                                      </span>
+                                    )}
+                                  </div>
                                 </button>
                               );
                             })}
@@ -1049,26 +1050,41 @@ export const PracticeConfigModal: React.FC<PracticeConfigModalProps> = ({
                                       : [...practiceFilterState.custom_filters, filter];
                                     setPracticeFilterState({ ...practiceFilterState, custom_filters: newFilters });
                                   }}
-                                  className={`relative overflow-hidden inline-flex items-center gap-2 px-4 py-2 rounded-full text-[11px] font-light transition-all ${
+                                  className={`relative overflow-hidden inline-flex flex-col items-start px-4 py-2.5 rounded-xl text-[11px] font-light transition-all min-w-[140px] ${
                                     isSelected
                                       ? 'bg-stone-900 text-white shadow-sm hover:bg-stone-800'
                                       : 'bg-white/60 backdrop-blur-xl text-stone-900 border border-black/[0.06] hover:border-black/[0.12]'
                                   }`}
                                   style={{ fontFamily: "'Manrope', sans-serif" }}
                                 >
-                                  {/* Progress bar background */}
+                                  {/* Progress bar - always visible at bottom */}
                                   <div 
-                                    className={`absolute inset-0 transition-all duration-500 ${
-                                      isSelected ? 'bg-white/10' : 'bg-green-500/20'
+                                    className={`absolute bottom-0 left-0 h-1 rounded-b-xl transition-all duration-500 ${
+                                      isSelected ? 'bg-white/30' : 'bg-emerald-500/60'
                                     }`}
-                                    style={{ width: `${correctPercent}%` }}
+                                    style={{ width: `${correctPercent}%`, zIndex: 1 }}
                                   />
-                                  <span className="relative z-10">{filter.replace(/-/g, ' ')}</span>
-                                  <span className={`relative z-10 text-[10px] font-medium ${
-                                    isSelected ? 'text-white/60' : 'text-stone-400'
-                                  }`} style={{ fontFamily: "'Unbounded', sans-serif" }}>
-                                    {stats.total}
-                                  </span>
+                                  {/* Empty progress track - always visible */}
+                                  <div 
+                                    className={`absolute bottom-0 left-0 right-0 h-1 rounded-b-xl ${
+                                      isSelected ? 'bg-white/10' : 'bg-stone-200'
+                                    }`}
+                                  />
+                                  <span className="relative z-10 font-medium">{filter.replace(/-/g, ' ')}</span>
+                                  <div className="relative z-10 flex items-center gap-2 mt-1">
+                                    <span className={`text-[10px] ${
+                                      isSelected ? 'text-white/60' : 'text-stone-500'
+                                    }`}>
+                                      {stats.total} concept{stats.total !== 1 ? 's' : ''}
+                                    </span>
+                                    {stats.total > 0 && stats.correct + stats.incorrect > 0 && (
+                                      <span className={`text-[10px] font-medium ${
+                                        isSelected ? 'text-white/80' : 'text-emerald-600'
+                                      }`}>
+                                        {Math.round(correctPercent)}% accuracy
+                                      </span>
+                                    )}
+                                  </div>
                                 </button>
                               );
                             })}
@@ -1105,26 +1121,41 @@ export const PracticeConfigModal: React.FC<PracticeConfigModalProps> = ({
                                 : [...practiceFilterState.custom_filters, filter];
                               setPracticeFilterState({ ...practiceFilterState, custom_filters: newFilters });
                             }}
-                            className={`relative overflow-hidden inline-flex items-center gap-2 px-4 py-2 rounded-full text-[11px] font-light transition-all ${
+                            className={`relative overflow-hidden inline-flex flex-col items-start px-4 py-2.5 rounded-xl text-[11px] font-light transition-all min-w-[140px] ${
                               isSelected
                                 ? 'bg-stone-900 text-white shadow-sm hover:bg-stone-800'
                                 : 'bg-white/60 backdrop-blur-xl text-stone-900 border border-black/[0.06] hover:border-black/[0.12]'
                             }`}
                             style={{ fontFamily: "'Manrope', sans-serif" }}
                           >
-                            {/* Progress bar background */}
+                            {/* Progress bar - always visible at bottom */}
                             <div 
-                              className={`absolute inset-0 transition-all duration-500 ${
-                                isSelected ? 'bg-white/10' : 'bg-green-500/20'
+                              className={`absolute bottom-0 left-0 h-1 rounded-b-xl transition-all duration-500 ${
+                                isSelected ? 'bg-white/30' : 'bg-emerald-500/60'
                               }`}
-                              style={{ width: `${correctPercent}%` }}
+                              style={{ width: `${correctPercent}%`, zIndex: 1 }}
                             />
-                            <span className="relative z-10">{filter.replace(/-/g, ' ')}</span>
-                            <span className={`relative z-10 text-[10px] font-medium ${
-                              isSelected ? 'text-white/60' : 'text-stone-400'
-                            }`} style={{ fontFamily: "'Unbounded', sans-serif" }}>
-                              {stats.total}
-                            </span>
+                            {/* Empty progress track - always visible */}
+                            <div 
+                              className={`absolute bottom-0 left-0 right-0 h-1 rounded-b-xl ${
+                                isSelected ? 'bg-white/10' : 'bg-stone-200'
+                              }`}
+                            />
+                            <span className="relative z-10 font-medium">{filter.replace(/-/g, ' ')}</span>
+                            <div className="relative z-10 flex items-center gap-2 mt-1">
+                              <span className={`text-[10px] ${
+                                isSelected ? 'text-white/60' : 'text-stone-500'
+                              }`}>
+                                {stats.total} concept{stats.total !== 1 ? 's' : ''}
+                              </span>
+                              {stats.total > 0 && stats.correct + stats.incorrect > 0 && (
+                                <span className={`text-[10px] font-medium ${
+                                  isSelected ? 'text-white/80' : 'text-emerald-600'
+                                }`}>
+                                  {Math.round(correctPercent)}% accuracy
+                                </span>
+                              )}
+                            </div>
                           </button>
                         );
                       })}
@@ -1132,33 +1163,18 @@ export const PracticeConfigModal: React.FC<PracticeConfigModalProps> = ({
                   </div>
                 )}
               </div>
-            )}
 
         </div>
 
         {/* Footer - Always visible */}
         <div className="border-t border-black/[0.06] bg-white/60 backdrop-blur-xl">
-          {/* Session Summary - Always show */}
+            {/* Session Summary - Always show */}
           <div className="px-6 md:px-12 py-4 border-b border-black/[0.06]">
             <div className="flex items-center justify-between gap-3 mb-3">
               <h4 className="text-[10px] uppercase tracking-widest text-stone-600" style={{ fontFamily: "'Unbounded', sans-serif", fontWeight: 500 }}>
                 Session Summary
               </h4>
-              {practiceFilterState.custom_filters.length > 0 && (
-                <button
-                  onClick={() => {
-                    setPracticeFilterState({
-                      ...practiceFilterState,
-                      mastery_levels: [],
-                      custom_filters: []
-                    });
-                  }}
-                  className="text-[10px] uppercase tracking-widest text-stone-500 hover:text-stone-900 transition-colors"
-                  style={{ fontFamily: "'Unbounded', sans-serif", fontWeight: 500 }}
-                >
-                  Clear Filters
-                </button>
-              )}
+              {/* Clear button removed - using Clear All in active filters section instead */}
             </div>
             
             {/* Study Mode Badge */}
@@ -1210,22 +1226,15 @@ export const PracticeConfigModal: React.FC<PracticeConfigModalProps> = ({
           {/* Start Practice Button */}
           <div className="px-6 md:px-12 py-6">
             <button
-              onClick={selectedFormat ? handleStartPractice : undefined}
-              disabled={!selectedFormat}
-              className={`w-full px-8 py-4 rounded-full text-[11px] uppercase tracking-widest transition-all duration-300 ${
-                selectedFormat
-                  ? 'bg-stone-900 text-white hover:bg-stone-800 shadow-lg'
-                  : 'bg-stone-200 text-stone-400 cursor-not-allowed'
-              }`}
+              onClick={handleStartPractice}
+              className="w-full px-8 py-4 rounded-full text-[11px] uppercase tracking-widest transition-all duration-300 bg-stone-900 text-white hover:bg-stone-800 shadow-lg"
               style={{ fontFamily: "'Unbounded', sans-serif", fontWeight: 500 }}
             >
               <div className="flex items-center justify-center gap-2">
-                <span>Start Practice</span>
-                {selectedFormat && (
-                  <span className="opacity-60">
-                    ({filteredPracticeConcepts.length})
-                  </span>
-                )}
+                <span>Set Practice</span>
+                <span className="opacity-60">
+                  ({displayConceptCount} concept{displayConceptCount !== 1 ? 's' : ''})
+                </span>
               </div>
             </button>
           </div>
