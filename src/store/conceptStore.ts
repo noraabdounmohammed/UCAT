@@ -1125,14 +1125,18 @@ export const createConceptStore = (curriculumId: string = 'default') => {
             const studyReason = conceptStudyReasons.get(concept.concept_id) || 'new';
             
             // Check for featured questions by title first (they have pre-loaded images)
+            // IMPORTANT: Only use cached questions that match the user's selected format
             const titleKey = concept.title?.toLowerCase() || '';
             const featuredByTitle = cachedByTitle[titleKey] || [];
-            const unseenFeatured = featuredByTitle.filter(q => !seenQuestionIds.has(q.id));
+            // Filter by format AND unseen
+            const unseenFeatured = featuredByTitle.filter(q => 
+              !seenQuestionIds.has(q.id) && q.question_format === targetFormat
+            );
             
             if (unseenFeatured.length > 0) {
               const featured = unseenFeatured[Math.floor(Math.random() * unseenFeatured.length)];
               newlySeenIds.push(featured.id);
-              console.log(`⭐ Using featured question for "${concept.title}"`);
+              console.log(`⭐ Using featured ${targetFormat} question for "${concept.title}"`);
               return {
                 id: featured.id,
                 concept_id: concept.concept_id, // Use user's concept_id
@@ -1141,7 +1145,7 @@ export const createConceptStore = (curriculumId: string = 'default') => {
                 options: featured.options,
                 correct_answer: featured.correct_answer,
                 explanation: featured.explanation,
-                format: featured.question_format || 'ukmla_sba',
+                format: featured.question_format, // Use the actual stored format
                 key_fact: featured.key_fact,
                 citation_id: featured.citation_id,
                 study_reason: studyReason,
@@ -1154,8 +1158,10 @@ export const createConceptStore = (curriculumId: string = 'default') => {
             // Check if we have cached questions for this concept by ID
             const allCachedForConcept = cachedByConcept[concept.concept_id] || [];
             
-            // Filter out questions the user has already seen
-            const unseenCached = allCachedForConcept.filter(q => !seenQuestionIds.has(q.id));
+            // Filter by format AND unseen - only use questions that match the user's selected format
+            const unseenCached = allCachedForConcept.filter(q => 
+              !seenQuestionIds.has(q.id) && q.question_format === targetFormat
+            );
             
             if (unseenCached.length > 0) {
               // Prioritize featured questions (they have pre-loaded images)
@@ -1165,6 +1171,7 @@ export const createConceptStore = (curriculumId: string = 'default') => {
               // Pick a random question from the pool
               const cached = questionPool[Math.floor(Math.random() * questionPool.length)];
               newlySeenIds.push(cached.id);
+              console.log(`📦 Using cached ${targetFormat} question for "${concept.title}"`);
               return {
                 id: cached.id,
                 concept_id: cached.concept_id,
@@ -1173,7 +1180,7 @@ export const createConceptStore = (curriculumId: string = 'default') => {
                 options: cached.options,
                 correct_answer: cached.correct_answer,
                 explanation: cached.explanation,
-                format: cached.question_format,
+                format: cached.question_format, // Use the actual stored format
                 key_fact: cached.key_fact,
                 citation_id: cached.citation_id,
                 study_reason: studyReason,
@@ -1184,9 +1191,12 @@ export const createConceptStore = (curriculumId: string = 'default') => {
               };
             }
             
-            // All cached questions seen (or none exist) — generate a fresh one
-            if (allCachedForConcept.length > 0) {
-              console.log(`🔄 All ${allCachedForConcept.length} cached questions seen for "${concept.title}" — generating fresh`);
+            // No cached questions for this format (or all seen) — generate a fresh one
+            const totalCachedForFormat = allCachedForConcept.filter(q => q.question_format === targetFormat).length;
+            if (totalCachedForFormat > 0) {
+              console.log(`🔄 All ${totalCachedForFormat} cached ${targetFormat} questions seen for "${concept.title}" — generating fresh`);
+            } else {
+              console.log(`🆕 No cached ${targetFormat} questions for "${concept.title}" — generating new`);
             }
             
             // Generate with AI and cache
