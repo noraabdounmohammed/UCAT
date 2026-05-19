@@ -900,7 +900,7 @@ export const createConceptStore = (curriculumId: string = 'default') => {
           });
           
           const nowMs = Date.now();
-          const MAX_SESSION_SIZE = 40;
+          // No hard cap - use the requested question count
           let conceptsForQuestions: ConceptNode[] = [];
           
           // Track study reason for each concept (for question badges)
@@ -953,7 +953,7 @@ export const createConceptStore = (curriculumId: string = 'default') => {
           
           if (studyMode === 'smart') {
             // Evidence-based smart study: 70% due/review, 20% new, 10% mastered
-            const targetCount = Math.min(questionCount, conceptsToUse.length, MAX_SESSION_SIZE);
+            const targetCount = Math.min(questionCount, conceptsToUse.length);
             const dueReviewTarget = Math.ceil(targetCount * 0.7);
             const newTarget = Math.ceil(targetCount * 0.2);
             const masteredTarget = Math.max(1, targetCount - dueReviewTarget - newTarget);
@@ -981,12 +981,12 @@ export const createConceptStore = (curriculumId: string = 'default') => {
             
           } else if (studyMode === 'new_only') {
             // Only unseen concepts, random order
-            conceptsForQuestions = categorized.unseen.slice(0, Math.min(questionCount, MAX_SESSION_SIZE));
+            conceptsForQuestions = categorized.unseen.slice(0, Math.min(questionCount, conceptsToUse.length));
             
           } else if (studyMode === 'review_weak') {
             // Only needs review (got wrong), random order
             conceptsForQuestions = [...categorized.needsReview, ...categorized.due]
-              .slice(0, Math.min(questionCount, MAX_SESSION_SIZE));
+              .slice(0, Math.min(questionCount, conceptsToUse.length));
             
           } else {
             // Custom mode: use FSRS ordering (original behavior)
@@ -1005,7 +1005,7 @@ export const createConceptStore = (curriculumId: string = 'default') => {
               if (priorityA === 0 && dueA !== null && dueB !== null) return dueA - dueB;
               return Math.random() - 0.5;
             });
-            conceptsForQuestions = shuffled.slice(0, Math.min(questionCount, MAX_SESSION_SIZE));
+            conceptsForQuestions = shuffled.slice(0, Math.min(questionCount, conceptsToUse.length));
           }
           
           // Update the actual count being generated
@@ -1215,8 +1215,10 @@ export const createConceptStore = (curriculumId: string = 'default') => {
             localStorage.setItem(seenKey, JSON.stringify(capped));
           }
           
-          // Record questions generated for daily limit tracking
-          recordQuestionsGenerated(questions.length, userId);
+          // Record questions generated for daily limit tracking (skip for unlimited users)
+          if (!isUnlimited) {
+            recordQuestionsGenerated(questions.length, userId);
+          }
           
           set({ 
             isPracticing: true,
