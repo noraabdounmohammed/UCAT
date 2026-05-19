@@ -57,12 +57,14 @@ export async function generateAIResponseStream(
 - Do NOT suggest or embed videos. Focus on text-based explanations only.
 - If unsure, state that briefly.`;
 
+    // Include more of the question for accurate context - clinical vignettes need full text
     const compressedUserPrompt = `
-QUESTION: ${context.question.substring(0, 150)}${context.question.length > 150 ? '...' : ''}
+QUESTION (FULL CLINICAL VIGNETTE):
+${context.question.substring(0, 600)}${context.question.length > 600 ? '...' : ''}
 
 CORRECT ANSWER: ${context.correctAnswer}
 
-EXPLANATION: ${context.explanation.substring(0, 150)}${context.explanation.length > 150 ? '...' : ''}
+EXPLANATION: ${context.explanation.substring(0, 300)}${context.explanation.length > 300 ? '...' : ''}
 
 USER QUERY: ${userQuery}`;
 
@@ -212,13 +214,14 @@ Important instructions:
 - If unsure or information is not provided, say so briefly.
 - Never cut off your response.`;
 
-    // Create a compressed version of the prompt to balance speed and context
+    // Include more of the question for accurate context - clinical vignettes need full text
     const compressedUserPrompt = `
-QUESTION: ${context.question.substring(0, 150)}${context.question.length > 150 ? '...' : ''}
+QUESTION (FULL CLINICAL VIGNETTE):
+${context.question.substring(0, 600)}${context.question.length > 600 ? '...' : ''}
 
 CORRECT ANSWER: ${context.correctAnswer}
 
-EXPLANATION: ${context.explanation.substring(0, 150)}${context.explanation.length > 150 ? '...' : ''}
+EXPLANATION: ${context.explanation.substring(0, 300)}${context.explanation.length > 300 ? '...' : ''}
 
 USER QUERY: ${userQuery}`;
 

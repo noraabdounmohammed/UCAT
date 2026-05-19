@@ -162,13 +162,19 @@ export const UkmlaSBAQuestion: React.FC<UkmlaSBAQuestionProps> = ({
     }
   }, [question.id, question.concept_id, question.question]);
 
+  // Get the full question content for visual generation and AI helper
+  // This is the complete clinical vignette that the user sees
+  const fullQuestionContent = question.question_stem || question.question || '';
+
   // Handle vignette visual generation
   const handleGenerateVignette = async () => {
-    const questionId = question.id || question.concept_id || `q_${question.question?.substring(0, 30)}`;
-    const stem = question.question_stem || question.question || '';
+    const questionId = question.id || question.concept_id || `q_${fullQuestionContent?.substring(0, 30)}`;
+    
+    // Use the full question content (clinical vignette) for accurate visual generation
+    console.log('🎨 Generating vignette with full question:', fullQuestionContent.substring(0, 100) + '...');
     
     setGeneratingVignette(true);
-    const result = await generateVignetteVisual(questionId, stem);
+    const result = await generateVignetteVisual(questionId, fullQuestionContent);
     if (result) {
       setVignetteImage(result.image_url);
     }
@@ -177,10 +183,12 @@ export const UkmlaSBAQuestion: React.FC<UkmlaSBAQuestionProps> = ({
 
   // Handle explanation visual generation
   const handleGenerateExplanation = async () => {
-    const questionId = String(question.id || question.concept_id || `q_${question.question?.substring(0, 30)}`);
+    const questionId = String(question.id || question.concept_id || `q_${fullQuestionContent?.substring(0, 30)}`);
     const conceptTitle = String(question.conceptTitle || question.title || 'Medical Concept');
     const explanationText = String(question.explanation || question.keyFact || '');
     const correctAnswer = String(question.correctAnswer ?? question.correct_answer ?? 'A');
+    
+    console.log('📊 Generating explanation visual for:', conceptTitle);
     
     setGeneratingExplanation(true);
     const result = await generateExplanationVisual(questionId, conceptTitle, explanationText, correctAnswer);
@@ -411,23 +419,22 @@ export const UkmlaSBAQuestion: React.FC<UkmlaSBAQuestionProps> = ({
                     onClick={handleGenerateVignette}
                     disabled={generatingVignette}
                     className={cn(
-                      "flex items-center gap-2 px-4 py-2.5 rounded-full text-[11px] uppercase tracking-widest font-medium transition-all duration-300",
+                      "inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all duration-200",
                       isLightMode
-                        ? "bg-stone-900 text-white hover:bg-stone-800"
-                        : "bg-white/10 text-white/90 border border-white/20 hover:bg-white/20",
+                        ? "bg-zinc-100 text-zinc-600 hover:bg-zinc-200 hover:text-zinc-800 border border-zinc-200"
+                        : "bg-white/5 text-white/60 hover:bg-white/10 hover:text-white/80 border border-white/10",
                       generatingVignette && "opacity-50 cursor-wait"
                     )}
-                    style={{ fontFamily: 'Unbounded, sans-serif' }}
                   >
                     {generatingVignette ? (
                       <>
-                        <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                        <span>Generating...</span>
+                        <Loader2 className="h-3 w-3 animate-spin" />
+                        <span>Creating...</span>
                       </>
                     ) : (
                       <>
-                        <ImageIcon className="h-3.5 w-3.5" />
-                        <span>Scene Visual</span>
+                        <ImageIcon className="h-3 w-3" />
+                        <span>Visualize scene</span>
                       </>
                     )}
                   </button>
@@ -648,23 +655,22 @@ export const UkmlaSBAQuestion: React.FC<UkmlaSBAQuestionProps> = ({
                         onClick={handleGenerateExplanation}
                         disabled={generatingExplanation}
                         className={cn(
-                          "flex items-center gap-2 px-4 py-2.5 rounded-full text-[11px] uppercase tracking-widest font-medium transition-all duration-300",
+                          "inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all duration-200",
                           isLightMode
-                            ? "bg-stone-900 text-white hover:bg-stone-800"
-                            : "bg-white/10 text-white/90 border border-white/20 hover:bg-white/20",
+                            ? "bg-indigo-50 text-indigo-600 hover:bg-indigo-100 hover:text-indigo-700 border border-indigo-200"
+                            : "bg-indigo-500/10 text-indigo-300 hover:bg-indigo-500/20 hover:text-indigo-200 border border-indigo-500/20",
                           generatingExplanation && "opacity-50 cursor-wait"
                         )}
-                        style={{ fontFamily: 'Unbounded, sans-serif' }}
                       >
                         {generatingExplanation ? (
                           <>
-                            <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                            <span>Generating...</span>
+                            <Loader2 className="h-3 w-3 animate-spin" />
+                            <span>Creating...</span>
                           </>
                         ) : (
                           <>
-                            <Sparkles className="h-3.5 w-3.5" />
-                            <span>Concept Visual</span>
+                            <Sparkles className="h-3 w-3" />
+                            <span>Visualize concept</span>
                           </>
                         )}
                       </button>

@@ -74,7 +74,7 @@ export async function generateVignetteVisual(
     // Patient-focused vignette - editorial medical illustration style
     const prompt = `Create a PREMIUM MOBILE CLINICAL VIGNETTE IMAGE - an emotional illness-script memory anchor.
 
-CLINICAL CASE: "${questionStem.slice(0, 350)}"
+CLINICAL CASE: "${questionStem.slice(0, 800)}"
 
 CRITICAL: Must be readable at phone width WITHOUT zooming.
 
