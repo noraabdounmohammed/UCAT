@@ -394,7 +394,7 @@ export const UkmlaSBAQuestion: React.FC<UkmlaSBAQuestionProps> = ({
       <div className="flex-1 overflow-y-auto">
         <div className="w-full max-w-2xl mx-auto">
           {/* Content - no card wrapper, edge-to-edge images */}
-          <div className="px-0 sm:px-4 md:px-6 pt-0 pb-4 pb-safe">
+          <div className="px-0 sm:px-4 md:px-6 pt-4 sm:pt-6 pb-4 pb-safe">
             {/* Vignette Visual - Edge to edge on mobile (only show if image exists) */}
             {vignetteImage && (
               <div className="-mx-0 sm:mx-0 mb-4">
