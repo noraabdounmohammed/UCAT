@@ -1,6 +1,4 @@
 import { useEffect, useState } from 'react';
-import { Copy, Check } from 'lucide-react';
-import { cn } from '@/lib/utils';
 import { SessionAnswer } from './SessionProgressDropdown';
 
 interface PracticeSessionTakeawaysProps {
@@ -82,13 +80,22 @@ export function PracticeSessionTakeaways({ answers, questions, light }: Practice
 
   if (status === 'loading') {
     return (
-      <div className={cn('rounded-2xl border p-4 mb-4', light ? 'bg-white border-zinc-200' : 'bg-white/5 border-white/10')}>
-        <p className={cn('text-[11px] uppercase tracking-widest font-semibold mb-3', light ? 'text-zinc-400' : 'text-white/40')}>
-          Takeaways
+      <div 
+        className="rounded-[18px] border p-[22px] mb-4"
+        style={{ 
+          background: light ? '#F4ECDF' : 'rgba(255,255,255,0.05)',
+          borderColor: light ? '#D9CCB6' : 'rgba(255,255,255,0.1)'
+        }}
+      >
+        <p 
+          className="text-[11px] font-semibold tracking-[0.22em] uppercase mb-3"
+          style={{ color: light ? '#8A7560' : 'rgba(255,255,255,0.5)' }}
+        >
+          The links
         </p>
         <div className="space-y-2">
           {[1, 2, 3].map(i => (
-            <div key={i} className={cn('h-3 rounded-full animate-pulse', light ? 'bg-zinc-100' : 'bg-white/10')} style={{ width: `${60 + i * 12}%` }} />
+            <div key={i} className="h-3 rounded-full animate-pulse" style={{ width: `${60 + i * 12}%`, background: light ? '#D9CCB6' : 'rgba(255,255,255,0.1)' }} />
           ))}
         </div>
       </div>
@@ -97,35 +104,83 @@ export function PracticeSessionTakeaways({ answers, questions, light }: Practice
 
   if (status === 'error' || !bullets || bullets.length === 0) return null;
 
+  const romanNumerals = ['i.', 'ii.', 'iii.', 'iv.', 'v.'];
+
   return (
-    <div className={cn('rounded-2xl border p-4 mb-4', light ? 'bg-white border-zinc-200' : 'bg-white/5 border-white/10')}>
+    <div 
+      className="rounded-[18px] border p-[22px] mb-4"
+      style={{ 
+        background: light ? '#F4ECDF' : 'rgba(255,255,255,0.05)',
+        borderColor: light ? '#D9CCB6' : 'rgba(255,255,255,0.1)'
+      }}
+    >
       {/* Header row */}
-      <div className="flex items-center justify-between mb-3">
-        <p className={cn('text-[11px] uppercase tracking-widest font-semibold', light ? 'text-zinc-400' : 'text-white/40')}>
-          Takeaways
+      <div className="flex items-center justify-between mb-[14px]">
+        <p 
+          className="text-[11px] font-semibold tracking-[0.22em] uppercase"
+          style={{ color: light ? '#8A7560' : 'rgba(255,255,255,0.5)' }}
+        >
+          The links
         </p>
         <button
           onClick={handleCopy}
-          className={cn(
-            'flex items-center gap-1 px-2 py-1 rounded-lg text-[11px] font-medium transition-all',
-            copied
-              ? light ? 'bg-emerald-50 text-emerald-600' : 'bg-emerald-500/15 text-emerald-400'
-              : light ? 'hover:bg-zinc-100 text-zinc-400 hover:text-zinc-600' : 'hover:bg-white/10 text-white/30 hover:text-white/60'
-          )}
+          className="flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-medium transition-all border"
+          style={{
+            background: 'none',
+            borderColor: light ? '#D9CCB6' : 'rgba(255,255,255,0.2)',
+            color: light ? '#3B2A1E' : 'rgba(255,255,255,0.7)',
+            fontFamily: 'Inter, sans-serif'
+          }}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.background = light ? '#FAF5EC' : 'rgba(255,255,255,0.1)';
+            e.currentTarget.style.borderColor = light ? '#3B2A1E' : 'rgba(255,255,255,0.4)';
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.background = 'none';
+            e.currentTarget.style.borderColor = light ? '#D9CCB6' : 'rgba(255,255,255,0.2)';
+          }}
           aria-label="Copy takeaways"
         >
-          {copied ? <Check className="w-3 h-3" /> : <Copy className="w-3 h-3" />}
-          {copied ? 'Copied' : 'Copy'}
+          {copied ? 'Copied' : '⧉ Copy'}
         </button>
       </div>
-      <ul className="space-y-2">
+      <div className="flex flex-col">
         {bullets.map((b, i) => (
-          <li key={i} className="flex items-baseline gap-2.5">
-            <span className={cn('flex-shrink-0 w-1 h-1 rounded-full relative top-[0.4em]', light ? 'bg-zinc-400' : 'bg-white/40')} />
-            <span className={cn('text-[13px] font-medium leading-snug', light ? 'text-zinc-700' : 'text-white/80')}>{b}</span>
-          </li>
+          <div 
+            key={i} 
+            className="flex gap-3 items-start py-[10px]"
+            style={{ 
+              borderTop: i === 0 ? 'none' : '1px dashed #D9CCB6',
+              paddingTop: i === 0 ? '4px' : '10px'
+            }}
+          >
+            <span 
+              className="flex-shrink-0 min-w-[18px]"
+              style={{ 
+                fontFamily: "'Fraunces', serif",
+                fontStyle: 'italic',
+                color: '#E5A89D',
+                fontSize: '14px',
+                lineHeight: '1.55'
+              }}
+            >
+              {romanNumerals[i] || `${i + 1}.`}
+            </span>
+            <span 
+              className="text-[17px] font-light leading-[1.45]"
+              style={{ 
+                fontFamily: "'Fraunces', serif",
+                color: light ? '#2A1E16' : 'white'
+              }}
+              dangerouslySetInnerHTML={{ 
+                __html: b.replace(/→/g, '<span style="color: #8A7560; margin: 0 2px; font-size: 14px;">→</span>')
+                  .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+                  .replace(/\*(.*?)\*/g, `<em style="color: #E5A89D; font-weight: 400;">$1</em>`)
+              }}
+            />
+          </div>
         ))}
-      </ul>
+      </div>
     </div>
   );
 }
