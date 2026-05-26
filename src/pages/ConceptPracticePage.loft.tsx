@@ -297,6 +297,7 @@ const ConceptPracticePageLoftContent: React.FC<Omit<ConceptPracticePageLoftProps
       <GenerationLoadingScreen 
         conceptCount={generatingQuestionCount}
         isReady={practiceQuestions && practiceQuestions.length > 0}
+        concepts={displayedConcepts}
         onComplete={() => {
           // User clicked "Begin" - dismiss loading screen
           setUserDismissedLoading(true);

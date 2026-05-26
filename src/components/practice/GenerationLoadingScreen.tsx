@@ -1,16 +1,18 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useTheme } from '@/contexts/ThemeContext';
 
 interface GenerationLoadingScreenProps {
   conceptCount?: number;
   isReady?: boolean;
   onComplete?: () => void;
+  concepts?: any[];
 }
 
 export const GenerationLoadingScreen: React.FC<GenerationLoadingScreenProps> = ({
   conceptCount = 1,
   isReady = false,
-  onComplete
+  onComplete,
+  concepts = []
 }) => {
   const { theme } = useTheme();
   const isLightMode = theme === 'light';
@@ -33,15 +35,85 @@ export const GenerationLoadingScreen: React.FC<GenerationLoadingScreenProps> = (
     "Ready."
   ];
 
-  // Simulated concept mix data
-  const mixData = [
-    { type: 'weak', count: Math.max(1, Math.floor(conceptCount * 0.5)), label: 'weak — accuracy below 50%' },
-    { type: 'drifting', count: Math.max(1, Math.floor(conceptCount * 0.3)), label: 'drifting — not seen in three weeks' },
-    { type: 'cold', count: Math.max(1, Math.floor(conceptCount * 0.2)), label: 'cold & high-yield — never met' }
-  ];
+  // Calculate real concept mix data from concepts
+  const mixData = useMemo(() => {
+    if (!concepts || concepts.length === 0) {
+      return [
+        { type: 'weak', count: Math.max(1, Math.floor(conceptCount * 0.5)), label: 'weak — accuracy below 50%' },
+        { type: 'drifting', count: Math.max(1, Math.floor(conceptCount * 0.3)), label: 'drifting — not seen in three weeks' },
+        { type: 'cold', count: Math.max(1, Math.floor(conceptCount * 0.2)), label: 'cold & high-yield — never met' }
+      ];
+    }
 
-  // Simulated systems
-  const systems = ['cardiology', 'psychiatry', 'renal', 'respiratory', 'gastroenterology'].slice(0, Math.min(5, Math.ceil(conceptCount / 3)));
+    const now = Date.now();
+    const threeWeeksMs = 21 * 24 * 60 * 60 * 1000;
+
+    let weakCount = 0;
+    let driftingCount = 0;
+    let coldCount = 0;
+
+    concepts.forEach((concept: any) => {
+      const mastery = concept.mastery_data || {};
+      const attempts = mastery.attempts || 0;
+      const correct = mastery.correct || 0;
+      const lastPracticed = mastery.last_practiced ? new Date(mastery.last_practiced).getTime() : null;
+
+      // Weak: accuracy below 50% and has been attempted
+      if (attempts > 0 && (correct / attempts) < 0.5) {
+        weakCount++;
+      }
+
+      // Drifting: not seen in 3 weeks and has been attempted
+      if (lastPracticed && (now - lastPracticed) > threeWeeksMs) {
+        driftingCount++;
+      }
+
+      // Cold: never attempted
+      if (attempts === 0) {
+        coldCount++;
+      }
+    });
+
+    // Ensure at least 1 in each category if total > 0
+    const total = weakCount + driftingCount + coldCount;
+    if (total === 0 && concepts.length > 0) {
+      // If no data, distribute evenly
+      const perCategory = Math.ceil(concepts.length / 3);
+      return [
+        { type: 'weak', count: perCategory, label: 'weak — accuracy below 50%' },
+        { type: 'drifting', count: perCategory, label: 'drifting — not seen in three weeks' },
+        { type: 'cold', count: perCategory, label: 'cold & high-yield — never met' }
+      ];
+    }
+
+    return [
+      { type: 'weak', count: weakCount || 1, label: 'weak — accuracy below 50%' },
+      { type: 'drifting', count: driftingCount || 1, label: 'drifting — not seen in three weeks' },
+      { type: 'cold', count: coldCount || 1, label: 'cold & high-yield — never met' }
+    ];
+  }, [concepts, conceptCount]);
+
+  // Extract real systems from concept custom_filters
+  const systems = useMemo(() => {
+    if (!concepts || concepts.length === 0) {
+      return ['cardiology', 'psychiatry', 'renal', 'respiratory', 'gastroenterology'].slice(0, Math.min(5, Math.ceil(conceptCount / 3)));
+    }
+
+    const systemSet = new Set<string>();
+    concepts.forEach((concept: any) => {
+      const filters = concept.custom_filters || [];
+      filters.forEach((filter: string) => {
+        // Extract system-like terms (lowercase, single words or common medical systems)
+        const system = filter.toLowerCase().trim();
+        if (system.length > 2 && system.length < 20) {
+          systemSet.add(system);
+        }
+      });
+    });
+
+    const systemList = Array.from(systemSet).slice(0, 5);
+    return systemList.length > 0 ? systemList : ['cardiology', 'psychiatry', 'renal'];
+  }, [concepts, conceptCount]);
 
   // Animation sequence - stops at ready state
   useEffect(() => {
@@ -100,9 +172,9 @@ export const GenerationLoadingScreen: React.FC<GenerationLoadingScreenProps> = (
         backgroundBlendMode: useParchmentTheme ? 'multiply' : undefined
       }}
     >
-      <div className="w-full max-w-[440px] px-7 py-10 flex flex-col items-center">
+      <div className="w-full max-w-[440px] px-7 py-8 flex flex-col items-center" style={{ paddingTop: '40px', paddingBottom: '32px' }}>
         {/* Star Mark */}
-        <div className="text-center mb-9" style={{ animation: 'fadeUp 0.7s 0.1s both ease-out' }}>
+        <div className="text-center mt-2 mb-9" style={{ animation: 'fadeUp 0.7s 0.1s both ease-out' }}>
           <span 
             className="text-[44px] leading-none inline-block"
             style={{ 
@@ -125,7 +197,8 @@ export const GenerationLoadingScreen: React.FC<GenerationLoadingScreenProps> = (
             fontWeight: 300,
             letterSpacing: '-0.025em',
             color: useParchmentTheme ? '#2A1E16' : 'white',
-            animation: 'fadeUp 0.7s 0.25s both ease-out'
+            animation: 'fadeUp 0.7s 0.25s both ease-out',
+            marginBottom: '12px'
           }}
         >
           Choosing tonight's<br />
@@ -139,7 +212,8 @@ export const GenerationLoadingScreen: React.FC<GenerationLoadingScreenProps> = (
             fontFamily: "'Fraunces', serif",
             fontStyle: 'italic',
             color: useParchmentTheme ? '#8A7560' : 'rgba(255,255,255,0.5)',
-            animation: 'fadeUp 0.7s 0.35s both ease-out'
+            animation: 'fadeUp 0.7s 0.35s both ease-out',
+            marginBottom: '44px'
           }}
         >
           A set tuned to where you are on the map
@@ -147,20 +221,22 @@ export const GenerationLoadingScreen: React.FC<GenerationLoadingScreenProps> = (
 
         {/* Phase Zone */}
         <div 
-          className="h-8 text-center mb-[18px] relative"
+          className="min-h-[28px] text-center mb-[18px] relative"
           style={{ animation: 'fadeUp 0.7s 0.5s both ease-out' }}
         >
           {phases.map((phase, idx) => (
             <span
               key={idx}
-              className="absolute inset-0 flex items-center justify-center px-2 transition-opacity duration-450 whitespace-nowrap"
+              className="absolute inset-0 flex items-center justify-center px-2 whitespace-nowrap"
               style={{
                 fontFamily: "'Fraunces', serif",
                 fontStyle: 'italic',
                 fontSize: '15px',
                 color: useParchmentTheme ? '#3B2A1E' : 'rgba(255,255,255,0.7)',
                 opacity: idx === currentPhase ? 1 : idx < currentPhase ? 0 : 0,
-                lineHeight: 1.4
+                lineHeight: 1.4,
+                transition: 'opacity 0.45s ease-out',
+                padding: '0 8px'
               }}
             >
               {phase}
@@ -174,7 +250,8 @@ export const GenerationLoadingScreen: React.FC<GenerationLoadingScreenProps> = (
             className="h-[2px] mx-6 mb-14 rounded-2 overflow-hidden relative"
             style={{ 
               background: useParchmentTheme ? '#E8DCC4' : 'rgba(255,255,255,0.1)',
-              animation: 'fadeUp 0.7s 0.6s both ease-out'
+              animation: 'fadeUp 0.7s 0.6s both ease-out',
+              margin: '0 24px 56px'
             }}
           >
             <div 
@@ -192,7 +269,8 @@ export const GenerationLoadingScreen: React.FC<GenerationLoadingScreenProps> = (
           className="w-full max-w-[320px] pt-[22px] border-t transition-opacity duration-600"
           style={{
             borderColor: useParchmentTheme ? '#E8DCC4' : 'rgba(255,255,255,0.1)',
-            opacity: showBrief ? 1 : 0
+            opacity: showBrief ? 1 : 0,
+            paddingTop: '22px'
           }}
         >
           <div 
@@ -202,7 +280,8 @@ export const GenerationLoadingScreen: React.FC<GenerationLoadingScreenProps> = (
               letterSpacing: '0.28em',
               textTransform: 'uppercase',
               color: useParchmentTheme ? '#8A7560' : 'rgba(255,255,255,0.5)',
-              fontWeight: 500
+              fontWeight: 500,
+              marginBottom: '18px'
             }}
           >
             Tonight's set
@@ -210,7 +289,7 @@ export const GenerationLoadingScreen: React.FC<GenerationLoadingScreenProps> = (
 
           {/* Mix Rows */}
           <div className="flex flex-col gap-[10px] mb-[18px]">
-            {mixData.map((item, idx) => (
+            {mixData.map((item: any, idx: number) => (
               <div
                 key={idx}
                 className="flex items-center gap-3 text-[14px] transition-all duration-500"
@@ -262,7 +341,7 @@ export const GenerationLoadingScreen: React.FC<GenerationLoadingScreenProps> = (
             className="flex flex-wrap justify-center gap-[6px] mt-[14px] transition-opacity duration-600"
             style={{ opacity: showSystems ? 1 : 0 }}
           >
-            {systems.map((sys, idx) => (
+            {systems.map((sys: string, idx: number) => (
               <span
                 key={idx}
                 className="px-[11px] py-1 rounded-full"
@@ -282,7 +361,7 @@ export const GenerationLoadingScreen: React.FC<GenerationLoadingScreenProps> = (
         </div>
 
         {/* Footer */}
-        <div className="mt-auto pt-8">
+        <div className="mt-auto" style={{ paddingTop: '32px' }}>
           {!showReady && (
             <p 
               className="text-center mb-[18px]"
@@ -290,7 +369,8 @@ export const GenerationLoadingScreen: React.FC<GenerationLoadingScreenProps> = (
                 fontFamily: "'Fraunces', serif",
                 fontStyle: 'italic',
                 fontSize: '12.5px',
-                color: useParchmentTheme ? '#8A7560' : 'rgba(255,255,255,0.5)'
+                color: useParchmentTheme ? '#8A7560' : 'rgba(255,255,255,0.5)',
+                marginBottom: '18px'
               }}
             >
               Usually 10–30 seconds
@@ -300,12 +380,12 @@ export const GenerationLoadingScreen: React.FC<GenerationLoadingScreenProps> = (
           {showReady && (
             <button
               onClick={handleBegin}
-              className="w-full py-[18px] rounded-full flex items-center justify-center gap-3 transition-all hover:-translate-y-0.5"
+              className="w-full p-[18px] rounded-full flex items-center justify-center gap-3 transition-all hover:-translate-y-0.5"
               style={{
                 background: useParchmentTheme ? '#1F140C' : 'white',
                 color: useParchmentTheme ? '#FAF5EC' : '#0A0A0A',
                 border: 'none',
-                fontFamily: "'Inter', sans-serif",
+                fontFamily: "'Inter', sans-serif',
                 fontWeight: 500,
                 fontSize: '15px',
                 animation: 'fadeUp 0.6s both ease-out'
