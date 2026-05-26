@@ -1,4 +1,26 @@
-@import url('https://fonts.googleapis.com/css2?family=Unbounded:wght@300;400;500;600;700&family=Manrope:wght@300;400;500;600&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Unbounded:wght@300;400;500;600;700&family=Manrope:wght@300;400;500;600&family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,400;0,9..144,500;1,9..144,300;1,9..144,400;1,9..144,500&family=Inter:wght@300;400;500;600&display=swap');
+
+/* ============================================
+   STUDYEDIT DESIGN SYSTEM - Parchment Theme
+   ============================================ */
+:root {
+  /* Parchment palette */
+  --se-parchment: #F4ECDF;
+  --se-parchment-deep: #EBE1D0;
+  --se-cream: #FAF5EC;
+  --se-espresso: #1F140C;
+  --se-espresso-soft: #3B2A1E;
+  --se-ink: #2A1E16;
+  --se-ink-muted: #8A7560;
+  --se-blush: #F2C9C1;
+  --se-blush-deep: #E5A89D;
+  --se-blush-bg: #F9E4DF;
+  --se-sage: #C8D3B8;
+  --se-sage-deep: #8FA379;
+  --se-sage-bg: #E2EAD6;
+  --se-line: #D9CCB6;
+  --se-line-soft: #E8DCC4;
+}
 
 @tailwind base;
 @tailwind components;

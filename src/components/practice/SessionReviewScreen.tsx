@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { CheckCircle2, XCircle, RotateCcw, ArrowRight, Flame, Target, Plus, Sun, Moon, ChevronRight } from 'lucide-react';
+import { RotateCcw, Plus, Sun, Moon, ChevronRight, ArrowRight } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { SessionAnswer } from './SessionProgressDropdown';
 import { useTheme } from '@/contexts/ThemeContext';
@@ -14,25 +14,30 @@ interface SessionReviewScreenProps {
   onViewQuestion?: (questionIndex: number) => void;
 }
 
-// Behavioral science: variable reward messaging based on score
-const getSessionMessage = (accuracy: number, streak: number) => {
-  if (accuracy === 100) return { headline: 'Perfect session.', sub: 'Every single one. That\'s rare — remember this feeling.', color: 'text-emerald-400' };
-  if (accuracy >= 90) return { headline: 'Outstanding.', sub: `${accuracy}% — you\'re in the top tier. One more push and it's perfect.`, color: 'text-emerald-400' };
-  if (accuracy >= 75) return { headline: 'Strong session.', sub: `${accuracy}% accuracy. You\'re building real clinical reasoning.`, color: 'text-emerald-400' };
-  if (accuracy >= 60) return { headline: 'Solid progress.', sub: `${accuracy}% — the gaps you have are fixable. Review the ones below.`, color: 'text-amber-400' };
-  if (accuracy >= 40) return { headline: 'Keep going.', sub: `${accuracy}% — this is exactly where improvement happens. Review every incorrect one.`, color: 'text-amber-400' };
-  return { headline: 'Rough session — good.', sub: 'You found your weak spots. That\'s the point. Review them now while they\'re fresh.', color: 'text-rose-400' };
-};
-
-// Calculate longest correct streak
-const getLongestStreak = (answers: SessionAnswer[]): number => {
-  let max = 0, curr = 0;
-  const sorted = [...answers].sort((a, b) => a.questionIndex - b.questionIndex);
-  for (const a of sorted) {
-    if (a.isCorrect) { curr++; max = Math.max(max, curr); }
-    else curr = 0;
+// StudyEdit: Concept-focused messaging
+const getSessionMessage = (mastered: number, stillOnList: number, total: number) => {
+  if (stillOnList === 0) {
+    return { 
+      headline: `${mastered} mastered.`, 
+      sub: 'Every concept clicked. The territory just expanded.' 
+    };
   }
-  return max;
+  if (mastered >= total * 0.7) {
+    return { 
+      headline: `${mastered} mastered.`, 
+      sub: `${stillOnList} still on your list — they'll come back.` 
+    };
+  }
+  if (mastered >= total * 0.5) {
+    return { 
+      headline: `${mastered} mastered.`, 
+      sub: `${stillOnList} need more work. The system will bring them back.` 
+    };
+  }
+  return { 
+    headline: `${stillOnList} still on your list.`, 
+    sub: `${mastered} moved forward. The gaps are now visible — that's the point.` 
+  };
 };
 
 export const SessionReviewScreen: React.FC<SessionReviewScreenProps> = ({
@@ -46,6 +51,9 @@ export const SessionReviewScreen: React.FC<SessionReviewScreenProps> = ({
   const [visible, setVisible] = useState(false);
   const { theme, toggleTheme } = useTheme();
   const light = theme === 'light';
+  
+  // StudyEdit: Use parchment theme in light mode
+  const useParchment = light;
 
   useEffect(() => {
     const t = setTimeout(() => setVisible(true), 50);
@@ -53,107 +61,216 @@ export const SessionReviewScreen: React.FC<SessionReviewScreenProps> = ({
   }, []);
 
   const total = questions.length;
-  const correct = answers.filter(a => a.isCorrect).length;
-  const incorrect = answers.filter(a => !a.isCorrect).length;
-  const unanswered = total - answers.length;
-  const accuracy = total > 0 ? Math.round((correct / total) * 100) : 0;
-  const streak = getLongestStreak(answers);
-  const { headline, sub, color } = getSessionMessage(accuracy, streak);
+  const mastered = answers.filter(a => a.isCorrect).length;
+  const stillOnList = answers.filter(a => !a.isCorrect).length;
+  const { headline, sub } = getSessionMessage(mastered, stillOnList, total);
   const incorrectQuestions = answers.filter(a => !a.isCorrect);
 
-  // Behavioral science: frame unanswered as potential, not failure
-  const attempted = answers.length;
+  // Group concepts by their state change
+  const conceptsMastered = answers.filter(a => a.isCorrect).map(a => {
+    const q = questions[a.questionIndex];
+    return q?.title || q?.topic || `Concept ${a.questionIndex + 1}`;
+  });
+  const conceptsStillWeak = answers.filter(a => !a.isCorrect).map(a => {
+    const q = questions[a.questionIndex];
+    return q?.title || q?.topic || `Concept ${a.questionIndex + 1}`;
+  });
 
   return (
-    <div className={cn(
-      'fixed inset-0 flex flex-col overflow-y-auto transition-opacity duration-500',
-      light ? 'bg-zinc-50' : 'bg-[#0A0A0A]',
-      visible ? 'opacity-100' : 'opacity-0'
-    )}>
+    <div 
+      className={cn(
+        'fixed inset-0 flex flex-col overflow-y-auto transition-opacity duration-500',
+        useParchment ? 'bg-[#F4ECDF]' : 'bg-[#0A0A0A]',
+        visible ? 'opacity-100' : 'opacity-0'
+      )}
+      style={useParchment ? {
+        backgroundImage: `url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='220' height='220'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 0.12  0 0 0 0 0.08  0 0 0 0 0.05  0 0 0 0.03 0'/></filter><rect width='100%25' height='100%25' filter='url(%23n)'/></svg>")`,
+        backgroundBlendMode: 'multiply'
+      } : undefined}
+    >
       {/* Theme toggle */}
       <div className="sticky top-0 z-10 flex justify-end px-4 pt-4">
         <button
           onClick={toggleTheme}
-          className={cn('p-2 rounded-full transition-colors', light ? 'hover:bg-zinc-200 text-zinc-600' : 'hover:bg-white/10 text-white/60')}
+          className={cn(
+            'p-2 rounded-full transition-colors',
+            useParchment ? 'hover:bg-[#EBE1D0] text-[#8A7560]' : 'hover:bg-white/10 text-white/60'
+          )}
           aria-label="Toggle theme"
         >
           {light ? <Moon className="w-4 h-4" /> : <Sun className="w-4 h-4" />}
         </button>
       </div>
-      <div className="max-w-2xl mx-auto w-full px-4 pb-10 sm:pb-16">
 
-        {/* Score circle */}
-        <div className="text-center mb-10">
-          <div className="relative inline-flex items-center justify-center w-28 h-28 mb-6">
-            <svg className="w-28 h-28 -rotate-90" viewBox="0 0 120 120">
-              <circle cx="60" cy="60" r="52" fill="none" stroke={light ? 'rgba(0,0,0,0.08)' : 'rgba(255,255,255,0.06)'} strokeWidth="8" />
-              <circle
-                cx="60" cy="60" r="52" fill="none"
-                stroke={accuracy >= 75 ? '#34d399' : accuracy >= 50 ? '#fbbf24' : '#f87171'}
-                strokeWidth="8"
-                strokeLinecap="round"
-                strokeDasharray={`${2 * Math.PI * 52}`}
-                strokeDashoffset={`${2 * Math.PI * 52 * (1 - accuracy / 100)}`}
-                style={{ transition: 'stroke-dashoffset 1s ease-out' }}
-              />
-            </svg>
-            <div className="absolute text-center">
-              <p className={cn('text-3xl font-bold', light ? 'text-zinc-900' : 'text-white')}>{accuracy}%</p>
-            </div>
+      <div className="max-w-[480px] mx-auto w-full px-5 sm:px-6 pb-10 sm:pb-16">
+        {/* Top section - mono label + headline */}
+        <div className={cn(
+          "pb-5 mb-6 border-b",
+          useParchment ? "border-[#E8DCC4]" : "border-white/10"
+        )}>
+          <div 
+            className={cn(
+              "text-[11px] font-medium tracking-[0.22em] uppercase mb-3",
+              useParchment ? "text-[#8A7560]" : "text-white/50"
+            )}
+          >
+            Session complete · {total} concepts
           </div>
-
-          <h1 className={cn('text-2xl sm:text-3xl font-bold mb-2', light ? 'text-zinc-900' : 'text-white')} style={{ fontFamily: "'Unbounded', cursive" }}>
-            {headline}
+          <h1 
+            className={cn(
+              "text-[32px] font-light leading-[1.0] tracking-[-0.025em]",
+              useParchment ? "text-[#2A1E16]" : "text-white"
+            )}
+            style={{ fontFamily: "'Fraunces', serif" }}
+          >
+            {headline.split(' ').map((word, i) => 
+              word.includes('mastered') || word.includes('list') ? (
+                <em key={i} className="text-[#E5A89D] italic">{word} </em>
+              ) : (
+                <span key={i}>{word} </span>
+              )
+            )}
           </h1>
-          <p className={cn('text-sm max-w-sm mx-auto', light ? 'text-zinc-500' : 'text-white/50')} style={{ fontFamily: "'Manrope', sans-serif" }}>
+          <p 
+            className={cn(
+              "text-[14px] italic mt-2",
+              useParchment ? "text-[#8A7560]" : "text-white/50"
+            )}
+            style={{ fontFamily: "'Fraunces', serif" }}
+          >
             {sub}
           </p>
         </div>
 
-        {/* Stats row */}
-        <div className="grid grid-cols-3 gap-3 mb-8">
-          {[
-            { icon: <CheckCircle2 className="w-4 h-4" />, label: 'Correct', value: correct, color: 'text-emerald-400', bg: 'bg-emerald-500/10 border-emerald-500/20' },
-            { icon: <XCircle className="w-4 h-4" />, label: 'Incorrect', value: incorrect, color: 'text-rose-400', bg: 'bg-rose-500/10 border-rose-500/20' },
-            { icon: <Flame className="w-4 h-4" />, label: 'Best streak', value: streak, color: 'text-amber-400', bg: 'bg-amber-500/10 border-amber-500/20' },
-          ].map(({ icon, label, value, color, bg }) => (
-            <div key={label} className={cn('rounded-2xl border p-4 text-center', bg)}>
-              <div className={cn('flex justify-center mb-1', color)}>{icon}</div>
-              <p className={cn('text-xl font-bold', color)}>{value}</p>
-              <p className={cn('text-xs mt-0.5', light ? 'text-zinc-500' : 'text-white/40')}>{label}</p>
+        {/* Map Widget - Territory shifts */}
+        <div className={cn(
+          "rounded-[22px] p-6 mb-4 relative overflow-hidden",
+          useParchment ? "bg-[#1F140C] text-[#FAF5EC]" : "bg-white/5 text-white"
+        )}>
+          {/* Gradient overlay */}
+          <div 
+            className="absolute inset-0 pointer-events-none"
+            style={{ background: 'radial-gradient(ellipse at 80% 20%, rgba(229,168,157,0.1), transparent 50%)' }}
+          />
+          
+          <div className="relative z-10">
+            <div className={cn(
+              "text-[10px] font-medium tracking-[0.22em] uppercase mb-3",
+              useParchment ? "text-[#FAF5EC]/50" : "text-white/40"
+            )}>
+              Your map · what just moved
             </div>
-          ))}
+            <h2 
+              className="text-[22px] font-light leading-[1.2] tracking-[-0.015em] mb-5"
+              style={{ fontFamily: "'Fraunces', serif" }}
+            >
+              The territory <em className="italic text-[#F2C9C1]">shifted</em>.
+            </h2>
+
+            {/* Shift lines */}
+            <div className={cn(
+              "flex flex-col gap-2 pt-4 border-t",
+              useParchment ? "border-[#FAF5EC]/10" : "border-white/10"
+            )}>
+              {mastered > 0 && (
+                <div className="flex items-center gap-3 text-[13px] animate-in slide-in-from-bottom-2 duration-500">
+                  <div className="flex items-center gap-1.5">
+                    <span className="w-2 h-2 rounded-full bg-[#4a3a2c]" />
+                    <span className="text-[#8A7560] text-[10px]">→</span>
+                    <span className="w-2 h-2 rounded-full bg-[#8FA379]" />
+                  </div>
+                  <span 
+                    className="text-[14px] italic text-[#FAF5EC]"
+                    style={{ fontFamily: "'Fraunces', serif" }}
+                  >
+                    +{mastered}
+                  </span>
+                  <span className="text-[12.5px] text-[#c8b89c]">
+                    moved to <em className="text-[#F2C9C1] italic">mastered</em>
+                    {conceptsMastered.length > 0 && conceptsMastered.length <= 2 && (
+                      <span> — {conceptsMastered.slice(0, 2).join(', ')}</span>
+                    )}
+                  </span>
+                </div>
+              )}
+              
+              {stillOnList > 0 && (
+                <div className="flex items-center gap-3 text-[13px] animate-in slide-in-from-bottom-2 duration-700">
+                  <div className="flex items-center gap-1.5">
+                    <span className="w-2 h-2 rounded-full bg-[#c8b89c]" />
+                    <span className="text-[#8A7560] text-[10px]">→</span>
+                    <span className="w-2 h-2 rounded-full bg-[#E5A89D]" />
+                  </div>
+                  <span 
+                    className="text-[14px] italic text-[#FAF5EC]"
+                    style={{ fontFamily: "'Fraunces', serif" }}
+                  >
+                    +{stillOnList}
+                  </span>
+                  <span className="text-[12.5px] text-[#c8b89c]">
+                    <em className="text-[#F2C9C1] italic">still weak</em>
+                    {conceptsStillWeak.length > 0 && conceptsStillWeak.length <= 2 && (
+                      <span> — {conceptsStillWeak.slice(0, 2).join(', ')}</span>
+                    )}
+                  </span>
+                </div>
+              )}
+            </div>
+          </div>
         </div>
 
-        {incorrectQuestions.length > 0 ? (
-          <div className="mb-4">
-            <div className="bg-rose-500/10 border border-rose-500/20 rounded-2xl p-4 mb-4">
-              <div className="flex items-start gap-3">
-                <Target className="w-4 h-4 text-rose-400 flex-shrink-0 mt-0.5" />
-                <div>
-                  <p className={cn('text-sm font-semibold', light ? 'text-zinc-800' : 'text-white/90')}>
-                    {incorrectQuestions.length} question{incorrectQuestions.length > 1 ? 's' : ''} to review
-                  </p>
-                  <p className={cn('text-xs mt-0.5', light ? 'text-zinc-500' : 'text-white/40')}>
-                    Retrying incorrect questions now is 3× more effective than moving on.
-                  </p>
-                </div>
+        {/* Action buttons */}
+        {stillOnList > 0 ? (
+          <div className="mb-6">
+            {/* Retry prompt */}
+            <div className={cn(
+              "py-[18px] pl-[22px] pr-4 border-l-[3px] mb-4",
+              useParchment 
+                ? "bg-[#FAF5EC] border-l-[#E5A89D]" 
+                : "bg-white/5 border-l-rose-400"
+            )}>
+              <div 
+                className={cn(
+                  "text-[10px] font-medium tracking-[0.22em] uppercase mb-2",
+                  useParchment ? "text-[#8A7560]" : "text-white/50"
+                )}
+              >
+                The system suggests
               </div>
+              <p 
+                className={cn(
+                  "text-[15px] leading-[1.4]",
+                  useParchment ? "text-[#2A1E16]" : "text-white/90"
+                )}
+                style={{ fontFamily: "'Fraunces', serif" }}
+              >
+                Retry the {stillOnList} weak concept{stillOnList > 1 ? 's' : ''} now — 
+                <em className="text-[#E5A89D] italic"> it's 3× more effective</em> than moving on.
+              </p>
             </div>
-            <div className={cn('flex gap-2', onAnotherFive ? 'flex-row' : 'flex-col')}>
+
+            <div className="grid grid-cols-2 gap-3">
               <button
                 onClick={onRetryIncorrect}
-                className={cn('flex-1 py-3.5 rounded-full font-bold text-sm flex items-center justify-center gap-2 transition-all border', light ? 'bg-zinc-100 border-zinc-300 text-zinc-700 hover:bg-zinc-200' : 'bg-white/10 border-white/20 text-white hover:bg-white/20')}
-                style={{ fontFamily: "'Manrope', sans-serif" }}
+                className={cn(
+                  "py-4 rounded-full font-medium text-[13.5px] flex items-center justify-center gap-2 transition-all border",
+                  useParchment 
+                    ? "bg-[#FAF5EC] border-[#D9CCB6] text-[#2A1E16] hover:border-[#8A7560]" 
+                    : "bg-white/10 border-white/20 text-white hover:bg-white/15"
+                )}
               >
                 <RotateCcw className="w-4 h-4" />
-                Retry {incorrectQuestions.length}
+                Retry {stillOnList}
               </button>
               {onAnotherFive && (
                 <button
                   onClick={() => onAnotherFive(undefined)}
-                  className={cn('flex-1 py-3.5 rounded-full font-bold text-sm flex items-center justify-center gap-2 transition-all', light ? 'bg-zinc-900 text-white hover:bg-zinc-700' : 'bg-white text-stone-900 hover:bg-stone-100')}
-                  style={{ fontFamily: "'Manrope', sans-serif" }}
+                  className={cn(
+                    "py-4 rounded-full font-medium text-[13.5px] flex items-center justify-center gap-2 transition-all",
+                    useParchment 
+                      ? "bg-[#1F140C] text-[#FAF5EC] hover:bg-[#3B2A1E]" 
+                      : "bg-white text-[#0A0A0A] hover:bg-white/90"
+                  )}
                 >
                   <Plus className="w-4 h-4" />
                   Another 5
@@ -162,14 +279,18 @@ export const SessionReviewScreen: React.FC<SessionReviewScreenProps> = ({
             </div>
           </div>
         ) : onAnotherFive && (
-          <div className="mb-4">
+          <div className="mb-6">
             <button
               onClick={() => onAnotherFive(undefined)}
-              className={cn('w-full py-3.5 rounded-full font-bold text-sm flex items-center justify-center gap-2 transition-all', light ? 'bg-zinc-900 text-white hover:bg-zinc-700' : 'bg-white text-stone-900 hover:bg-stone-100')}
-              style={{ fontFamily: "'Manrope', sans-serif" }}
+              className={cn(
+                "w-full py-[18px] rounded-full font-medium text-[15px] flex items-center justify-center gap-3 transition-all",
+                useParchment 
+                  ? "bg-[#1F140C] text-[#FAF5EC] hover:bg-[#3B2A1E] hover:-translate-y-0.5" 
+                  : "bg-white text-[#0A0A0A] hover:bg-white/90 hover:-translate-y-0.5"
+              )}
             >
               <Plus className="w-4 h-4" />
-              Another 5
+              Another 5 concepts
             </button>
           </div>
         )}
@@ -177,17 +298,29 @@ export const SessionReviewScreen: React.FC<SessionReviewScreenProps> = ({
         {/* AI Takeaways */}
         <PracticeSessionTakeaways answers={answers} questions={questions} light={light} />
 
-        {/* Question breakdown */}
-        <div className={cn('border rounded-2xl overflow-hidden mb-4', light ? 'bg-white border-zinc-200' : 'bg-white/5 border-white/10')}>
-          <div className={cn('px-4 py-3 border-b', light ? 'border-zinc-200' : 'border-white/10')}>
-            <p className={cn('text-xs font-semibold uppercase tracking-widest', light ? 'text-zinc-400' : 'text-white/40')}>Question Breakdown</p>
+        {/* Concept breakdown - StudyEdit style */}
+        <div className={cn(
+          'border rounded-[18px] overflow-hidden mb-6',
+          useParchment ? 'bg-[#FAF5EC] border-[#D9CCB6]' : 'bg-white/5 border-white/10'
+        )}>
+          <div className={cn(
+            'px-5 py-3.5 border-b',
+            useParchment ? 'border-[#E8DCC4]' : 'border-white/10'
+          )}>
+            <p className={cn(
+              'text-[10px] font-medium tracking-[0.22em] uppercase',
+              useParchment ? 'text-[#8A7560]' : 'text-white/40'
+            )}>
+              Concept breakdown
+            </p>
           </div>
-          <div className={cn('divide-y', light ? 'divide-zinc-100' : 'divide-white/5')}>
+          <div className={cn('divide-y', useParchment ? 'divide-[#E8DCC4]' : 'divide-white/5')}>
             {questions.map((q, i) => {
               const answer = answers.find(a => a.questionIndex === i);
-              const topic = q.title || q.topic || `Question ${i + 1}`;
-              const questionPreview = (q.question_stem || q.question || q.content || '').slice(0, 80);
-              const isClickable = onViewQuestion && answer; // Only clickable if answered
+              const topic = q.title || q.topic || `Concept ${i + 1}`;
+              const isClickable = onViewQuestion && answer;
+              const isMastered = answer?.isCorrect;
+              const isWeak = answer && !answer.isCorrect;
 
               return (
                 <button
@@ -195,55 +328,65 @@ export const SessionReviewScreen: React.FC<SessionReviewScreenProps> = ({
                   onClick={() => isClickable && onViewQuestion(i)}
                   disabled={!isClickable}
                   className={cn(
-                    'w-full flex items-start gap-3 px-4 py-3 text-left transition-colors',
-                    isClickable && (light ? 'hover:bg-zinc-50 cursor-pointer' : 'hover:bg-white/5 cursor-pointer'),
+                    'w-full flex items-center gap-3 px-5 py-3.5 text-left transition-all',
+                    isClickable && (useParchment ? 'hover:pl-6' : 'hover:bg-white/5'),
                     !isClickable && 'cursor-default'
                   )}
                 >
-                  <div className="flex-shrink-0 mt-0.5">
-                    {answer?.isCorrect ? (
-                      <CheckCircle2 className="w-4 h-4 text-emerald-500" />
-                    ) : answer && !answer.isCorrect ? (
-                      <XCircle className="w-4 h-4 text-rose-500" />
-                    ) : (
-                      <div className={cn('w-4 h-4 rounded-full border', light ? 'border-zinc-300' : 'border-white/20')} />
+                  {/* Status pip */}
+                  <div className={cn(
+                    "w-2.5 h-2.5 rounded-full flex-shrink-0",
+                    isMastered && "bg-[#8FA379]",
+                    isWeak && "bg-[#E5A89D]",
+                    !answer && (useParchment ? "bg-[#D9CCB6]" : "bg-white/20")
+                  )} />
+                  
+                  {/* Concept name */}
+                  <span 
+                    className={cn(
+                      'flex-1 text-[14.5px]',
+                      useParchment ? 'text-[#2A1E16]' : 'text-white/80'
                     )}
-                  </div>
-                  <div className="min-w-0 flex-1">
-                    <p className={cn('text-xs font-medium truncate', light ? 'text-zinc-700' : 'text-white/70')}>{topic}</p>
-                    {questionPreview && (
-                      <p className={cn('text-xs truncate mt-0.5', light ? 'text-zinc-400' : 'text-white/30')}>{questionPreview}…</p>
-                    )}
-                  </div>
-                  <div className="flex items-center gap-2 flex-shrink-0">
-                    <span className={cn(
-                      'text-[10px] font-semibold px-2 py-0.5 rounded-full',
-                      answer?.isCorrect ? 'bg-emerald-500/15 text-emerald-600' :
-                      answer ? 'bg-rose-500/15 text-rose-600' :
-                      light ? 'bg-zinc-100 text-zinc-400' : 'bg-white/5 text-white/20'
-                    )}>
-                      {answer?.isCorrect ? 'Correct' : answer ? 'Wrong' : 'Skipped'}
-                    </span>
-                    {isClickable && (
-                      <ChevronRight className={cn('w-4 h-4', light ? 'text-zinc-300' : 'text-white/20')} />
-                    )}
-                  </div>
+                    style={{ fontFamily: "'Fraunces', serif" }}
+                  >
+                    {topic}
+                  </span>
+                  
+                  {/* Status label */}
+                  <span className={cn(
+                    'text-[11px] font-medium',
+                    isMastered && (useParchment ? 'text-[#8FA379]' : 'text-emerald-400'),
+                    isWeak && (useParchment ? 'text-[#E5A89D]' : 'text-rose-400'),
+                    !answer && (useParchment ? 'text-[#8A7560]' : 'text-white/30')
+                  )}>
+                    {isMastered ? 'mastered' : isWeak ? 'weak' : 'skipped'}
+                  </span>
+                  
+                  {isClickable && (
+                    <ChevronRight className={cn(
+                      'w-4 h-4',
+                      useParchment ? 'text-[#8A7560]' : 'text-white/20'
+                    )} />
+                  )}
                 </button>
               );
             })}
           </div>
         </div>
 
-        {/* Done button - hidden for now, will add later */}
-        {/* <button
+        {/* Back to dashboard */}
+        <button
           onClick={onDone}
-          className={cn('w-full py-3.5 rounded-full border font-semibold text-sm flex items-center justify-center gap-2 transition-all', light ? 'bg-zinc-100 border-zinc-200 text-zinc-600 hover:bg-zinc-200' : 'bg-white/10 border-white/15 text-white/70 hover:bg-white/15')}
-          style={{ fontFamily: "'Manrope', sans-serif" }}
+          className={cn(
+            "w-full py-4 rounded-full border font-medium text-[13.5px] flex items-center justify-center gap-2 transition-all",
+            useParchment 
+              ? "bg-[#FAF5EC] border-[#D9CCB6] text-[#3B2A1E] hover:border-[#8A7560]" 
+              : "bg-white/10 border-white/15 text-white/70 hover:bg-white/15"
+          )}
         >
           Back to dashboard
           <ArrowRight className="w-4 h-4" />
-        </button> */}
-
+        </button>
       </div>
     </div>
   );

@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { CheckCircle, XCircle, ChevronRight, ArrowLeft, ChevronLeft, Sun, Moon, X, ChevronDown, Settings2, BookOpen, ExternalLink, Sparkles, Image as ImageIcon, Loader2, BarChart2 } from 'lucide-react';
+import { ChevronRight, Sun, Moon, X, ChevronDown, Settings2, Sparkles, Image as ImageIcon, Loader2 } from 'lucide-react';
 import { PracticeFilterModal } from './PracticeFilterModal';
 import { useTheme } from '@/contexts/ThemeContext';
 import type { QuestionData } from './questionTypes';
@@ -7,7 +7,7 @@ import ReactMarkdown from 'react-markdown';
 import { AIHelper } from './AIHelperClean';
 import { motion } from 'framer-motion';
 import { cn } from '@/lib/utils';
-import { SessionProgressDropdown, SessionAnswer } from './SessionProgressDropdown';
+import type { SessionAnswer } from './SessionProgressDropdown';
 import { generateVignetteVisual, generateExplanationVisual, getCachedVisual, isImageGenAvailable } from '@/services/visualGenerator';
 import { useConceptStore } from '@/contexts/ConceptStoreContext';
 
@@ -253,151 +253,152 @@ export const UkmlaSBAQuestion: React.FC<UkmlaSBAQuestionProps> = ({
   const keyFact = sanitiseExplanation((question as any).key_fact || '');
   const isCorrect = hasSubmitted && selectedOption === correctAnswerId;
 
-  return (
-    <div className={`fixed inset-0 flex flex-col overflow-hidden ${isLightMode ? 'bg-zinc-50' : 'bg-[#0A0A0A]'}`}>
-      {/* Header Navbar */}
-      <div className={`flex items-center justify-between px-4 py-4 border-b flex-shrink-0 ${
-        isLightMode ? 'border-zinc-200' : 'border-white/10'
-      }`}>
-        {/* Back button - hidden for now, will add later */}
-        {/* <button
-          onClick={onExit}
-          className={`p-2 rounded-lg transition-colors ${
-            isLightMode ? 'hover:bg-zinc-200' : 'hover:bg-white/5'
-          }`}
-          aria-label="Go back"
-        >
-          <ArrowLeft className={`h-5 w-5 ${isLightMode ? 'text-zinc-700' : 'text-white/70'}`} />
-        </button> */}
-        <div className="w-9" /> {/* Spacer to maintain layout */}
+  // StudyEdit parchment theme - only applies in light mode
+  const useParchmentTheme = isLightMode;
 
-        {/* Center: progress pill (replaces static title) */}
-        <div className="flex-1 flex justify-center">
-          {totalQuestions > 0 && sessionAnswers ? (
-            <SessionProgressDropdown
-              answers={sessionAnswers}
-              total={totalQuestions}
-              currentIndex={currentIndex}
-              isLightMode={isLightMode}
-              onJumpTo={onJumpTo}
-            />
-          ) : totalQuestions > 0 ? (
-            <span className={`text-sm font-medium tabular-nums ${isLightMode ? 'text-zinc-500' : 'text-white/50'}`}>
-              {currentIndex + 1} / {totalQuestions}
-            </span>
-          ) : null}
+  return (
+    <div className={cn(
+      "fixed inset-0 flex flex-col overflow-hidden",
+      useParchmentTheme ? "bg-[#F4ECDF]" : "bg-[#0A0A0A]"
+    )}
+    style={useParchmentTheme ? {
+      // Paper texture overlay
+      backgroundImage: `url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='220' height='220'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 0.12  0 0 0 0 0.08  0 0 0 0 0.05  0 0 0 0.03 0'/></filter><rect width='100%25' height='100%25' filter='url(%23n)'/></svg>")`,
+      backgroundBlendMode: 'multiply'
+    } : undefined}
+    >
+      {/* Header - StudyEdit style */}
+      <div className={cn(
+        "flex items-center justify-between px-4 sm:px-6 py-3 border-b flex-shrink-0",
+        useParchmentTheme 
+          ? "border-[#D9CCB6] bg-[#FAF5EC]/80 backdrop-blur-sm" 
+          : "border-white/10 bg-[#0A0A0A]"
+      )}>
+        {/* Left: Progress */}
+        <div className={cn(
+          "text-[11px] font-medium tracking-[0.2em] uppercase",
+          useParchmentTheme ? "text-[#8A7560]" : "text-white/50"
+        )}
+        style={{ fontFamily: "'Inter', sans-serif" }}
+        >
+          {totalQuestions > 0 && (
+            <>
+              <span className={cn(
+                "font-['Fraunces'] italic normal-case tracking-normal text-[13px] mr-1",
+                useParchmentTheme ? "text-[#2A1E16]" : "text-white"
+              )}>
+                Concept {currentIndex + 1}
+              </span>
+              of {totalQuestions}
+            </>
+          )}
         </div>
 
-        <div className="flex items-center gap-2">
-          {/* Configure Practice Button */}
+        {/* Right: Tools */}
+        <div className="flex items-center gap-3">
+          {/* Configure */}
           <button
             onClick={() => setShowConfigPanel(true)}
             className={cn(
-              'flex items-center gap-2 px-3 py-2 rounded-lg transition-colors text-xs font-medium',
-              showConfigPanel
-                ? isLightMode ? 'bg-zinc-200 text-stone-900' : 'bg-white/15 text-white'
-                : isLightMode ? 'hover:bg-zinc-200 text-zinc-700' : 'hover:bg-white/5 text-white/70'
+              "p-2 rounded-lg transition-colors",
+              useParchmentTheme 
+                ? "hover:bg-[#EBE1D0] text-[#8A7560]" 
+                : "hover:bg-white/5 text-white/70"
             )}
             aria-label="Configure practice"
           >
-            <Settings2 className="h-4 w-4" />
-            <span className="hidden sm:inline">Configure</span>
+            <Settings2 className="h-[18px] w-[18px]" />
           </button>
-          {/* AI Helper Button - only show after answer submitted */}
+          {/* AI Helper - only after submit */}
           {hasSubmitted && (
             <button
               onClick={() => setShowAIHelper(!showAIHelper)}
               className={cn(
-                'px-3 py-1.5 rounded-lg transition-colors text-sm font-medium',
+                "px-3 py-1.5 rounded-full text-[11px] font-medium tracking-wide transition-colors",
                 showAIHelper
-                  ? isLightMode ? 'bg-zinc-200 text-stone-900' : 'bg-white/15 text-white'
-                  : isLightMode ? 'hover:bg-zinc-200 text-zinc-700' : 'hover:bg-white/5 text-white/70'
+                  ? useParchmentTheme 
+                    ? "bg-[#1F140C] text-[#FAF5EC]" 
+                    : "bg-white text-[#0A0A0A]"
+                  : useParchmentTheme 
+                    ? "bg-[#EBE1D0] text-[#3B2A1E] hover:bg-[#D9CCB6]" 
+                    : "bg-white/10 text-white/70 hover:bg-white/20"
               )}
-              aria-label={showAIHelper ? 'Close AI' : 'Open AI'}
             >
               AI
             </button>
           )}
-          {/* Dark/Light Mode Toggle */}
+          {/* Theme Toggle */}
           <button
             onClick={toggleTheme}
-            className={`p-2 rounded-lg transition-colors ${
-              isLightMode ? 'hover:bg-zinc-200' : 'hover:bg-white/5'
-            }`}
+            className={cn(
+              "p-2 rounded-lg transition-colors",
+              useParchmentTheme 
+                ? "hover:bg-[#EBE1D0] text-[#8A7560]" 
+                : "hover:bg-white/5 text-white/70"
+            )}
             aria-label="Toggle theme"
           >
             {isLightMode ? (
-              <Moon className="h-5 w-5 text-zinc-700" />
+              <Moon className="h-[18px] w-[18px]" />
             ) : (
-              <Sun className="h-5 w-5 text-white/70" />
+              <Sun className="h-[18px] w-[18px]" />
             )}
-          </button>
-          {/* Previous Button */}
-          <button
-            onClick={onPrevious}
-            disabled={!onPrevious || currentIndex === 0}
-            className={`p-2 rounded-lg transition-colors ${
-              !onPrevious || currentIndex === 0
-                ? 'opacity-30 cursor-not-allowed'
-                : isLightMode
-                ? 'hover:bg-zinc-200'
-                : 'hover:bg-white/5'
-            }`}
-            aria-label="Previous question"
-          >
-            <ChevronLeft className={`h-5 w-5 ${isLightMode ? 'text-zinc-700' : 'text-white/70'}`} />
-          </button>
-          {/* Next Button */}
-          <button
-            onClick={onNext}
-            disabled={currentIndex >= totalQuestions - 1}
-            className={`p-2 rounded-lg transition-colors ${
-              currentIndex >= totalQuestions - 1
-                ? 'opacity-30 cursor-not-allowed'
-                : isLightMode
-                ? 'hover:bg-zinc-200'
-                : 'hover:bg-white/5'
-            }`}
-            aria-label="Next question"
-          >
-            <ChevronRight className={`h-5 w-5 ${isLightMode ? 'text-zinc-700' : 'text-white/70'}`} />
           </button>
         </div>
       </div>
 
-      {/* Thin Banner Strip - AI + Study Reason - Manhattan Loft Style */}
-      <div className={cn(
-        "flex items-center justify-center gap-4 px-4 py-2 text-[10px] uppercase tracking-widest border-b",
-        isLightMode 
-          ? "bg-stone-100/80 border-stone-200 text-stone-500" 
-          : "bg-white/5 border-white/10 text-white/50"
-      )}
-      style={{ fontFamily: 'Unbounded, sans-serif' }}
-      >
-        <span>AI-Generated</span>
-        {(question as any).study_reason && (
-          <>
-            <span className="w-px h-3 bg-current opacity-30"></span>
-            <span className={cn(
-              isLightMode ? "text-stone-700" : "text-white/70"
-            )}>
-              {(question as any).study_reason === 'due' && 'Due for Review'}
-              {(question as any).study_reason === 'needs_review' && 'Needs Review'}
-              {(question as any).study_reason === 'new' && 'New Concept'}
-              {(question as any).study_reason === 'reinforcement' && 'Reinforcement'}
-            </span>
-          </>
-        )}
-      </div>
-
-      {/* Scrollable Content Area - Edge to edge on mobile */}
+      {/* Scrollable Content Area */}
       <div className="flex-1 overflow-y-auto">
-        <div className="w-full max-w-2xl mx-auto">
-          {/* Content - no card wrapper, edge-to-edge images */}
-          <div className="px-0 sm:px-4 md:px-6 pt-4 sm:pt-6 pb-4 pb-safe">
-            {/* Vignette Visual - Edge to edge on mobile (only show if image exists) */}
+        <div className="w-full max-w-[480px] mx-auto">
+          {/* Head Strip - Concept info */}
+          <div className={cn(
+            "px-5 sm:px-6 pt-5 pb-4 border-b mb-5",
+            useParchmentTheme ? "border-[#E8DCC4]" : "border-white/10"
+          )}>
+            {/* Concept name + facet chip */}
+            <div className="flex items-center gap-2.5 flex-wrap mb-2">
+              <h2 
+                className={cn(
+                  "text-[19px] font-medium leading-tight tracking-[-0.01em]",
+                  useParchmentTheme ? "text-[#2A1E16]" : "text-white"
+                )}
+                style={{ fontFamily: "'Fraunces', serif" }}
+              >
+                {question.title || (question as any).topic || 'Clinical Concept'}
+                {(question as any).microSkill && (
+                  <span className="text-[#E5A89D] italic font-normal"> · {(question as any).microSkill}</span>
+                )}
+              </h2>
+            </div>
+            
+            {/* Why line - contextual explanation */}
+            {(question as any).study_reason && (
+              <p 
+                className={cn(
+                  "text-[12.5px] italic leading-relaxed",
+                  useParchmentTheme ? "text-[#8A7560]" : "text-white/50"
+                )}
+                style={{ fontFamily: "'Fraunces', serif" }}
+              >
+                <span className="text-[#E5A89D] not-italic mr-1">because</span>
+                {(question as any).study_reason === 'due' && 'this concept is due for review'}
+                {(question as any).study_reason === 'needs_review' && 'you need more practice on this'}
+                {(question as any).study_reason === 'new' && "you haven't seen this concept yet"}
+                {(question as any).study_reason === 'reinforcement' && 'reinforcing what you know'}
+                {conceptStats && conceptStats.attempts > 0 && (
+                  <span className={useParchmentTheme ? "text-[#3B2A1E]" : "text-white/70"}>
+                    {' '}· tested <strong className="font-medium">{conceptStats.attempts}×</strong>
+                  </span>
+                )}
+              </p>
+            )}
+          </div>
+
+          {/* Content area */}
+          <div className="px-5 sm:px-6 pb-4 pb-safe">
+            {/* Vignette Visual */}
             {vignetteImage && (
-              <div className="-mx-0 sm:mx-0 mb-4">
+              <div className="-mx-5 sm:mx-0 mb-5">
                 <div 
                   className="overflow-hidden cursor-zoom-in relative group sm:rounded-xl"
                   onClick={() => setFullscreenImage(vignetteImage)}
@@ -416,193 +417,278 @@ export const UkmlaSBAQuestion: React.FC<UkmlaSBAQuestionProps> = ({
               </div>
             )}
             
-            {/* Text content with padding */}
-            <div className="px-4 sm:px-0">
-            {/* Question */}
-            <div className="mb-5 sm:mb-6 md:mb-8">
-              <div className={cn(
-                "text-base sm:text-lg md:text-xl font-semibold leading-snug",
-                isLightMode ? "text-zinc-900" : "text-white"
-              )}>
-                <ReactMarkdown
-                  components={{
-                    p: ({ children }) => <p className="mb-3 last:mb-0">{children}</p>,
-                  }}
-                >{questionContent}</ReactMarkdown>
-              </div>
-            </div>
-
-            {/* Options */}
-            <div className="space-y-2.5 sm:space-y-3">
-              {options.map((option: { id: string; text: string }) => (
-                <div
-                  key={option.id}
-                  onClick={() => handleOptionSelect(option.id)}
-                  className={cn(
-                    "flex items-start p-3 sm:p-3.5 md:p-4 rounded-lg sm:rounded-xl cursor-pointer transition-all duration-200 active:scale-[0.98]",
-                    hasSubmitted && option.id === correctAnswerId
-                      ? 'bg-emerald-500/20 border-2 border-emerald-500'
-                      : hasSubmitted && option.id === selectedOption
-                      ? 'bg-rose-500/20 border-2 border-rose-500'
-                      : selectedOption === option.id
-                      ? isLightMode ? 'bg-zinc-100 border-2 border-zinc-300' : 'bg-white/10 border-2 border-white/30'
-                      : isLightMode 
-                        ? 'bg-zinc-50 border-2 border-zinc-200 hover:bg-zinc-100 hover:border-zinc-300'
-                        : 'bg-white/5 border-2 border-white/10 hover:bg-white/10 hover:border-white/20'
-                  )}
-                >
-                  <div className={cn(
-                    "flex-shrink-0 w-7 h-7 sm:w-7 sm:h-7 rounded-full flex items-center justify-center mr-2.5 sm:mr-3 mt-0.5 border",
-                    isLightMode ? "bg-zinc-200 border-zinc-300" : "bg-white/10 border-white/20"
-                  )}>
-                    <span className={cn(
-                      "text-xs sm:text-sm font-semibold",
-                      isLightMode ? "text-zinc-900" : "text-white"
-                    )}>{option.id}</span>
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <div className={cn(
-                      "text-sm sm:text-base md:text-lg font-semibold leading-relaxed break-words",
-                      isLightMode ? "text-zinc-900" : "text-white"
-                    )}>
-                      <ReactMarkdown>{option.text}</ReactMarkdown>
-                    </div>
-                  </div>
-                  {hasSubmitted && option.id === correctAnswerId && (
-                    <CheckCircle className="h-4 w-4 sm:h-5 sm:w-5 text-emerald-400 ml-2 flex-shrink-0" />
-                  )}
-                  {hasSubmitted && option.id === selectedOption && option.id !== correctAnswerId && (
-                    <XCircle className="h-4 w-4 sm:h-5 sm:w-5 text-rose-400 ml-2 flex-shrink-0" />
-                  )}
-                </div>
-              ))}
-            </div>
-
-            {/* Feedback section - normal flow */}
-            {hasSubmitted && (
-              <div className="animate-in fade-in slide-in-from-bottom-4 duration-300 mt-4 sm:mt-5 space-y-3">
-
-                {/* Compact summary box */}
-                <div className={cn(
-                  "rounded-xl border px-4 py-3 space-y-2",
-                  isCorrect
-                    ? isLightMode
-                      ? "bg-emerald-50 border-emerald-200"
-                      : "bg-emerald-500/10 border-emerald-500/25"
-                    : isLightMode
-                      ? "bg-rose-50 border-rose-200"
-                      : "bg-rose-500/10 border-rose-500/25"
-                )}>
-                  {/* Result line + concept chip */}
-                  <div className="flex flex-wrap items-center gap-2">
-                    <span className={cn(
-                      "text-xs font-bold uppercase tracking-widest",
-                      isCorrect
-                        ? isLightMode ? "text-emerald-700" : "text-emerald-400"
-                        : isLightMode ? "text-rose-700" : "text-rose-400"
-                    )}>
-                      {isCorrect ? "✓ Correct" : "✗ Incorrect"}
+            {/* Vignette Text - Fraunces serif */}
+            <div 
+              className={cn(
+                "text-[19px] sm:text-[19.5px] font-light leading-[1.55] tracking-[-0.005em] mb-6",
+                useParchmentTheme ? "text-[#2A1E16]" : "text-white/90"
+              )}
+              style={{ fontFamily: "'Fraunces', serif" }}
+            >
+              <ReactMarkdown
+                components={{
+                  p: ({ children }) => <p className="mb-4 last:mb-0">{children}</p>,
+                  strong: ({ children }) => (
+                    <span 
+                      className="font-normal"
+                      style={{ 
+                        background: 'linear-gradient(to top, rgba(229,168,157,0.25) 35%, transparent 35%)',
+                        padding: '0 2px'
+                      }}
+                    >
+                      {children}
                     </span>
+                  ),
+                }}
+              >{questionContent}</ReactMarkdown>
+            </div>
 
-                    {(question.title || (question as any).topic) && (
-                      <span className={cn(
-                        "inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-semibold tracking-wide",
-                        isLightMode
-                          ? "bg-indigo-50 text-indigo-700 border border-indigo-200"
-                          : "bg-indigo-500/15 text-indigo-300 border border-indigo-500/30"
-                      )}>
-                        📚 {question.title || (question as any).topic}
-                      </span>
-                    )}
+            {/* Ask line - the actual question */}
+            {(question as any).question_text && (
+              <div className={cn(
+                "text-[14.5px] font-medium tracking-[0.01em] mb-5 pt-5 border-t",
+                useParchmentTheme ? "text-[#2A1E16] border-[#E8DCC4]" : "text-white border-white/10"
+              )}>
+                {(question as any).question_text}
+              </div>
+            )}
 
-                    {(question as any).microSkill && (question as any).microSkill !== question.title && (question as any).microSkill !== (question as any).topic && (
-                      <span className={cn(
-                        "inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-medium",
-                        isLightMode
-                          ? "bg-zinc-100 text-zinc-600 border border-zinc-200"
-                          : "bg-white/8 text-white/50 border border-white/10"
-                      )}>
-                        {(question as any).microSkill}
-                      </span>
-                    )}
-                  </div>
-
-                  {/* Concept test stats */}
-                  {conceptStats && (
-                    <div className={cn(
-                      "flex items-center gap-2 text-[12px]",
-                      isLightMode ? "text-zinc-500" : "text-white/50"
-                    )}>
-                      <BarChart2 className="h-3.5 w-3.5" />
-                      <span>
-                        Tested <strong className={isLightMode ? "text-zinc-700" : "text-white/80"}>{conceptStats.attempts}×</strong> on this concept
-                        {' · '}
-                        <strong className={cn(
-                          conceptStats.accuracy >= 70 ? (isLightMode ? "text-emerald-600" : "text-emerald-400") :
-                          conceptStats.accuracy >= 50 ? (isLightMode ? "text-amber-600" : "text-amber-400") :
-                          (isLightMode ? "text-rose-600" : "text-rose-400")
-                        )}>{conceptStats.accuracy}%</strong> accuracy
-                      </span>
-                    </div>
-                  )}
-
-                  {/* Key fact */}
-                  {keyFact && (
-                    <p className={cn(
-                      "text-sm sm:text-base leading-snug font-medium",
-                      isLightMode ? "text-zinc-800" : "text-white/90"
-                    )}>
-                      {keyFact}
-                    </p>
-                  )}
-                </div>
-
-                {/* Toggle for full explanation */}
-                {explanation && (
-                  <button
-                    onClick={() => setShowFullExplanation(v => !v)}
+            {/* Options - StudyEdit style */}
+            <div className="flex flex-col gap-2.5 mb-6">
+              {options.map((option: { id: string; text: string }) => {
+                const isSelected = selectedOption === option.id;
+                const isCorrectOption = option.id === correctAnswerId;
+                const isWrongChoice = hasSubmitted && isSelected && !isCorrectOption;
+                const isCorrectChoice = hasSubmitted && isCorrectOption;
+                const isOtherOption = hasSubmitted && !isSelected && !isCorrectOption;
+                
+                return (
+                  <div
+                    key={option.id}
+                    onClick={() => handleOptionSelect(option.id)}
                     className={cn(
-                      "flex items-center gap-1.5 text-[12px] sm:text-[13px] font-medium transition-colors",
-                      isLightMode ? "text-zinc-500 hover:text-zinc-700" : "text-white/40 hover:text-white/70"
+                      "flex items-center gap-3.5 px-4 py-[15px] rounded-[14px] border-[1.5px] transition-all duration-200",
+                      hasSubmitted ? "cursor-default" : "cursor-pointer",
+                      // Answered states
+                      isCorrectChoice && (useParchmentTheme 
+                        ? "bg-[#E2EAD6] border-[#8FA379] text-[#4d5e3b]" 
+                        : "bg-emerald-500/15 border-emerald-500 text-emerald-300"),
+                      isWrongChoice && (useParchmentTheme 
+                        ? "bg-[#F9E4DF] border-[#E5A89D] text-[#8a3328]" 
+                        : "bg-rose-500/15 border-rose-500 text-rose-300"),
+                      isOtherOption && "opacity-50",
+                      // Pre-submit states
+                      !hasSubmitted && isSelected && (useParchmentTheme 
+                        ? "bg-[#FAF5EC] border-[#1F140C] shadow-[0_0_0_3px_rgba(31,20,12,0.08)]" 
+                        : "bg-white/10 border-white shadow-[0_0_0_3px_rgba(255,255,255,0.1)]"),
+                      !hasSubmitted && !isSelected && (useParchmentTheme 
+                        ? "bg-[#FAF5EC] border-[#D9CCB6] hover:border-[#8A7560]" 
+                        : "bg-white/5 border-white/20 hover:border-white/40"),
                     )}
                   >
-                    <ChevronDown className={cn(
-                      "h-3.5 w-3.5 transition-transform duration-200",
-                      showFullExplanation ? "rotate-180" : ""
-                    )} />
-                    {showFullExplanation ? "Hide explanation" : "Show full explanation"}
-                  </button>
-                )}
-
-                {/* Full explanation (collapsible) */}
-                {showFullExplanation && explanation && (
-                  <div className={cn(
-                    "pt-3 border-t",
-                    isLightMode ? "border-zinc-200" : "border-white/10"
-                  )}>
+                    {/* Letter badge */}
                     <div className={cn(
-                      "text-sm sm:text-base md:text-lg leading-relaxed",
-                      isLightMode ? "text-zinc-700" : "text-white/75"
+                      "flex-shrink-0 w-[26px] h-[26px] rounded-full flex items-center justify-center text-[13px] font-medium transition-all",
+                      isCorrectChoice && (useParchmentTheme 
+                        ? "bg-[#8FA379]/30 text-[#4d5e3b]" 
+                        : "bg-emerald-500/30 text-emerald-300"),
+                      isWrongChoice && (useParchmentTheme 
+                        ? "bg-[#E5A89D]/35 text-[#8a3328]" 
+                        : "bg-rose-500/30 text-rose-300"),
+                      !hasSubmitted && isSelected && (useParchmentTheme 
+                        ? "bg-[#1F140C] text-[#FAF5EC]" 
+                        : "bg-white text-[#0A0A0A]"),
+                      !hasSubmitted && !isSelected && (useParchmentTheme 
+                        ? "bg-[#1F140C]/[0.06] text-[#3B2A1E]" 
+                        : "bg-white/10 text-white/70"),
+                      isOtherOption && (useParchmentTheme 
+                        ? "bg-[#1F140C]/[0.06] text-[#3B2A1E]" 
+                        : "bg-white/10 text-white/70"),
                     )}>
-                      <ReactMarkdown components={{ p: ({ children }) => <p className="mb-3 last:mb-0">{children}</p> }}>{explanation}</ReactMarkdown>
+                      {option.id}
+                    </div>
+                    
+                    {/* Option text */}
+                    <span className={cn(
+                      "flex-1 text-[15px]",
+                      useParchmentTheme ? "text-[#2A1E16]" : "text-white",
+                      isOtherOption && "opacity-70"
+                    )}>
+                      {option.text}
+                    </span>
+                    
+                    {/* Check/X mark */}
+                    {isCorrectChoice && (
+                      <span className={cn(
+                        "text-[14px] ml-auto",
+                        useParchmentTheme ? "text-[#8FA379]" : "text-emerald-400"
+                      )}>✓</span>
+                    )}
+                    {isWrongChoice && (
+                      <span className={cn(
+                        "text-[14px] ml-auto",
+                        useParchmentTheme ? "text-[#E5A89D]" : "text-rose-400"
+                      )}>✕</span>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+
+            {/* Submit Button - StudyEdit style */}
+            {!hasSubmitted && selectedOption && (
+              <div className="mb-6">
+                <button
+                  onClick={handleSubmit}
+                  className={cn(
+                    "w-full py-[18px] px-6 rounded-full font-medium text-[15px] tracking-[0.01em] transition-all duration-200 flex items-center justify-center gap-3 active:scale-[0.98]",
+                    useParchmentTheme
+                      ? "bg-[#1F140C] text-[#FAF5EC] hover:bg-[#3B2A1E] hover:-translate-y-0.5"
+                      : "bg-white text-[#0A0A0A] hover:bg-white/90 hover:-translate-y-0.5"
+                  )}
+                >
+                  <span>Commit answer</span>
+                  <span className="transition-transform group-hover:translate-x-1">→</span>
+                </button>
+                <p className={cn(
+                  "text-center text-[12px] mt-2.5 italic",
+                  useParchmentTheme ? "text-[#8A7560]" : "text-white/40"
+                )}
+                style={{ fontFamily: "'Fraunces', serif" }}
+                >
+                  No going back — commit, then learn.
+                </p>
+              </div>
+            )}
+
+            {/* Feedback section - StudyEdit style */}
+            {hasSubmitted && (
+              <div className="animate-in fade-in slide-in-from-bottom-4 duration-300">
+                {/* Verdict Strip */}
+                <div className={cn(
+                  "flex items-center justify-between gap-3 pt-5 mb-4 border-t",
+                  useParchmentTheme ? "border-[#E8DCC4]" : "border-white/10"
+                )}>
+                  <div className={cn(
+                    "inline-flex items-center gap-2 text-[11px] font-semibold tracking-[0.22em] uppercase",
+                    isCorrect 
+                      ? (useParchmentTheme ? "text-[#8FA379]" : "text-emerald-400")
+                      : (useParchmentTheme ? "text-[#8a3328]" : "text-rose-400")
+                  )}>
+                    <span className={cn(
+                      "w-[22px] h-[22px] rounded-full flex items-center justify-center text-[12px] font-bold",
+                      isCorrect 
+                        ? (useParchmentTheme ? "bg-[#8FA379] text-[#FAF5EC]" : "bg-emerald-500 text-white")
+                        : (useParchmentTheme ? "bg-[#E5A89D] text-[#FAF5EC]" : "bg-rose-500 text-white")
+                    )}>
+                      {isCorrect ? '✓' : '✕'}
+                    </span>
+                    {isCorrect ? 'Correct' : 'Incorrect'}
+                  </div>
+                  
+                  {/* Heat chip - test stats */}
+                  {conceptStats && (
+                    <div className={cn(
+                      "inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-medium",
+                      useParchmentTheme 
+                        ? "bg-[#F9E4DF] border border-[#E5A89D] text-[#8a3328]" 
+                        : "bg-rose-500/15 border border-rose-500/30 text-rose-300"
+                    )}>
+                      Tested <span className="font-['Fraunces'] italic text-[13px]">{conceptStats.attempts}×</span>
+                      {' · '}
+                      <span className="font-['Fraunces'] italic text-[13px]">{conceptStats.accuracy}%</span>
+                    </div>
+                  )}
+                </div>
+
+                {/* The Link - Key takeaway card */}
+                {(keyFact || explanation) && (
+                  <div className={cn(
+                    "mb-6 py-[18px] pl-[22px] pr-1 border-l-[3px]",
+                    useParchmentTheme 
+                      ? "bg-[#FAF5EC] border-l-[#E5A89D]" 
+                      : "bg-white/5 border-l-rose-400"
+                  )}>
+                    <div 
+                      className={cn(
+                        "text-[10px] font-medium tracking-[0.22em] uppercase mb-2.5",
+                        useParchmentTheme ? "text-[#8A7560]" : "text-white/50"
+                      )}
+                    >
+                      The link
+                    </div>
+                    <div 
+                      className={cn(
+                        "text-[21px] font-light leading-[1.4] tracking-[-0.01em]",
+                        useParchmentTheme ? "text-[#2A1E16]" : "text-white/90"
+                      )}
+                      style={{ fontFamily: "'Fraunces', serif" }}
+                    >
+                      {keyFact || (explanation && explanation.split('.')[0] + '.')}
                     </div>
                   </div>
                 )}
 
-                {/* Visual Generation Buttons & Generated Images (after answer) */}
-                {hasSubmitted && (
+                {/* Full reasoning toggle */}
+                {explanation && (
+                  <>
+                    <button
+                      onClick={() => setShowFullExplanation(v => !v)}
+                      className={cn(
+                        "w-full flex items-center justify-between py-3.5 border-y text-[13px] font-medium tracking-[0.02em]",
+                        useParchmentTheme 
+                          ? "border-[#E8DCC4] text-[#3B2A1E]" 
+                          : "border-white/10 text-white/70"
+                      )}
+                    >
+                      <span>{showFullExplanation ? 'Hide the full reasoning' : 'Show the full reasoning'}</span>
+                      <ChevronDown className={cn(
+                        "h-4 w-4 transition-transform duration-200",
+                        showFullExplanation && "rotate-180"
+                      )} />
+                    </button>
+                    
+                    {showFullExplanation && (
+                      <div 
+                        className={cn(
+                          "py-4 text-[15px] font-light leading-[1.6]",
+                          useParchmentTheme ? "text-[#3B2A1E]" : "text-white/75"
+                        )}
+                        style={{ fontFamily: "'Fraunces', serif" }}
+                      >
+                        <ReactMarkdown 
+                          components={{ 
+                            p: ({ children }) => <p className="mb-3 last:mb-0">{children}</p> 
+                          }}
+                        >
+                          {explanation}
+                        </ReactMarkdown>
+                      </div>
+                    )}
+                  </>
+                )}
+
+                {/* Visual generation section */}
+                {isImageGenAvailable() && (
                   <div className={cn(
-                    "mt-4 pt-4 border-t",
-                    isLightMode ? "border-zinc-200" : "border-white/10"
+                    "py-5 border-t",
+                    useParchmentTheme ? "border-[#E8DCC4]" : "border-white/10"
                   )}>
-                    {/* Show generated images if they exist */}
+                    <div className={cn(
+                      "text-[10.5px] font-medium tracking-[0.22em] uppercase mb-3",
+                      useParchmentTheme ? "text-[#8A7560]" : "text-white/50"
+                    )}>
+                      Go deeper
+                    </div>
+                    
+                    {/* Generated image */}
                     {explanationImage && (
-                      <div className="-mx-4 sm:mx-0 mb-4">
+                      <div className="-mx-5 sm:mx-0 mb-4">
                         {memoryHook && (
                           <div className={cn(
-                            "mb-2 mx-4 sm:mx-0 px-3 py-1.5 rounded-full inline-flex items-center gap-1.5 text-xs font-medium",
-                            isLightMode
-                              ? "bg-emerald-50 text-emerald-700 border border-emerald-200"
+                            "mb-2 mx-5 sm:mx-0 px-3 py-1.5 rounded-full inline-flex items-center gap-1.5 text-xs font-medium",
+                            useParchmentTheme
+                              ? "bg-[#E2EAD6] text-[#4d5e3b] border border-[#8FA379]"
                               : "bg-emerald-950/30 text-emerald-300 border border-emerald-800"
                           )}>
                             <Sparkles className="h-3 w-3" />
@@ -613,156 +699,109 @@ export const UkmlaSBAQuestion: React.FC<UkmlaSBAQuestionProps> = ({
                           className="overflow-hidden cursor-zoom-in relative group sm:rounded-xl"
                           onClick={() => setFullscreenImage(explanationImage)}
                         >
-                          <img 
-                            src={explanationImage} 
-                            alt="Concept diagram" 
-                            className="w-full h-auto"
-                          />
-                          <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors flex items-center justify-center">
-                            <span className="text-white text-xs bg-black/50 px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity">
-                              Tap to enlarge
-                            </span>
-                          </div>
+                          <img src={explanationImage} alt="Concept diagram" className="w-full h-auto" />
                         </div>
                       </div>
                     )}
                     
-                    {/* Visual generation buttons - stacked vertically, left-aligned */}
-                    {isImageGenAvailable() && (!vignetteImage || !explanationImage) && (
-                      <div className="flex flex-col items-start gap-2">
-                        {!vignetteImage && (
-                          <button
-                            onClick={handleGenerateVignette}
-                            disabled={generatingVignette}
-                            className={cn(
-                              "inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all duration-200",
-                              isLightMode
-                                ? "bg-zinc-100 text-zinc-600 hover:bg-zinc-200 hover:text-zinc-800 border border-zinc-200"
-                                : "bg-white/5 text-white/60 hover:bg-white/10 hover:text-white/80 border border-white/10",
-                              generatingVignette && "opacity-50 cursor-wait"
-                            )}
-                          >
-                            {generatingVignette ? (
-                              <>
-                                <Loader2 className="h-3 w-3 animate-spin" />
-                                <span>Creating...</span>
-                              </>
-                            ) : (
-                              <>
-                                <ImageIcon className="h-3 w-3" />
-                                <span>Visualize scene</span>
-                              </>
-                            )}
-                          </button>
-                        )}
-                        {!explanationImage && (
-                          <button
-                            onClick={handleGenerateExplanation}
-                            disabled={generatingExplanation}
-                            className={cn(
-                              "inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all duration-200",
-                              isLightMode
-                                ? "bg-zinc-100 text-zinc-600 hover:bg-zinc-200 hover:text-zinc-800 border border-zinc-200"
-                                : "bg-white/5 text-white/60 hover:bg-white/10 hover:text-white/80 border border-white/10",
-                              generatingExplanation && "opacity-50 cursor-wait"
-                            )}
-                          >
-                            {generatingExplanation ? (
-                              <>
-                                <Loader2 className="h-3 w-3 animate-spin" />
-                                <span>Creating...</span>
-                              </>
-                            ) : (
-                              <>
-                                <Sparkles className="h-3 w-3" />
-                                <span>Visualize concept</span>
-                              </>
-                            )}
-                          </button>
-                        )}
-                      </div>
-                    )}
-                  </div>
-                )}
-
-                {/* Guideline Citation - Always visible when available */}
-                {(question.guideline || question.guideline_url) && (
-                  <div className={cn(
-                    "mt-3 pt-3 border-t",
-                    isLightMode ? "border-zinc-200" : "border-white/10"
-                  )}>
-                    <div className={cn(
-                      "flex items-start gap-2 p-3 rounded-xl",
-                      isLightMode 
-                        ? "bg-blue-50 border border-blue-200" 
-                        : "bg-blue-500/10 border border-blue-500/20"
-                    )}>
-                      <BookOpen className={cn(
-                        "w-4 h-4 flex-shrink-0 mt-0.5",
-                        isLightMode ? "text-blue-600" : "text-blue-400"
-                      )} />
-                      <div className="flex-1 min-w-0">
-                        <div className={cn(
-                          "text-[11px] uppercase tracking-widest font-semibold mb-1",
-                          isLightMode ? "text-blue-700" : "text-blue-300"
-                        )}>
-                          UK Clinical Guideline
-                        </div>
-                        {question.guideline_url ? (
-                          <a
-                            href={question.guideline_url}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className={cn(
-                              "text-sm font-medium hover:underline inline-flex items-center gap-1.5",
-                              isLightMode ? "text-blue-700" : "text-blue-300"
-                            )}
-                          >
-                            {question.guideline || 'View guideline'}
-                            <ExternalLink className="w-3.5 h-3.5" />
-                          </a>
-                        ) : (
-                          <span className={cn(
-                            "text-sm font-medium",
-                            isLightMode ? "text-blue-700" : "text-blue-300"
-                          )}>
-                            {question.guideline}
-                          </span>
-                        )}
-                        {question.guideline_section && (
+                    {/* Viz rows */}
+                    <div className="flex flex-col">
+                      {!vignetteImage && (
+                        <button
+                          onClick={handleGenerateVignette}
+                          disabled={generatingVignette}
+                          className={cn(
+                            "flex items-center gap-3.5 py-3 border-t transition-all",
+                            useParchmentTheme 
+                              ? "border-[#E8DCC4] hover:pl-1" 
+                              : "border-white/10 hover:pl-1",
+                            generatingVignette && "opacity-50"
+                          )}
+                        >
                           <div className={cn(
-                            "text-xs mt-1",
-                            isLightMode ? "text-blue-600/70" : "text-blue-400/70"
+                            "w-7 h-7 rounded-lg flex items-center justify-center border",
+                            useParchmentTheme 
+                              ? "bg-[#F4ECDF] border-[#D9CCB6] text-[#1F140C]" 
+                              : "bg-white/5 border-white/20 text-white"
                           )}>
-                            {question.guideline_section}
+                            {generatingVignette ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <ImageIcon className="h-3.5 w-3.5" />}
                           </div>
-                        )}
-                      </div>
+                          <div className="flex-1 text-left">
+                            <div className={cn(
+                              "text-[14.5px] font-normal",
+                              useParchmentTheme ? "text-[#2A1E16]" : "text-white"
+                            )} style={{ fontFamily: "'Fraunces', serif" }}>
+                              See this <em className="text-[#E5A89D]">play out</em>
+                            </div>
+                            <div className={cn(
+                              "text-[11.5px]",
+                              useParchmentTheme ? "text-[#8A7560]" : "text-white/50"
+                            )}>
+                              {generatingVignette ? 'Creating...' : 'A clinical scene of the scenario'}
+                            </div>
+                          </div>
+                          <span className={useParchmentTheme ? "text-[#8A7560]" : "text-white/50"}>›</span>
+                        </button>
+                      )}
+                      
+                      {!explanationImage && (
+                        <button
+                          onClick={handleGenerateExplanation}
+                          disabled={generatingExplanation}
+                          className={cn(
+                            "flex items-center gap-3.5 py-3 border-t transition-all",
+                            useParchmentTheme 
+                              ? "border-[#E8DCC4] hover:pl-1" 
+                              : "border-white/10 hover:pl-1",
+                            generatingExplanation && "opacity-50"
+                          )}
+                        >
+                          <div className={cn(
+                            "w-7 h-7 rounded-lg flex items-center justify-center border",
+                            useParchmentTheme 
+                              ? "bg-[#F4ECDF] border-[#D9CCB6] text-[#1F140C]" 
+                              : "bg-white/5 border-white/20 text-white"
+                          )}>
+                            {generatingExplanation ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Sparkles className="h-3.5 w-3.5" />}
+                          </div>
+                          <div className="flex-1 text-left">
+                            <div className={cn(
+                              "text-[14.5px] font-normal",
+                              useParchmentTheme ? "text-[#2A1E16]" : "text-white"
+                            )} style={{ fontFamily: "'Fraunces', serif" }}>
+                              Map the <em className="text-[#E5A89D]">concept</em>
+                            </div>
+                            <div className={cn(
+                              "text-[11.5px]",
+                              useParchmentTheme ? "text-[#8A7560]" : "text-white/50"
+                            )}>
+                              {generatingExplanation ? 'Creating...' : 'How the concepts connect'}
+                            </div>
+                          </div>
+                          <span className={useParchmentTheme ? "text-[#8A7560]" : "text-white/50"}>›</span>
+                        </button>
+                      )}
                     </div>
                   </div>
                 )}
 
-                {/* Next button */}
-                <div className={cn(
-                  "pt-3 sm:pt-4 pb-6 sm:pb-8 border-t",
-                  isLightMode ? "border-zinc-200" : "border-white/10"
-                )}>
+                {/* Continue button - StudyEdit style */}
+                <div className="pt-4 pb-8">
                   <button
                     onClick={onNext}
                     className={cn(
-                      "w-full py-3 sm:py-3 md:py-3.5 font-semibold rounded-lg sm:rounded-xl transition-all border-2 active:scale-[0.98] flex items-center justify-center gap-2 text-sm sm:text-base touch-manipulation",
-                      isLightMode
-                        ? "bg-zinc-900 hover:bg-zinc-800 active:bg-zinc-700 text-white border-zinc-900 hover:border-zinc-800"
-                        : "bg-white/10 hover:bg-white/20 active:bg-white/15 text-white border-white/20 hover:border-white/30"
+                      "w-full py-[18px] px-6 rounded-full font-medium text-[15px] tracking-[0.01em] transition-all duration-200 flex items-center justify-center gap-3 active:scale-[0.98]",
+                      useParchmentTheme
+                        ? "bg-[#1F140C] text-[#FAF5EC] hover:bg-[#3B2A1E] hover:-translate-y-0.5"
+                        : "bg-white text-[#0A0A0A] hover:bg-white/90 hover:-translate-y-0.5"
                     )}
                   >
-                    <span>{nextButtonText || 'Next Question'}</span>
-                    <ChevronRight className="h-4 w-4 sm:h-5 sm:w-5" />
+                    <span>{nextButtonText || 'Continue'}</span>
+                    <span className="transition-transform group-hover:translate-x-1">→</span>
                   </button>
                 </div>
               </div>
             )}
-            </div>{/* End text content padding */}
           </div>
         </div>
       </div>
