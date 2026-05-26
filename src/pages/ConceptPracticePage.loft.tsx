@@ -12,6 +12,7 @@ import { useUserRole } from '@/hooks/useUserRole';
 // Lazy load heavy components (practice session uses markdown = 295KB)
 const ApplePracticeSession = lazy(() => import('@/components/practice/ApplePracticeSession').then(m => ({ default: m.ApplePracticeSession })));
 const PracticeConfigModal = lazy(() => import('@/components/practice/PracticeConfigModal').then(m => ({ default: m.PracticeConfigModal })));
+const SessionOpeningFrame = lazy(() => import('@/components/practice/SessionOpeningFrame').then(m => ({ default: m.SessionOpeningFrame })));
 const ConceptCreationHub = lazy(() => import('@/components/concept/ConceptCreationHub').then(m => ({ default: m.ConceptCreationHub })));
 const ConceptEditorModal = lazy(() => import('@/components/concept/ConceptEditorModal').then(m => ({ default: m.ConceptEditorModal })));
 const ConceptManualAddModal = lazy(() => import('@/components/concept/ConceptManualAddModal.new').then(m => ({ default: m.ConceptManualAddModal })));
@@ -68,6 +69,7 @@ const ConceptPracticePageLoftContent: React.FC<Omit<ConceptPracticePageLoftProps
   } = useConceptStore() as any;
   
   const [showPracticeConfig, setShowPracticeConfig] = useState(false);
+  const [showSessionFrame, setShowSessionFrame] = useState(false);
   const [showCreationHub, setShowCreationHub] = useState(false);
   const [showManualAdd, setShowManualAdd] = useState(false);
   const [showFiltersPanel, setShowFiltersPanel] = useState(false);
@@ -356,7 +358,7 @@ const ConceptPracticePageLoftContent: React.FC<Omit<ConceptPracticePageLoftProps
         {/* Dashboard Content */}
         <CurriculumDashboard
           curriculum={curriculum}
-          onStartPractice={() => setShowPracticeConfig(true)}
+          onStartPractice={() => setShowSessionFrame(true)}
           onOpenFilters={(format, filter) => {
             setPreselectedFormat(format);
             setPreselectedFilter(filter);
@@ -373,6 +375,23 @@ const ConceptPracticePageLoftContent: React.FC<Omit<ConceptPracticePageLoftProps
 
         {/* Modals - lazy loaded */}
         <Suspense fallback={null}>
+        {/* Session Opening Frame - StudyEdit style */}
+        {showSessionFrame && (
+          <SessionOpeningFrame
+            concepts={displayedConcepts}
+            onBegin={() => {
+              // Start practice with smart study mode
+              setShowSessionFrame(false);
+              startPractice({ study_mode: 'smart' });
+            }}
+            onCustomize={() => {
+              // Show config modal for customization
+              setShowSessionFrame(false);
+              setShowPracticeConfig(true);
+            }}
+          />
+        )}
+
         {showPracticeConfig && (
           <PracticeConfigModal
             isOpen={showPracticeConfig}
@@ -1221,7 +1240,7 @@ const ConceptPracticePageLoftContent: React.FC<Omit<ConceptPracticePageLoftProps
           ) : currentView === 'dashboard' ? (
             <CurriculumDashboard
               curriculum={curriculum}
-              onStartPractice={() => setShowPracticeConfig(true)}
+              onStartPractice={() => setShowSessionFrame(true)}
               onOpenFilters={(format, filter) => {
                 setPreselectedFormat(format);
                 setPreselectedFilter(filter);
@@ -1241,6 +1260,23 @@ const ConceptPracticePageLoftContent: React.FC<Omit<ConceptPracticePageLoftProps
       </div>
 
       {/* Modals */}
+      {/* Session Opening Frame - StudyEdit style */}
+      {showSessionFrame && (
+        <Suspense fallback={null}>
+          <SessionOpeningFrame
+            concepts={displayedConcepts}
+            onBegin={() => {
+              setShowSessionFrame(false);
+              startPractice({ study_mode: 'smart' });
+            }}
+            onCustomize={() => {
+              setShowSessionFrame(false);
+              setShowPracticeConfig(true);
+            }}
+          />
+        </Suspense>
+      )}
+
       {showPracticeConfig && (
         <PracticeConfigModal
           isOpen={showPracticeConfig}
