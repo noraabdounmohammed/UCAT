@@ -439,7 +439,7 @@ export const UkmlaSBAQuestion: React.FC<UkmlaSBAQuestionProps> = ({
                 )}
                 style={{ fontFamily: "'Fraunces', serif" }}
               >
-                {question.title || (question as any).topic || 'Clinical Concept'}
+                {(question as any).concept_title || question.title || (question as any).topic || 'Clinical Concept'}
                 {(question as any).microSkill && (
                   <span className="text-[#E5A89D] italic font-normal"> · {(question as any).microSkill}</span>
                 )}
@@ -637,7 +637,7 @@ export const UkmlaSBAQuestion: React.FC<UkmlaSBAQuestionProps> = ({
                       letterSpacing: '-0.01em'
                     }}
                   >
-                    {question.title || (question as any).topic || 'Clinical Concept'}
+                    {(question as any).concept_title || question.title || (question as any).topic || 'Clinical Concept'}
                     {(question as any).microSkill && (
                       <span className="text-[#E5A89D] italic font-normal"> · {(question as any).microSkill}</span>
                     )}

@@ -86,7 +86,7 @@ export const SessionReviewScreen: React.FC<SessionReviewScreenProps> = ({
   const conceptData = useMemo(() => {
     return questions.map((q, i) => {
       const answer = answers.find(a => a.questionIndex === i);
-      const title = q?.title || q?.topic || `Concept ${i + 1}`;
+      const title = (q as any).concept_title || q?.title || q?.topic || `Concept ${i + 1}`;
       // Extract category/system from custom_filters or title
       const category = q?.custom_filters?.[0]?.split('-').map((w: string) => 
         w.charAt(0).toUpperCase() + w.slice(1)
