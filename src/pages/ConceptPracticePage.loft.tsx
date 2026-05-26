@@ -293,11 +293,16 @@ const ConceptPracticePageLoftContent: React.FC<Omit<ConceptPracticePageLoftProps
 
   // Show loading screen while waiting for auto-start or while generating
   if (pendingAutoStart || (isLoading && isPracticing && !userDismissedLoading)) {
+    // Get the actual concepts being used for this session
+    const sessionConcepts = practiceSelection && practiceSelection.length > 0
+      ? displayedConcepts.filter((c: any) => practiceSelection.includes(c.concept_id))
+      : displayedConcepts;
+
     return (
       <GenerationLoadingScreen 
         conceptCount={generatingQuestionCount}
         isReady={practiceQuestions && practiceQuestions.length > 0}
-        concepts={displayedConcepts}
+        concepts={sessionConcepts}
         onComplete={() => {
           // User clicked "Begin" - dismiss loading screen
           setUserDismissedLoading(true);
