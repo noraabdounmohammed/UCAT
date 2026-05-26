@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { ChevronRight, Sun, Moon, X, ChevronDown, Settings2, Sparkles, Image as ImageIcon, Loader2 } from 'lucide-react';
+import { Sun, Moon, X, ChevronDown, Settings2, Sparkles, Image as ImageIcon, Loader2 } from 'lucide-react';
 import { PracticeFilterModal } from './PracticeFilterModal';
 import { useTheme } from '@/contexts/ThemeContext';
 import type { QuestionData } from './questionTypes';
@@ -372,7 +372,7 @@ export const UkmlaSBAQuestion: React.FC<UkmlaSBAQuestionProps> = ({
             </div>
             
             {/* Why line - contextual explanation */}
-            {(question as any).study_reason && (
+            {((question as any).study_reason || (conceptStats && conceptStats.attempts > 0)) && (
               <p 
                 className={cn(
                   "text-[12.5px] italic leading-relaxed",
@@ -385,7 +385,8 @@ export const UkmlaSBAQuestion: React.FC<UkmlaSBAQuestionProps> = ({
                 {(question as any).study_reason === 'needs_review' && 'you need more practice on this'}
                 {(question as any).study_reason === 'new' && "you haven't seen this concept yet"}
                 {(question as any).study_reason === 'reinforcement' && 'reinforcing what you know'}
-                {conceptStats && conceptStats.attempts > 0 && (
+                {!(question as any).study_reason && conceptStats && conceptStats.attempts > 0 && `you've answered this concept wrong ${conceptStats.attempts - conceptStats.correct} times`}
+                {conceptStats && conceptStats.attempts > 0 && (question as any).study_reason && (
                   <span className={useParchmentTheme ? "text-[#3B2A1E]" : "text-white/70"}>
                     {' '}· tested <strong className="font-medium">{conceptStats.attempts}×</strong>
                   </span>
@@ -417,6 +418,40 @@ export const UkmlaSBAQuestion: React.FC<UkmlaSBAQuestionProps> = ({
               </div>
             )}
             
+            {/* Concept Pill */}
+            <div 
+              className={cn(
+                "inline-flex items-center gap-2 px-3 py-1.5 rounded-full border mb-4",
+                useParchmentTheme 
+                  ? "bg-[#FAF5EC] border-[#D9CCB6]" 
+                  : "bg-white/5 border-white/20"
+              )}
+            >
+              <span className="w-1.5 h-1.5 rounded-full bg-[#E5A89D]" />
+              {(question as any).category && (
+                <>
+                  <span 
+                    className={cn(
+                      "text-[11px] tracking-[0.16em] uppercase",
+                      useParchmentTheme ? "text-[#8A7560]" : "text-white/50"
+                    )}
+                  >
+                    {(question as any).category}
+                  </span>
+                  <span className={useParchmentTheme ? "text-[#D9CCB6]" : "text-white/20"}>·</span>
+                </>
+              )}
+              <span 
+                className={cn(
+                  "text-[12.5px] italic",
+                  useParchmentTheme ? "text-[#2A1E16]" : "text-white"
+                )}
+                style={{ fontFamily: "'Fraunces', serif" }}
+              >
+                {question.title || (question as any).topic || 'Clinical Concept'}
+              </span>
+            </div>
+
             {/* Vignette Text - Fraunces serif */}
             <div 
               className={cn(
@@ -430,9 +465,9 @@ export const UkmlaSBAQuestion: React.FC<UkmlaSBAQuestionProps> = ({
                   p: ({ children }) => <p className="mb-4 last:mb-0">{children}</p>,
                   strong: ({ children }) => (
                     <span 
-                      className="font-normal"
+                      className="font-medium"
                       style={{ 
-                        background: 'linear-gradient(to top, rgba(229,168,157,0.25) 35%, transparent 35%)',
+                        background: 'linear-gradient(to top, rgba(229,168,157,0.22) 30%, transparent 30%)',
                         padding: '0 2px'
                       }}
                     >
@@ -444,12 +479,12 @@ export const UkmlaSBAQuestion: React.FC<UkmlaSBAQuestionProps> = ({
             </div>
 
             {/* Ask line - the actual question */}
-            {(question as any).question_text && (
+            {((question as any).question_text || (question as any).stem_question) && (
               <div className={cn(
-                "text-[14.5px] font-medium tracking-[0.01em] mb-5 pt-5 border-t",
+                "text-[15px] font-medium tracking-[0.01em] mb-5 pt-5 border-t",
                 useParchmentTheme ? "text-[#2A1E16] border-[#E8DCC4]" : "text-white border-white/10"
               )}>
-                {(question as any).question_text}
+                {(question as any).question_text || (question as any).stem_question || 'What is the most appropriate next step?'}
               </div>
             )}
 
@@ -535,99 +570,119 @@ export const UkmlaSBAQuestion: React.FC<UkmlaSBAQuestionProps> = ({
               })}
             </div>
 
-            {/* Submit Button - StudyEdit style */}
-            {!hasSubmitted && selectedOption && (
-              <div className="mb-6">
-                <button
-                  onClick={handleSubmit}
-                  className={cn(
-                    "w-full py-[18px] px-6 rounded-full font-medium text-[15px] tracking-[0.01em] transition-all duration-200 flex items-center justify-center gap-3 active:scale-[0.98]",
-                    useParchmentTheme
-                      ? "bg-[#1F140C] text-[#FAF5EC] hover:bg-[#3B2A1E] hover:-translate-y-0.5"
-                      : "bg-white text-[#0A0A0A] hover:bg-white/90 hover:-translate-y-0.5"
-                  )}
-                >
-                  <span>Commit answer</span>
-                  <span className="transition-transform group-hover:translate-x-1">→</span>
-                </button>
-                <p className={cn(
-                  "text-center text-[12px] mt-2.5 italic",
-                  useParchmentTheme ? "text-[#8A7560]" : "text-white/40"
-                )}
-                style={{ fontFamily: "'Fraunces', serif" }}
-                >
-                  No going back — commit, then learn.
-                </p>
-              </div>
-            )}
 
             {/* Feedback section - StudyEdit style */}
             {hasSubmitted && (
               <div className="animate-in fade-in slide-in-from-bottom-4 duration-300">
-                {/* Verdict Strip */}
+                {/* Feedback Card */}
                 <div className={cn(
-                  "flex items-center justify-between gap-3 pt-5 mb-4 border-t",
-                  useParchmentTheme ? "border-[#E8DCC4]" : "border-white/10"
+                  "rounded-[18px] p-5 pt-4 mb-5 border",
+                  isCorrect 
+                    ? (useParchmentTheme ? "bg-[#E2EAD6] border-[#8FA379]/50" : "bg-emerald-950/30 border-emerald-800")
+                    : (useParchmentTheme ? "bg-[#F9E4DF] border-[#E5A89D]/50" : "bg-rose-950/30 border-rose-800")
                 )}>
-                  <div className={cn(
-                    "inline-flex items-center gap-2 text-[11px] font-semibold tracking-[0.22em] uppercase",
-                    isCorrect 
-                      ? (useParchmentTheme ? "text-[#8FA379]" : "text-emerald-400")
-                      : (useParchmentTheme ? "text-[#8a3328]" : "text-rose-400")
-                  )}>
-                    <span className={cn(
-                      "w-[22px] h-[22px] rounded-full flex items-center justify-center text-[12px] font-bold",
-                      isCorrect 
-                        ? (useParchmentTheme ? "bg-[#8FA379] text-[#FAF5EC]" : "bg-emerald-500 text-white")
-                        : (useParchmentTheme ? "bg-[#E5A89D] text-[#FAF5EC]" : "bg-rose-500 text-white")
-                    )}>
-                      {isCorrect ? '✓' : '✕'}
-                    </span>
-                    {isCorrect ? 'Correct' : 'Incorrect'}
-                  </div>
-                  
-                  {/* Heat chip - test stats */}
-                  {conceptStats && (
+                  {/* Verdict Strip */}
+                  <div className="flex items-center justify-between gap-3 flex-wrap mb-3">
                     <div className={cn(
-                      "inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-medium",
-                      useParchmentTheme 
-                        ? "bg-[#F9E4DF] border border-[#E5A89D] text-[#8a3328]" 
-                        : "bg-rose-500/15 border border-rose-500/30 text-rose-300"
+                      "inline-flex items-center gap-2 text-[11px] font-semibold tracking-[0.22em] uppercase",
+                      isCorrect 
+                        ? (useParchmentTheme ? "text-[#4d5e3b]" : "text-emerald-400")
+                        : (useParchmentTheme ? "text-[#8a3328]" : "text-rose-400")
                     )}>
-                      Tested <span className="font-['Fraunces'] italic text-[13px]">{conceptStats.attempts}×</span>
-                      {' · '}
-                      <span className="font-['Fraunces'] italic text-[13px]">{conceptStats.accuracy}%</span>
+                      <span className={cn(
+                        "w-[18px] h-[18px] rounded-full flex items-center justify-center text-[11px] font-bold",
+                        isCorrect 
+                          ? (useParchmentTheme ? "bg-[#8FA379] text-[#FAF5EC]" : "bg-emerald-500 text-white")
+                          : (useParchmentTheme ? "bg-[#E5A89D] text-[#FAF5EC]" : "bg-rose-500 text-white")
+                      )}>
+                        {isCorrect ? '✓' : '✕'}
+                      </span>
+                      {isCorrect ? 'Correct' : 'Incorrect'}
                     </div>
-                  )}
-                </div>
+                    
+                    {/* Heat chip - test stats */}
+                    {conceptStats && (
+                      <div className={cn(
+                        "inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11.5px] font-medium",
+                        isCorrect
+                          ? (useParchmentTheme ? "bg-[#8FA379]/20 border border-[#8FA379] text-[#4d5e3b]" : "bg-emerald-500/15 border border-emerald-500/30 text-emerald-300")
+                          : (useParchmentTheme ? "bg-[#E5A89D]/30 border border-[#E5A89D] text-[#8a3328]" : "bg-rose-500/15 border border-rose-500/30 text-rose-300")
+                      )}>
+                        Tested <span className="font-['Fraunces'] italic text-[14px]">{conceptStats.attempts}×</span>
+                        {' · '}
+                        <span className="font-['Fraunces'] italic text-[14px]">{conceptStats.accuracy}%</span> accuracy
+                      </div>
+                    )}
+                  </div>
 
-                {/* The Link - Key takeaway card */}
-                {(keyFact || explanation) && (
-                  <div className={cn(
-                    "mb-6 py-[18px] pl-[22px] pr-1 border-l-[3px]",
-                    useParchmentTheme 
-                      ? "bg-[#FAF5EC] border-l-[#E5A89D]" 
-                      : "bg-white/5 border-l-rose-400"
-                  )}>
+                  {/* The Link - Key takeaway */}
+                  {(keyFact || explanation) && (
                     <div 
                       className={cn(
-                        "text-[10px] font-medium tracking-[0.22em] uppercase mb-2.5",
-                        useParchmentTheme ? "text-[#8A7560]" : "text-white/50"
-                      )}
-                    >
-                      The link
-                    </div>
-                    <div 
-                      className={cn(
-                        "text-[21px] font-light leading-[1.4] tracking-[-0.01em]",
-                        useParchmentTheme ? "text-[#2A1E16]" : "text-white/90"
+                        "text-[17px] font-light leading-[1.5] mb-4",
+                        isCorrect
+                          ? (useParchmentTheme ? "text-[#2A1E16]" : "text-white/90")
+                          : (useParchmentTheme ? "text-[#2A1E16]" : "text-white/90")
                       )}
                       style={{ fontFamily: "'Fraunces', serif" }}
                     >
-                      {keyFact || (explanation && explanation.split('.')[0] + '.')}
+                      {keyFact ? (
+                        <span dangerouslySetInnerHTML={{ 
+                          __html: keyFact.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+                            .replace(/\*(.*?)\*/g, `<em style="color: ${isCorrect ? '#4d5e3b' : '#8a3328'}">$1</em>`)
+                        }} />
+                      ) : (
+                        explanation && explanation.split('.')[0] + '.'
+                      )}
                     </div>
-                  </div>
-                )}
+                  )}
+
+                  {/* Divider */}
+                  <hr className={cn(
+                    "border-0 border-t border-dashed my-3",
+                    isCorrect
+                      ? (useParchmentTheme ? "border-[#8FA379]/40" : "border-emerald-700/40")
+                      : (useParchmentTheme ? "border-[#E5A89D]/50" : "border-rose-700/40")
+                  )} />
+
+                  {/* Why not the others - only show for incorrect answers */}
+                  {!isCorrect && (question as any).distractorExplanations && (
+                    <div className="mb-2">
+                      <div className={cn(
+                        "text-[10.5px] font-semibold tracking-[0.22em] uppercase mb-2",
+                        useParchmentTheme ? "text-[#8a3328]" : "text-rose-400"
+                      )}>
+                        Why not the others
+                      </div>
+                      <div className="flex flex-col">
+                        {Object.entries((question as any).distractorExplanations || {}).map(([letter, text]: [string, any]) => (
+                          letter !== correctAnswerId && (
+                            <div 
+                              key={letter}
+                              className={cn(
+                                "flex gap-2.5 py-2 text-[13px] leading-[1.45] border-t",
+                                useParchmentTheme ? "border-[#E5A89D]/25 text-[#3B2A1E]" : "border-rose-700/25 text-white/70"
+                              )}
+                            >
+                              <span 
+                                className="text-[13px] italic flex-shrink-0 min-w-[16px]"
+                                style={{ fontFamily: "'Fraunces', serif", color: useParchmentTheme ? '#E5A89D' : '#f87171' }}
+                              >
+                                {letter}.
+                              </span>
+                              <span>
+                                <strong className={useParchmentTheme ? "text-[#2A1E16] font-medium" : "text-white font-medium"}>
+                                  {options.find((o: any) => o.id === letter)?.text?.split(' ').slice(0, 3).join(' ')}
+                                </strong>
+                                {' — '}{text}
+                              </span>
+                            </div>
+                          )
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
 
                 {/* Full reasoning toggle */}
                 {explanation && (
