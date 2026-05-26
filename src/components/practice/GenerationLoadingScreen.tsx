@@ -385,7 +385,7 @@ export const GenerationLoadingScreen: React.FC<GenerationLoadingScreenProps> = (
                 background: useParchmentTheme ? '#1F140C' : 'white',
                 color: useParchmentTheme ? '#FAF5EC' : '#0A0A0A',
                 border: 'none',
-                fontFamily: "'Inter', sans-serif',
+                fontFamily: 'Inter, sans-serif',
                 fontWeight: 500,
                 fontSize: '15px',
                 animation: 'fadeUp 0.6s both ease-out'
@@ -394,7 +394,7 @@ export const GenerationLoadingScreen: React.FC<GenerationLoadingScreenProps> = (
               <span>Begin · </span>
               <span 
                 style={{ 
-                  fontFamily: "'Fraunces', serif",
+                  fontFamily: 'Fraunces, serif',
                   fontStyle: 'italic',
                   fontWeight: 400,
                   color: useParchmentTheme ? '#F2C9C1' : '#E5A89D',
