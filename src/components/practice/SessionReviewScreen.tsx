@@ -86,8 +86,8 @@ export const SessionReviewScreen: React.FC<SessionReviewScreenProps> = ({
   const conceptData = useMemo(() => {
     return questions.map((q, i) => {
       const answer = answers.find(a => a.questionIndex === i);
-      // Try multiple fields for concept title
-      const title = (q as any).concept_title || q?.title || q?.topic || q?.question_stem || q?.question || `Concept ${i + 1}`;
+      // Use concept_title from question data (populated from concept.title during generation)
+      const title = (q as any).concept_title || q?.title || q?.topic || `Concept ${i + 1}`;
       // Extract category/system from custom_filters or title
       const category = q?.custom_filters?.[0]?.split('-').map((w: string) => 
         w.charAt(0).toUpperCase() + w.slice(1)
@@ -106,8 +106,6 @@ export const SessionReviewScreen: React.FC<SessionReviewScreenProps> = ({
           concept_title: (q as any).concept_title,
           title: q?.title,
           topic: q?.topic,
-          question_stem: q?.question_stem,
-          question: q?.question,
           finalTitle: title
         });
       }

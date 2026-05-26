@@ -1138,6 +1138,7 @@ export const createConceptStore = (curriculumId: string = 'default') => {
               return {
                 id: featured.id,
                 concept_id: concept.concept_id, // Use user's concept_id
+                concept_title: featured.concept_title,
                 question_stem: featured.question_stem,
                 question: featured.question_text,
                 options: featured.options,
@@ -1173,6 +1174,7 @@ export const createConceptStore = (curriculumId: string = 'default') => {
               return {
                 id: cached.id,
                 concept_id: cached.concept_id,
+                concept_title: cached.concept_title,
                 question_stem: cached.question_stem,
                 question: cached.question_text,
                 options: cached.options,
@@ -1225,14 +1227,15 @@ export const createConceptStore = (curriculumId: string = 'default') => {
                 difficulty: 'medium'
               }).catch(err => console.error('Failed to cache question:', err));
               
-              // Add study reason to generated question
-              return { ...generated, study_reason: studyReason };
+              // Add study reason and concept_title to generated question
+              return { ...generated, study_reason: studyReason, concept_title: concept.title };
             } catch (error) {
               console.error(`Failed to generate question for concept ${concept.concept_id}:`, error);
               // Return a fallback question
               return {
                 id: `fallback_${concept.concept_id}`,
                 concept_id: concept.concept_id,
+                concept_title: concept.title,
                 question: `What do you know about ${concept.title}?`,
                 options: ['A lot', 'Some', 'A little', 'Nothing'],
                 correct_answer: 0,
