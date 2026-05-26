@@ -73,6 +73,7 @@ const ConceptPracticePageLoftContent: React.FC<Omit<ConceptPracticePageLoftProps
   const [showCreationHub, setShowCreationHub] = useState(false);
   const [showManualAdd, setShowManualAdd] = useState(false);
   const [showFiltersPanel, setShowFiltersPanel] = useState(false);
+  const [userDismissedLoading, setUserDismissedLoading] = useState(false);
   type ViewType = 'dashboard' | 'progress' | 'concepts';
   const [selectedView, setSelectedView] = useState<ViewType>(initialView);
   // Helper to avoid TypeScript type narrowing issues in conditional blocks
@@ -243,6 +244,7 @@ const ConceptPracticePageLoftContent: React.FC<Omit<ConceptPracticePageLoftProps
 
   const handlePracticeComplete = () => {
     endPractice();
+    setUserDismissedLoading(false); // Reset for next practice session
   };
 
   // Handle answer submission to track progress
@@ -290,10 +292,15 @@ const ConceptPracticePageLoftContent: React.FC<Omit<ConceptPracticePageLoftProps
   };
 
   // Show loading screen while waiting for auto-start or while generating
-  if (pendingAutoStart || (isLoading && isPracticing)) {
+  if (pendingAutoStart || (isLoading && isPracticing && !userDismissedLoading)) {
     return (
       <GenerationLoadingScreen 
         conceptCount={generatingQuestionCount}
+        isReady={practiceQuestions && practiceQuestions.length > 0}
+        onComplete={() => {
+          // User clicked "Begin" - dismiss loading screen
+          setUserDismissedLoading(true);
+        }}
       />
     );
   }

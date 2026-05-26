@@ -2,14 +2,14 @@ import React, { useState, useEffect } from 'react';
 import { useTheme } from '@/contexts/ThemeContext';
 
 interface GenerationLoadingScreenProps {
-  format?: 'flashcard' | 'ukmla_sba' | 'mindmap';
   conceptCount?: number;
+  isReady?: boolean;
   onComplete?: () => void;
 }
 
 export const GenerationLoadingScreen: React.FC<GenerationLoadingScreenProps> = ({
-  format = 'ukmla_sba',
   conceptCount = 1,
+  isReady = false,
   onComplete
 }) => {
   const { theme } = useTheme();
@@ -43,51 +43,47 @@ export const GenerationLoadingScreen: React.FC<GenerationLoadingScreenProps> = (
   // Simulated systems
   const systems = ['cardiology', 'psychiatry', 'renal', 'respiratory', 'gastroenterology'].slice(0, Math.min(5, Math.ceil(conceptCount / 3)));
 
-  // Animation sequence - loops until dismissed
+  // Animation sequence - stops at ready state
   useEffect(() => {
-    const runSequence = () => {
-      const timers: NodeJS.Timeout[] = [];
+    const timers: NodeJS.Timeout[] = [];
 
-      // Reset state
-      setCurrentPhase(0);
-      setShowBrief(false);
-      setShowMixRows([false, false, false]);
-      setShowSystems(false);
-      setShowReady(false);
-      setHideProgress(false);
-
-      // Phase sequence
-      timers.push(setTimeout(() => setCurrentPhase(0), 300));
-      timers.push(setTimeout(() => setCurrentPhase(1), 2400));
-      timers.push(setTimeout(() => setCurrentPhase(2), 4400));
-      
-      // Start revealing brief
-      timers.push(setTimeout(() => setShowBrief(true), 4600));
-      timers.push(setTimeout(() => setShowMixRows(prev => [true, prev[1], prev[2]]), 5000));
-      timers.push(setTimeout(() => setCurrentPhase(3), 6400));
-      timers.push(setTimeout(() => setShowMixRows(prev => [prev[0], true, prev[2]]), 6600));
-      timers.push(setTimeout(() => setShowMixRows(prev => [prev[0], prev[1], true]), 7400));
-      timers.push(setTimeout(() => setCurrentPhase(4), 8200));
-      timers.push(setTimeout(() => setShowSystems(true), 8400));
-      
-      // Ready state
-      timers.push(setTimeout(() => {
-        setCurrentPhase(5);
-        setHideProgress(true);
-        setShowReady(true);
-      }, 10000));
-
-      // Loop the sequence after 12 seconds if still loading
-      timers.push(setTimeout(() => {
-        runSequence();
-      }, 12000));
-
-      return timers;
+    // Phase sequence
+    timers.push(setTimeout(() => setCurrentPhase(0), 300));
+    timers.push(setTimeout(() => setCurrentPhase(1), 2400));
+    timers.push(setTimeout(() => setCurrentPhase(2), 4400));
+    
+    // Start revealing brief
+    timers.push(setTimeout(() => setShowBrief(true), 4600));
+    timers.push(setTimeout(() => setShowMixRows(prev => [true, prev[1], prev[2]]), 5000));
+    timers.push(setTimeout(() => setCurrentPhase(3), 6400));
+    timers.push(setTimeout(() => setShowMixRows(prev => [prev[0], true, prev[2]]), 6600));
+    timers.push(setTimeout(() => setShowMixRows(prev => [prev[0], prev[1], true]), 7400));
+    timers.push(setTimeout(() => setCurrentPhase(4), 8200));
+    timers.push(setTimeout(() => setShowSystems(true), 8400));
+    
+    // Ready state - show when isReady or after 10 seconds
+    const showReadyState = () => {
+      setCurrentPhase(5);
+      setHideProgress(true);
+      setShowReady(true);
     };
+    
+    timers.push(setTimeout(showReadyState, 10000));
 
-    const timers = runSequence();
     return () => timers.forEach(t => clearTimeout(t));
   }, [conceptCount]);
+
+  // If questions become ready early, jump to ready state
+  useEffect(() => {
+    if (isReady && !showReady) {
+      setCurrentPhase(5);
+      setHideProgress(true);
+      setShowReady(true);
+      setShowBrief(true);
+      setShowMixRows([true, true, true]);
+      setShowSystems(true);
+    }
+  }, [isReady, showReady]);
 
   const handleBegin = () => {
     onComplete?.();
@@ -151,13 +147,13 @@ export const GenerationLoadingScreen: React.FC<GenerationLoadingScreenProps> = (
 
         {/* Phase Zone */}
         <div 
-          className="h-7 text-center mb-[18px] relative"
+          className="h-8 text-center mb-[18px] relative"
           style={{ animation: 'fadeUp 0.7s 0.5s both ease-out' }}
         >
           {phases.map((phase, idx) => (
             <span
               key={idx}
-              className="absolute inset-0 flex items-center justify-center px-2 transition-opacity duration-450"
+              className="absolute inset-0 flex items-center justify-center px-2 transition-opacity duration-450 whitespace-nowrap"
               style={{
                 fontFamily: "'Fraunces', serif",
                 fontStyle: 'italic',
