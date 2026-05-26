@@ -184,7 +184,7 @@ export const UkmlaSBAQuestion: React.FC<UkmlaSBAQuestionProps> = ({
   // Handle explanation visual generation
   const handleGenerateExplanation = async () => {
     const questionId = String(question.id || question.concept_id || `q_${fullQuestionContent?.substring(0, 30)}`);
-    const conceptTitle = String(question.conceptTitle || question.title || 'Medical Concept');
+    const conceptTitle = String((question as any).concept_title || question.conceptTitle || question.title || 'Medical Concept');
     const explanationText = String(question.explanation || question.keyFact || '');
     const correctAnswer = String(question.correctAnswer ?? question.correct_answer ?? 'A');
     

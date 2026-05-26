@@ -86,18 +86,31 @@ export const SessionReviewScreen: React.FC<SessionReviewScreenProps> = ({
   const conceptData = useMemo(() => {
     return questions.map((q, i) => {
       const answer = answers.find(a => a.questionIndex === i);
-      const title = (q as any).concept_title || q?.title || q?.topic || `Concept ${i + 1}`;
+      // Try multiple fields for concept title
+      const title = (q as any).concept_title || q?.title || q?.topic || q?.question_stem || q?.question || `Concept ${i + 1}`;
       // Extract category/system from custom_filters or title
       const category = q?.custom_filters?.[0]?.split('-').map((w: string) => 
         w.charAt(0).toUpperCase() + w.slice(1)
       ).join(' ') || '';
       // Get stem/vignette preview
-      const stem = q?.vignette || q?.question || q?.content || '';
+      const stem = q?.vignette || q?.question || q?.content || q?.question_stem || '';
       const stemPreview = stem.length > 60 ? stem.substring(0, 60) + '…' : stem;
       // Get accuracy data
       const attempts = q?.mastery_data?.attempts || (answer ? 1 : 0);
       const correct = q?.mastery_data?.correct || (answer?.isCorrect ? 1 : 0);
       const accuracy = attempts > 0 ? Math.round((correct / attempts) * 100) : 0;
+      
+      // Debug logging
+      if (process.env.NODE_ENV === 'development') {
+        console.log('Concept data for question', i, ':', {
+          concept_title: (q as any).concept_title,
+          title: q?.title,
+          topic: q?.topic,
+          question_stem: q?.question_stem,
+          question: q?.question,
+          finalTitle: title
+        });
+      }
       
       return {
         title,

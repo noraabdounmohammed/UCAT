@@ -24,6 +24,7 @@ export interface QuestionData {
   // Format-specific properties
   format?: 'sba' | 'flashcard' | 'ukmla_sba' | 'mcq' | 'emq' | 'data_interpretation' | 'osce' | 'short_answer' | 'essay' | 'mindmap' | 'true_false' | 'ranking';
   concept_id?: string; // Link to the concept this question tests
+  concept_title?: string; // The title of the concept this question tests
   bloom_level?: string; // The Bloom's taxonomy level this question targets
   // Mind map specific properties
   title?: string; // Concept title for mind maps
