@@ -1,6 +1,5 @@
-import { Routes, Route, Navigate, useParams } from 'react-router-dom';
+import { Routes, Route, Navigate } from 'react-router-dom';
 import { lazy, Suspense } from 'react';
-import { MainLayout } from '@/components/layout/MainLayout';
 import { ThemeProvider } from '@/contexts/ThemeContext';
 import { FontSizeProvider } from '@/contexts/FontSizeContext';
 import { AuthProvider } from '@/contexts/AuthContext';
@@ -11,9 +10,6 @@ import '@/styles/font-sizes.css';
 
 // Import bulk generator to make it available in browser console
 import '@/scripts/bulkGenerateQuestions';
-
-// Eager import for the main app — no spinner on first load
-import { CurriculumApp } from '@/components/CurriculumApp';
 
 // Lazy only for secondary routes rarely visited
 const LandingPage = lazy(() => import('@/pages/LandingPage').then(m => ({ default: m.LandingPage })));
@@ -29,12 +25,6 @@ const PrivacyPolicy = lazy(() => import('@/pages/PrivacyPolicy').then(m => ({ de
 const LeaderboardPage = lazy(() => import('@/pages/LeaderboardPage').then(m => ({ default: m.LeaderboardPage })));
 const ConceptPracticePage = lazy(() => import('@/pages/ConceptPracticePage.loft').then(m => ({ default: m.ConceptPracticePageLoft })));
 
-// Wrapper to extract curriculumId from URL params
-const CurriculumRoute = () => {
-  const { curriculumId } = useParams<{ curriculumId: string }>();
-  return <CurriculumApp initialCurriculumId={curriculumId} />;
-};
-
 // Instant blank parchment — replaces the spinning loader for secondary routes
 const BlankFallback = () => <div className="h-screen w-screen" style={{ backgroundColor: '#F4EFE8' }} />;
 
@@ -47,12 +37,8 @@ function App() {
           <PWAInstallPrompt />
           <PWAUpdateNotification />
           <Routes>
-            {/* Landing Page — lazy, shown rarely */}
-            <Route path="/" element={
-              <Suspense fallback={<BlankFallback />}>
-                <LandingPage />
-              </Suspense>
-            } />
+            {/* Root — redirect straight to concept practice */}
+            <Route path="/" element={<Navigate to="/concept-practice" replace />} />
 
             {/* Manhattan Loft concept-practice — original polished UI */}
             <Route path="/concept-practice" element={

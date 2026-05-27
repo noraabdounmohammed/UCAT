@@ -244,7 +244,8 @@ const ConceptPracticePageLoftContent: React.FC<Omit<ConceptPracticePageLoftProps
 
   const handlePracticeComplete = () => {
     endPractice();
-    setUserDismissedLoading(false); // Reset for next practice session
+    setUserDismissedLoading(false); // Reset so the loading screen shows again
+    hasAutoStarted.current = false; // Allow auto-start to fire again for next session
   };
 
   // Handle answer submission to track progress
