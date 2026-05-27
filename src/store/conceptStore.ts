@@ -823,7 +823,19 @@ export const createConceptStore = (curriculumId: string = 'default') => {
         
         // Calculate actual question count first
         const requestedCount = practiceConfig?.question_count || 10;
-        
+
+        // SYNCHRONOUSLY clear stale session state so the loading screen takes over immediately
+        // (no flash of the previous review screen, dashboard, or stale questions while we await auth)
+        set({
+          isLoading: true,
+          isPracticing: true,
+          practiceQuestions: [],
+          currentSessionAnswers: [],
+          sessionStartTime: startTime,
+          generatingQuestionCount: requestedCount,
+          practiceError: null
+        });
+
         // Check daily limit - get user ID if available
         const { data: { user } } = await supabase.auth.getUser();
         const userId = user?.id;

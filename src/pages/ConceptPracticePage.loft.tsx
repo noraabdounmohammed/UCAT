@@ -292,8 +292,11 @@ const ConceptPracticePageLoftContent: React.FC<Omit<ConceptPracticePageLoftProps
     setShowPracticeConfig(false);
   };
 
-  // Show loading screen while waiting for auto-start or while generating, OR while ready but user hasn't pressed Begin
-  if (pendingAutoStart || (isPracticing && !userDismissedLoading)) {
+  // Show loading screen while waiting for auto-start, while loading, while generating,
+  // OR while ready but user hasn't pressed Begin. Also keeps the loading screen visible
+  // during the brief async gap right after pressing "Another five" so we never flash the
+  // dashboard or the stale review.
+  if (pendingAutoStart || isLoading || (isPracticing && !userDismissedLoading)) {
     // Get the actual concepts being used for this session
     const sessionConcepts = practiceSelection && practiceSelection.length > 0
       ? displayedConcepts.filter((c: any) => practiceSelection.includes(c.concept_id))
@@ -301,9 +304,10 @@ const ConceptPracticePageLoftContent: React.FC<Omit<ConceptPracticePageLoftProps
 
     return (
       <GenerationLoadingScreen 
-        conceptCount={generatingQuestionCount}
-        isReady={practiceQuestions && practiceQuestions.length > 0}
+        conceptCount={Math.max(5, generatingQuestionCount || 5)}
+        isReady={!isLoading && Array.isArray(practiceQuestions) && practiceQuestions.length > 0}
         concepts={sessionConcepts}
+        practiceQuestions={practiceQuestions || []}
         onComplete={() => {
           // User clicked "Begin" - dismiss loading screen
           setUserDismissedLoading(true);
