@@ -307,6 +307,7 @@ const ConceptPracticePageLoftContent: React.FC<Omit<ConceptPracticePageLoftProps
         conceptCount={Math.max(5, generatingQuestionCount || 5)}
         isReady={!isLoading && Array.isArray(practiceQuestions) && practiceQuestions.length > 0}
         concepts={sessionConcepts}
+        allConcepts={concepts || []}
         practiceQuestions={practiceQuestions || []}
         onComplete={() => {
           // User clicked "Begin" - dismiss loading screen

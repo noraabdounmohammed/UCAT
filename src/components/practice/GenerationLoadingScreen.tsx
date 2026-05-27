@@ -6,6 +6,8 @@ interface GenerationLoadingScreenProps {
   isReady?: boolean;
   onComplete?: () => void;
   concepts?: any[];
+  /** Full curriculum concepts list — used to resolve question.concept_id → concept for system extraction */
+  allConcepts?: any[];
   practiceQuestions?: any[];
 }
 
@@ -65,6 +67,7 @@ export const GenerationLoadingScreen: React.FC<GenerationLoadingScreenProps> = (
   isReady = false,
   onComplete,
   concepts = [],
+  allConcepts = [],
   practiceQuestions = []
 }) => {
   // Always promise the user at least 5 concepts; never display 0.
@@ -131,30 +134,51 @@ export const GenerationLoadingScreen: React.FC<GenerationLoadingScreenProps> = (
     return { weak, drifting, cold };
   }, [sessionConcepts, safeConceptCount]);
 
-  // Derive systems from the actual questions when available (so the chips match what's
-  // being tested), otherwise fall back to the session concepts. Only known clinical
-  // systems pass through the whitelist — specific condition names are filtered out so
-  // they can't spoil answers.
+  // Derive systems from the actual questions when available. Each question carries a
+  // `concept_id` — we resolve it back to the full concept (which has rich `custom_filters`)
+  // so we never miss a system just because a question's own metadata is sparse.
+  // Only known clinical systems pass through the whitelist; specific condition names
+  // are intentionally filtered out so they can't spoil answers.
   const systems = useMemo(() => {
     const found = new Set<string>();
-    const collect = (items: any[]) => {
-      items.forEach((item) => {
-        const sources: string[] = [];
-        if (item?.custom_filters) sources.push(...item.custom_filters);
-        if (item?.tags) sources.push(...item.tags);
-        if (item?.system) sources.push(item.system);
-        if (item?.specialty) sources.push(item.specialty);
-        if (item?.body_system) sources.push(item.body_system);
-        sources.forEach((raw: string) => {
-          const sys = toSystem(raw);
-          if (sys) found.add(sys);
-        });
+
+    const conceptById = new Map<string, any>();
+    const conceptByTitle = new Map<string, any>();
+    (allConcepts || []).forEach((c: any) => {
+      if (c?.concept_id) conceptById.set(c.concept_id, c);
+      if (c?.id) conceptById.set(c.id, c);
+      if (c?.title) conceptByTitle.set(String(c.title).toLowerCase(), c);
+    });
+
+    const collectFromItem = (item: any) => {
+      const sources: string[] = [];
+      if (Array.isArray(item?.custom_filters)) sources.push(...item.custom_filters);
+      if (Array.isArray(item?.tags)) sources.push(...item.tags);
+      if (item?.system) sources.push(item.system);
+      if (item?.specialty) sources.push(item.specialty);
+      if (item?.body_system) sources.push(item.body_system);
+      if (item?.category) sources.push(item.category);
+      sources.forEach((raw: string) => {
+        const sys = toSystem(raw);
+        if (sys) found.add(sys);
       });
     };
-    if (practiceQuestions && practiceQuestions.length > 0) collect(practiceQuestions);
-    if (found.size === 0) collect(sessionConcepts);
-    return Array.from(found).slice(0, 5);
-  }, [practiceQuestions, sessionConcepts]);
+
+    if (practiceQuestions && practiceQuestions.length > 0) {
+      practiceQuestions.forEach((q: any) => {
+        // Pull anything carried directly on the question
+        collectFromItem(q);
+        // Resolve the underlying concept (which usually has the richest filters)
+        const concept =
+          (q?.concept_id && conceptById.get(q.concept_id)) ||
+          (q?.concept_title && conceptByTitle.get(String(q.concept_title).toLowerCase())) ||
+          (q?.title && conceptByTitle.get(String(q.title).toLowerCase()));
+        if (concept) collectFromItem(concept);
+      });
+    }
+    if (found.size === 0) sessionConcepts.forEach(collectFromItem);
+    return Array.from(found).slice(0, 6);
+  }, [practiceQuestions, sessionConcepts, allConcepts]);
 
   // Phased messages with optional emphasized fragments — matches the HTML
   const phases: Array<{ before: string; em?: string; after?: string }> = [
