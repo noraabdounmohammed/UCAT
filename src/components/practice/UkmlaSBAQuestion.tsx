@@ -429,45 +429,6 @@ export const UkmlaSBAQuestion: React.FC<UkmlaSBAQuestionProps> = ({
                 </button>
               </div>
             </div>
-            
-            {/* Row 2: Concept name */}
-            <div className="flex items-center gap-2.5 flex-wrap mb-[6px]">
-              <h2 
-                className={cn(
-                  "text-[19px] font-medium leading-tight tracking-[-0.01em]",
-                  useParchmentTheme ? "text-[#2A1E16]" : "text-white"
-                )}
-                style={{ fontFamily: "'Fraunces', serif" }}
-              >
-                {(question as any).concept_title || question.title || (question as any).topic || 'Clinical Concept'}
-                {(question as any).microSkill && (
-                  <span className="text-[#E5A89D] italic font-normal"> · {(question as any).microSkill}</span>
-                )}
-              </h2>
-            </div>
-            
-            {/* Why line - contextual explanation */}
-            {((question as any).study_reason || (conceptStats && conceptStats.attempts > 0)) && (
-              <p 
-                className={cn(
-                  "text-[12.5px] italic leading-relaxed",
-                  useParchmentTheme ? "text-[#8A7560]" : "text-white/50"
-                )}
-                style={{ fontFamily: "'Fraunces', serif" }}
-              >
-                <span className="text-[#E5A89D] not-italic mr-1">because</span>
-                {(question as any).study_reason === 'due' && 'this concept is due for review'}
-                {(question as any).study_reason === 'needs_review' && 'you need more practice on this'}
-                {(question as any).study_reason === 'new' && "you haven't seen this concept yet"}
-                {(question as any).study_reason === 'reinforcement' && 'reinforcing what you know'}
-                {!(question as any).study_reason && conceptStats && conceptStats.attempts > 0 && `you've answered this concept wrong ${conceptStats.attempts - conceptStats.correct} times`}
-                {conceptStats && conceptStats.attempts > 0 && (question as any).study_reason && (
-                  <span className={useParchmentTheme ? "text-[#3B2A1E]" : "text-white/70"}>
-                    {' '}· tested <strong className="font-medium">{conceptStats.attempts}×</strong>
-                  </span>
-                )}
-              </p>
-            )}
           </div>
 
           {/* Content area */}
