@@ -8,6 +8,24 @@ interface GenerationLoadingScreenProps {
   concepts?: any[];
 }
 
+// Returns time-aware greeting word
+const getTimeGreeting = () => {
+  const hour = new Date().getHours();
+  if (hour >= 5 && hour < 12) return "morning's";
+  if (hour >= 12 && hour < 17) return "afternoon's";
+  if (hour >= 17 && hour < 21) return "evening's";
+  return "tonight's";
+};
+
+// Returns time-aware set label
+const getSetLabel = () => {
+  const hour = new Date().getHours();
+  if (hour >= 5 && hour < 12) return "This morning's set";
+  if (hour >= 12 && hour < 17) return "This afternoon's set";
+  if (hour >= 17 && hour < 21) return "This evening's set";
+  return "Tonight's set";
+};
+
 export const GenerationLoadingScreen: React.FC<GenerationLoadingScreenProps> = ({
   conceptCount = 1,
   isReady = false,
@@ -20,142 +38,78 @@ export const GenerationLoadingScreen: React.FC<GenerationLoadingScreenProps> = (
 
   const [currentPhase, setCurrentPhase] = useState(0);
   const [showBrief, setShowBrief] = useState(false);
-  const [showMixRows, setShowMixRows] = useState([false, false, false]);
-  const [showSystems, setShowSystems] = useState(false);
+  const [showConceptRows, setShowConceptRows] = useState<boolean[]>([]);
   const [showReady, setShowReady] = useState(false);
   const [hideProgress, setHideProgress] = useState(false);
+
+  const greeting = useMemo(() => getTimeGreeting(), []);
+  const setLabel = useMemo(() => getSetLabel(), []);
 
   // Phased messages
   const phases = [
     "Reading where you are on the map…",
-    `Selecting from ${Math.floor(Math.random() * 30) + 40} candidate concepts…`,
+    `Selecting from candidate concepts…`,
     "Choosing across your weakest areas…",
     "Dressing each as an AKT vignette…",
     "Calibrating to the MLA format…",
     "Ready."
   ];
 
-  // Calculate real concept mix data from concepts
-  const mixData = useMemo(() => {
-    if (!concepts || concepts.length === 0) {
-      return [
-        { type: 'weak', count: Math.max(1, Math.floor(conceptCount * 0.5)), label: 'weak — accuracy below 50%' },
-        { type: 'drifting', count: Math.max(1, Math.floor(conceptCount * 0.3)), label: 'drifting — not seen in three weeks' },
-        { type: 'cold', count: Math.max(1, Math.floor(conceptCount * 0.2)), label: 'cold & high-yield — never met' }
-      ];
-    }
-
-    const now = Date.now();
-    const threeWeeksMs = 21 * 24 * 60 * 60 * 1000;
-
-    let weakCount = 0;
-    let driftingCount = 0;
-    let coldCount = 0;
-
-    concepts.forEach((concept: any) => {
-      const mastery = concept.mastery_data || {};
-      const attempts = mastery.attempts || 0;
-      const correct = mastery.correct || 0;
-      const lastPracticed = mastery.last_practiced ? new Date(mastery.last_practiced).getTime() : null;
-
-      // Weak: accuracy below 50% and has been attempted
-      if (attempts > 0 && (correct / attempts) < 0.5) {
-        weakCount++;
-      }
-
-      // Drifting: not seen in 3 weeks and has been attempted
-      if (lastPracticed && (now - lastPracticed) > threeWeeksMs) {
-        driftingCount++;
-      }
-
-      // Cold: never attempted
-      if (attempts === 0) {
-        coldCount++;
-      }
-    });
-
-    // Ensure at least 1 in each category if total > 0
-    const total = weakCount + driftingCount + coldCount;
-    if (total === 0 && concepts.length > 0) {
-      // If no data, distribute evenly
-      const perCategory = Math.ceil(concepts.length / 3);
-      return [
-        { type: 'weak', count: perCategory, label: 'weak — accuracy below 50%' },
-        { type: 'drifting', count: perCategory, label: 'drifting — not seen in three weeks' },
-        { type: 'cold', count: perCategory, label: 'cold & high-yield — never met' }
-      ];
-    }
-
-    return [
-      { type: 'weak', count: weakCount || 1, label: 'weak — accuracy below 50%' },
-      { type: 'drifting', count: driftingCount || 1, label: 'drifting — not seen in three weeks' },
-      { type: 'cold', count: coldCount || 1, label: 'cold & high-yield — never met' }
-    ];
+  // Get actual concept titles for this session (limit to conceptCount)
+  const sessionConceptTitles = useMemo(() => {
+    if (!concepts || concepts.length === 0) return [];
+    return concepts
+      .slice(0, conceptCount)
+      .map((c: any) => c.title || c.concept_title || '')
+      .filter(Boolean);
   }, [concepts, conceptCount]);
 
-  // Extract real systems from concept custom_filters
-  const systems = useMemo(() => {
-    if (!concepts || concepts.length === 0) {
-      return ['cardiology', 'psychiatry', 'renal', 'respiratory', 'gastroenterology'].slice(0, Math.min(5, Math.ceil(conceptCount / 3)));
-    }
-
-    const systemSet = new Set<string>();
-    concepts.forEach((concept: any) => {
-      const filters = concept.custom_filters || [];
-      filters.forEach((filter: string) => {
-        // Extract system-like terms (lowercase, single words or common medical systems)
-        const system = filter.toLowerCase().trim();
-        if (system.length > 2 && system.length < 20) {
-          systemSet.add(system);
-        }
-      });
-    });
-
-    const systemList = Array.from(systemSet).slice(0, 5);
-    return systemList.length > 0 ? systemList : ['cardiology', 'psychiatry', 'renal'];
-  }, [concepts, conceptCount]);
-
-  // Animation sequence - stops at ready state
+  // Animation sequence
   useEffect(() => {
     const timers: NodeJS.Timeout[] = [];
+    const numConcepts = sessionConceptTitles.length || conceptCount;
 
-    // Phase sequence
     timers.push(setTimeout(() => setCurrentPhase(0), 300));
     timers.push(setTimeout(() => setCurrentPhase(1), 2400));
     timers.push(setTimeout(() => setCurrentPhase(2), 4400));
-    
-    // Start revealing brief
+
+    // Start revealing brief and concept rows one-by-one
     timers.push(setTimeout(() => setShowBrief(true), 4600));
-    timers.push(setTimeout(() => setShowMixRows(prev => [true, prev[1], prev[2]]), 5000));
+    for (let i = 0; i < Math.max(numConcepts, 1); i++) {
+      const delay = 5000 + i * 400;
+      timers.push(setTimeout(() => {
+        setShowConceptRows(prev => {
+          const next = [...prev];
+          next[i] = true;
+          return next;
+        });
+      }, delay));
+    }
+
     timers.push(setTimeout(() => setCurrentPhase(3), 6400));
-    timers.push(setTimeout(() => setShowMixRows(prev => [prev[0], true, prev[2]]), 6600));
-    timers.push(setTimeout(() => setShowMixRows(prev => [prev[0], prev[1], true]), 7400));
     timers.push(setTimeout(() => setCurrentPhase(4), 8200));
-    timers.push(setTimeout(() => setShowSystems(true), 8400));
-    
-    // Ready state - show when isReady or after 10 seconds
-    const showReadyState = () => {
+
+    // Ready state after 10 seconds or when isReady
+    timers.push(setTimeout(() => {
       setCurrentPhase(5);
       setHideProgress(true);
       setShowReady(true);
-    };
-    
-    timers.push(setTimeout(showReadyState, 10000));
+    }, 10000));
 
     return () => timers.forEach(t => clearTimeout(t));
-  }, [conceptCount]);
+  }, [conceptCount, sessionConceptTitles.length]);
 
-  // If questions become ready early, jump to ready state
+  // Jump to ready state if questions become available early
   useEffect(() => {
     if (isReady && !showReady) {
       setCurrentPhase(5);
       setHideProgress(true);
       setShowReady(true);
       setShowBrief(true);
-      setShowMixRows([true, true, true]);
-      setShowSystems(true);
+      const all = sessionConceptTitles.map(() => true);
+      setShowConceptRows(all.length > 0 ? all : [true]);
     }
-  }, [isReady, showReady]);
+  }, [isReady, showReady, sessionConceptTitles]);
 
   const handleBegin = () => {
     onComplete?.();
@@ -201,7 +155,7 @@ export const GenerationLoadingScreen: React.FC<GenerationLoadingScreenProps> = (
             marginBottom: '12px'
           }}
         >
-          Choosing tonight's<br />
+          Choosing {greeting}<br />
           <em style={{ color: useParchmentTheme ? '#E5A89D' : '#f87171' }}>concepts</em>
         </h1>
 
@@ -266,10 +220,11 @@ export const GenerationLoadingScreen: React.FC<GenerationLoadingScreenProps> = (
 
         {/* Brief Zone */}
         <div 
-          className="w-full max-w-[320px] pt-[22px] border-t transition-opacity duration-600"
+          className="w-full max-w-[320px] pt-[22px] border-t"
           style={{
             borderColor: useParchmentTheme ? '#E8DCC4' : 'rgba(255,255,255,0.1)',
             opacity: showBrief ? 1 : 0,
+            transition: 'opacity 0.6s ease-out',
             paddingTop: '22px'
           }}
         >
@@ -284,79 +239,63 @@ export const GenerationLoadingScreen: React.FC<GenerationLoadingScreenProps> = (
               marginBottom: '18px'
             }}
           >
-            Tonight's set
+            {setLabel}
           </div>
 
-          {/* Mix Rows */}
+          {/* Concept rows — actual session concepts revealed one by one */}
           <div className="flex flex-col gap-[10px] mb-[18px]">
-            {mixData.map((item: any, idx: number) => (
+            {sessionConceptTitles.length > 0 ? sessionConceptTitles.map((title: string, idx: number) => (
               <div
                 key={idx}
-                className="flex items-center gap-3 text-[14px] transition-all duration-500"
+                className="flex items-center gap-3 text-[14px]"
                 style={{
-                  color: useParchmentTheme ? '#2A1E16' : 'white',
-                  opacity: showMixRows[idx] ? 1 : 0,
-                  transform: showMixRows[idx] ? 'translateY(0)' : 'translateY(6px)'
+                  opacity: showConceptRows[idx] ? 1 : 0,
+                  transform: showConceptRows[idx] ? 'translateY(0)' : 'translateY(6px)',
+                  transition: 'opacity 0.5s ease-out, transform 0.5s ease-out'
                 }}
               >
                 <span 
                   className="w-[9px] h-[9px] rounded-full flex-shrink-0"
-                  style={{
-                    background: item.type === 'weak' 
-                      ? (useParchmentTheme ? '#E5A89D' : '#f87171')
-                      : item.type === 'drifting'
-                      ? (useParchmentTheme ? '#c8b89c' : '#a89f91')
-                      : (useParchmentTheme ? '#4a3a2c' : '#6b5d52')
-                  }}
+                  style={{ background: useParchmentTheme ? '#E5A89D' : '#f87171' }}
                 />
                 <span 
-                  className="min-w-[18px]"
-                  style={{ 
-                    fontFamily: "'Fraunces', serif",
-                    fontWeight: 400,
-                    fontSize: '18px',
-                    letterSpacing: '-0.02em',
-                    color: useParchmentTheme ? '#2A1E16' : 'white'
-                  }}
-                >
-                  {item.count}
-                </span>
-                <span 
-                  className="flex-1"
                   style={{ 
                     fontFamily: "'Fraunces', serif",
                     fontStyle: 'italic',
-                    color: useParchmentTheme ? '#3B2A1E' : 'rgba(255,255,255,0.7)',
-                    fontSize: '13.5px'
+                    color: useParchmentTheme ? '#3B2A1E' : 'rgba(255,255,255,0.85)',
+                    fontSize: '13.5px',
+                    lineHeight: 1.35
                   }}
                 >
-                  <em style={{ color: useParchmentTheme ? '#E5A89D' : '#f87171' }}>{item.type}</em> — {item.label}
+                  {title}
                 </span>
               </div>
-            ))}
-          </div>
-
-          {/* Systems Strip */}
-          <div 
-            className="flex flex-wrap justify-center gap-[6px] mt-[14px] transition-opacity duration-600"
-            style={{ opacity: showSystems ? 1 : 0 }}
-          >
-            {systems.map((sys: string, idx: number) => (
-              <span
-                key={idx}
-                className="px-[11px] py-1 rounded-full"
-                style={{
-                  background: useParchmentTheme ? '#F4ECDF' : 'rgba(255,255,255,0.05)',
-                  border: `1px solid ${useParchmentTheme ? '#D9CCB6' : 'rgba(255,255,255,0.1)'}`,
-                  fontFamily: "'Fraunces', serif",
-                  fontStyle: 'italic',
-                  fontSize: '12.5px',
-                  color: useParchmentTheme ? '#2A1E16' : 'white'
-                }}
-              >
-                {sys}
-              </span>
-            ))}
+            )) : (
+              // Fallback placeholder rows if no concept data yet
+              Array.from({ length: conceptCount }).map((_, idx) => (
+                <div
+                  key={idx}
+                  className="flex items-center gap-3"
+                  style={{
+                    opacity: showConceptRows[idx] ? 1 : 0,
+                    transform: showConceptRows[idx] ? 'translateY(0)' : 'translateY(6px)',
+                    transition: 'opacity 0.5s ease-out, transform 0.5s ease-out'
+                  }}
+                >
+                  <span 
+                    className="w-[9px] h-[9px] rounded-full flex-shrink-0"
+                    style={{ background: useParchmentTheme ? '#E5A89D' : '#f87171' }}
+                  />
+                  <div 
+                    className="h-3 rounded-full animate-pulse"
+                    style={{ 
+                      width: `${120 + (idx * 30) % 80}px`,
+                      background: useParchmentTheme ? '#D9CCB6' : 'rgba(255,255,255,0.15)'
+                    }}
+                  />
+                </div>
+              ))
+            )}
           </div>
         </div>
 
@@ -380,30 +319,35 @@ export const GenerationLoadingScreen: React.FC<GenerationLoadingScreenProps> = (
           {showReady && (
             <button
               onClick={handleBegin}
-              className="w-full p-[18px] rounded-full flex items-center justify-center gap-3 transition-all hover:-translate-y-0.5"
+              className="w-full flex items-center justify-center gap-3 transition-all"
               style={{
                 background: useParchmentTheme ? '#1F140C' : 'white',
                 color: useParchmentTheme ? '#FAF5EC' : '#0A0A0A',
                 border: 'none',
+                borderRadius: '100px',
+                padding: '18px',
                 fontFamily: 'Inter, sans-serif',
                 fontWeight: 500,
                 fontSize: '15px',
+                lineHeight: 1,
+                cursor: 'pointer',
                 animation: 'fadeUp 0.6s both ease-out'
               }}
+              onMouseEnter={e => { e.currentTarget.style.background = useParchmentTheme ? '#3B2A1E' : '#e5e5e5'; e.currentTarget.style.transform = 'translateY(-1px)'; }}
+              onMouseLeave={e => { e.currentTarget.style.background = useParchmentTheme ? '#1F140C' : 'white'; e.currentTarget.style.transform = 'translateY(0)'; }}
             >
-              <span>Begin · </span>
+              <span>Begin ·</span>
               <span 
                 style={{ 
                   fontFamily: 'Fraunces, serif',
                   fontStyle: 'italic',
                   fontWeight: 400,
-                  color: useParchmentTheme ? '#F2C9C1' : '#E5A89D',
-                  marginRight: '4px'
+                  color: useParchmentTheme ? '#F2C9C1' : '#E5A89D'
                 }}
               >
-                {conceptCount} concepts
+                {conceptCount} concept{conceptCount !== 1 ? 's' : ''}
               </span>
-              <span style={{ transition: 'transform 0.2s' }}>→</span>
+              <span className="arrow" style={{ transition: 'transform 0.2s' }}>→</span>
             </button>
           )}
         </div>
