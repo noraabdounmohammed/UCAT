@@ -330,6 +330,9 @@ const ConceptPracticePageLoftContent: React.FC<Omit<ConceptPracticePageLoftProps
             } else {
               updateFilterState({ custom_filters: [] });
             }
+            // Show loading screen and remount the session so review state clears
+            setUserDismissedLoading(false);
+            hasAutoStarted.current = false;
             startPractice({ target_formats: [currentFormat], question_count: 5 });
           }}
           section="UKMLA AKT"
@@ -337,10 +340,14 @@ const ConceptPracticePageLoftContent: React.FC<Omit<ConceptPracticePageLoftProps
           onChangeFormat={(format: string) => {
             setCurrentFormat(format);
             // Restart practice with new format - preserves current filter if any
+            setUserDismissedLoading(false);
+            hasAutoStarted.current = false;
             startPractice({ target_formats: [format], question_count: 5 });
           }}
           onRestartWithFilters={() => {
             // Restart practice with current filters from filterState
+            setUserDismissedLoading(false);
+            hasAutoStarted.current = false;
             startPractice({ target_formats: [currentFormat], question_count: 5 });
           }}
         />

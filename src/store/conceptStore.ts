@@ -857,7 +857,7 @@ export const createConceptStore = (curriculumId: string = 'default') => {
         // Set generatingQuestionCount to the requested question count for the loading screen
         // This shows "Crafting X questions" where X is what the user will see, not what's being AI-generated
         const requestedQuestionCount = practiceConfig?.question_count || 10;
-        set({ isLoading: true, isPracticing: true, currentSessionAnswers: [], sessionStartTime: startTime, generatingQuestionCount: requestedQuestionCount });
+        set({ isLoading: true, isPracticing: true, practiceQuestions: [], currentSessionAnswers: [], sessionStartTime: startTime, generatingQuestionCount: requestedQuestionCount });
         
         const currentState = get();
         

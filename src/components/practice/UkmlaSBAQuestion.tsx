@@ -269,10 +269,10 @@ export const UkmlaSBAQuestion: React.FC<UkmlaSBAQuestionProps> = ({
     >
       {/* Header - StudyEdit style */}
       <div className={cn(
-        "flex items-center justify-between px-4 sm:px-6 py-3 border-b flex-shrink-0",
+        "flex items-center justify-between px-4 sm:px-6 py-3 flex-shrink-0",
         useParchmentTheme 
-          ? "border-[#D9CCB6] bg-[#FAF5EC]/80 backdrop-blur-sm" 
-          : "border-white/10 bg-[#0A0A0A]"
+          ? "bg-transparent" 
+          : "bg-transparent"
       )}>
         {/* Left: Progress */}
         <div className={cn(
