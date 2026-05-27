@@ -291,8 +291,8 @@ const ConceptPracticePageLoftContent: React.FC<Omit<ConceptPracticePageLoftProps
     setShowPracticeConfig(false);
   };
 
-  // Show loading screen while waiting for auto-start or while generating
-  if (pendingAutoStart || (isLoading && isPracticing && !userDismissedLoading)) {
+  // Show loading screen while waiting for auto-start or while generating, OR while ready but user hasn't pressed Begin
+  if (pendingAutoStart || (isPracticing && !userDismissedLoading)) {
     // Get the actual concepts being used for this session
     const sessionConcepts = practiceSelection && practiceSelection.length > 0
       ? displayedConcepts.filter((c: any) => practiceSelection.includes(c.concept_id))
