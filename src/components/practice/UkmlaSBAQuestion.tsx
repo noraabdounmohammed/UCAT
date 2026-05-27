@@ -11,6 +11,11 @@ import type { SessionAnswer } from './SessionProgressDropdown';
 import { generateVignetteVisual, generateExplanationVisual, getCachedVisual, isImageGenAvailable } from '@/services/visualGenerator';
 import { useConceptStore } from '@/contexts/ConceptStoreContext';
 
+// Feature flag — set to true to re-enable the "Go deeper" image generation section
+// ("See this play out" / "Map the concept"). All underlying handlers, state, and
+// services remain intact so flipping this back to true fully restores the feature.
+const SHOW_IMAGE_GENERATION = false;
+
 interface UkmlaSBAQuestionProps {
   question: QuestionData;
   onAnswer: (isCorrect: boolean) => void;
@@ -689,8 +694,11 @@ export const UkmlaSBAQuestion: React.FC<UkmlaSBAQuestionProps> = ({
                   </>
                 )}
 
-                {/* Visual generation section */}
-                {isImageGenAvailable() && (
+                {/* Visual generation section.
+                    Temporarily disabled per user request — flip SHOW_IMAGE_GENERATION
+                    to true to bring it back. All underlying code (handlers, state,
+                    isImageGenAvailable, services) is intentionally kept intact. */}
+                {SHOW_IMAGE_GENERATION && isImageGenAvailable() && (
                   <div className="my-5">
                     <div className={cn(
                       "text-[10.5px] font-medium tracking-[0.22em] uppercase mb-3",
