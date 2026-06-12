@@ -68,10 +68,10 @@ export const PracticeFilterModalParchment: React.FC<Props> = ({ isOpen, onClose,
     return f.map(id => ({ id, label: id.replace(/-/g, ' '), count: stats?.by_custom_filter?.[id] || concepts?.filter(c => c.custom_filters?.includes(id)).length || 0 }));
   }, [categories, byCat, stats, concepts]);
 
-  // Facets from "other" category (Diagnosis, Investigations, Management, etc.)
+  // Facets from "skill" category (Diagnosis, Investigations, Management, etc.)
   const facets = useMemo(() => {
-    // Look for "other" category first, then fallback to facet/topic/demo
-    const cat = findCat('other') || findCat('facet') || findCat('topic');
+    // Look for "skill" category (contains diagnosis, treatment, investigations, etc.)
+    const cat = findCat('skill') || findCat('facet') || findCat('topic');
     const f = cat ? byCat[cat.id] || [] : ['diagnosis','investigations','management','risk-factors','complications','prognosis'];
     return f.map(id => ({ id, label: id.replace(/-/g, ' '), count: stats?.by_custom_filter?.[id] || concepts?.filter(c => c.custom_filters?.includes(id)).length || 0 }));
   }, [categories, byCat, stats, concepts]);
