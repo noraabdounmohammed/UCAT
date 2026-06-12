@@ -35,6 +35,7 @@ export const PracticeFilterModalParchment: React.FC<Props> = ({ isOpen, onClose,
   const [sStatus, setSStatus] = useState<Set<string>>(new Set(['any']));
   const [sAreas, setSAreas] = useState<Set<string>>(new Set());
   const [sPres, setSPres] = useState<Set<string>>(new Set(['any']));
+  const [presSearch, setPresSearch] = useState('');
   const [sFacets, setSFacets] = useState<Set<string>>(new Set(['any']));
   const [areaOpen, setAreaOpen] = useState(false);
   const cid = curriculumId || 'default';
@@ -219,8 +220,22 @@ export const PracticeFilterModalParchment: React.FC<Props> = ({ isOpen, onClose,
           {/* Presentations */}
           <div className="py-4 border-t" style={{ borderColor: T.lineSoft }}>
             <div className="mb-3"><span className="text-[18px]" style={{ fontFamily: "'Fraunces', serif", fontStyle: 'italic', color: T.inkMuted }}>presenting as</span></div>
+            {/* Search box for presentations */}
+            <div className="relative pl-1 mb-3">
+              <input
+                type="text"
+                placeholder="Search presentations..."
+                value={presSearch}
+                onChange={(e) => setPresSearch(e.target.value)}
+                className="w-full px-4 py-2 rounded-full text-[12px] border outline-none"
+                style={{ backgroundColor: T.parchment, borderColor: T.line, color: T.ink }}
+              />
+              {presSearch && (
+                <button onClick={() => setPresSearch('')} className="absolute right-3 top-1/2 -translate-y-1/2 text-[10px]" style={{ color: T.inkMuted }}>✕</button>
+              )}
+            </div>
             <div className="flex flex-wrap gap-2 pl-1">
-              {presentations.map(p => {
+              {presentations.filter(p => !presSearch || p.label.toLowerCase().includes(presSearch.toLowerCase())).map(p => {
                 const sel = sPres.has(p.id);
                 return <button key={p.id} onClick={() => toggle(sPres, p.id, setSPres)} className="inline-flex items-center gap-1.5 px-3 py-2 rounded-full text-[12.5px] font-medium transition-all border" style={{ backgroundColor: sel ? T.espresso : T.cream, color: sel ? T.cream : T.ink, borderColor: sel ? T.espresso : T.line, whiteSpace: 'nowrap' }}>
                   <span>{p.label}</span><span className="text-[11.5px] italic ml-0.5" style={{ fontFamily: "'Fraunces', serif", color: sel ? T.blush : T.inkMuted }}>{p.count}</span>
