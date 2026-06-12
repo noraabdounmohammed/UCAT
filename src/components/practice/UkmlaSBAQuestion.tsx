@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { Sun, Moon, X, ChevronDown, Settings2, Sparkles, Image as ImageIcon, Loader2 } from 'lucide-react';
-import { PracticeFilterModal } from './PracticeFilterModal';
+import { PracticeFilterModalParchment as PracticeFilterModal } from './PracticeFilterModalParchment';
 import { useTheme } from '@/contexts/ThemeContext';
 import type { QuestionData } from './questionTypes';
 import ReactMarkdown from 'react-markdown';
@@ -845,13 +845,8 @@ export const UkmlaSBAQuestion: React.FC<UkmlaSBAQuestionProps> = ({
       {/* Configure Practice Modal */}
       {showConfigPanel && (
         <PracticeFilterModal
-          isLightMode={isLightMode}
+          isOpen={showConfigPanel}
           onClose={() => setShowConfigPanel(false)}
-          currentFormat={currentFormat}
-          onChangeFormat={(format) => {
-            onChangeFormat?.(format);
-            setShowConfigPanel(false);
-          }}
           onApplyFilters={() => {
             onRestartWithFilters?.();
             setShowConfigPanel(false);
