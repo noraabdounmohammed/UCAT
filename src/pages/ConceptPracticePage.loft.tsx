@@ -11,7 +11,7 @@ import { useUserRole } from '@/hooks/useUserRole';
 
 // Lazy load heavy components (practice session uses markdown = 295KB)
 const ApplePracticeSession = lazy(() => import('@/components/practice/ApplePracticeSession').then(m => ({ default: m.ApplePracticeSession })));
-const PracticeConfigModal = lazy(() => import('@/components/practice/PracticeConfigModal').then(m => ({ default: m.PracticeConfigModal })));
+const PracticeConfigModal = lazy(() => import('@/components/practice/PracticeConfigModalParchment').then(m => ({ default: m.PracticeConfigModalParchment })));
 const SessionOpeningFrame = lazy(() => import('@/components/practice/SessionOpeningFrame').then(m => ({ default: m.SessionOpeningFrame })));
 const ConceptCreationHub = lazy(() => import('@/components/concept/ConceptCreationHub').then(m => ({ default: m.ConceptCreationHub })));
 const ConceptEditorModal = lazy(() => import('@/components/concept/ConceptEditorModal').then(m => ({ default: m.ConceptEditorModal })));
@@ -395,7 +395,7 @@ const ConceptPracticePageLoftContent: React.FC<Omit<ConceptPracticePageLoftProps
           }}
           onPreloadModal={() => {
             // Preload the modal chunk on hover so it's instant when clicked
-            import('@/components/practice/PracticeConfigModal');
+            import('@/components/practice/PracticeConfigModalParchment');
           }}
         />
 
