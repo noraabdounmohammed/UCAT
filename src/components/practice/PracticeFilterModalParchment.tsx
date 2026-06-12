@@ -1,9 +1,6 @@
 import React, { useState, useMemo } from 'react';
-import { X, Search, Filter, RefreshCw, Settings2, ChevronDown, BookOpen, Sliders } from 'lucide-react';
+import { X, ChevronDown } from 'lucide-react';
 import { useConceptStore } from '@/contexts/ConceptStoreContext';
-import type { FilterCategory } from '@/types/conceptTypes';
-
-type StudyMode = 'smart' | 'new_only' | 'review_weak' | 'custom';
 
 interface PracticeFilterModalParchmentProps {
   isOpen: boolean;
@@ -21,23 +18,56 @@ const THEME = {
   inkMuted: '#8A7560',
   blush: '#F2C9C1',
   blushDeep: '#E5A89D',
+  blushSoft: '#FBEDE7',
+  blushBg: '#F9E4DF',
   sage: '#C8D3B8',
   sageDeep: '#8FA379',
+  sageBg: '#E2EAD6',
   line: '#D9CCB6',
   lineSoft: '#E8DCC4',
 };
 
-const STATUS_CONFIG = [
-  { id: 0, label: 'cold', name: 'Not Started', color: '#4a3a2c' },
-  { id: 1, label: 'weak', name: 'Needs Review', color: THEME.blushDeep },
-  { id: 2, label: 'mastered', name: 'Mastered', color: THEME.sageDeep },
+// Status chips config (matches HTML: weak, drifting, cold, mastered, any)
+const STATUS_CHIPS = [
+  { id: 'weak', label: 'weak', count: 420, color: THEME.blushDeep },
+  { id: 'drifting', label: 'drifting', count: 186, color: '#c8b89c' },
+  { id: 'cold', label: 'cold', count: 4259, color: '#4a3a2c' },
+  { id: 'mastered', label: 'mastered', count: 1427, color: THEME.sageDeep },
+  { id: 'any', label: 'any', count: 7099, color: THEME.ink, isDefault: true },
 ];
 
-const STUDY_MODES = [
-  { mode: 'smart' as const, name: 'Smart Study', description: 'Algorithm picks', recommended: true },
-  { mode: 'new_only' as const, name: 'New Only', description: 'Fresh concepts' },
-  { mode: 'review_weak' as const, name: 'Review Weak', description: 'Focus on mistakes' },
-  { mode: 'custom' as const, name: 'Custom', description: 'You choose' },
+// Areas config with mini-bar segments (matches HTML)
+const AREAS = [
+  { id: 'cardio', name: 'Cardiology', count: 1265, segments: { mastered: 48, weak: 10, attempted: 30, cold: 12 } },
+  { id: 'resp', name: 'Respiratory', count: 948, segments: { mastered: 45, weak: 12, attempted: 28, cold: 15 } },
+  { id: 'gi', name: 'Gastroenterology', count: 813, segments: { mastered: 27, weak: 10, attempted: 38, cold: 25 } },
+  { id: 'renal', name: 'Renal', count: 562, segments: { mastered: 10, weak: 8, attempted: 32, cold: 50 } },
+  { id: 'psych', name: 'Psychiatry', count: 524, segments: { mastered: 9, weak: 18, attempted: 28, cold: 45 } },
+  { id: 'neuro', name: 'Neurology', count: 887, segments: { mastered: 20, weak: 12, attempted: 40, cold: 28 } },
+  { id: 'paeds', name: 'Paediatrics', count: 643, segments: { mastered: 15, weak: 10, attempted: 35, cold: 40 } },
+];
+
+// Presentation chips (matches HTML)
+const PRESENTATIONS = [
+  { id: 'chest_pain', label: 'chest pain', count: 284 },
+  { id: 'breathlessness', label: 'breathlessness', count: 312 },
+  { id: 'abdo_pain', label: 'abdominal pain', count: 267 },
+  { id: 'headache', label: 'headache', count: 183 },
+  { id: 'palpitations', label: 'palpitations', count: 92 },
+  { id: 'confusion', label: 'confusion', count: 148 },
+  { id: 'weight_loss', label: 'weight loss', count: 104 },
+  { id: 'any', label: 'any', count: 7099, isDefault: true },
+];
+
+// Facet chips (matches HTML)
+const FACETS = [
+  { id: 'recognition', label: 'recognition', count: 1420 },
+  { id: 'investigations', label: 'investigations', count: 1240 },
+  { id: 'management', label: 'management', count: 1582 },
+  { id: 'risk_factors', label: 'risk factors', count: 860 },
+  { id: 'complications', label: 'complications', count: 774 },
+  { id: 'prognosis', label: 'prognosis', count: 421 },
+  { id: 'any', label: 'any', count: 7099, isDefault: true },
 ];
 
 export const PracticeFilterModalParchment: React.FC<PracticeFilterModalParchmentProps> = ({
@@ -45,171 +75,151 @@ export const PracticeFilterModalParchment: React.FC<PracticeFilterModalParchment
   onClose,
   onApplyFilters,
 }) => {
-  const {
-    filterState,
-    updateFilterState,
-    filterOptions,
-    filterCategories,
-    concepts,
-    curriculumId,
-    stats,
-  } = useConceptStore();
-
+  const { concepts } = useConceptStore();
+  
+  // Session size state
+  const [sessionSize, setSessionSize] = useState(10);
+  
+  // Selected filters
+  const [selectedStatus, setSelectedStatus] = useState<Set<string>>(new Set(['any']));
+  const [selectedAreas, setSelectedAreas] = useState<Set<string>>(new Set());
+  const [selectedPresentations, setSelectedPresentations] = useState<Set<string>>(new Set(['any']));
+  const [selectedFacets, setSelectedFacets] = useState<Set<string>>(new Set(['any']));
   const [searchQuery, setSearchQuery] = useState('');
-  const [studyMode, setStudyMode] = useState<StudyMode>('smart');
-  const [expandedCategories, setExpandedCategories] = useState<Set<string>>(new Set());
+  const [areaListOpen, setAreaListOpen] = useState(false);
 
-  // Get filter assignments from localStorage
-  const filterAssignments = useMemo(() => {
-    const primaryKey = `${curriculumId}_filter_assignments`;
-    let stored = localStorage.getItem(primaryKey);
-    if (!stored) {
-      const base = (curriculumId ?? '').replace(/^imported-pub-/, '').split('-')[0];
-      for (let i = 0; i < localStorage.length; i++) {
-        const key = localStorage.key(i);
-        if (key && key.includes('filter_assignments') && (base.length >= 3 ? key.includes(base) : true)) {
-          stored = localStorage.getItem(key);
-          break;
-        }
-      }
+  // Calculate available concepts based on filters
+  const availableCount = useMemo(() => {
+    let count = 7099;
+    
+    if (!selectedStatus.has('any')) {
+      const sum = [...selectedStatus].reduce((acc, s) => {
+        const found = STATUS_CHIPS.find(st => st.id === s);
+        return acc + (found?.count || 0);
+      }, 0);
+      count = Math.min(count, sum);
     }
-    return stored ? JSON.parse(stored) : {};
-  }, [curriculumId]);
-
-  // Calculate filter counts
-  const filterCounts = useMemo(() => {
-    const counts: Record<string, { total: number; correct: number; incorrect: number }> = {};
-    filterOptions?.custom_filters?.forEach((filter: string) => {
-      const filterConcepts = concepts?.filter((c: any) => c.custom_filters?.includes(filter)) || [];
-      const correct = filterConcepts.filter((c: any) => c.mastery_data?.mastery_level === 2).length;
-      const incorrect = filterConcepts.filter((c: any) => c.mastery_data?.mastery_level === 1).length;
-      counts[filter] = { total: filterConcepts.length, correct, incorrect };
-    });
-    return counts;
-  }, [concepts, filterOptions?.custom_filters]);
-
-  // Toggle study mode
-  const handleStudyModeChange = (mode: StudyMode) => {
-    setStudyMode(mode);
-    let newMasteryLevels: number[] = [];
-    if (mode === 'new_only') newMasteryLevels = [0];
-    else if (mode === 'review_weak') newMasteryLevels = [1];
-    updateFilterState({ mastery_levels: newMasteryLevels });
-  };
-
-  // Toggle mastery level
-  const toggleMastery = (level: number) => {
-    const current: number[] = filterState.mastery_levels ?? [];
-    const next = current.includes(level) ? current.filter(l => l !== level) : [...current, level];
-    updateFilterState({ mastery_levels: next });
-  };
-
-  // Toggle filter
-  const toggleFilter = (filter: string) => {
-    const current: string[] = filterState.custom_filters ?? [];
-    const next = current.includes(filter) ? current.filter(f => f !== filter) : [...current, filter];
-    updateFilterState({ custom_filters: next });
-  };
-
-  // Toggle cascading mode
-  const toggleCascadingMode = () => {
-    updateFilterState({ cascading_mode: !filterState.cascading_mode });
-  };
-
-  // Toggle category expansion
-  const toggleCategory = (catId: string) => {
-    setExpandedCategories(prev => {
-      const next = new Set(prev);
-      if (next.has(catId)) next.delete(catId);
-      else next.add(catId);
-      return next;
-    });
-  };
-
-  const clearAll = () => {
-    updateFilterState({ custom_filters: [], mastery_levels: [] });
-  };
-
-  // Group filters by category
-  const filtersByCategory = useMemo(() => {
-    const grouped: Record<string, string[]> = {};
     
-    filterCategories?.forEach((cat: FilterCategory) => {
-      grouped[cat.id] = [];
-    });
-    grouped['uncategorized'] = [];
+    if (selectedAreas.size > 0) {
+      const sum = [...selectedAreas].reduce((acc, a) => {
+        const found = AREAS.find(ar => ar.id === a);
+        return acc + (found?.count || 0);
+      }, 0);
+      count = Math.round(count * (sum / 7099));
+    }
     
-    filterOptions?.custom_filters?.forEach((filter: string) => {
-      const catId = filterAssignments[filter];
-      if (catId && grouped[catId]) {
-        grouped[catId].push(filter);
-      } else {
-        grouped['uncategorized'].push(filter);
-      }
-    });
+    if (!selectedPresentations.has('any')) {
+      count = Math.round(count * 0.18 * selectedPresentations.size);
+    }
     
-    // Filter by search
-    if (searchQuery) {
-      const q = searchQuery.toLowerCase();
-      Object.keys(grouped).forEach(key => {
-        grouped[key] = grouped[key].filter(f => f.toLowerCase().includes(q));
+    if (!selectedFacets.has('any')) {
+      count = Math.round(count * 0.16 * selectedFacets.size);
+    }
+    
+    return Math.max(0, Math.min(count, concepts?.length || count));
+  }, [selectedStatus, selectedAreas, selectedPresentations, selectedFacets, concepts?.length]);
+
+  // Toggle chip helper
+  const toggleChip = (set: Set<string>, value: string, setFn: (s: Set<string>) => void, hasAny: boolean = true) => {
+    const next = new Set(set);
+    if (value === 'any') {
+      setFn(new Set(['any']));
+      return;
+    }
+    if (next.has(value)) {
+      next.delete(value);
+      if (next.size === 0 && hasAny) next.add('any');
+    } else {
+      next.delete('any');
+      next.add(value);
+    }
+    setFn(next);
+  };
+
+  // Toggle area
+  const toggleArea = (areaId: string) => {
+    const next = new Set(selectedAreas);
+    if (next.has(areaId)) next.delete(areaId);
+    else next.add(areaId);
+    setSelectedAreas(next);
+  };
+
+  // Reset all
+  const resetAll = () => {
+    setSessionSize(10);
+    setSelectedStatus(new Set(['any']));
+    setSelectedAreas(new Set());
+    setSelectedPresentations(new Set(['any']));
+    setSelectedFacets(new Set(['any']));
+    setSearchQuery('');
+  };
+
+  // Generate preview sentence
+  const previewSentence = useMemo(() => {
+    const sizeText = `<strong>${sessionSize} concepts</strong>`;
+    
+    let statusText = '<em>any</em> status';
+    if (!selectedStatus.has('any')) {
+      const statuses = [...selectedStatus].map(s => `<em>${s}</em>`);
+      statusText = statuses.join(', ');
+    }
+    
+    let areaText = '<em>anywhere</em> on the map';
+    if (selectedAreas.size > 0) {
+      const areaNames = [...selectedAreas].map(a => {
+        const found = AREAS.find(ar => ar.id === a);
+        return `<em>${found?.name.toLowerCase() || a}</em>`;
+      });
+      areaText = areaNames.join(', ');
+    }
+    
+    return `${sizeText} — ${statusText}, ${areaText}.`;
+  }, [sessionSize, selectedStatus, selectedAreas]);
+
+  // Active filters for the stacked bar
+  const activeFilters = useMemo(() => {
+    const filters: { type: string; value: string; label: string }[] = [];
+    if (!selectedStatus.has('any')) {
+      [...selectedStatus].forEach(s => {
+        const found = STATUS_CHIPS.find(st => st.id === s);
+        if (found) filters.push({ type: 'status', value: s, label: found.label });
       });
     }
-    
-    return grouped;
-  }, [filterCategories, filterOptions?.custom_filters, filterAssignments, searchQuery]);
+    if (selectedAreas.size > 0) {
+      [...selectedAreas].forEach(a => {
+        const found = AREAS.find(ar => ar.id === a);
+        if (found) filters.push({ type: 'area', value: a, label: found.name });
+      });
+    }
+    if (!selectedPresentations.has('any')) {
+      [...selectedPresentations].forEach(p => {
+        const found = PRESENTATIONS.find(pr => pr.id === p);
+        if (found) filters.push({ type: 'presentation', value: p, label: found.label });
+      });
+    }
+    if (!selectedFacets.has('any')) {
+      [...selectedFacets].forEach(f => {
+        const found = FACETS.find(fa => fa.id === f);
+        if (found) filters.push({ type: 'facet', value: f, label: found.label });
+      });
+    }
+    return filters;
+  }, [selectedStatus, selectedAreas, selectedPresentations, selectedFacets]);
 
-  const activeCount = (filterState.custom_filters?.length || 0) + (filterState.mastery_levels?.length || 0);
+  // Remove active filter
+  const removeFilter = (type: string, value: string) => {
+    if (type === 'status') toggleChip(selectedStatus, value, setSelectedStatus);
+    else if (type === 'area') toggleArea(value);
+    else if (type === 'presentation') toggleChip(selectedPresentations, value, setSelectedPresentations);
+    else if (type === 'facet') toggleChip(selectedFacets, value, setSelectedFacets);
+  };
 
-  const handleApply = () => {
+  const handleBegin = () => {
     onApplyFilters?.();
     onClose();
   };
 
   if (!isOpen) return null;
-
-  const Chip = ({ 
-    label, 
-    count, 
-    selected, 
-    onClick, 
-    color,
-    showDot = true 
-  }: { 
-    label: string; 
-    count?: number; 
-    selected: boolean; 
-    onClick: () => void;
-    color?: string;
-    showDot?: boolean;
-  }) => (
-    <button
-      onClick={onClick}
-      className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-full text-[12.5px] font-medium transition-all border"
-      style={{
-        backgroundColor: selected ? THEME.espresso : THEME.cream,
-        color: selected ? THEME.cream : THEME.ink,
-        borderColor: selected ? THEME.espresso : THEME.line,
-        fontFamily: "'Inter', sans-serif"
-      }}
-    >
-      {showDot && color && (
-        <span className="w-[7px] h-[7px] rounded-full" style={{ backgroundColor: color }} />
-      )}
-      <span className="capitalize">{label}</span>
-      {count !== undefined && (
-        <span 
-          className="text-[11.5px] italic ml-0.5"
-          style={{ 
-            fontFamily: "'Fraunces', serif",
-            color: selected ? THEME.blush : THEME.inkMuted
-          }}
-        >
-          {count}
-        </span>
-      )}
-    </button>
-  );
 
   return (
     <div 
@@ -218,58 +228,58 @@ export const PracticeFilterModalParchment: React.FC<PracticeFilterModalParchment
       onClick={onClose}
     >
       <div 
-        className="w-full h-full md:h-auto md:max-w-[480px] flex flex-col overflow-hidden shadow-2xl"
+        className="w-full h-full md:h-auto md:max-w-[460px] flex flex-col overflow-hidden shadow-2xl"
         style={{ 
           backgroundColor: THEME.cream,
-          borderRadius: '28px',
+          borderRadius: '38px',
           maxHeight: '95vh',
           fontFamily: "'Inter', sans-serif",
         }}
         onClick={(e) => e.stopPropagation()}
       >
         {/* Sheet Grabber */}
-        <div className="flex justify-center pt-3 pb-1">
-          <div style={{ width: '36px', height: '4px', backgroundColor: THEME.line, borderRadius: '2px' }} />
+        <div className="flex justify-center pt-3">
+          <div style={{ width: '38px', height: '4px', backgroundColor: THEME.line, borderRadius: '2px' }} />
         </div>
         
         {/* Header */}
-        <div className="px-6 py-4 flex items-start justify-between gap-4">
+        <div className="px-6 pt-5 pb-3 flex items-start justify-between gap-4">
           <div className="flex-1">
             <h1 
-              className="text-[26px] leading-[1.1] mb-1"
+              className="text-[28px] leading-[1.05] mb-1.5"
               style={{ 
                 fontFamily: "'Fraunces', serif",
                 fontWeight: 300,
                 color: THEME.ink,
-                letterSpacing: '-0.02em'
+                letterSpacing: '-0.025em'
               }}
             >
-              Configure <em style={{ color: THEME.blushDeep, fontStyle: 'italic' }}>practice</em>
+              Practise <em style={{ color: THEME.blushDeep, fontStyle: 'italic' }}>your way</em>
             </h1>
             <p 
-              className="text-[12px]"
+              className="text-[13px]"
               style={{ 
                 fontFamily: "'Fraunces', serif",
                 fontStyle: 'italic',
                 color: THEME.inkMuted
               }}
             >
-              Adjust your session filters
+              Stack filters to sculpt exactly the slice you want.
             </p>
           </div>
           <div className="flex gap-2">
-            {activeCount > 0 && (
+            {activeFilters.length > 0 && (
               <button
-                onClick={clearAll}
+                onClick={resetAll}
                 className="px-3 py-1.5 rounded-full text-[11px] font-medium transition-all border"
                 style={{ borderColor: THEME.line, color: THEME.inkMuted }}
               >
-                Clear
+                Reset
               </button>
             )}
             <button
               onClick={onClose}
-              className="w-8 h-8 rounded-full flex items-center justify-center transition-all border"
+              className="w-7 h-7 rounded-full flex items-center justify-center transition-all border"
               style={{ borderColor: THEME.line, color: THEME.inkMuted }}
             >
               <X className="w-4 h-4" />
@@ -277,42 +287,39 @@ export const PracticeFilterModalParchment: React.FC<PracticeFilterModalParchment
           </div>
         </div>
 
-        {/* Active Filters */}
-        {activeCount > 0 && (
-          <div className="px-6 pb-3 flex flex-wrap gap-2">
-            <span className="text-[9px] uppercase tracking-[0.2em] font-medium py-2" style={{ color: THEME.inkMuted }}>
-              Active
+        {/* Active Filters Bar */}
+        {activeFilters.length > 0 && (
+          <div className="px-6 pb-4 flex flex-wrap gap-1.5 items-center">
+            <span 
+              className="text-[9.5px] uppercase tracking-[0.22em] font-medium mr-1"
+              style={{ color: THEME.inkMuted }}
+            >
+              Stacked
             </span>
-            {(filterState.mastery_levels || []).map((level: number) => {
-              const status = STATUS_CONFIG.find(s => s.id === level);
-              if (!status) return null;
-              return (
-                <button
-                  key={level}
-                  onClick={() => toggleMastery(level)}
-                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[11px] transition-all"
-                  style={{ backgroundColor: THEME.espresso, color: THEME.cream }}
-                >
-                  <span style={{ fontFamily: "'Fraunces', serif", fontStyle: 'italic', color: THEME.blush }}>
-                    status
-                  </span>
-                  <span>{status.label}</span>
-                  <span className="ml-0.5 opacity-60">×</span>
-                </button>
-              );
-            })}
-            {(filterState.custom_filters || []).map((filter: string) => (
+            {activeFilters.map((filter) => (
               <button
-                key={filter}
-                onClick={() => toggleFilter(filter)}
-                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[11px] transition-all"
+                key={`${filter.type}-${filter.value}`}
+                onClick={() => removeFilter(filter.type, filter.value)}
+                className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11.5px] transition-all"
                 style={{ backgroundColor: THEME.espresso, color: THEME.cream }}
               >
-                <span style={{ fontFamily: "'Fraunces', serif", fontStyle: 'italic', color: THEME.blush }}>
-                  filter
+                <span 
+                  className="text-[11px]"
+                  style={{ 
+                    fontFamily: "'Fraunces', serif",
+                    fontStyle: 'italic',
+                    color: THEME.blush 
+                  }}
+                >
+                  {filter.type}
                 </span>
-                <span>{filter.replace(/-/g, ' ')}</span>
-                <span className="ml-0.5 opacity-60">×</span>
+                <span>{filter.label}</span>
+                <span 
+                  className="w-4 h-4 rounded-full inline-flex items-center justify-center text-[10px] ml-0.5"
+                  style={{ backgroundColor: 'rgba(245,239,227,0.18)' }}
+                >
+                  ×
+                </span>
               </button>
             ))}
           </div>
@@ -321,306 +328,414 @@ export const PracticeFilterModalParchment: React.FC<PracticeFilterModalParchment
         {/* Scrollable Content */}
         <div className="flex-1 overflow-y-auto px-6 pb-4">
           
-          {/* STUDY MODE */}
+          {/* SIZE BLOCK */}
           <div className="py-4 border-t" style={{ borderColor: THEME.lineSoft }}>
             <div className="mb-3">
-              <span className="text-[17px]" style={{ fontFamily: "'Fraunces', serif", fontStyle: 'italic', color: THEME.inkMuted }}>
-                Study mode
+              <span 
+                className="text-[18px]"
+                style={{ fontFamily: "'Fraunces', serif", fontStyle: 'italic', color: THEME.inkMuted }}
+              >
+                A session of
               </span>
             </div>
-            <div className="grid grid-cols-2 gap-2 pl-1">
-              {STUDY_MODES.map(({ mode, name, description, recommended }) => {
-                const isSelected = studyMode === mode;
+            <div className="flex items-center justify-between gap-4 pl-1">
+              <div 
+                className="flex items-center rounded-full p-1"
+                style={{ backgroundColor: THEME.parchment, border: `1px solid ${THEME.line}` }}
+              >
+                <button
+                  onClick={() => setSessionSize(Math.max(5, sessionSize - 5))}
+                  disabled={sessionSize <= 5}
+                  className="w-[30px] h-[30px] rounded-full flex items-center justify-center text-[17px] font-light transition-all disabled:opacity-35"
+                  style={{ color: THEME.ink }}
+                >
+                  −
+                </button>
+                <span 
+                  className="min-w-[88px] text-center text-[19px]"
+                  style={{ 
+                    fontFamily: "'Fraunces', serif",
+                    fontWeight: 400,
+                    color: THEME.ink,
+                    letterSpacing: '-0.02em'
+                  }}
+                >
+                  {sessionSize}
+                  <span 
+                    className="text-[12.5px] italic ml-1"
+                    style={{ fontFamily: "'Fraunces', serif", color: THEME.inkMuted }}
+                  >
+                    concepts
+                  </span>
+                </span>
+                <button
+                  onClick={() => setSessionSize(Math.min(50, sessionSize + 5))}
+                  disabled={sessionSize >= 50}
+                  className="w-[30px] h-[30px] rounded-full flex items-center justify-center text-[17px] font-light transition-all disabled:opacity-35"
+                  style={{ color: THEME.ink }}
+                >
+                  +
+                </button>
+              </div>
+              <span 
+                className="text-[12.5px] italic text-right"
+                style={{ fontFamily: "'Fraunces', serif", color: THEME.inkMuted }}
+              >
+                ≈ {Math.round(sessionSize * 2)} min
+              </span>
+            </div>
+          </div>
+
+          {/* STATUS BLOCK */}
+          <div className="py-4 border-t" style={{ borderColor: THEME.lineSoft }}>
+            <div className="mb-3">
+              <span 
+                className="text-[18px]"
+                style={{ fontFamily: "'Fraunces', serif", fontStyle: 'italic', color: THEME.inkMuted }}
+              >
+                that are
+              </span>
+            </div>
+            <div className="flex flex-wrap gap-2 pl-1">
+              {STATUS_CHIPS.map((chip) => {
+                const isSelected = selectedStatus.has(chip.id);
                 return (
                   <button
-                    key={mode}
-                    onClick={() => handleStudyModeChange(mode)}
-                    className="relative p-3 rounded-[14px] text-left transition-all border"
+                    key={chip.id}
+                    onClick={() => toggleChip(selectedStatus, chip.id, setSelectedStatus)}
+                    className="inline-flex items-center gap-1.5 px-3 py-2 rounded-full text-[12.5px] font-medium transition-all border"
                     style={{
                       backgroundColor: isSelected ? THEME.espresso : THEME.cream,
-                      borderColor: isSelected ? THEME.espresso : THEME.line,
                       color: isSelected ? THEME.cream : THEME.ink,
+                      borderColor: isSelected ? THEME.espresso : THEME.line,
+                      whiteSpace: 'nowrap'
                     }}
                   >
-                    {recommended && (
-                      <span 
-                        className="absolute top-1.5 right-1.5 text-[8px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded"
-                        style={{ backgroundColor: isSelected ? THEME.blush : THEME.sage, color: THEME.espresso }}
-                      >
-                        Best
-                      </span>
-                    )}
-                    <div className="text-xs font-medium mb-0.5" style={{ fontFamily: "'Inter', sans-serif" }}>
-                      {name}
-                    </div>
-                    <div 
-                      className="text-[10px]"
+                    <span 
+                      className="w-[7px] h-[7px] rounded-full"
+                      style={{ backgroundColor: chip.color }}
+                    />
+                    <span className="capitalize">{chip.label}</span>
+                    <span 
+                      className="text-[11.5px] italic ml-0.5"
                       style={{ 
-                        fontFamily: "'Inter', sans-serif",
+                        fontFamily: "'Fraunces', serif",
                         color: isSelected ? THEME.blush : THEME.inkMuted
                       }}
                     >
-                      {description}
-                    </div>
+                      {chip.count}
+                    </span>
                   </button>
                 );
               })}
             </div>
           </div>
 
-          {/* FILTER MODE */}
-          <div className="py-4 border-t" style={{ borderColor: THEME.lineSoft }}>
-            <div className="flex items-center justify-between pl-1">
-              <div className="flex items-center gap-2">
-                <Sliders className="w-4 h-4" style={{ color: THEME.inkMuted }} />
-                <span className="text-[15px]" style={{ fontFamily: "'Fraunces', serif", color: THEME.ink }}>
-                  Filter mode
-                </span>
-              </div>
-              <button
-                onClick={toggleCascadingMode}
-                className="px-4 py-2 rounded-full text-[11px] font-medium transition-all border"
-                style={{
-                  backgroundColor: filterState.cascading_mode ? THEME.espresso : THEME.cream,
-                  color: filterState.cascading_mode ? THEME.cream : THEME.ink,
-                  borderColor: THEME.line,
-                }}
-              >
-                {filterState.cascading_mode ? 'Match ALL (AND)' : 'Match ANY (OR)'}
-              </button>
-            </div>
-          </div>
-
-          {/* MASTERY STATUS - Only in custom mode */}
-          {studyMode === 'custom' && (
-            <div className="py-4 border-t" style={{ borderColor: THEME.lineSoft }}>
-              <div className="mb-3">
-                <span className="text-[17px]" style={{ fontFamily: "'Fraunces', serif", fontStyle: 'italic', color: THEME.inkMuted }}>
-                  Mastery status
-                </span>
-              </div>
-              <div className="flex flex-wrap gap-2 pl-1">
-                {STATUS_CONFIG.map((status) => {
-                  const isSelected = (filterState.mastery_levels || []).includes(status.id);
-                  const count = stats?.by_mastery?.[status.id] || 0;
-                  return (
-                    <Chip
-                      key={status.id}
-                      label={status.label}
-                      count={count}
-                      selected={isSelected}
-                      onClick={() => toggleMastery(status.id)}
-                      color={status.color}
-                    />
-                  );
-                })}
-              </div>
-            </div>
-          )}
-
-          {/* SEARCH */}
-          <div className="py-4 border-t" style={{ borderColor: THEME.lineSoft }}>
-            <div className="relative pl-1">
-              <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4" style={{ color: THEME.inkMuted }} />
-              <input
-                type="text"
-                placeholder="Search filters..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full pl-10 pr-10 py-2.5 rounded-full text-sm border outline-none transition-all focus:border-ink/40"
-                style={{ backgroundColor: THEME.parchment, borderColor: THEME.line, color: THEME.ink }}
-              />
-              {searchQuery && (
-                <button
-                  onClick={() => setSearchQuery('')}
-                  className="absolute right-3.5 top-1/2 -translate-y-1/2"
-                  style={{ color: THEME.inkMuted }}
-                >
-                  <X className="w-4 h-4" />
-                </button>
-              )}
-            </div>
-          </div>
-
-          {/* FILTER CATEGORIES */}
+          {/* AREA BLOCK */}
           <div className="py-4 border-t" style={{ borderColor: THEME.lineSoft }}>
             <div className="mb-3">
-              <span className="text-[17px]" style={{ fontFamily: "'Fraunces', serif", fontStyle: 'italic', color: THEME.inkMuted }}>
-                Categories
+              <span 
+                className="text-[18px]"
+                style={{ fontFamily: "'Fraunces', serif", fontStyle: 'italic', color: THEME.inkMuted }}
+              >
+                in
               </span>
             </div>
-            
-            <div className="space-y-3 pl-1">
-              {filterCategories?.map((category: FilterCategory) => {
-                const filters = filtersByCategory[category.id] || [];
-                if (filters.length === 0 && !searchQuery) return null;
-                
-                const isExpanded = expandedCategories.has(category.id) || searchQuery.length > 0;
-                const displayFilters = isExpanded ? filters : filters.slice(0, 4);
-                
-                return (
-                  <div key={category.id} className="rounded-[14px] border overflow-hidden" style={{ borderColor: THEME.line }}>
-                    <button
-                      onClick={() => toggleCategory(category.id)}
-                      className="w-full flex items-center justify-between p-3 transition-all hover:bg-parchment/50"
-                      style={{ backgroundColor: THEME.parchment }}
-                    >
-                      <span className="text-[13px] font-medium" style={{ color: THEME.ink }}>
-                        {category.name}
-                      </span>
-                      <div className="flex items-center gap-2">
-                        <span className="text-[11px] italic" style={{ fontFamily: "'Fraunces', serif", color: THEME.inkMuted }}>
-                          {filters.length}
-                        </span>
-                        <ChevronDown 
-                          className="w-4 h-4 transition-transform"
-                          style={{ 
-                            color: THEME.inkMuted,
-                            transform: isExpanded ? 'rotate(180deg)' : 'rotate(0deg)'
-                          }}
-                        />
-                      </div>
-                    </button>
-                    
-                    {displayFilters.length > 0 && (
-                      <div style={{ backgroundColor: THEME.cream }}>
-                        {displayFilters.map((filter: string, index: number) => {
-                          const isSelected = (filterState.custom_filters || []).includes(filter);
-                          const stats = filterCounts[filter] || { total: 0, correct: 0, incorrect: 0 };
-                          const correctPercent = stats.total > 0 ? (stats.correct / stats.total) * 100 : 0;
-                          
-                          return (
-                            <button
-                              key={filter}
-                              onClick={() => toggleFilter(filter)}
-                              className="w-full flex items-center justify-between px-3 py-2.5 text-left transition-all hover:bg-parchment/30"
-                              style={{ 
-                                borderTop: index === 0 ? `1px solid ${THEME.lineSoft}` : undefined,
-                                borderBottom: index < displayFilters.length - 1 ? `1px solid ${THEME.lineSoft}` : undefined,
-                              }}
-                            >
-                              <div className="flex items-center gap-2">
-                                <span 
-                                  className="w-4 h-4 rounded flex items-center justify-center text-[10px] border transition-all"
-                                  style={{
-                                    backgroundColor: isSelected ? THEME.espresso : THEME.cream,
-                                    borderColor: isSelected ? THEME.espresso : THEME.line,
-                                    color: isSelected ? THEME.cream : 'transparent'
-                                  }}
-                                >
-                                  {isSelected && '✓'}
-                                </span>
-                                <span className="text-[12px] capitalize" style={{ color: THEME.ink }}>
-                                  {filter.replace(/-/g, ' ')}
-                                </span>
-                              </div>
-                              <div className="flex items-center gap-2">
-                                {stats.total > 0 && (
-                                  <div className="flex items-center gap-1">
-                                    {stats.correct > 0 && (
-                                      <div 
-                                        className="h-1 rounded-full"
-                                        style={{ width: `${Math.max(correctPercent / 3, 3)}px`, backgroundColor: THEME.sageDeep }}
-                                      />
-                                    )}
-                                    {stats.incorrect > 0 && (
-                                      <div 
-                                        className="h-1 rounded-full"
-                                        style={{ width: `${Math.max((stats.incorrect / stats.total) * 30 / 3, 3)}px`, backgroundColor: THEME.blushDeep }}
-                                      />
-                                    )}
-                                  </div>
-                                )}
-                                <span className="text-[11px] italic w-6 text-right" style={{ fontFamily: "'Fraunces', serif", color: THEME.inkMuted }}>
-                                  {stats.total}
-                                </span>
-                              </div>
-                            </button>
-                          );
-                        })}
-                      </div>
-                    )}
-                  </div>
-                );
-              })}
-              
-              {/* Uncategorized filters */}
-              {filtersByCategory['uncategorized']?.length > 0 && (
-                <div className="rounded-[14px] border overflow-hidden" style={{ borderColor: THEME.line }}>
-                  <div className="p-3" style={{ backgroundColor: THEME.parchment }}>
-                    <span className="text-[13px] font-medium" style={{ color: THEME.ink }}>
-                      Other filters
-                    </span>
-                  </div>
-                  <div style={{ backgroundColor: THEME.cream }}>
-                    {filtersByCategory['uncategorized'].map((filter: string, index: number) => {
-                      const isSelected = (filterState.custom_filters || []).includes(filter);
-                      const stats = filterCounts[filter] || { total: 0 };
-                      
-                      return (
-                        <button
-                          key={filter}
-                          onClick={() => toggleFilter(filter)}
-                          className="w-full flex items-center justify-between px-3 py-2.5 text-left transition-all hover:bg-parchment/30"
-                          style={{ 
-                            borderBottom: index < filtersByCategory['uncategorized'].length - 1 ? `1px solid ${THEME.lineSoft}` : undefined,
+            <div className="pl-1">
+              {/* Area Current */}
+              <button
+                onClick={() => setAreaListOpen(!areaListOpen)}
+                className="w-full flex items-center justify-between gap-3 p-3 rounded-[14px] text-left transition-all"
+                style={{ 
+                  backgroundColor: THEME.cream, 
+                  border: `1px solid ${THEME.line}` 
+                }}
+              >
+                <div className="flex flex-col gap-0.5 flex-1">
+                  <span 
+                    className="text-[9.5px] uppercase tracking-[0.2em] font-medium"
+                    style={{ color: THEME.inkMuted }}
+                  >
+                    Area of the map
+                  </span>
+                  <span 
+                    className="text-[15px]"
+                    style={{ fontFamily: "'Fraunces', serif", color: THEME.ink }}
+                  >
+                    {selectedAreas.size === 0 ? (
+                      <em style={{ color: THEME.blushDeep }}>anywhere</em>
+                    ) : (
+                      [...selectedAreas].map(a => {
+                        const found = AREAS.find(ar => ar.id === a);
+                        return found?.name;
+                      }).join(', ')
+                    )} on the map
+                  </span>
+                </div>
+                <ChevronDown 
+                  className="w-4 h-4 transition-transform"
+                  style={{ 
+                    color: THEME.inkMuted,
+                    transform: areaListOpen ? 'rotate(180deg)' : 'rotate(0deg)'
+                  }}
+                />
+              </button>
+
+              {/* Area List */}
+              {areaListOpen && (
+                <div 
+                  className="mt-2 rounded-[14px] overflow-hidden"
+                  style={{ 
+                    backgroundColor: THEME.parchment, 
+                    border: `1px solid ${THEME.line}` 
+                  }}
+                >
+                  {AREAS.map((area) => {
+                    const isSelected = selectedAreas.has(area.id);
+                    return (
+                      <button
+                        key={area.id}
+                        onClick={() => toggleArea(area.id)}
+                        className="w-full flex items-center gap-2.5 px-3.5 py-2.5 text-left transition-all border-b last:border-b-0"
+                        style={{ 
+                          borderColor: THEME.lineSoft,
+                          backgroundColor: isSelected ? 'rgba(250,245,236,0.5)' : 'transparent'
+                        }}
+                      >
+                        <span 
+                          className="w-[17px] h-[17px] rounded flex items-center justify-center text-[10px] border transition-all"
+                          style={{
+                            backgroundColor: isSelected ? THEME.espresso : THEME.cream,
+                            borderColor: isSelected ? THEME.espresso : THEME.line,
+                            color: isSelected ? THEME.cream : 'transparent'
                           }}
                         >
-                          <div className="flex items-center gap-2">
-                            <span 
-                              className="w-4 h-4 rounded flex items-center justify-center text-[10px] border transition-all"
-                              style={{
-                                backgroundColor: isSelected ? THEME.espresso : THEME.cream,
-                                borderColor: isSelected ? THEME.espresso : THEME.line,
-                                color: isSelected ? THEME.cream : 'transparent'
-                              }}
-                            >
-                              {isSelected && '✓'}
-                            </span>
-                            <span className="text-[12px] capitalize" style={{ color: THEME.ink }}>
-                              {filter.replace(/-/g, ' ')}
-                            </span>
-                          </div>
-                          <span className="text-[11px] italic" style={{ fontFamily: "'Fraunces', serif", color: THEME.inkMuted }}>
-                            {stats.total}
-                          </span>
-                        </button>
-                      );
-                    })}
-                  </div>
+                          {isSelected && '✓'}
+                        </span>
+                        <span className="text-[13px] flex-1" style={{ color: THEME.ink }}>
+                          {area.name}
+                        </span>
+                        {/* Mini bar */}
+                        <div 
+                          className="w-11 h-1 rounded-sm overflow-hidden flex"
+                          style={{ backgroundColor: THEME.lineSoft }}
+                        >
+                          <span 
+                            className="h-full"
+                            style={{ width: `${area.segments.mastered}%`, backgroundColor: THEME.sageDeep }}
+                          />
+                          <span 
+                            className="h-full"
+                            style={{ width: `${area.segments.weak}%`, backgroundColor: THEME.blushDeep }}
+                          />
+                          <span 
+                            className="h-full"
+                            style={{ width: `${area.segments.attempted}%`, backgroundColor: '#c8b89c' }}
+                          />
+                          <span 
+                            className="h-full"
+                            style={{ width: `${area.segments.cold}%`, backgroundColor: '#4a3a2c' }}
+                          />
+                        </div>
+                        <span 
+                          className="text-[12px] italic min-w-[42px] text-right"
+                          style={{ fontFamily: "'Fraunces', serif", color: THEME.inkMuted }}
+                        >
+                          {area.count.toLocaleString()}
+                        </span>
+                      </button>
+                    );
+                  })}
                 </div>
               )}
+
+              {/* Narrow Further */}
+              <div className="mt-2.5 text-center">
+                <button
+                  className="text-[13px] transition-all hover:text-ink"
+                  style={{ fontFamily: "'Fraunces', serif", fontStyle: 'italic', color: THEME.inkMuted }}
+                >
+                  narrow further by condition
+                  <span className="not-italic ml-1">→</span>
+                </button>
+              </div>
+            </div>
+          </div>
+
+          {/* PRESENTATION BLOCK */}
+          <div className="py-4 border-t" style={{ borderColor: THEME.lineSoft }}>
+            <div className="mb-3">
+              <span 
+                className="text-[18px]"
+                style={{ fontFamily: "'Fraunces', serif", fontStyle: 'italic', color: THEME.inkMuted }}
+              >
+                presenting as
+              </span>
+            </div>
+            <div className="flex flex-wrap gap-2 pl-1">
+              {PRESENTATIONS.map((chip) => {
+                const isSelected = selectedPresentations.has(chip.id);
+                return (
+                  <button
+                    key={chip.id}
+                    onClick={() => toggleChip(selectedPresentations, chip.id, setSelectedPresentations)}
+                    className="inline-flex items-center gap-1.5 px-3 py-2 rounded-full text-[12.5px] font-medium transition-all border"
+                    style={{
+                      backgroundColor: isSelected ? THEME.espresso : THEME.cream,
+                      color: isSelected ? THEME.cream : THEME.ink,
+                      borderColor: isSelected ? THEME.espresso : THEME.line,
+                      whiteSpace: 'nowrap'
+                    }}
+                  >
+                    <span>{chip.label}</span>
+                    <span 
+                      className="text-[11.5px] italic ml-0.5"
+                      style={{ 
+                        fontFamily: "'Fraunces', serif",
+                        color: isSelected ? THEME.blush : THEME.inkMuted
+                      }}
+                    >
+                      {chip.count}
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* FACET BLOCK */}
+          <div className="py-4 border-t" style={{ borderColor: THEME.lineSoft }}>
+            <div className="mb-3">
+              <span 
+                className="text-[18px]"
+                style={{ fontFamily: "'Fraunces', serif", fontStyle: 'italic', color: THEME.inkMuted }}
+              >
+                about
+              </span>
+            </div>
+            <div className="flex flex-wrap gap-2 pl-1">
+              {FACETS.map((chip) => {
+                const isSelected = selectedFacets.has(chip.id);
+                return (
+                  <button
+                    key={chip.id}
+                    onClick={() => toggleChip(selectedFacets, chip.id, setSelectedFacets)}
+                    className="inline-flex items-center gap-1.5 px-3 py-2 rounded-full text-[12.5px] font-medium transition-all border"
+                    style={{
+                      backgroundColor: isSelected ? THEME.espresso : THEME.cream,
+                      color: isSelected ? THEME.cream : THEME.ink,
+                      borderColor: isSelected ? THEME.espresso : THEME.line,
+                      whiteSpace: 'nowrap'
+                    }}
+                  >
+                    <span>{chip.label}</span>
+                    <span 
+                      className="text-[11.5px] italic ml-0.5"
+                      style={{ 
+                        fontFamily: "'Fraunces', serif",
+                        color: isSelected ? THEME.blush : THEME.inkMuted
+                      }}
+                    >
+                      {chip.count}
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* SEARCH BLOCK */}
+          <div className="py-4 border-t" style={{ borderColor: THEME.lineSoft }}>
+            <div className="mb-3">
+              <span 
+                className="text-[18px]"
+                style={{ fontFamily: "'Fraunces', serif", fontStyle: 'italic', color: THEME.inkMuted }}
+              >
+                or jump to
+              </span>
+            </div>
+            <div className="relative pl-1">
+              <span 
+                className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[13px]"
+                style={{ color: THEME.inkMuted }}
+              >
+                ⌕
+              </span>
+              <input
+                type="text"
+                placeholder="A concept, condition, or presentation…"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="w-full pl-9 pr-4 py-2.5 rounded-full text-[13px] border outline-none transition-all"
+                style={{ 
+                  backgroundColor: THEME.parchment, 
+                  borderColor: THEME.line, 
+                  color: THEME.ink 
+                }}
+              />
             </div>
           </div>
         </div>
 
-        {/* Footer */}
-        <div className="px-6 py-4 border-t" style={{ borderColor: THEME.lineSoft, backgroundColor: THEME.cream }}>
+        {/* FOOTER */}
+        <div 
+          className="px-6 pt-3 pb-5"
+          style={{ 
+            background: `linear-gradient(to top, ${THEME.cream} 70%, rgba(250,245,236,0))` 
+          }}
+        >
+          {/* Preview Box */}
+          <div 
+            className="relative rounded-2xl p-4 mb-2.5"
+            style={{ backgroundColor: THEME.blushSoft }}
+          >
+            <div 
+              className="absolute left-0 top-3.5 bottom-3.5 w-0.5 rounded-full"
+              style={{ backgroundColor: THEME.blushDeep }}
+            />
+            <div 
+              className="text-[9.5px] uppercase tracking-[0.22em] font-medium mb-1.5"
+              style={{ color: THEME.blushDeep }}
+            >
+              You'll practise
+            </div>
+            <div 
+              className="text-[14.5px] leading-[1.5]"
+              style={{ 
+                fontFamily: "'Fraunces', serif",
+                fontWeight: 300,
+                color: THEME.ink
+              }}
+              dangerouslySetInnerHTML={{ __html: previewSentence }}
+            />
+          </div>
+
+          {/* Warning note if no concepts */}
+          {availableCount === 0 && (
+            <div 
+              className="text-[12.5px] italic text-center mb-2"
+              style={{ fontFamily: "'Fraunces', serif", color: THEME.inkMuted }}
+            >
+              No concepts match your filters. <em style={{ color: THEME.blushDeep }}>Try removing some</em>.
+            </div>
+          )}
+
+          {/* CTA Button */}
           <button
-            onClick={handleApply}
-            className="w-full py-3.5 rounded-full text-[15px] font-medium transition-all flex items-center justify-center gap-2"
+            onClick={handleBegin}
+            disabled={availableCount === 0}
+            className="w-full py-4 rounded-full text-[14px] font-medium transition-all flex items-center justify-center gap-3 disabled:cursor-not-allowed"
             style={{ 
-              backgroundColor: THEME.espresso, 
+              backgroundColor: availableCount === 0 ? THEME.inkMuted : THEME.espresso, 
               color: THEME.cream,
               fontFamily: "'Inter', sans-serif"
             }}
           >
-            <RefreshCw className="w-4 h-4" />
-            Restart with {concepts?.filter((c: any) => {
-              // Calculate filtered count
-              let match = true;
-              if ((filterState.mastery_levels?.length || 0) > 0) {
-                match = filterState.mastery_levels.includes(c.mastery_data?.mastery_level || 0);
-              }
-              if (match && (filterState.custom_filters?.length || 0) > 0) {
-                if (filterState.cascading_mode) {
-                  match = filterState.custom_filters.every((f: string) => c.custom_filters?.includes(f));
-                } else {
-                  match = filterState.custom_filters.some((f: string) => c.custom_filters?.includes(f));
-                }
-              }
-              return match;
-            }).length} concepts
+            <span>Begin</span>
+            <span className="text-[14.5px] italic" style={{ fontFamily: "'Fraunces', serif", color: THEME.blush }}>
+              {Math.min(availableCount, sessionSize)} concepts
+            </span>
+            <span className="transition-transform">→</span>
           </button>
         </div>
       </div>
