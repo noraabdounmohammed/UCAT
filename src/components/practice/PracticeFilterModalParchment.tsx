@@ -40,7 +40,7 @@ export const PracticeFilterModalParchment: React.FC<Props> = ({ isOpen, onClose,
   const cid = curriculumId || 'default';
 
   useEffect(() => { setCategories(getStorage(cid, 'filter_categories', [])); }, [cid]);
-  const assignments = useMemo(() => getStorage(cid, 'filter_assignments', {}), [cid]);
+  const assignments = useMemo<Record<string, string>>(() => getStorage(cid, 'filter_assignments', {}), [cid]);
 
   const byCat = useMemo(() => {
     const all = new Set<string>();
@@ -68,9 +68,11 @@ export const PracticeFilterModalParchment: React.FC<Props> = ({ isOpen, onClose,
     return f.map(id => ({ id, label: id.replace(/-/g, ' '), count: stats?.by_custom_filter?.[id] || concepts?.filter(c => c.custom_filters?.includes(id)).length || 0 }));
   }, [categories, byCat, stats, concepts]);
 
+  // Facets from "other" category (Diagnosis, Investigations, Management, etc.)
   const facets = useMemo(() => {
-    const cat = findCat('facet') || findCat('topic');
-    const f = cat ? byCat[cat.id] || [] : ['recognition','investigations','management','risk-factors','complications','prognosis'];
+    // Look for "other" category first, then fallback to facet/topic/demo
+    const cat = findCat('other') || findCat('facet') || findCat('topic');
+    const f = cat ? byCat[cat.id] || [] : ['diagnosis','investigations','management','risk-factors','complications','prognosis'];
     return f.map(id => ({ id, label: id.replace(/-/g, ' '), count: stats?.by_custom_filter?.[id] || concepts?.filter(c => c.custom_filters?.includes(id)).length || 0 }));
   }, [categories, byCat, stats, concepts]);
 
@@ -108,10 +110,10 @@ export const PracticeFilterModalParchment: React.FC<Props> = ({ isOpen, onClose,
 
   const active = useMemo(() => {
     const a: {t: string, v: string, l: string}[] = [];
-    if (!sStatus.has('any')) [...sStatus].forEach(v => { const f = statusChips.find(s => s.id === v); if (f) a.push({t: 'status', v, l: f.l}); });
-    if (sAreas.size) [...sAreas].forEach(v => { const f = areas.find(ar => ar.id === v); if (f) a.push({t: 'area', v, l: f.name}); });
-    if (!sPres.has('any')) [...sPres].forEach(v => { const f = presentations.find(p => p.id === v); if (f) a.push({t: 'presentation', v, l: f.label}); });
-    if (!sFacets.has('any')) [...sFacets].forEach(v => { const f = facets.find(f => f.id === v); if (f) a.push({t: 'facet', v, l: f.label}); });
+    if (!sStatus.has('any')) [...sStatus].forEach(v => { const found = statusChips.find(s => s.id === v); if (found) a.push({t: 'status', v, l: found.l}); });
+    if (sAreas.size) [...sAreas].forEach(v => { const found = areas.find(ar => ar.id === v); if (found) a.push({t: 'area', v, l: found.name}); });
+    if (!sPres.has('any')) [...sPres].forEach(v => { const found = presentations.find(p => p.id === v); if (found) a.push({t: 'presentation', v, l: found.label}); });
+    if (!sFacets.has('any')) [...sFacets].forEach(v => { const found = facets.find(facet => facet.id === v); if (found) a.push({t: 'facet', v, l: found.label}); });
     return a;
   }, [sStatus, sAreas, sPres, sFacets, statusChips, areas, presentations, facets]);
 
