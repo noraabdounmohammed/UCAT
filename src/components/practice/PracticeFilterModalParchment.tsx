@@ -37,16 +37,19 @@ const calcSegments = (concepts: ConceptNode[], filter: string) => {
 };
 
 export const PracticeFilterModalParchment: React.FC<Props> = ({ isOpen, onClose, onApplyFilters }) => {
-  const { concepts, curriculumId, stats } = useConceptStore();
+  const { concepts, curriculumId, stats, setPracticeSelection } = useConceptStore();
   const [categories, setCategories] = useState<FilterCategory[]>([]);
   const [size, setSize] = useState(10);
   const [sStatus, setSStatus] = useState<Set<string>>(new Set(['any']));
   const [sAreas, setSAreas] = useState<Set<string>>(new Set());
   const [sConditions, setSConditions] = useState<Set<string>>(new Set(['any']));
   const [conditionSearch, setConditionSearch] = useState('');
+  const [conditionExpanded, setConditionExpanded] = useState(false);
   const [sPres, setSPres] = useState<Set<string>>(new Set(['any']));
   const [presSearch, setPresSearch] = useState('');
+  const [presExpanded, setPresExpanded] = useState(false);
   const [sFacets, setSFacets] = useState<Set<string>>(new Set(['any']));
+  const [facetExpanded, setFacetExpanded] = useState(false);
   const [areaOpen, setAreaOpen] = useState(false);
   const cid = curriculumId || 'default';
 
@@ -85,10 +88,10 @@ export const PracticeFilterModalParchment: React.FC<Props> = ({ isOpen, onClose,
     return f.map(id => ({ id, label: id.replace(/-/g, ' '), count: stats?.by_custom_filter?.[id] || concepts?.filter(c => c.custom_filters?.includes(id)).length || 0 }));
   }, [categories, byCat, stats, concepts]);
 
-  // Facets from "skill" category (Diagnosis, Investigations, Management, etc.)
+  // Facets from "Other" category (Definition, Pathophysiology, Investigation, Management, etc.)
   const facets = useMemo(() => {
-    // Look for "skill" category (contains diagnosis, treatment, investigations, etc.)
-    const cat = findCat('skill') || findCat('facet') || findCat('topic');
+    // Real curriculum JSON labels this category "Other" — fall back to skill/facet/topic for legacy data
+    const cat = findCat('other') || findCat('skill') || findCat('facet') || findCat('topic');
     const f = cat ? byCat[cat.id] || [] : ['diagnosis','investigations','management','risk-factors','complications','prognosis'];
     return f.map(id => ({ id, label: id.replace(/-/g, ' '), count: stats?.by_custom_filter?.[id] || concepts?.filter(c => c.custom_filters?.includes(id)).length || 0 }));
   }, [categories, byCat, stats, concepts]);
@@ -101,7 +104,7 @@ export const PracticeFilterModalParchment: React.FC<Props> = ({ isOpen, onClose,
     { id: 'any', l: 'any', c: concepts?.length || 0, col: T.ink, def: true },
   ], [stats, concepts]);
 
-  const available = useMemo(() => {
+  const filteredPool = useMemo(() => {
     let f = concepts || [];
     if (!sStatus.has('any')) f = f.filter(c => [...sStatus].some(s => 
       (s === 'mastered' && c.mastery_data?.mastery_level === 2) ||
@@ -113,8 +116,10 @@ export const PracticeFilterModalParchment: React.FC<Props> = ({ isOpen, onClose,
     if (!sConditions.has('any')) f = f.filter(c => [...sConditions].some(condition => c.custom_filters?.includes(condition)));
     if (!sPres.has('any')) f = f.filter(c => [...sPres].some(p => c.custom_filters?.includes(p)));
     if (!sFacets.has('any')) f = f.filter(c => [...sFacets].some(facet => c.custom_filters?.includes(facet)));
-    return f.length;
+    return f;
   }, [concepts, sStatus, sAreas, sConditions, sPres, sFacets]);
+
+  const available = filteredPool.length;
 
   const toggle = (set: Set<string>, v: string, fn: (s: Set<string>) => void, hasAny = true) => {
     const n = new Set(set);
@@ -124,7 +129,7 @@ export const PracticeFilterModalParchment: React.FC<Props> = ({ isOpen, onClose,
     fn(n);
   };
   const toggleArea = (id: string) => toggle(sAreas, id, setSAreas, false);
-  const reset = () => { setSize(10); setSStatus(new Set(['any'])); setSAreas(new Set()); setSConditions(new Set(['any'])); setConditionSearch(''); setSPres(new Set(['any'])); setPresSearch(''); setSFacets(new Set(['any'])); };
+  const reset = () => { setSize(10); setSStatus(new Set(['any'])); setSAreas(new Set()); setSConditions(new Set(['any'])); setConditionSearch(''); setConditionExpanded(false); setSPres(new Set(['any'])); setPresSearch(''); setPresExpanded(false); setSFacets(new Set(['any'])); setFacetExpanded(false); };
 
   const active = useMemo(() => {
     const a: {t: string, v: string, l: string}[] = [];
@@ -252,7 +257,13 @@ export const PracticeFilterModalParchment: React.FC<Props> = ({ isOpen, onClose,
               )}
             </div>
             <div className="flex flex-wrap gap-2 pl-1">
-              {presentations.filter(p => !presSearch || p.label.toLowerCase().includes(presSearch.toLowerCase())).map(p => {
+              {(() => {
+                const filtered = presentations.filter(p => !presSearch || p.label.toLowerCase().includes(presSearch.toLowerCase()));
+                const visible = presExpanded || presSearch
+                  ? filtered
+                  : filtered.filter((p, i) => i < 10 || sPres.has(p.id));
+                return visible;
+              })().map(p => {
                 const sel = sPres.has(p.id);
                 return <button key={p.id} onClick={() => toggle(sPres, p.id, setSPres)} className="inline-flex items-center gap-1.5 px-3 py-2 rounded-full text-[12.5px] font-medium transition-all border" style={{ backgroundColor: sel ? T.espresso : T.cream, color: sel ? T.cream : T.ink, borderColor: sel ? T.espresso : T.line, whiteSpace: 'nowrap' }}>
                   <span>{p.label}</span><span className="text-[11.5px] italic ml-0.5" style={{ fontFamily: "'Fraunces', serif", color: sel ? T.blush : T.inkMuted }}>{p.count}</span>
@@ -261,6 +272,11 @@ export const PracticeFilterModalParchment: React.FC<Props> = ({ isOpen, onClose,
               <button onClick={() => toggle(sPres, 'any', setSPres)} className="inline-flex items-center gap-1.5 px-3 py-2 rounded-full text-[12.5px] font-medium transition-all border" style={{ backgroundColor: sPres.has('any') ? T.espresso : T.cream, color: sPres.has('any') ? T.cream : T.ink, borderColor: sPres.has('any') ? T.espresso : T.line, whiteSpace: 'nowrap' }}>
                 <span>any</span><span className="text-[11.5px] italic ml-0.5" style={{ fontFamily: "'Fraunces', serif", color: sPres.has('any') ? T.blush : T.inkMuted }}>{concepts?.length || 0}</span>
               </button>
+              {!presSearch && presentations.length > 10 && (
+                <button onClick={() => setPresExpanded(!presExpanded)} className="inline-flex items-center gap-1 px-3 py-2 rounded-full text-[12.5px] transition-all" style={{ color: T.inkMuted, fontFamily: "'Fraunces', serif", fontStyle: 'italic' }}>
+                  {presExpanded ? 'show less' : `+${presentations.length - 10} more`}
+                </button>
+              )}
             </div>
           </div>
 
@@ -281,7 +297,12 @@ export const PracticeFilterModalParchment: React.FC<Props> = ({ isOpen, onClose,
               )}
             </div>
             <div className="flex flex-wrap gap-2 pl-1">
-              {conditions.filter(c => !conditionSearch || c.label.toLowerCase().includes(conditionSearch.toLowerCase())).map(c => {
+              {(() => {
+                const filtered = conditions.filter(c => !conditionSearch || c.label.toLowerCase().includes(conditionSearch.toLowerCase()));
+                return conditionExpanded || conditionSearch
+                  ? filtered
+                  : filtered.filter((c, i) => i < 10 || sConditions.has(c.id));
+              })().map(c => {
                 const sel = sConditions.has(c.id);
                 return <button key={c.id} onClick={() => toggle(sConditions, c.id, setSConditions)} className="inline-flex items-center gap-1.5 px-3 py-2 rounded-full text-[12.5px] font-medium transition-all border" style={{ backgroundColor: sel ? T.espresso : T.cream, color: sel ? T.cream : T.ink, borderColor: sel ? T.espresso : T.line, whiteSpace: 'nowrap' }}>
                   <span>{c.label}</span><span className="text-[11.5px] italic ml-0.5" style={{ fontFamily: "'Fraunces', serif", color: sel ? T.blush : T.inkMuted }}>{c.count}</span>
@@ -290,6 +311,11 @@ export const PracticeFilterModalParchment: React.FC<Props> = ({ isOpen, onClose,
               <button onClick={() => toggle(sConditions, 'any', setSConditions)} className="inline-flex items-center gap-1.5 px-3 py-2 rounded-full text-[12.5px] font-medium transition-all border" style={{ backgroundColor: sConditions.has('any') ? T.espresso : T.cream, color: sConditions.has('any') ? T.cream : T.ink, borderColor: sConditions.has('any') ? T.espresso : T.line, whiteSpace: 'nowrap' }}>
                 <span>any</span><span className="text-[11.5px] italic ml-0.5" style={{ fontFamily: "'Fraunces', serif", color: sConditions.has('any') ? T.blush : T.inkMuted }}>{concepts?.length || 0}</span>
               </button>
+              {!conditionSearch && conditions.length > 10 && (
+                <button onClick={() => setConditionExpanded(!conditionExpanded)} className="inline-flex items-center gap-1 px-3 py-2 rounded-full text-[12.5px] transition-all" style={{ color: T.inkMuted, fontFamily: "'Fraunces', serif", fontStyle: 'italic' }}>
+                  {conditionExpanded ? 'show less' : `+${conditions.length - 10} more`}
+                </button>
+              )}
             </div>
           </div>}
 
@@ -297,7 +323,7 @@ export const PracticeFilterModalParchment: React.FC<Props> = ({ isOpen, onClose,
           <div className="py-4 border-t" style={{ borderColor: T.lineSoft }}>
             <div className="mb-3"><span className="text-[18px]" style={{ fontFamily: "'Fraunces', serif", fontStyle: 'italic', color: T.inkMuted }}>about</span></div>
             <div className="flex flex-wrap gap-2 pl-1">
-              {facets.map(f => {
+              {(facetExpanded ? facets : facets.filter((f, i) => i < 10 || sFacets.has(f.id))).map(f => {
                 const sel = sFacets.has(f.id);
                 return <button key={f.id} onClick={() => toggle(sFacets, f.id, setSFacets)} className="inline-flex items-center gap-1.5 px-3 py-2 rounded-full text-[12.5px] font-medium transition-all border" style={{ backgroundColor: sel ? T.espresso : T.cream, color: sel ? T.cream : T.ink, borderColor: sel ? T.espresso : T.line, whiteSpace: 'nowrap' }}>
                   <span>{f.label}</span><span className="text-[11.5px] italic ml-0.5" style={{ fontFamily: "'Fraunces', serif", color: sel ? T.blush : T.inkMuted }}>{f.count}</span>
@@ -306,6 +332,11 @@ export const PracticeFilterModalParchment: React.FC<Props> = ({ isOpen, onClose,
               <button onClick={() => toggle(sFacets, 'any', setSFacets)} className="inline-flex items-center gap-1.5 px-3 py-2 rounded-full text-[12.5px] font-medium transition-all border" style={{ backgroundColor: sFacets.has('any') ? T.espresso : T.cream, color: sFacets.has('any') ? T.cream : T.ink, borderColor: sFacets.has('any') ? T.espresso : T.line, whiteSpace: 'nowrap' }}>
                 <span>any</span><span className="text-[11.5px] italic ml-0.5" style={{ fontFamily: "'Fraunces', serif", color: sFacets.has('any') ? T.blush : T.inkMuted }}>{concepts?.length || 0}</span>
               </button>
+              {facets.length > 10 && (
+                <button onClick={() => setFacetExpanded(!facetExpanded)} className="inline-flex items-center gap-1 px-3 py-2 rounded-full text-[12.5px] transition-all" style={{ color: T.inkMuted, fontFamily: "'Fraunces', serif", fontStyle: 'italic' }}>
+                  {facetExpanded ? 'show less' : `+${facets.length - 10} more`}
+                </button>
+              )}
             </div>
           </div>
 
@@ -320,6 +351,8 @@ export const PracticeFilterModalParchment: React.FC<Props> = ({ isOpen, onClose,
           </div>
           {available === 0 && <div className="text-[12.5px] italic text-center mb-2" style={{ fontFamily: "'Fraunces', serif", color: T.inkMuted }}>No concepts match your filters. <em style={{ color: T.blushDeep }}>Try removing some</em>.</div>}
           <button onClick={() => {
+            const selectedIds = filteredPool.slice(0, size).map(c => c.concept_id);
+            setPracticeSelection(selectedIds);
             onApplyFilters?.({
               size,
               statuses: [...sStatus],

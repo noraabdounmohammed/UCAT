@@ -211,7 +211,7 @@ export const SessionReviewScreen: React.FC<SessionReviewScreenProps> = ({
           />
           
           <div className="relative z-10">
-            {/* Header with Open map link */}
+            {/* Header */}
             <div className="flex items-center justify-between mb-[18px]">
               <span 
                 className="text-[10px] font-medium tracking-[0.22em] uppercase"
@@ -219,17 +219,6 @@ export const SessionReviewScreen: React.FC<SessionReviewScreenProps> = ({
               >
                 Map · what just moved
               </span>
-              <button 
-                onClick={onDone}
-                className="text-[12px] italic pb-0.5"
-                style={{ 
-                  fontFamily: "'Fraunces', serif", 
-                  color: '#F2C9C1',
-                  borderBottom: '1px solid rgba(229,168,157,0.4)'
-                }}
-              >
-                Open map →
-              </button>
             </div>
             
             <h2 

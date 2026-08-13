@@ -21,7 +21,7 @@ interface PracticeSessionProps {
   defaultFormat?: 'flashcard' | 'sba' | 'ukmla_sba' | 'mindmap'; // Default question format if not specified in the question
   currentFormat?: string; // Current format for the switcher
   onChangeFormat?: (format: string) => void; // Callback when user switches format
-  onRestartWithFilters?: () => void; // Callback when user applies new filters from config modal
+  onRestartWithFilters?: (filters?: any) => void; // Callback when user applies new filters from config modal
 }
 
 export function ApplePracticeSession({ 

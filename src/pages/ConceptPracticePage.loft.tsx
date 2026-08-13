@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, lazy, Suspense } from 'react';
+import React, { useState, useEffect, lazy, Suspense } from 'react';
 import { useConceptStore, ConceptStoreProvider } from '@/contexts/ConceptStoreContext';
 import { ConceptFilterPanel } from '@/components/concept/ConceptFilterPanel';
 import { TrackDashboard } from '@/components/track/TrackDashboard.loft';
@@ -12,6 +12,8 @@ import { useUserRole } from '@/hooks/useUserRole';
 // Lazy load heavy components (practice session uses markdown = 295KB)
 const ApplePracticeSession = lazy(() => import('@/components/practice/ApplePracticeSession').then(m => ({ default: m.ApplePracticeSession })));
 const PracticeConfigModal = lazy(() => import('@/components/practice/PracticeConfigModalParchment').then(m => ({ default: m.PracticeConfigModalParchment })));
+const PracticeFilterModalParchment = lazy(() => import('@/components/practice/PracticeFilterModalParchment').then(m => ({ default: m.PracticeFilterModalParchment })));
+type FilterStateType = import('@/components/practice/PracticeFilterModalParchment').FilterState;
 const SessionOpeningFrame = lazy(() => import('@/components/practice/SessionOpeningFrame').then(m => ({ default: m.SessionOpeningFrame })));
 const ConceptCreationHub = lazy(() => import('@/components/concept/ConceptCreationHub').then(m => ({ default: m.ConceptCreationHub })));
 const ConceptEditorModal = lazy(() => import('@/components/concept/ConceptEditorModal').then(m => ({ default: m.ConceptEditorModal })));
@@ -105,8 +107,9 @@ const ConceptPracticePageLoftContent: React.FC<Omit<ConceptPracticePageLoftProps
   const [activeSessionFilter, setActiveSessionFilter] = useState<string | null>(null);
   // Track current practice format for switching during session
   const [currentFormat, setCurrentFormat] = useState<string>('ukmla_sba');
-  // Show a loading screen immediately on mount so the dashboard never flashes
-  const [pendingAutoStart, setPendingAutoStart] = useState(true);
+  // Land on the "Practise your way" config modal instead of auto-starting a session.
+  // Cleared once a session actually begins; re-shown after a session completes.
+  const [showInitialConfig, setShowInitialConfig] = useState(true);
 
   // Redirect consumers away from concepts view
   useEffect(() => {
@@ -115,28 +118,12 @@ const ConceptPracticePageLoftContent: React.FC<Omit<ConceptPracticePageLoftProps
     }
   }, [isCreator, selectedView]);
 
-  // Auto-start: launch 5 UKMLA SBAs as soon as concepts are ready, once per mount
-  const hasAutoStarted = useRef(false);
+  // Hide the config screen once a session is actually live
   useEffect(() => {
-    if (hasAutoStarted.current) return;
-    if (isPracticing) { hasAutoStarted.current = true; setPendingAutoStart(false); return; }
-    // Use filteredConcepts if available, fall back to all concepts
-    const available = (filteredConcepts && filteredConcepts.length > 0)
-      ? filteredConcepts
-      : concepts;
-    if (available && available.length > 0) {
-      hasAutoStarted.current = true;
-      startPractice({ target_formats: [currentFormat], question_count: 5 });
-      // pendingAutoStart cleared below once isPracticing becomes true
+    if (isPracticing) {
+      setShowInitialConfig(false);
     }
-  }, [filteredConcepts, concepts, isPracticing, currentFormat]);
-
-  // Clear the pending screen once the session is live or an error surfaces
-  useEffect(() => {
-    if (isPracticing || practiceError) {
-      setPendingAutoStart(false);
-    }
-  }, [isPracticing, practiceError]);
+  }, [isPracticing]);
 
   // Close menus when clicking outside
   useEffect(() => {
@@ -245,7 +232,7 @@ const ConceptPracticePageLoftContent: React.FC<Omit<ConceptPracticePageLoftProps
   const handlePracticeComplete = () => {
     endPractice();
     setUserDismissedLoading(false); // Reset so the loading screen shows again
-    hasAutoStarted.current = false; // Allow auto-start to fire again for next session
+    setShowInitialConfig(true); // Return to the config modal for the next session
   };
 
   // Handle answer submission to track progress
@@ -292,11 +279,26 @@ const ConceptPracticePageLoftContent: React.FC<Omit<ConceptPracticePageLoftProps
     setShowPracticeConfig(false);
   };
 
-  // Show loading screen while waiting for auto-start, while loading, while generating,
-  // OR while ready but user hasn't pressed Begin. Also keeps the loading screen visible
-  // during the brief async gap right after pressing "Another five" so we never flash the
-  // dashboard or the stale review.
-  if (pendingAutoStart || isLoading || (isPracticing && !userDismissedLoading)) {
+  // Land on the "Practise your way" config modal instead of auto-starting a session.
+  if (showInitialConfig && !isPracticing) {
+    return (
+      <Suspense fallback={<div className="h-screen w-screen" style={{ backgroundColor: '#F4EFE8' }} />}>
+        <PracticeFilterModalParchment
+          isOpen={true}
+          onClose={() => setShowInitialConfig(false)}
+          onApplyFilters={(filters: FilterStateType) => {
+            setShowInitialConfig(false);
+            startPractice({ target_formats: [currentFormat], question_count: filters.size });
+          }}
+        />
+      </Suspense>
+    );
+  }
+
+  // Show loading screen while generating, OR while ready but user hasn't pressed Begin.
+  // Also keeps the loading screen visible during the brief async gap right after pressing
+  // "Another five" so we never flash the dashboard or the stale review.
+  if (isLoading || (isPracticing && !userDismissedLoading)) {
     // Get the actual concepts being used for this session
     const sessionConcepts = practiceSelection && practiceSelection.length > 0
       ? displayedConcepts.filter((c: any) => practiceSelection.includes(c.concept_id))
@@ -337,7 +339,6 @@ const ConceptPracticePageLoftContent: React.FC<Omit<ConceptPracticePageLoftProps
             }
             // Show loading screen and remount the session so review state clears
             setUserDismissedLoading(false);
-            hasAutoStarted.current = false;
             startPractice({ target_formats: [currentFormat], question_count: 5 });
           }}
           section="UKMLA AKT"
@@ -346,14 +347,13 @@ const ConceptPracticePageLoftContent: React.FC<Omit<ConceptPracticePageLoftProps
             setCurrentFormat(format);
             // Restart practice with new format - preserves current filter if any
             setUserDismissedLoading(false);
-            hasAutoStarted.current = false;
             startPractice({ target_formats: [format], question_count: 5 });
           }}
-          onRestartWithFilters={() => {
-            // Restart practice with current filters from filterState
+          onRestartWithFilters={(filters?: { size?: number }) => {
+            // Restart practice with the concept selection + size chosen in the filter modal
+            // (setPracticeSelection was already called by PracticeFilterModalParchment before this fires)
             setUserDismissedLoading(false);
-            hasAutoStarted.current = false;
-            startPractice({ target_formats: [currentFormat], question_count: 5 });
+            startPractice({ target_formats: [currentFormat], question_count: filters?.size || 5 });
           }}
         />
       </Suspense>
