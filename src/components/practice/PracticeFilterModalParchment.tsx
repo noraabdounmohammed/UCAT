@@ -3,7 +3,15 @@ import { X, ChevronDown } from 'lucide-react';
 import { useConceptStore } from '@/contexts/ConceptStoreContext';
 import type { FilterCategory, ConceptNode } from '@/types/conceptTypes';
 
-interface Props { isOpen: boolean; onClose: () => void; onApplyFilters?: () => void; }
+export interface FilterState {
+  size: number;
+  statuses: string[];
+  areas: string[];
+  conditions: string[];
+  presentations: string[];
+  facets: string[];
+}
+interface Props { isOpen: boolean; onClose: () => void; onApplyFilters?: (filters: FilterState) => void; }
 
 const T = {
   parchment: '#F4ECDF', cream: '#FAF5EC', espresso: '#1F140C', ink: '#2A1E16',
@@ -34,6 +42,8 @@ export const PracticeFilterModalParchment: React.FC<Props> = ({ isOpen, onClose,
   const [size, setSize] = useState(10);
   const [sStatus, setSStatus] = useState<Set<string>>(new Set(['any']));
   const [sAreas, setSAreas] = useState<Set<string>>(new Set());
+  const [sConditions, setSConditions] = useState<Set<string>>(new Set(['any']));
+  const [conditionSearch, setConditionSearch] = useState('');
   const [sPres, setSPres] = useState<Set<string>>(new Set(['any']));
   const [presSearch, setPresSearch] = useState('');
   const [sFacets, setSFacets] = useState<Set<string>>(new Set(['any']));
@@ -63,9 +73,15 @@ export const PracticeFilterModalParchment: React.FC<Props> = ({ isOpen, onClose,
       seg: calcSegments(concepts || [], id) }));
   }, [categories, byCat, stats, concepts]);
 
+  const conditions = useMemo(() => {
+    const cat = findCat('condition');
+    const f = cat ? byCat[cat.id] || [] : [];
+    return f.map(id => ({ id, label: id.replace(/-/g, ' '), count: stats?.by_custom_filter?.[id] || concepts?.filter(c => c.custom_filters?.includes(id)).length || 0 }));
+  }, [categories, byCat, stats, concepts]);
+
   const presentations = useMemo(() => {
     const cat = findCat('presentation');
-    const f = cat ? byCat[cat.id] || [] : ['chest-pain','breathlessness','abdominal-pain','headache','palpitations','confusion','weight-loss'];
+    const f = cat ? byCat[cat.id] || [] : [];
     return f.map(id => ({ id, label: id.replace(/-/g, ' '), count: stats?.by_custom_filter?.[id] || concepts?.filter(c => c.custom_filters?.includes(id)).length || 0 }));
   }, [categories, byCat, stats, concepts]);
 
@@ -94,10 +110,11 @@ export const PracticeFilterModalParchment: React.FC<Props> = ({ isOpen, onClose,
       (s === 'drifting' && !c.mastery_data?.mastery_level && c.mastery_data?.attempts)
     ));
     if (sAreas.size) f = f.filter(c => [...sAreas].some(a => c.custom_filters?.includes(a)));
+    if (!sConditions.has('any')) f = f.filter(c => [...sConditions].some(condition => c.custom_filters?.includes(condition)));
     if (!sPres.has('any')) f = f.filter(c => [...sPres].some(p => c.custom_filters?.includes(p)));
     if (!sFacets.has('any')) f = f.filter(c => [...sFacets].some(facet => c.custom_filters?.includes(facet)));
     return f.length;
-  }, [concepts, sStatus, sAreas, sPres, sFacets]);
+  }, [concepts, sStatus, sAreas, sConditions, sPres, sFacets]);
 
   const toggle = (set: Set<string>, v: string, fn: (s: Set<string>) => void, hasAny = true) => {
     const n = new Set(set);
@@ -107,16 +124,17 @@ export const PracticeFilterModalParchment: React.FC<Props> = ({ isOpen, onClose,
     fn(n);
   };
   const toggleArea = (id: string) => toggle(sAreas, id, setSAreas, false);
-  const reset = () => { setSize(10); setSStatus(new Set(['any'])); setSAreas(new Set()); setSPres(new Set(['any'])); setSFacets(new Set(['any'])); };
+  const reset = () => { setSize(10); setSStatus(new Set(['any'])); setSAreas(new Set()); setSConditions(new Set(['any'])); setConditionSearch(''); setSPres(new Set(['any'])); setPresSearch(''); setSFacets(new Set(['any'])); };
 
   const active = useMemo(() => {
     const a: {t: string, v: string, l: string}[] = [];
     if (!sStatus.has('any')) [...sStatus].forEach(v => { const found = statusChips.find(s => s.id === v); if (found) a.push({t: 'status', v, l: found.l}); });
     if (sAreas.size) [...sAreas].forEach(v => { const found = areas.find(ar => ar.id === v); if (found) a.push({t: 'area', v, l: found.name}); });
+    if (!sConditions.has('any')) [...sConditions].forEach(v => { const found = conditions.find(cn => cn.id === v); if (found) a.push({t: 'condition', v, l: found.label}); });
     if (!sPres.has('any')) [...sPres].forEach(v => { const found = presentations.find(p => p.id === v); if (found) a.push({t: 'presentation', v, l: found.label}); });
     if (!sFacets.has('any')) [...sFacets].forEach(v => { const found = facets.find(facet => facet.id === v); if (found) a.push({t: 'facet', v, l: found.label}); });
     return a;
-  }, [sStatus, sAreas, sPres, sFacets, statusChips, areas, presentations, facets]);
+  }, [sStatus, sAreas, sConditions, sPres, sFacets, statusChips, areas, conditions, presentations, facets]);
 
   const preview = useMemo(() => {
     const st = !sStatus.has('any') ? [...sStatus].map(s => `<em>${s}</em>`).join(', ') : '<em>any</em> status';
@@ -130,8 +148,7 @@ export const PracticeFilterModalParchment: React.FC<Props> = ({ isOpen, onClose,
     <div className="fixed inset-0 flex items-center justify-center z-[100] p-0 md:p-4" style={{ backgroundColor: 'rgba(31, 20, 12, 0.4)' }} onClick={onClose}>
       <div className="w-full h-full md:h-auto md:max-w-[460px] flex flex-col overflow-hidden shadow-2xl" style={{ backgroundColor: T.cream, borderRadius: '38px', maxHeight: '95vh', fontFamily: "'Inter', sans-serif" }} onClick={e => e.stopPropagation()}>
         {/* Header */}
-        <div className="flex justify-center pt-3"><div style={{ width: '38px', height: '4px', backgroundColor: T.line, borderRadius: '2px' }} /></div>
-        <div className="px-6 pt-5 pb-3 flex items-start justify-between gap-4">
+        <div className="px-6 pt-6 pb-3 flex items-start justify-between gap-4">
           <div className="flex-1">
             <h1 className="text-[28px] leading-[1.05] mb-1.5" style={{ fontFamily: "'Fraunces', serif", fontWeight: 300, color: T.ink, letterSpacing: '-0.025em' }}>Practise <em style={{ color: T.blushDeep, fontStyle: 'italic' }}>your way</em></h1>
             <p className="text-[13px]" style={{ fontFamily: "'Fraunces', serif", fontStyle: 'italic', color: T.inkMuted }}>Stack filters to sculpt exactly the slice you want.</p>
@@ -147,7 +164,7 @@ export const PracticeFilterModalParchment: React.FC<Props> = ({ isOpen, onClose,
           <div className="px-6 pb-4 flex flex-wrap gap-1.5 items-center">
             <span className="text-[9.5px] uppercase tracking-[0.22em] font-medium mr-1" style={{ color: T.inkMuted }}>Stacked</span>
             {active.map(f => (
-              <button key={`${f.t}-${f.v}`} onClick={() => f.t === 'status' ? toggle(sStatus, f.v, setSStatus) : f.t === 'area' ? toggleArea(f.v) : f.t === 'presentation' ? toggle(sPres, f.v, setSPres) : toggle(sFacets, f.v, setSFacets)}
+              <button key={`${f.t}-${f.v}`} onClick={() => f.t === 'status' ? toggle(sStatus, f.v, setSStatus) : f.t === 'area' ? toggleArea(f.v) : f.t === 'condition' ? toggle(sConditions, f.v, setSConditions) : f.t === 'presentation' ? toggle(sPres, f.v, setSPres) : toggle(sFacets, f.v, setSFacets)}
                 className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11.5px] transition-all" style={{ backgroundColor: T.espresso, color: T.cream }}>
                 <span className="text-[11px]" style={{ fontFamily: "'Fraunces', serif", fontStyle: 'italic', color: T.blush }}>{f.t}</span>
                 <span>{f.l}</span>
@@ -247,6 +264,35 @@ export const PracticeFilterModalParchment: React.FC<Props> = ({ isOpen, onClose,
             </div>
           </div>
 
+          {/* Conditions */}
+          {conditions.length > 0 && <div className="py-4 border-t" style={{ borderColor: T.lineSoft }}>
+            <div className="mb-3"><span className="text-[18px]" style={{ fontFamily: "'Fraunces', serif", fontStyle: 'italic', color: T.inkMuted }}>with condition</span></div>
+            <div className="relative pl-1 mb-3">
+              <input
+                type="text"
+                placeholder="Search conditions..."
+                value={conditionSearch}
+                onChange={(e) => setConditionSearch(e.target.value)}
+                className="w-full px-4 py-2 rounded-full text-[12px] border outline-none"
+                style={{ backgroundColor: T.parchment, borderColor: T.line, color: T.ink }}
+              />
+              {conditionSearch && (
+                <button onClick={() => setConditionSearch('')} className="absolute right-3 top-1/2 -translate-y-1/2 text-[10px]" style={{ color: T.inkMuted }}>✕</button>
+              )}
+            </div>
+            <div className="flex flex-wrap gap-2 pl-1">
+              {conditions.filter(c => !conditionSearch || c.label.toLowerCase().includes(conditionSearch.toLowerCase())).map(c => {
+                const sel = sConditions.has(c.id);
+                return <button key={c.id} onClick={() => toggle(sConditions, c.id, setSConditions)} className="inline-flex items-center gap-1.5 px-3 py-2 rounded-full text-[12.5px] font-medium transition-all border" style={{ backgroundColor: sel ? T.espresso : T.cream, color: sel ? T.cream : T.ink, borderColor: sel ? T.espresso : T.line, whiteSpace: 'nowrap' }}>
+                  <span>{c.label}</span><span className="text-[11.5px] italic ml-0.5" style={{ fontFamily: "'Fraunces', serif", color: sel ? T.blush : T.inkMuted }}>{c.count}</span>
+                </button>;
+              })}
+              <button onClick={() => toggle(sConditions, 'any', setSConditions)} className="inline-flex items-center gap-1.5 px-3 py-2 rounded-full text-[12.5px] font-medium transition-all border" style={{ backgroundColor: sConditions.has('any') ? T.espresso : T.cream, color: sConditions.has('any') ? T.cream : T.ink, borderColor: sConditions.has('any') ? T.espresso : T.line, whiteSpace: 'nowrap' }}>
+                <span>any</span><span className="text-[11.5px] italic ml-0.5" style={{ fontFamily: "'Fraunces', serif", color: sConditions.has('any') ? T.blush : T.inkMuted }}>{concepts?.length || 0}</span>
+              </button>
+            </div>
+          </div>}
+
           {/* Facets */}
           <div className="py-4 border-t" style={{ borderColor: T.lineSoft }}>
             <div className="mb-3"><span className="text-[18px]" style={{ fontFamily: "'Fraunces', serif", fontStyle: 'italic', color: T.inkMuted }}>about</span></div>
@@ -263,11 +309,6 @@ export const PracticeFilterModalParchment: React.FC<Props> = ({ isOpen, onClose,
             </div>
           </div>
 
-          {/* Search */}
-          <div className="py-4 border-t" style={{ borderColor: T.lineSoft }}>
-            <div className="mb-3"><span className="text-[18px]" style={{ fontFamily: "'Fraunces', serif", fontStyle: 'italic', color: T.inkMuted }}>or jump to</span></div>
-            <div className="relative pl-1"><span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[13px]" style={{ color: T.inkMuted }}>⌕</span></div>
-          </div>
         </div>
 
         {/* Footer */}
@@ -278,7 +319,17 @@ export const PracticeFilterModalParchment: React.FC<Props> = ({ isOpen, onClose,
             <div className="text-[14.5px] leading-[1.5]" style={{ fontFamily: "'Fraunces', serif", fontWeight: 300, color: T.ink }} dangerouslySetInnerHTML={{ __html: preview }} />
           </div>
           {available === 0 && <div className="text-[12.5px] italic text-center mb-2" style={{ fontFamily: "'Fraunces', serif", color: T.inkMuted }}>No concepts match your filters. <em style={{ color: T.blushDeep }}>Try removing some</em>.</div>}
-          <button onClick={() => { onApplyFilters?.(); onClose(); }} disabled={available === 0} className="w-full py-4 rounded-full text-[14px] font-medium transition-all flex items-center justify-center gap-3 disabled:cursor-not-allowed" style={{ backgroundColor: available === 0 ? T.inkMuted : T.espresso, color: T.cream, fontFamily: "'Inter', sans-serif" }}>
+          <button onClick={() => {
+            onApplyFilters?.({
+              size,
+              statuses: [...sStatus],
+              areas: [...sAreas],
+              conditions: [...sConditions],
+              presentations: [...sPres],
+              facets: [...sFacets]
+            });
+            onClose();
+          }} disabled={available === 0} className="w-full py-4 rounded-full text-[14px] font-medium transition-all flex items-center justify-center gap-3 disabled:cursor-not-allowed" style={{ backgroundColor: available === 0 ? T.inkMuted : T.espresso, color: T.cream, fontFamily: "'Inter', sans-serif" }}>
             <span>Begin</span><span className="text-[14.5px] italic" style={{ fontFamily: "'Fraunces', serif", color: T.blush }}>{Math.min(size, available)} concepts</span><span className="transition-transform">→</span>
           </button>
         </div>

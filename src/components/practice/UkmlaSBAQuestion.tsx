@@ -3,6 +3,7 @@ import { Sun, Moon, X, ChevronDown, Settings2, Sparkles, Image as ImageIcon, Loa
 import { PracticeFilterModalParchment as PracticeFilterModal } from './PracticeFilterModalParchment';
 import { useTheme } from '@/contexts/ThemeContext';
 import type { QuestionData } from './questionTypes';
+import type { FilterState } from './PracticeFilterModalParchment';
 import ReactMarkdown from 'react-markdown';
 import { AIHelper } from './AIHelperClean';
 import { motion } from 'framer-motion';
@@ -32,7 +33,7 @@ interface UkmlaSBAQuestionProps {
   onFilterSelect?: (filter?: string) => void;
   currentFormat?: string;
   onChangeFormat?: (format: string) => void;
-  onRestartWithFilters?: () => void; // Called when user applies new filters from config modal
+  onRestartWithFilters?: (filters?: FilterState) => void; // Called when user applies new filters from config modal
   // Review mode props - show question in already-answered state
   preSelectedAnswer?: string;
   preSubmitted?: boolean;
@@ -847,8 +848,8 @@ export const UkmlaSBAQuestion: React.FC<UkmlaSBAQuestionProps> = ({
         <PracticeFilterModal
           isOpen={showConfigPanel}
           onClose={() => setShowConfigPanel(false)}
-          onApplyFilters={() => {
-            onRestartWithFilters?.();
+          onApplyFilters={(filters) => {
+            onRestartWithFilters?.(filters);
             setShowConfigPanel(false);
           }}
         />
