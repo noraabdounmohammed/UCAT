@@ -50,11 +50,19 @@ interface AIHelperProps {
   integrated?: boolean;
   onMessageSent?: () => void;
   lightMode?: boolean;
+  parchment?: boolean;
   curriculumName?: string;
   conceptTitles?: string[];
 }
 
-export function AIHelper({ question, correctAnswer, selectedAnswer, explanation, onMessageSent, lightMode = false, curriculumName, conceptTitles }: AIHelperProps) {
+// StudyEdit parchment palette
+const P = {
+  parchment: '#F4ECDF', parchmentDeep: '#EBE1D0', cream: '#FAF5EC', espresso: '#1F140C',
+  ink: '#2A1E16', inkMuted: '#8A7560', blush: '#F2C9C1', blushDeep: '#E5A89D',
+  line: '#D9CCB6', lineSoft: '#E8DCC4', sageDeep: '#8FA379',
+};
+
+export function AIHelper({ question, correctAnswer, selectedAnswer, explanation, onMessageSent, lightMode = false, parchment = false, curriculumName, conceptTitles }: AIHelperProps) {
   const questionId = question.id || `q-${Date.now()}`;
   
   const getCurrentSessionId = (): string | null => {
@@ -232,86 +240,87 @@ export function AIHelper({ question, correctAnswer, selectedAnswer, explanation,
 
 
 
+  const suggestionBtnClass = parchment
+    ? 'group px-4 md:px-5 py-3 md:py-4 rounded-2xl text-xs md:text-sm transition-all text-left font-light flex items-center gap-2 md:gap-3 border'
+    : `group px-4 md:px-5 py-3 md:py-4 rounded-2xl text-xs md:text-sm transition-all text-left font-light flex items-center gap-2 md:gap-3 ${
+        lightMode
+          ? 'bg-black/[0.03] border border-black/[0.08] text-stone-700 hover:bg-black/[0.06] hover:border-black/[0.12] hover:text-stone-900'
+          : 'bg-white/[0.03] border border-white/[0.08] text-white/70 hover:bg-white/[0.06] hover:border-white/[0.12] hover:text-white/90'
+      }`;
+  const suggestionBtnStyle = parchment ? { fontFamily: "'Manrope', sans-serif", backgroundColor: P.parchment, borderColor: P.line, color: P.ink } : { fontFamily: "'Manrope', sans-serif" };
+  const suggestionIconClass = parchment ? 'h-4 w-4 transition-colors' : `h-4 w-4 transition-colors ${lightMode ? 'text-stone-500 group-hover:text-stone-700' : 'text-white/50 group-hover:text-white/70'}`;
+  const suggestionIconStyle = parchment ? { color: P.inkMuted } : undefined;
+
   return (
-    <div className={`flex flex-col h-full ${lightMode ? 'bg-stone-50' : 'bg-[#1a1a1a]'}`}>
+    <div
+      className={parchment ? 'flex flex-col h-full' : `flex flex-col h-full ${lightMode ? 'bg-stone-50' : 'bg-[#1a1a1a]'}`}
+      style={parchment ? { backgroundColor: P.cream } : undefined}
+    >
       {/* Header */}
-      <div className={`flex items-center gap-2 px-4 md:px-6 py-3 border-b ${
-        lightMode ? 'border-black/[0.06]' : 'border-white/[0.08]'
-      }`}>
-        <MessageSquare className={`h-4 w-4 ${lightMode ? 'text-stone-500' : 'text-white/50'}`} />
-        <span className={`text-sm font-medium ${lightMode ? 'text-stone-600' : 'text-white/60'}`}>AI Helper</span>
+      <div
+        className={parchment ? 'flex items-center gap-2 px-4 md:px-6 py-3 border-b' : `flex items-center gap-2 px-4 md:px-6 py-3 border-b ${lightMode ? 'border-black/[0.06]' : 'border-white/[0.08]'}`}
+        style={parchment ? { borderColor: P.lineSoft } : undefined}
+      >
+        <MessageSquare
+          className={parchment ? 'h-4 w-4' : `h-4 w-4 ${lightMode ? 'text-stone-500' : 'text-white/50'}`}
+          style={parchment ? { color: P.inkMuted } : undefined}
+        />
+        <span
+          className={parchment ? 'text-sm' : `text-sm font-medium ${lightMode ? 'text-stone-600' : 'text-white/60'}`}
+          style={parchment ? { color: P.inkMuted, fontFamily: "'Fraunces', serif", fontStyle: 'italic' } : undefined}
+        >AI Helper</span>
       </div>
 
       {/* Messages Container */}
       <div className="flex-1 overflow-y-auto space-y-4 md:space-y-6 py-4 md:py-8 px-4 md:px-6">
         {messages.length === 0 && (
           <div className="text-center py-8 md:py-12 px-4 md:px-6">
-            <div className={`h-[1px] w-12 mx-auto mb-6 md:mb-8 ${lightMode ? 'bg-black/10' : 'bg-white/10'}`}></div>
-            <h4 className={`text-lg md:text-xl font-light mb-2 ${lightMode ? 'text-stone-900' : 'text-white/90'}`} style={{ fontFamily: "'Manrope', sans-serif" }}>
+            <div className={parchment ? 'h-[1px] w-12 mx-auto mb-6 md:mb-8' : `h-[1px] w-12 mx-auto mb-6 md:mb-8 ${lightMode ? 'bg-black/10' : 'bg-white/10'}`} style={parchment ? { backgroundColor: P.line } : undefined}></div>
+            <h4 className={parchment ? 'text-lg md:text-xl mb-2' : `text-lg md:text-xl font-light mb-2 ${lightMode ? 'text-stone-900' : 'text-white/90'}`} style={parchment ? { fontFamily: "'Fraunces', serif", fontWeight: 300, color: P.ink } : { fontFamily: "'Manrope', sans-serif" }}>
               How can I help?
             </h4>
-            <p className={`text-xs md:text-sm mb-6 md:mb-8 font-light ${lightMode ? 'text-stone-500' : 'text-white/50'}`} style={{ fontFamily: "'Manrope', sans-serif" }}>
+            <p className={parchment ? 'text-xs md:text-sm mb-6 md:mb-8 font-light' : `text-xs md:text-sm mb-6 md:mb-8 font-light ${lightMode ? 'text-stone-500' : 'text-white/50'}`} style={parchment ? { fontFamily: "'Manrope', sans-serif", color: P.inkMuted } : { fontFamily: "'Manrope', sans-serif" }}>
               Choose a prompt or ask your own question
             </p>
             <div className="flex flex-col gap-2 md:gap-3 max-w-md mx-auto">
               <button
                 onClick={() => handleSendMessage("Teach me this from scratch")}
-                className={`group px-4 md:px-5 py-3 md:py-4 rounded-2xl text-xs md:text-sm transition-all text-left font-light flex items-center gap-2 md:gap-3 ${
-                  lightMode 
-                    ? 'bg-black/[0.03] border border-black/[0.08] text-stone-700 hover:bg-black/[0.06] hover:border-black/[0.12] hover:text-stone-900'
-                    : 'bg-white/[0.03] border border-white/[0.08] text-white/70 hover:bg-white/[0.06] hover:border-white/[0.12] hover:text-white/90'
-                }`}
-                style={{ fontFamily: "'Manrope', sans-serif" }}
+                className={suggestionBtnClass}
+                style={suggestionBtnStyle}
               >
-                <BookOpen className={`h-4 w-4 transition-colors ${lightMode ? 'text-stone-500 group-hover:text-stone-700' : 'text-white/50 group-hover:text-white/70'}`} />
+                <BookOpen className={suggestionIconClass} style={suggestionIconStyle} />
                 <span>Teach me this from scratch</span>
               </button>
               <button
                 onClick={() => handleSendMessage("Explain this step by step")}
-                className={`group px-4 md:px-5 py-3 md:py-4 rounded-2xl text-xs md:text-sm transition-all text-left font-light flex items-center gap-2 md:gap-3 ${
-                  lightMode 
-                    ? 'bg-black/[0.03] border border-black/[0.08] text-stone-700 hover:bg-black/[0.06] hover:border-black/[0.12] hover:text-stone-900'
-                    : 'bg-white/[0.03] border border-white/[0.08] text-white/70 hover:bg-white/[0.06] hover:border-white/[0.12] hover:text-white/90'
-                }`}
-                style={{ fontFamily: "'Manrope', sans-serif" }}
+                className={suggestionBtnClass}
+                style={suggestionBtnStyle}
               >
-                <List className={`h-4 w-4 transition-colors ${lightMode ? 'text-stone-500 group-hover:text-stone-700' : 'text-white/50 group-hover:text-white/70'}`} />
+                <List className={suggestionIconClass} style={suggestionIconStyle} />
                 <span>Explain step by step</span>
               </button>
               <button
                 onClick={() => handleSendMessage("Give me a clinical example of this")}
-                className={`group px-4 md:px-5 py-3 md:py-4 rounded-2xl text-xs md:text-sm transition-all text-left font-light flex items-center gap-2 md:gap-3 ${
-                  lightMode 
-                    ? 'bg-black/[0.03] border border-black/[0.08] text-stone-700 hover:bg-black/[0.06] hover:border-black/[0.12] hover:text-stone-900'
-                    : 'bg-white/[0.03] border border-white/[0.08] text-white/70 hover:bg-white/[0.06] hover:border-white/[0.12] hover:text-white/90'
-                }`}
-                style={{ fontFamily: "'Manrope', sans-serif" }}
+                className={suggestionBtnClass}
+                style={suggestionBtnStyle}
               >
-                <Stethoscope className={`h-4 w-4 transition-colors ${lightMode ? 'text-stone-500 group-hover:text-stone-700' : 'text-white/50 group-hover:text-white/70'}`} />
+                <Stethoscope className={suggestionIconClass} style={suggestionIconStyle} />
                 <span>Give me a clinical example</span>
               </button>
               <button
                 onClick={() => handleSendMessage("Explain like I'm 10")}
-                className={`group px-4 md:px-5 py-3 md:py-4 rounded-2xl text-xs md:text-sm transition-all text-left font-light flex items-center gap-2 md:gap-3 ${
-                  lightMode 
-                    ? 'bg-black/[0.03] border border-black/[0.08] text-stone-700 hover:bg-black/[0.06] hover:border-black/[0.12] hover:text-stone-900'
-                    : 'bg-white/[0.03] border border-white/[0.08] text-white/70 hover:bg-white/[0.06] hover:border-white/[0.12] hover:text-white/90'
-                }`}
-                style={{ fontFamily: "'Manrope', sans-serif" }}
+                className={suggestionBtnClass}
+                style={suggestionBtnStyle}
               >
-                <Lightbulb className={`h-4 w-4 transition-colors ${lightMode ? 'text-stone-500 group-hover:text-stone-700' : 'text-white/50 group-hover:text-white/70'}`} />
+                <Lightbulb className={suggestionIconClass} style={suggestionIconStyle} />
                 <span>Explain like I'm 10</span>
               </button>
               <button
                 onClick={() => handleSendMessage("What are common mistakes to avoid?")}
-                className={`group px-4 md:px-5 py-3 md:py-4 rounded-2xl text-xs md:text-sm transition-all text-left font-light flex items-center gap-2 md:gap-3 ${
-                  lightMode 
-                    ? 'bg-black/[0.03] border border-black/[0.08] text-stone-700 hover:bg-black/[0.06] hover:border-black/[0.12] hover:text-stone-900'
-                    : 'bg-white/[0.03] border border-white/[0.08] text-white/70 hover:bg-white/[0.06] hover:border-white/[0.12] hover:text-white/90'
-                }`}
-                style={{ fontFamily: "'Manrope', sans-serif" }}
+                className={suggestionBtnClass}
+                style={suggestionBtnStyle}
               >
-                <AlertTriangle className={`h-4 w-4 transition-colors ${lightMode ? 'text-stone-500 group-hover:text-stone-700' : 'text-white/50 group-hover:text-white/70'}`} />
+                <AlertTriangle className={suggestionIconClass} style={suggestionIconStyle} />
                 <span>Common mistakes to avoid</span>
               </button>
             </div>
@@ -320,13 +329,16 @@ export function AIHelper({ question, correctAnswer, selectedAnswer, explanation,
 
         <div className="px-4">
           <div className="space-y-4">
-            {messages.map((message, index) => (
+            {messages.map((message, index) => {
+              const mdColor = parchment ? (message.role === 'user' ? P.cream : P.ink) : undefined;
+              const mdMutedColor = parchment ? (message.role === 'user' ? P.blush : P.inkMuted) : undefined;
+              return (
               <div key={message.id || index} className={`flex w-full ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}>
                 <div className={`${message.role === 'user' ? 'max-w-[85%]' : 'max-w-[95%]'}`}>
                   {/* Reply context */}
                   {message.replyTo && (
                     <div
-                      className={`mb-3 px-4 py-3 rounded-xl border-l-2 text-sm ${
+                      className={parchment ? 'mb-3 px-4 py-3 rounded-xl border-l-2 text-sm' : `mb-3 px-4 py-3 rounded-xl border-l-2 text-sm ${
                         message.role === 'user'
                           ? lightMode
                             ? 'bg-white border-stone-200'
@@ -335,19 +347,21 @@ export function AIHelper({ question, correctAnswer, selectedAnswer, explanation,
                             ? 'bg-stone-50 border-stone-200'
                             : 'bg-white/[0.02] border-white/10'
                       }`}
-                      style={{ fontFamily: "'Manrope', sans-serif" }}
+                      style={parchment ? { fontFamily: "'Manrope', sans-serif", backgroundColor: P.parchment, borderColor: P.line } : { fontFamily: "'Manrope', sans-serif" }}
                     >
                       <div
-                        className={`text-xs font-light mb-1.5 uppercase tracking-wider ${
+                        className={parchment ? 'text-xs font-light mb-1.5 uppercase tracking-wider' : `text-xs font-light mb-1.5 uppercase tracking-wider ${
                           lightMode ? 'text-stone-500' : 'text-white/60'
                         }`}
+                        style={parchment ? { color: P.inkMuted } : undefined}
                       >
                         {message.replyTo.role === 'assistant' ? 'AI Assistant' : 'You'}
                       </div>
                       <div
-                        className={`text-sm leading-relaxed font-light ${
+                        className={parchment ? 'text-sm leading-relaxed font-light' : `text-sm leading-relaxed font-light ${
                           lightMode ? 'text-stone-700' : 'text-white/70'
                         }`}
+                        style={parchment ? { color: P.ink } : undefined}
                       >
                         {message.replyTo.content.replace(/✓/g, '').replace(/✅/g, '').trim() || 'Message content'}
                       </div>
@@ -355,7 +369,7 @@ export function AIHelper({ question, correctAnswer, selectedAnswer, explanation,
                   )}
                   {/* Message bubble */}
                   <div 
-                    className={`group relative px-5 py-4 rounded-2xl ${
+                    className={parchment ? 'group relative px-5 py-4 rounded-2xl border' : `group relative px-5 py-4 rounded-2xl ${
                       message.role === 'user'
                         ? lightMode
                           ? 'bg-white border border-black/[0.06] text-stone-900'
@@ -364,13 +378,17 @@ export function AIHelper({ question, correctAnswer, selectedAnswer, explanation,
                           ? 'bg-white border border-black/[0.04] text-stone-900'
                           : 'bg-white/[0.03] border border-white/[0.08] text-white'
                     }`}
-                    style={{ fontFamily: "'Manrope', sans-serif" }}
+                    style={parchment ? (
+                      message.role === 'user'
+                        ? { fontFamily: "'Manrope', sans-serif", backgroundColor: P.espresso, borderColor: P.espresso, color: P.cream }
+                        : { fontFamily: "'Manrope', sans-serif", backgroundColor: P.cream, borderColor: P.line, color: P.ink }
+                    ) : { fontFamily: "'Manrope', sans-serif" }}
                   >
                     {message.role === 'assistant' && message.content === '' && isStreaming ? (
                       <div className="flex space-x-1">
-                        <div className="w-2 h-2 bg-white/40 rounded-full animate-bounce"></div>
-                        <div className="w-2 h-2 bg-white/40 rounded-full animate-bounce" style={{ animationDelay: '0.1s' }}></div>
-                        <div className="w-2 h-2 bg-white/40 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
+                        <div className="w-2 h-2 rounded-full animate-bounce" style={parchment ? { backgroundColor: P.inkMuted } : { backgroundColor: 'rgba(255,255,255,0.4)' }}></div>
+                        <div className="w-2 h-2 rounded-full animate-bounce" style={parchment ? { backgroundColor: P.inkMuted, animationDelay: '0.1s' } : { backgroundColor: 'rgba(255,255,255,0.4)', animationDelay: '0.1s' }}></div>
+                        <div className="w-2 h-2 rounded-full animate-bounce" style={parchment ? { backgroundColor: P.inkMuted, animationDelay: '0.2s' } : { backgroundColor: 'rgba(255,255,255,0.4)', animationDelay: '0.2s' }}></div>
                       </div>
                     ) : (
                       <div className="text-[13px] sm:text-[15px]">
@@ -379,34 +397,32 @@ export function AIHelper({ question, correctAnswer, selectedAnswer, explanation,
                           components={{
                             p: ({ children }) => (
                               <p
-                                className={`mb-2 last:mb-0 leading-[1.4] ${
-                                  lightMode ? 'text-stone-800' : 'text-white'
-                                }`}
+                                className={parchment ? 'mb-2 last:mb-0 leading-[1.4]' : `mb-2 last:mb-0 leading-[1.4] ${lightMode ? 'text-stone-800' : 'text-white'}`}
+                                style={parchment ? { color: mdColor } : undefined}
                               >
                                 {children}
                               </p>
                             ),
                             h1: ({ children }) => (
                               <h1
-                                className={`font-bold mb-2 ${lightMode ? 'text-stone-900' : 'text-white'}`}
+                                className={parchment ? 'font-bold mb-2' : `font-bold mb-2 ${lightMode ? 'text-stone-900' : 'text-white'}`}
+                                style={parchment ? { color: mdColor } : undefined}
                               >
                                 {children}
                               </h1>
                             ),
                             h2: ({ children }) => (
                               <h2
-                                className={`font-semibold mb-2 mt-3 first:mt-0 ${
-                                  lightMode ? 'text-stone-900' : 'text-white'
-                                }`}
+                                className={parchment ? 'font-semibold mb-2 mt-3 first:mt-0' : `font-semibold mb-2 mt-3 first:mt-0 ${lightMode ? 'text-stone-900' : 'text-white'}`}
+                                style={parchment ? { color: mdColor } : undefined}
                               >
                                 {children}
                               </h2>
                             ),
                             h3: ({ children }) => (
                               <h3
-                                className={`font-medium mb-2 mt-2 first:mt-0 ${
-                                  lightMode ? 'text-stone-900' : 'text-white'
-                                }`}
+                                className={parchment ? 'font-medium mb-2 mt-2 first:mt-0' : `font-medium mb-2 mt-2 first:mt-0 ${lightMode ? 'text-stone-900' : 'text-white'}`}
+                                style={parchment ? { color: mdColor } : undefined}
                               >
                                 {children}
                               </h3>
@@ -415,49 +431,48 @@ export function AIHelper({ question, correctAnswer, selectedAnswer, explanation,
                             ol: ({ children }) => <ol className="list-decimal pl-4 mb-2 space-y-1">{children}</ol>,
                             li: ({ children }) => (
                               <li
-                                className={`leading-[1.4] ${
-                                  lightMode ? 'text-stone-800' : 'text-white'
-                                }`}
+                                className={parchment ? 'leading-[1.4]' : `leading-[1.4] ${lightMode ? 'text-stone-800' : 'text-white'}`}
+                                style={parchment ? { color: mdColor } : undefined}
                               >
                                 {children}
                               </li>
                             ),
                             strong: ({ children }) => (
                               <strong
-                                className={`font-semibold ${
-                                  lightMode ? 'text-stone-900' : 'text-white'
-                                }`}
+                                className={parchment ? 'font-semibold' : `font-semibold ${lightMode ? 'text-stone-900' : 'text-white'}`}
+                                style={parchment ? { color: mdColor } : undefined}
                               >
                                 {children}
                               </strong>
                             ),
                             em: ({ children }) => (
                               <em
-                                className={`italic ${
-                                  lightMode ? 'text-stone-700' : 'text-white/90'
-                                }`}
+                                className={parchment ? 'italic' : `italic ${lightMode ? 'text-stone-700' : 'text-white/90'}`}
+                                style={parchment ? { color: mdMutedColor } : undefined}
                               >
                                 {children}
                               </em>
                             ),
                             code: ({ children }) => (
                               <code
-                                className={`px-1 py-0.5 rounded text-xs font-mono ${
+                                className={parchment ? 'px-1 py-0.5 rounded text-xs font-mono' : `px-1 py-0.5 rounded text-xs font-mono ${
                                   lightMode
                                     ? 'bg-stone-100 text-stone-900'
                                     : 'bg-white/20 text-white'
                                 }`}
+                                style={parchment ? { backgroundColor: 'rgba(31,20,12,0.08)', color: mdColor } : undefined}
                               >
                                 {children}
                               </code>
                             ),
                             blockquote: ({ children }) => (
                               <blockquote
-                                className={`border-l-2 pl-3 py-1 italic my-2 ${
+                                className={parchment ? 'border-l-2 pl-3 py-1 italic my-2' : `border-l-2 pl-3 py-1 italic my-2 ${
                                   lightMode
                                     ? 'border-stone-300 text-stone-700'
                                     : 'border-white/30 text-white/80'
                                 }`}
+                                style={parchment ? { borderColor: mdMutedColor, color: mdMutedColor } : undefined}
                               >
                                 {children}
                               </blockquote>
@@ -483,12 +498,12 @@ export function AIHelper({ question, correctAnswer, selectedAnswer, explanation,
                             }
                           }, 100);
                         }}
-                        className={`text-xs px-3 py-1.5 rounded-lg transition-all font-light ${
+                        className={parchment ? 'text-xs px-3 py-1.5 rounded-lg transition-all font-light hover:bg-black/[0.05]' : `text-xs px-3 py-1.5 rounded-lg transition-all font-light ${
                           lightMode
                             ? 'text-stone-500 hover:bg-black/[0.04] hover:text-stone-800'
                             : 'text-white/50 hover:bg-white/[0.05] hover:text-white/80'
                         }`}
-                        style={{ fontFamily: "'Manrope', sans-serif" }}
+                        style={parchment ? { fontFamily: "'Manrope', sans-serif", color: P.inkMuted } : { fontFamily: "'Manrope', sans-serif" }}
                         title="Reply to this message"
                       >
                         ↩ Reply
@@ -545,8 +560,8 @@ export function AIHelper({ question, correctAnswer, selectedAnswer, explanation,
                             }
                           }
                         }}
-                        className="text-xs text-white/50 px-3 py-1.5 rounded-lg hover:bg-white/[0.05] hover:text-white/80 transition-all font-light"
-                        style={{ fontFamily: "'Manrope', sans-serif" }}
+                        className={parchment ? 'text-xs px-3 py-1.5 rounded-lg hover:bg-black/[0.05] transition-all font-light' : 'text-xs text-white/50 px-3 py-1.5 rounded-lg hover:bg-white/[0.05] hover:text-white/80 transition-all font-light'}
+                        style={parchment ? { fontFamily: "'Manrope', sans-serif", color: P.inkMuted } : { fontFamily: "'Manrope', sans-serif" }}
                         title="Copy message"
                       >
                         ⧉ Copy
@@ -555,7 +570,8 @@ export function AIHelper({ question, correctAnswer, selectedAnswer, explanation,
                   )}
                 </div>
               </div>
-            ))}
+              );
+            })}
 
 
           </div>
@@ -581,32 +597,30 @@ export function AIHelper({ question, correctAnswer, selectedAnswer, explanation,
           lightMode={lightMode}
           replyPreview={replyingTo ? (
             <div
-              className={`p-3 rounded-t-lg border-b ${
+              className={parchment ? 'p-3 rounded-t-lg border-b' : `p-3 rounded-t-lg border-b ${
                 lightMode
                   ? 'bg-stone-50 border-stone-200'
                   : 'bg-white/5 border-white/10'
               }`}
+              style={parchment ? { backgroundColor: P.parchment, borderColor: P.line } : undefined}
             >
               <div className="flex items-start justify-between gap-3">
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 mb-1">
                     <div
-                      className={`w-2 h-2 rounded-full ${
-                        lightMode ? 'bg-stone-400' : 'bg-white/40'
-                      }`}
+                      className={parchment ? 'w-2 h-2 rounded-full' : `w-2 h-2 rounded-full ${lightMode ? 'bg-stone-400' : 'bg-white/40'}`}
+                      style={parchment ? { backgroundColor: P.inkMuted } : undefined}
                     ></div>
                     <span
-                      className={`text-xs font-medium ${
-                        lightMode ? 'text-stone-700' : 'text-white/70'
-                      }`}
+                      className={parchment ? 'text-xs font-medium' : `text-xs font-medium ${lightMode ? 'text-stone-700' : 'text-white/70'}`}
+                      style={parchment ? { color: P.ink } : undefined}
                     >
                       {replyingTo.role === 'assistant' ? 'AI Assistant' : 'You'}
                     </span>
                   </div>
                   <div
-                    className={`text-sm line-clamp-2 leading-relaxed ${
-                      lightMode ? 'text-stone-700' : 'text-white/80'
-                    }`}
+                    className={parchment ? 'text-sm line-clamp-2 leading-relaxed' : `text-sm line-clamp-2 leading-relaxed ${lightMode ? 'text-stone-700' : 'text-white/80'}`}
+                    style={parchment ? { color: P.ink } : undefined}
                   >
                     {replyingTo.content.length > 120 
                       ? replyingTo.content.substring(0, 120) + '...' 
@@ -616,17 +630,16 @@ export function AIHelper({ question, correctAnswer, selectedAnswer, explanation,
                 </div>
                 <button
                   onClick={() => setReplyingTo(null)}
-                  className={`flex-shrink-0 p-1 rounded-full transition-colors group ${
-                    lightMode ? 'hover:bg-black/[0.05]' : 'hover:bg-white/10'
-                  }`}
+                  className={parchment ? 'flex-shrink-0 p-1 rounded-full transition-colors group hover:bg-black/[0.06]' : `flex-shrink-0 p-1 rounded-full transition-colors group ${lightMode ? 'hover:bg-black/[0.05]' : 'hover:bg-white/10'}`}
                   title="Cancel reply"
                 >
                   <svg
-                    className={`w-4 h-4 ${
+                    className={parchment ? 'w-4 h-4' : `w-4 h-4 ${
                       lightMode
                         ? 'text-stone-500 group-hover:text-stone-800'
                         : 'text-white/60 group-hover:text-white/90'
                     }`}
+                    style={parchment ? { color: P.inkMuted } : undefined}
                     fill="none"
                     stroke="currentColor"
                     viewBox="0 0 24 24"

@@ -872,23 +872,30 @@ export const UkmlaSBAQuestion: React.FC<UkmlaSBAQuestionProps> = ({
             transition={{ type: 'spring', damping: 30, stiffness: 300 }}
             className={cn(
               "fixed right-0 top-0 bottom-0 w-full md:w-[500px] lg:w-[600px] z-50 shadow-2xl flex flex-col",
-              isLightMode ? "bg-stone-50" : "bg-[#1a1a1a]"
+              !useParchmentTheme && (isLightMode ? "bg-stone-50" : "bg-[#1a1a1a]")
             )}
+            style={useParchmentTheme ? { backgroundColor: '#FAF5EC' } : undefined}
           >
             {/* Header */}
             <div className={cn(
               "flex items-center justify-between px-4 md:px-6 py-3 md:py-4 border-b flex-shrink-0",
-              isLightMode ? "border-black/[0.08] bg-stone-50" : "border-white/10 bg-[#1a1a1a]"
-            )}>
+              !useParchmentTheme && (isLightMode ? "border-black/[0.08] bg-stone-50" : "border-white/10 bg-[#1a1a1a]")
+            )}
+              style={useParchmentTheme ? { borderColor: '#E8DCC4', backgroundColor: '#FAF5EC' } : undefined}
+            >
               <div className="flex items-center gap-2 md:gap-3 min-w-0">
                 <div className={cn(
                   "px-3 py-1.5 rounded-lg font-bold text-sm flex-shrink-0",
-                  isLightMode ? "bg-stone-900 text-white" : "bg-white text-stone-900"
-                )}>
+                  !useParchmentTheme && (isLightMode ? "bg-stone-900 text-white" : "bg-white text-stone-900")
+                )}
+                  style={useParchmentTheme ? { backgroundColor: '#1F140C', color: '#FAF5EC' } : undefined}
+                >
                   AI
                 </div>
                 <div className="min-w-0">
-                  <p className={cn("text-xs md:text-sm font-light truncate hidden sm:block", isLightMode ? "text-stone-500" : "text-white/50")} style={{ fontFamily: "'Manrope', sans-serif" }}>
+                  <p className={cn("text-xs md:text-sm font-light truncate hidden sm:block", !useParchmentTheme && (isLightMode ? "text-stone-500" : "text-white/50"))}
+                    style={useParchmentTheme ? { fontFamily: "'Manrope', sans-serif", color: '#8A7560' } : { fontFamily: "'Manrope', sans-serif" }}
+                  >
                     Ask me anything about this question
                   </p>
                 </div>
@@ -897,16 +904,18 @@ export const UkmlaSBAQuestion: React.FC<UkmlaSBAQuestionProps> = ({
                 onClick={() => setShowAIHelper(false)}
                 className={cn(
                   "p-2 rounded-lg transition-colors flex-shrink-0",
-                  isLightMode ? "hover:bg-black/[0.05]" : "hover:bg-white/10"
+                  useParchmentTheme ? "hover:bg-[#EBE1D0]" : (isLightMode ? "hover:bg-black/[0.05]" : "hover:bg-white/10")
                 )}
                 aria-label="Close AI"
               >
-                <X className={cn("h-5 w-5", isLightMode ? "text-stone-700" : "text-zinc-300")} />
+                <X className={cn("h-5 w-5", !useParchmentTheme && (isLightMode ? "text-stone-700" : "text-zinc-300"))} style={useParchmentTheme ? { color: '#3B2A1E' } : undefined} />
               </button>
             </div>
 
             {/* AI Helper Content */}
-            <div className={cn("flex-1 overflow-hidden", isLightMode ? "bg-stone-50" : "bg-[#1a1a1a]")}>
+            <div className={cn("flex-1 overflow-hidden", !useParchmentTheme && (isLightMode ? "bg-stone-50" : "bg-[#1a1a1a]"))}
+              style={useParchmentTheme ? { backgroundColor: '#FAF5EC' } : undefined}
+            >
               <AIHelper
                 question={question}
                 correctAnswer={correctAnswerId}
@@ -914,6 +923,7 @@ export const UkmlaSBAQuestion: React.FC<UkmlaSBAQuestionProps> = ({
                 explanation={explanation}
                 integrated={true}
                 lightMode={isLightMode}
+                parchment={useParchmentTheme}
               />
             </div>
           </motion.div>
