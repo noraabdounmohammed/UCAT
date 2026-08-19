@@ -1,4 +1,4 @@
-import { lazy, Suspense, useMemo, useState } from 'react';
+import { lazy, Suspense, useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { AuthForm } from '@/components/auth/AuthForm';
@@ -27,13 +27,26 @@ function CustomPracticeContent() {
 
   const [showFilters, setShowFilters] = useState(true);
   const [userDismissedLoading, setUserDismissedLoading] = useState(false);
+  const beginningSessionRef = useRef(false);
 
   const goHome = () => {
     if (isPracticing) endPractice();
     navigate('/');
   };
 
+  const handleFilterClose = () => {
+    // PracticeFilterModalParchment calls onClose immediately after onApplyFilters.
+    // Ignore that one close event so Begin continues into the session; a genuine
+    // X/backdrop close still returns the student to the new Home.
+    if (beginningSessionRef.current) {
+      beginningSessionRef.current = false;
+      return;
+    }
+    goHome();
+  };
+
   const startCustomSession = (filters: FilterState) => {
+    beginningSessionRef.current = true;
     setShowFilters(false);
     setUserDismissedLoading(false);
     startPractice({
@@ -65,7 +78,7 @@ function CustomPracticeContent() {
       <Suspense fallback={<div className="h-screen w-screen bg-[#F4EFE8]" />}>
         <PracticeFilterModalParchment
           isOpen={true}
-          onClose={goHome}
+          onClose={handleFilterClose}
           onApplyFilters={startCustomSession}
         />
       </Suspense>
@@ -101,6 +114,7 @@ function CustomPracticeContent() {
           }}
           onRestartWithFilters={() => {
             endPractice();
+            beginningSessionRef.current = false;
             setShowFilters(true);
             setUserDismissedLoading(false);
           }}
