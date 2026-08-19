@@ -10,7 +10,7 @@ import '@/styles/font-sizes.css';
 
 const LaunchHomePage = lazy(() => import('@/pages/LaunchHomePage').then(m => ({ default: m.LaunchHomePage })));
 const RecommendedPracticePage = lazy(() => import('@/pages/RecommendedPracticePage').then(m => ({ default: m.RecommendedPracticePage })));
-const ConceptPracticePage = lazy(() => import('@/pages/ConceptPracticePage.loft').then(m => ({ default: m.ConceptPracticePageLoft })));
+const CustomPracticePage = lazy(() => import('@/pages/CustomPracticePage').then(m => ({ default: m.CustomPracticePage })));
 const PrivacyPolicy = lazy(() => import('@/pages/PrivacyPolicy').then(m => ({ default: m.PrivacyPolicy })));
 
 const BlankFallback = () => <div className="h-screen w-screen" style={{ backgroundColor: '#F4EFE8' }} />;
@@ -26,7 +26,7 @@ function App() {
           <Routes>
             <Route path="/" element={<Suspense fallback={<BlankFallback />}><LaunchHomePage /></Suspense>} />
             <Route path="/recommended-practice" element={<Suspense fallback={<BlankFallback />}><RecommendedPracticePage /></Suspense>} />
-            <Route path="/concept-practice" element={<Suspense fallback={<BlankFallback />}><ConceptPracticePage /></Suspense>} />
+            <Route path="/concept-practice" element={<Suspense fallback={<BlankFallback />}><CustomPracticePage /></Suspense>} />
             <Route path="/privacy" element={<Suspense fallback={<BlankFallback />}><PrivacyPolicy /></Suspense>} />
             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>
