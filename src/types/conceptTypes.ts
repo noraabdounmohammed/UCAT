@@ -1,15 +1,9 @@
 // Concept node types for the domain-agnostic concept practice system
 
-// Bloom's taxonomy levels
 export type BloomLevel = 'remember' | 'understand' | 'apply' | 'analyze' | 'evaluate' | 'create';
-
-// Question formats
 export type QuestionFormat = 'mcq' | 'sba' | 'emq' | 'true_false' | 'ranking' | 'data_interpretation' | 'osce' | 'short_answer' | 'flashcard' | 'essay' | 'ukmla_sba' | 'mindmap';
-
-// Relationship types between concepts
 export type RelationshipType = 'prerequisite_of' | 'part_of' | 'contrasts_with' | 'analogous_to' | 'misconception_of';
 
-// Per-Bloom level mastery statistics
 export interface BloomMasteryStats {
   attempts: number;
   correct: number;
@@ -19,45 +13,34 @@ export interface ConceptMasteryData {
   attempts: number;
   correct: number;
   incorrect: number;
-  mastery_level: number; // 0 = unseen, 1 = incorrect, 2 = correct
-  last_practiced: string | null; // ISO date string
-  last_practiced_at?: Date; // For compatibility
-  practice_count?: number; // Total practice attempts
-  correct_count?: number; // Total correct answers
-  bloom_stats?: Record<BloomLevel, BloomMasteryStats>; // Per-Bloom level stats
-  // FSRS-5 scheduler state (persisted per concept)
-  fsrs_stability?: number;   // memory stability in days
-  fsrs_difficulty?: number;  // 1..10 internal scale
-  fsrs_due_at?: string;      // ISO — next review due date
-  fsrs_last_review?: string; // ISO — when the last review was recorded
-  fsrs_reps?: number;        // total successful reviews
-  fsrs_lapses?: number;      // times forgotten (rating=1)
-  // Legacy aliases kept for read compatibility
+  mastery_level: number;
+  last_practiced: string | null;
+  last_practiced_at?: Date;
+  practice_count?: number;
+  correct_count?: number;
+  bloom_stats?: Record<BloomLevel, BloomMasteryStats>;
+  fsrs_stability?: number;
+  fsrs_difficulty?: number;
+  fsrs_due_at?: string;
+  fsrs_last_review?: string;
+  fsrs_reps?: number;
+  fsrs_lapses?: number;
   stability?: number;
   next_review_at?: string;
 }
 
-// Mind map types (optional per concept)
 export type MindMapCategory =
-  | 'central'
-  | 'risk'
-  | 'investigation'
-  | 'management'
-  | 'differential'
-  | 'complication'
-  | 'definition'
-  | 'mechanism'
-  | 'application'
-  | 'example';
+  | 'central' | 'risk' | 'investigation' | 'management' | 'differential'
+  | 'complication' | 'definition' | 'mechanism' | 'application' | 'example';
 
 export interface MindMapNode {
   id: string;
   label: string;
   category: MindMapCategory;
-  full?: string; // full untruncated label for tooltip/popover
+  full?: string;
 }
 
-export type MindMapEdge = [string, string]; // [fromId, toId]
+export type MindMapEdge = [string, string];
 
 export interface MindMapData {
   title: string;
@@ -65,7 +48,6 @@ export interface MindMapData {
   edges: MindMapEdge[];
 }
 
-// UKMLA-specific dimensions
 export interface UKMLADimensions {
   systems: string[];
   conditions: string[];
@@ -73,64 +55,51 @@ export interface UKMLADimensions {
   competencies: string[];
 }
 
-// Generic taxonomy dimensions for any domain
 export interface GenericTaxonomy {
-  domain: string; // e.g., "Medicine", "Mathematics", "Language"
-  subject: string; // e.g., "Cardiology", "Algebra", "Spanish"
-  topic?: string; // e.g., "Acute Coronary Syndrome", "Quadratic Equations", "Past Tense"
-  subtopic?: string; // e.g., "STEMI", "Completing the Square", "Irregular Verbs"
+  domain: string;
+  subject: string;
+  topic?: string;
+  subtopic?: string;
 }
 
-// Exam-specific dimensions container
 export interface ExamSpecific {
   ukmla?: UKMLADimensions;
-  // Future: gmat?: GMATDimensions, gcse_math?: GCSEMathDimensions, etc.
 }
 
-// Combined dimensions interface
 export interface ConceptDimensions extends GenericTaxonomy {
   exam_specific?: ExamSpecific;
 }
 
 export interface ConceptKnowledge {
   decision_rule: string;
-  guideline_ref?: {
-    name: string;
-    year: number;
-    key_line: string;
-  };
+  guideline_ref?: { name: string; year: number; key_line: string };
   misconceptions?: string[];
   key_facts?: string[];
 }
 
-// Concept relationship
 export interface ConceptRelation {
   type: RelationshipType;
   target_id: string;
 }
 
-// Template for generating questions at specific Bloom levels and formats
 export interface TemplateSpec {
   prompt: string;
   hints?: string[];
   answer_template?: string;
 }
 
-// Media asset for a concept
 export interface MediaAsset {
   type: 'image' | 'chart' | 'audio' | 'video' | 'dataset' | 'code';
   uri: string;
   caption?: string;
 }
 
-// Reference for a concept
 export interface Reference {
   label: string;
   url?: string;
   citation?: string;
 }
 
-// Authoring metadata
 export interface AuthoringMetadata {
   created_at: string;
   updated_at: string;
@@ -138,17 +107,25 @@ export interface AuthoringMetadata {
   author?: string;
 }
 
-// Ultra-simple concept node interface
+export interface ConceptImportance {
+  exam_weight?: number;
+  safety_critical?: boolean;
+  core?: boolean;
+}
+
 export interface ConceptNode {
   concept_id: string;
   title: string;
-  content: string; // Single field for all concept content
-  custom_filters: string[]; // User-defined filter tags
-  prerequisites: string[]; // Concept dependencies
+  content: string;
+  custom_filters: string[];
+  prerequisites: string[];
   mastery_data: ConceptMasteryData;
+  importance?: ConceptImportance;
+  exam_weight?: number;
+  safety_critical?: boolean;
+  core?: boolean;
   created_at?: Date;
   updated_at?: Date;
-  // Optional curated mind map representation; if absent, UI can auto-generate
   mindmap?: MindMapData;
 }
 
@@ -158,11 +135,7 @@ export interface ConceptModel {
     systems: string[];
     competencies: string[];
     difficulty_levels: string[];
-    mastery_levels: Array<{
-      level: number;
-      name: string;
-      description: string;
-    }>;
+    mastery_levels: Array<{ level: number; name: string; description: string }>;
   };
 }
 
@@ -170,7 +143,7 @@ export interface ConceptFilterState {
   searchQuery: string;
   mastery_levels: number[];
   custom_filters: string[];
-  cascading_mode?: boolean; // AND vs OR logic for custom filters
+  cascading_mode?: boolean;
 }
 
 export interface ConceptFilterOptions {
@@ -184,7 +157,6 @@ export interface ConceptStats {
   by_custom_filter: Record<string, number>;
 }
 
-// Custom filter types
 export interface CustomFilter {
   id: string;
   name: string;
@@ -203,7 +175,6 @@ export interface FilterCategory {
   created_at: Date;
 }
 
-// Practice configuration
 export type StudyMode = 'smart' | 'new_only' | 'review_weak' | 'custom';
 
 export interface PracticeConfig {
@@ -230,40 +201,21 @@ export interface ConceptPracticeState {
   activeView: 'simple' | 'grid' | 'mastery' | 'dashboard';
   customFilters: CustomFilter[];
   filterCategories: FilterCategory[];
-  
-  // Optional selection of concept IDs to drive a targeted practice session
   practiceSelection: string[] | null;
-  
-  // Practice state
   isPracticing: boolean;
-  practiceQuestions: any[]; // Will be typed properly later
+  practiceQuestions: any[];
+  generatingQuestionCount: number;
+  practiceError: string | null;
   practiceConfig: PracticeConfig;
-  currentSessionAnswers: Array<{questionId: string; conceptId: string; isCorrect: boolean; timestamp: string}>;
-  sessionStartTime: number | null; // Timestamp when practice session started
-  generatingQuestionCount: number; // Number of questions being generated for loading screen
-  practiceError: string | null; // Error message for practice (e.g., daily limit reached)
-  
-  // Actions
-  migrateFilterState: () => void;
+  currentSessionAnswers: any[];
+  sessionStartTime: number | null;
   loadConcepts: () => Promise<void>;
-  updateFilterState: (filterUpdates: Partial<ConceptFilterState>) => void;
-  resetFilters: () => void;
-  setActiveView: (view: 'simple' | 'grid' | 'mastery' | 'dashboard') => void;
-  addConcept: (concept: Omit<ConceptNode, 'concept_id'>) => void;
-  updateConcept: (conceptId: string, updates: Partial<ConceptNode>) => void;
-  deleteConcept: (conceptId: string) => void;
-  
-  // Practice actions
-  setPracticeSelection: (ids: string[] | null) => void;
+  migrateFilterState: () => void;
+  setFilterState: (filterState: ConceptFilterState) => void;
+  setPracticeSelection: (conceptIds: string[] | null) => void;
   startPractice: (config?: PracticeConfig) => Promise<void>;
   endPractice: () => void;
   updateMastery: (conceptId: string, isCorrect: boolean) => void;
-  
-  // Custom filter management
-  createCustomFilter: (filter: Omit<CustomFilter, 'id' | 'created_at'>) => void;
-  updateCustomFilter: (filterId: string, updates: Partial<CustomFilter>) => void;
-  deleteCustomFilter: (filterId: string) => void;
-  
-  // Filter category management
-  createFilterCategory: (category: Omit<FilterCategory, 'id' | 'created_at'>) => void;
+  getConceptById?: (conceptId: string) => ConceptNode | undefined;
+  [key: string]: any;
 }
