@@ -1,4 +1,4 @@
-import { lazy, Suspense, useEffect, useRef, useState } from 'react';
+import { lazy, Suspense, useCallback, useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ConceptStoreProvider, useConceptStore } from '@/contexts/ConceptStoreContext';
 import { useAuth } from '@/contexts/AuthContext';
@@ -6,6 +6,61 @@ import { AuthForm } from '@/components/auth/AuthForm';
 import { GenerationLoadingScreen } from '@/components/practice/GenerationLoadingScreen';
 
 const ApplePracticeSession = lazy(() => import('@/components/practice/ApplePracticeSession').then(m => ({ default: m.ApplePracticeSession })));
+
+function deterministicJitter(id: string) {
+  let hash = 0;
+  for (let i = 0; i < id.length; i += 1) hash = ((hash << 5) - hash + id.charCodeAt(i)) | 0;
+  return (Math.abs(hash) % 1000) / 1000;
+}
+
+function conceptPriority(concept: any, now = Date.now()) {
+  const md = concept?.mastery_data || {};
+  const attempts = Number(md.attempts || 0);
+  const incorrect = Number(md.incorrect || 0);
+  const lapses = Number(md.fsrs_lapses || 0);
+  const masteryLevel = Number(md.mastery_level || 0);
+
+  // Coverage: unseen concepts must continue entering the mix so the learner model
+  // does not over-focus on a small, already-tested corner of the curriculum.
+  const coverageNeed = attempts === 0 ? 0.46 : 0;
+
+  // Weakness: use a lightly smoothed error rate so one answer never creates false certainty.
+  const smoothedErrorRate = (incorrect + 1) / (attempts + 2);
+  const weakness = attempts > 0 ? smoothedErrorRate * 0.42 : 0;
+  const explicitWeakness = masteryLevel === 1 ? 0.16 : 0;
+
+  // Forgetting: FSRS due dates are the strongest time-sensitive signal currently available.
+  const dueAt = md.fsrs_due_at ? new Date(md.fsrs_due_at).getTime() : null;
+  const isDue = dueAt !== null && Number.isFinite(dueAt) && dueAt <= now;
+  const overdueDays = isDue && dueAt !== null ? Math.max(0, (now - dueAt) / 86_400_000) : 0;
+  const forgetting = isDue ? 0.22 + Math.min(overdueDays / 60, 0.12) : 0;
+  const lapseSignal = Math.min(lapses * 0.025, 0.1);
+
+  // Evidence uncertainty falls as we collect more observations.
+  const uncertainty = attempts === 0 ? 0.08 : 0.08 / Math.sqrt(attempts + 1);
+
+  // Curriculum metadata is optional. UKMLA can add these labels progressively later;
+  // another curriculum can provide its own values without changing the engine.
+  const importance = concept?.importance || {};
+  const examWeight = Number(importance.exam_weight ?? concept?.exam_weight ?? 0);
+  const examBoost = Number.isFinite(examWeight) && examWeight > 0 ? Math.min(examWeight, 5) * 0.025 : 0;
+  const safetyBoost = importance.safety_critical === true || concept?.safety_critical === true ? 0.14 : 0;
+  const coreBoost = importance.core === true || concept?.core === true ? 0.07 : 0;
+
+  // Tiny stable jitter avoids always choosing the first JSON concepts when many unseen
+  // concepts have identical evidence, without making the recommendation meaningfully random.
+  const jitter = deterministicJitter(String(concept?.concept_id || concept?.title || '')) * 0.015;
+
+  return coverageNeed + weakness + explicitWeakness + forgetting + lapseSignal + uncertainty + examBoost + safetyBoost + coreBoost + jitter;
+}
+
+function chooseRecommendedConcepts(concepts: any[], count: number) {
+  return [...concepts]
+    .map(concept => ({ concept, score: conceptPriority(concept) }))
+    .sort((a, b) => b.score - a.score)
+    .slice(0, Math.min(count, concepts.length))
+    .map(item => item.concept);
+}
 
 function RecommendedPracticeContent() {
   const navigate = useNavigate();
@@ -21,20 +76,28 @@ function RecommendedPracticeContent() {
     generatingQuestionCount,
     practiceError,
     filterOptions,
+    setPracticeSelection,
   } = useConceptStore() as any;
 
   const startedRef = useRef(false);
   const [userDismissedLoading, setUserDismissedLoading] = useState(false);
 
-  useEffect(() => {
-    if (!user || startedRef.current || !concepts?.length) return;
-    startedRef.current = true;
+  const startRecommended = useCallback((count: number) => {
+    if (!concepts?.length) return;
+    const selected = chooseRecommendedConcepts(concepts, count);
+    setPracticeSelection(selected.map((concept: any) => concept.concept_id));
     startPractice({
       study_mode: 'smart',
       target_formats: ['ukmla_sba'],
-      question_count: 10,
+      question_count: count,
     });
-  }, [user, concepts, startPractice]);
+  }, [concepts, setPracticeSelection, startPractice]);
+
+  useEffect(() => {
+    if (!user || startedRef.current || !concepts?.length) return;
+    startedRef.current = true;
+    startRecommended(10);
+  }, [user, concepts, startRecommended]);
 
   const handleAnswerSubmit = (questionId: string, isCorrect: boolean) => {
     const question = practiceQuestions.find((q: any) => q.id === questionId);
@@ -76,7 +139,14 @@ function RecommendedPracticeContent() {
   }
 
   if (!concepts?.length && !isPracticing) {
-    return <div className="h-screen w-screen bg-[#F4EFE8]" />;
+    return (
+      <main className="flex min-h-screen items-center justify-center bg-[#F4EFE8] px-6 text-[#2A1E16]">
+        <div className="text-center">
+          <div className="text-[11px] font-medium uppercase tracking-[0.22em] text-[#8A7560]">Recommended session</div>
+          <p className="mt-3 text-sm text-[#8A7560]">Loading your curriculum…</p>
+        </div>
+      </main>
+    );
   }
 
   if (isLoading || (isPracticing && !userDismissedLoading)) {
@@ -104,7 +174,7 @@ function RecommendedPracticeContent() {
           currentFormat="ukmla_sba"
           onAnotherFive={() => {
             setUserDismissedLoading(false);
-            startPractice({ study_mode: 'smart', target_formats: ['ukmla_sba'], question_count: 5 });
+            startRecommended(5);
           }}
         />
       </Suspense>
