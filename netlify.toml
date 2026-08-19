@@ -3,6 +3,12 @@
   publish = "dist"
   functions = "netlify/functions"
 
+[build.environment]
+  NODE_VERSION = "20"
+  VITE_SUPABASE_URL = "https://uivitzexbtsmnspcitgh.supabase.co"
+  VITE_SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYXNlIiwicmVmIjoidWl2aXR6ZXhidHNtbnNwY2l0Z2giLCJyb2xlIjoiYW5vbiIsImlhdCI6MTc2MDQzNDc2NiwiZXhwIjoyMDc2MDEwNzY2fQ.2Y6zDndrPwKMPqIq7nprXK9pei0MZGPIyWJDxN9XmgQ"
+  SECRETS_SCAN_OMIT_KEYS = "VITE_SUPABASE_URL,VITE_SUPABASE_ANON_KEY"
+
 [dev]
   command = "npm run dev"
   targetPort = 5173

@@ -138,6 +138,12 @@ export interface AuthoringMetadata {
   author?: string;
 }
 
+export interface ConceptImportance {
+  exam_weight?: number;
+  safety_critical?: boolean;
+  core?: boolean;
+}
+
 // Ultra-simple concept node interface
 export interface ConceptNode {
   concept_id: string;
@@ -146,6 +152,10 @@ export interface ConceptNode {
   custom_filters: string[]; // User-defined filter tags
   prerequisites: string[]; // Concept dependencies
   mastery_data: ConceptMasteryData;
+  importance?: ConceptImportance;
+  exam_weight?: number;
+  safety_critical?: boolean;
+  core?: boolean;
   created_at?: Date;
   updated_at?: Date;
   // Optional curated mind map representation; if absent, UI can auto-generate
