@@ -1,9 +1,10 @@
-import { lazy, Suspense, useCallback, useEffect, useRef, useState } from 'react';
+import { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ConceptStoreProvider, useConceptStore } from '@/contexts/ConceptStoreContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { AuthForm } from '@/components/auth/AuthForm';
 import { GenerationLoadingScreen } from '@/components/practice/GenerationLoadingScreen';
+import { getUserCurriculumId, migrateLegacyCurriculumState } from '@/utils/curriculumScope';
 
 const ApplePracticeSession = lazy(() => import('@/components/practice/ApplePracticeSession').then(m => ({ default: m.ApplePracticeSession })));
 
@@ -20,35 +21,23 @@ function conceptPriority(concept: any, now = Date.now()) {
   const lapses = Number(md.fsrs_lapses || 0);
   const masteryLevel = Number(md.mastery_level || 0);
 
-  // Coverage: unseen concepts must continue entering the mix so the learner model
-  // does not over-focus on a small, already-tested corner of the curriculum.
   const coverageNeed = attempts === 0 ? 0.46 : 0;
-
-  // Weakness: use a lightly smoothed error rate so one answer never creates false certainty.
   const smoothedErrorRate = (incorrect + 1) / (attempts + 2);
   const weakness = attempts > 0 ? smoothedErrorRate * 0.42 : 0;
   const explicitWeakness = masteryLevel === 1 ? 0.16 : 0;
 
-  // Forgetting: FSRS due dates are the strongest time-sensitive signal currently available.
   const dueAt = md.fsrs_due_at ? new Date(md.fsrs_due_at).getTime() : null;
   const isDue = dueAt !== null && Number.isFinite(dueAt) && dueAt <= now;
   const overdueDays = isDue && dueAt !== null ? Math.max(0, (now - dueAt) / 86_400_000) : 0;
   const forgetting = isDue ? 0.22 + Math.min(overdueDays / 60, 0.12) : 0;
   const lapseSignal = Math.min(lapses * 0.025, 0.1);
-
-  // Evidence uncertainty falls as we collect more observations.
   const uncertainty = attempts === 0 ? 0.08 : 0.08 / Math.sqrt(attempts + 1);
 
-  // Curriculum metadata is optional. UKMLA can add these labels progressively later;
-  // another curriculum can provide its own values without changing the engine.
   const importance = concept?.importance || {};
   const examWeight = Number(importance.exam_weight ?? concept?.exam_weight ?? 0);
   const examBoost = Number.isFinite(examWeight) && examWeight > 0 ? Math.min(examWeight, 5) * 0.025 : 0;
   const safetyBoost = importance.safety_critical === true || concept?.safety_critical === true ? 0.14 : 0;
   const coreBoost = importance.core === true || concept?.core === true ? 0.07 : 0;
-
-  // Tiny stable jitter avoids always choosing the first JSON concepts when many unseen
-  // concepts have identical evidence, without making the recommendation meaningfully random.
   const jitter = deterministicJitter(String(concept?.concept_id || concept?.title || '')) * 0.015;
 
   return coverageNeed + weakness + explicitWeakness + forgetting + lapseSignal + uncertainty + examBoost + safetyBoost + coreBoost + jitter;
@@ -185,8 +174,14 @@ function RecommendedPracticeContent() {
 }
 
 export function RecommendedPracticePage() {
+  const { user } = useAuth();
+  const curriculumId = useMemo(() => {
+    if (user?.id) migrateLegacyCurriculumState(user.id);
+    return getUserCurriculumId(user?.id);
+  }, [user?.id]);
+
   return (
-    <ConceptStoreProvider curriculumId="default">
+    <ConceptStoreProvider curriculumId={curriculumId}>
       <RecommendedPracticeContent />
     </ConceptStoreProvider>
   );
