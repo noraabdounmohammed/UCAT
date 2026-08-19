@@ -3,6 +3,7 @@ import { ArrowRight, SlidersHorizontal } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { ConceptStoreProvider, useConceptStore } from '@/contexts/ConceptStoreContext';
 import { useAuth } from '@/contexts/AuthContext';
+import { getUserCurriculumId, migrateLegacyCurriculumState } from '@/utils/curriculumScope';
 
 const palette = {
   cream: '#FAF5EC', espresso: '#1F140C', ink: '#2A1E16', muted: '#8A7560',
@@ -165,5 +166,11 @@ function Pill({ children }: { children: React.ReactNode }) {
 }
 
 export function LaunchHomePage() {
-  return <ConceptStoreProvider curriculumId="default"><HomeContent /></ConceptStoreProvider>;
+  const { user } = useAuth();
+  const curriculumId = useMemo(() => {
+    if (user?.id) migrateLegacyCurriculumState(user.id);
+    return getUserCurriculumId(user?.id);
+  }, [user?.id]);
+
+  return <ConceptStoreProvider curriculumId={curriculumId}><HomeContent /></ConceptStoreProvider>;
 }
