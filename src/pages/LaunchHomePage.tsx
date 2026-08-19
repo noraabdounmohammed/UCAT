@@ -18,7 +18,7 @@ function getGreeting() {
 
 function HomeContent() {
   const navigate = useNavigate();
-  const { user } = useAuth();
+  const { user, signOut } = useAuth();
   const { concepts, isLoading } = useConceptStore() as any;
 
   const firstName = useMemo(() => {
@@ -64,14 +64,21 @@ function HomeContent() {
   return (
     <main className="min-h-screen" style={{ backgroundColor: palette.cream, color: palette.ink }}>
       <div className="mx-auto max-w-5xl px-5 py-6 sm:px-8 sm:py-10">
-        <header className="flex items-center justify-between border-b pb-5" style={{ borderColor: palette.line }}>
+        <header className="flex items-center justify-between gap-4 border-b pb-5" style={{ borderColor: palette.line }}>
           <div>
             <div className="text-xl font-semibold tracking-tight" style={{ color: palette.espresso }}>StudyEdit</div>
             <div className="mt-1 text-xs uppercase tracking-[0.2em]" style={{ color: palette.muted }}>UKMLA AKT</div>
           </div>
-          <button onClick={openCustomPractice} className="rounded-full border px-4 py-2 text-sm transition hover:-translate-y-0.5" style={{ borderColor: palette.line, color: palette.ink }}>
-            Practice
-          </button>
+          <div className="flex items-center gap-2">
+            <button onClick={openCustomPractice} className="rounded-full border px-4 py-2 text-sm transition hover:-translate-y-0.5" style={{ borderColor: palette.line, color: palette.ink }}>
+              Practice
+            </button>
+            {user && (
+              <button onClick={() => void signOut()} className="hidden rounded-full px-3 py-2 text-xs sm:block" style={{ color: palette.muted }}>
+                Sign out
+              </button>
+            )}
+          </div>
         </header>
 
         <section className="pt-10 sm:pt-14">
@@ -83,7 +90,7 @@ function HomeContent() {
 
         <section className="mt-10 rounded-[28px] border p-6 sm:p-8" style={{ borderColor: palette.line, backgroundColor: '#FFFDF8' }}>
           <div className="text-[11px] font-medium uppercase tracking-[0.22em]" style={{ color: palette.muted }}>Your preparation</div>
-          <div className="mt-6 grid grid-cols-3 divide-x" style={{ borderColor: palette.line }}>
+          <div className="mt-6 grid grid-cols-1 divide-y sm:grid-cols-3 sm:divide-x sm:divide-y-0" style={{ borderColor: palette.line }}>
             <Metric label="Tested coverage" value={isLoading ? '—' : `${preparation.coverage}%`} detail="of mapped concepts" />
             <Metric label="Retrieval" value={isLoading || !preparation.hasEvidence ? '—' : `${preparation.retrieval}%`} detail={preparation.hasEvidence ? 'across attempts' : 'not enough evidence yet'} />
             <Metric label="Current gaps" value={isLoading || !preparation.hasEvidence ? '—' : String(preparation.weakCount)} detail={preparation.hasEvidence ? 'currently weak' : 'not enough evidence yet'} />
@@ -117,7 +124,7 @@ function HomeContent() {
           </div>
         </section>
 
-        <section className="mt-10 pb-16">
+        <section className="mt-10 pb-10">
           <div className="text-[11px] font-medium uppercase tracking-[0.22em]" style={{ color: palette.muted }}>Where you’re most exposed</div>
           <h2 className="mt-2 text-2xl font-light" style={{ fontFamily: "'Fraunces', serif" }}>Your clearest current gaps</h2>
           <div className="mt-5 divide-y rounded-[24px] border px-5" style={{ borderColor: palette.line, backgroundColor: '#FFFDF8' }}>
@@ -139,13 +146,18 @@ function HomeContent() {
             )}
           </div>
         </section>
+
+        <footer className="flex items-center justify-between border-t py-5 text-xs" style={{ borderColor: palette.line, color: palette.muted }}>
+          <button onClick={() => navigate('/privacy')}>Privacy</button>
+          {user && <button className="sm:hidden" onClick={() => void signOut()}>Sign out</button>}
+        </footer>
       </div>
     </main>
   );
 }
 
 function Metric({ label, value, detail }: { label: string; value: string; detail: string }) {
-  return <div className="px-3 first:pl-0 last:pr-0 sm:px-7"><div className="text-xs" style={{ color: palette.muted }}>{label}</div><div className="mt-2 text-3xl font-light tracking-tight sm:text-4xl" style={{ fontFamily: "'Fraunces', serif", color: palette.espresso }}>{value}</div><div className="mt-1 text-[11px] sm:text-xs" style={{ color: palette.muted }}>{detail}</div></div>;
+  return <div className="py-5 first:pt-0 last:pb-0 sm:px-7 sm:py-0 sm:first:pl-0 sm:last:pr-0"><div className="text-xs" style={{ color: palette.muted }}>{label}</div><div className="mt-2 text-3xl font-light tracking-tight sm:text-4xl" style={{ fontFamily: "'Fraunces', serif", color: palette.espresso }}>{value}</div><div className="mt-1 text-[11px] sm:text-xs" style={{ color: palette.muted }}>{detail}</div></div>;
 }
 
 function Pill({ children }: { children: React.ReactNode }) {
