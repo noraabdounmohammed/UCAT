@@ -1,7 +1,7 @@
-import React, { useState, useMemo, useEffect } from 'react';
-import { X, ChevronDown } from 'lucide-react';
+import React, { useEffect, useMemo, useState } from 'react';
+import { ChevronDown, X } from 'lucide-react';
 import { useConceptStore } from '@/contexts/ConceptStoreContext';
-import type { FilterCategory, ConceptNode } from '@/types/conceptTypes';
+import type { ConceptNode, FilterCategory } from '@/types/conceptTypes';
 
 export interface FilterState {
   size: number;
@@ -11,7 +11,12 @@ export interface FilterState {
   presentations: string[];
   facets: string[];
 }
-interface Props { isOpen: boolean; onClose: () => void; onApplyFilters?: (filters: FilterState) => void; }
+
+interface Props {
+  isOpen: boolean;
+  onClose: () => void;
+  onApplyFilters?: (filters: FilterState) => void;
+}
 
 const T = {
   parchment: '#F4ECDF', cream: '#FAF5EC', espresso: '#1F140C', ink: '#2A1E16',
@@ -19,351 +24,314 @@ const T = {
   sageDeep: '#8FA379', line: '#D9CCB6', lineSoft: '#E8DCC4',
 };
 
-const getStorage = <T,>(cid: string, key: string, def: T): T => {
-  const s = localStorage.getItem(`${cid}_${key}`) || localStorage.getItem(key);
-  return s ? JSON.parse(s) : def;
+const getStorage = <T,>(cid: string, key: string, fallback: T): T => {
+  try {
+    const stored = localStorage.getItem(`${cid}_${key}`) || localStorage.getItem(key);
+    return stored ? JSON.parse(stored) : fallback;
+  } catch {
+    return fallback;
+  }
+};
+
+const labelFor = (id: string) => id.replace(/-/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
+const hasAny = (values: Set<string>) => values.has('any');
+const matchesAnyTag = (concept: ConceptNode, values: Set<string>) =>
+  values.size === 0 || hasAny(values) || [...values].some(value => concept.custom_filters?.includes(value));
+
+const matchesStatus = (concept: ConceptNode, values: Set<string>) => {
+  if (hasAny(values)) return true;
+  const md = concept.mastery_data || ({} as any);
+  return [...values].some(status =>
+    (status === 'mastered' && md.mastery_level === 2) ||
+    (status === 'weak' && md.mastery_level === 1) ||
+    (status === 'cold' && !md.attempts && !md.mastery_level) ||
+    (status === 'drifting' && !!md.attempts && !md.mastery_level)
+  );
+};
+
+const countStatus = (concepts: ConceptNode[], status: string) => {
+  if (status === 'any') return concepts.length;
+  return concepts.filter(concept => matchesStatus(concept, new Set([status]))).length;
 };
 
 const calcSegments = (concepts: ConceptNode[], filter: string) => {
-  const m = concepts.filter(c => c.custom_filters?.includes(filter));
-  const t = m.length;
-  if (!t) return { m: 0, w: 0, a: 0, c: 0 };
+  const matching = concepts.filter(c => c.custom_filters?.includes(filter));
+  const total = matching.length;
+  if (!total) return { m: 0, w: 0, a: 0, c: 0 };
   return {
-    m: Math.round((m.filter(c => c.mastery_data?.mastery_level === 2).length / t) * 100),
-    w: Math.round((m.filter(c => c.mastery_data?.mastery_level === 1).length / t) * 100),
-    a: Math.round((m.filter(c => c.mastery_data?.attempts && !c.mastery_data?.mastery_level).length / t) * 100),
-    c: Math.round((m.filter(c => !c.mastery_data?.attempts && !c.mastery_data?.mastery_level).length / t) * 100),
+    m: Math.round((matching.filter(c => c.mastery_data?.mastery_level === 2).length / total) * 100),
+    w: Math.round((matching.filter(c => c.mastery_data?.mastery_level === 1).length / total) * 100),
+    a: Math.round((matching.filter(c => c.mastery_data?.attempts && !c.mastery_data?.mastery_level).length / total) * 100),
+    c: Math.round((matching.filter(c => !c.mastery_data?.attempts && !c.mastery_data?.mastery_level).length / total) * 100),
   };
 };
 
 export const PracticeFilterModalParchment: React.FC<Props> = ({ isOpen, onClose, onApplyFilters }) => {
-  const { concepts, curriculumId, stats, setPracticeSelection } = useConceptStore();
+  const { concepts = [], curriculumId, setPracticeSelection } = useConceptStore();
   const [categories, setCategories] = useState<FilterCategory[]>([]);
   const [size, setSize] = useState(10);
   const [sStatus, setSStatus] = useState<Set<string>>(new Set(['any']));
   const [sAreas, setSAreas] = useState<Set<string>>(new Set());
   const [sConditions, setSConditions] = useState<Set<string>>(new Set(['any']));
-  const [conditionSearch, setConditionSearch] = useState('');
-  const [conditionExpanded, setConditionExpanded] = useState(false);
   const [sPres, setSPres] = useState<Set<string>>(new Set(['any']));
-  const [presSearch, setPresSearch] = useState('');
-  const [presExpanded, setPresExpanded] = useState(false);
   const [sFacets, setSFacets] = useState<Set<string>>(new Set(['any']));
+  const [conditionSearch, setConditionSearch] = useState('');
+  const [presentationSearch, setPresentationSearch] = useState('');
+  const [conditionExpanded, setConditionExpanded] = useState(false);
+  const [presentationExpanded, setPresentationExpanded] = useState(false);
   const [facetExpanded, setFacetExpanded] = useState(false);
   const [areaOpen, setAreaOpen] = useState(false);
-  const cid = curriculumId || 'default';
 
-  useEffect(() => { setCategories(getStorage(cid, 'filter_categories', [])); }, [cid]);
+  const cid = curriculumId || 'default';
+  useEffect(() => setCategories(getStorage(cid, 'filter_categories', [])), [cid]);
   const assignments = useMemo<Record<string, string>>(() => getStorage(cid, 'filter_assignments', {}), [cid]);
 
-  const byCat = useMemo(() => {
-    const all = new Set<string>();
-    concepts?.forEach(c => c.custom_filters?.forEach(f => all.add(f)));
-    const g: Record<string, string[]> = {};
-    categories.forEach(c => g[c.id] = []);
-    g['uncat'] = [];
-    all.forEach(f => (assignments[f] && g[assignments[f]]) ? g[assignments[f]].push(f) : g['uncat'].push(f));
-    return g;
+  const categoryFor = (needle: string) => categories.find(category =>
+    category.name.toLowerCase().includes(needle) || category.id.toLowerCase().includes(needle)
+  );
+
+  const tagsByCategory = useMemo(() => {
+    const result: Record<string, string[]> = {};
+    categories.forEach(category => { result[category.id] = []; });
+    concepts.forEach(concept => concept.custom_filters?.forEach(tag => {
+      const categoryId = assignments[tag];
+      if (categoryId && result[categoryId] && !result[categoryId].includes(tag)) result[categoryId].push(tag);
+    }));
+    Object.values(result).forEach(tags => tags.sort((a, b) => labelFor(a).localeCompare(labelFor(b))));
+    return result;
   }, [concepts, categories, assignments]);
 
-  const findCat = (t: string) => categories.find(c => c.name.toLowerCase().includes(t) || c.id.toLowerCase().includes(t));
+  const specialtyCategory = categoryFor('specialty') || categoryFor('system');
+  const conditionCategory = categoryFor('condition');
+  const presentationCategory = categoryFor('presentation');
+  const facetCategory = categoryFor('other') || categoryFor('skill') || categoryFor('facet') || categoryFor('topic');
 
-  const areas = useMemo(() => {
-    const cat = findCat('specialty') || findCat('system');
-    const f = cat ? byCat[cat.id] || [] : [];
-    return f.map(id => ({ id, name: id.replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase()),
-      count: stats?.by_custom_filter?.[id] || concepts?.filter(c => c.custom_filters?.includes(id)).length || 0,
-      seg: calcSegments(concepts || [], id) }));
-  }, [categories, byCat, stats, concepts]);
+  const specialtyIds = specialtyCategory ? tagsByCategory[specialtyCategory.id] || [] : [];
+  const conditionIds = conditionCategory ? tagsByCategory[conditionCategory.id] || [] : [];
+  const presentationIds = presentationCategory ? tagsByCategory[presentationCategory.id] || [] : [];
+  const facetIds = facetCategory ? tagsByCategory[facetCategory.id] || [] : [];
 
-  const conditions = useMemo(() => {
-    const cat = findCat('condition');
-    const f = cat ? byCat[cat.id] || [] : [];
-    return f.map(id => ({ id, label: id.replace(/-/g, ' '), count: stats?.by_custom_filter?.[id] || concepts?.filter(c => c.custom_filters?.includes(id)).length || 0 }));
-  }, [categories, byCat, stats, concepts]);
+  // Cascade rule: OR within one dimension, AND between dimensions.
+  const statusPool = useMemo(() => concepts.filter(c => matchesStatus(c, sStatus)), [concepts, sStatus]);
+  const specialtyPool = useMemo(() => statusPool.filter(c => matchesAnyTag(c, sAreas)), [statusPool, sAreas]);
+  const conditionPool = useMemo(() => specialtyPool.filter(c => matchesAnyTag(c, sConditions)), [specialtyPool, sConditions]);
+  const presentationPool = useMemo(() => conditionPool.filter(c => matchesAnyTag(c, sPres)), [conditionPool, sPres]);
+  const filteredPool = useMemo(() => presentationPool.filter(c => matchesAnyTag(c, sFacets)), [presentationPool, sFacets]);
 
-  const presentations = useMemo(() => {
-    const cat = findCat('presentation');
-    const f = cat ? byCat[cat.id] || [] : [];
-    return f.map(id => ({ id, label: id.replace(/-/g, ' '), count: stats?.by_custom_filter?.[id] || concepts?.filter(c => c.custom_filters?.includes(id)).length || 0 }));
-  }, [categories, byCat, stats, concepts]);
+  const areas = useMemo(() => specialtyIds.map(id => ({
+    id,
+    name: labelFor(id),
+    count: statusPool.filter(c => c.custom_filters?.includes(id)).length,
+    seg: calcSegments(statusPool, id),
+  })).filter(option => option.count > 0 || sAreas.has(option.id)), [specialtyIds, statusPool, sAreas]);
 
-  // Facets from "Other" category (Definition, Pathophysiology, Investigation, Management, etc.)
-  const facets = useMemo(() => {
-    // Real curriculum JSON labels this category "Other" — fall back to skill/facet/topic for legacy data
-    const cat = findCat('other') || findCat('skill') || findCat('facet') || findCat('topic');
-    const f = cat ? byCat[cat.id] || [] : ['diagnosis','investigations','management','risk-factors','complications','prognosis'];
-    return f.map(id => ({ id, label: id.replace(/-/g, ' '), count: stats?.by_custom_filter?.[id] || concepts?.filter(c => c.custom_filters?.includes(id)).length || 0 }));
-  }, [categories, byCat, stats, concepts]);
+  const conditions = useMemo(() => conditionIds.map(id => ({
+    id,
+    label: labelFor(id),
+    count: specialtyPool.filter(c => c.custom_filters?.includes(id)).length,
+  })).filter(option => option.count > 0 || sConditions.has(option.id)), [conditionIds, specialtyPool, sConditions]);
+
+  const presentations = useMemo(() => presentationIds.map(id => ({
+    id,
+    label: labelFor(id),
+    count: conditionPool.filter(c => c.custom_filters?.includes(id)).length,
+  })).filter(option => option.count > 0 || sPres.has(option.id)), [presentationIds, conditionPool, sPres]);
+
+  const facets = useMemo(() => facetIds.map(id => ({
+    id,
+    label: labelFor(id),
+    count: presentationPool.filter(c => c.custom_filters?.includes(id)).length,
+  })).filter(option => option.count > 0 || sFacets.has(option.id)), [facetIds, presentationPool, sFacets]);
+
+  // If an upstream choice makes an old downstream choice impossible, remove it automatically.
+  useEffect(() => {
+    if (hasAny(sConditions)) return;
+    const valid = new Set(conditions.filter(o => o.count > 0).map(o => o.id));
+    const next = new Set([...sConditions].filter(id => valid.has(id)));
+    if (next.size !== sConditions.size) setSConditions(next.size ? next : new Set(['any']));
+  }, [conditions, sConditions]);
+
+  useEffect(() => {
+    if (hasAny(sPres)) return;
+    const valid = new Set(presentations.filter(o => o.count > 0).map(o => o.id));
+    const next = new Set([...sPres].filter(id => valid.has(id)));
+    if (next.size !== sPres.size) setSPres(next.size ? next : new Set(['any']));
+  }, [presentations, sPres]);
+
+  useEffect(() => {
+    if (hasAny(sFacets)) return;
+    const valid = new Set(facets.filter(o => o.count > 0).map(o => o.id));
+    const next = new Set([...sFacets].filter(id => valid.has(id)));
+    if (next.size !== sFacets.size) setSFacets(next.size ? next : new Set(['any']));
+  }, [facets, sFacets]);
 
   const statusChips = useMemo(() => [
-    { id: 'weak', l: 'weak', c: stats?.by_mastery?.[1] || 0, col: T.blushDeep },
-    { id: 'drifting', l: 'drifting', c: Math.floor((stats?.by_mastery?.[1] || 0) * 0.3), col: '#c8b89c' },
-    { id: 'cold', l: 'cold', c: stats?.by_mastery?.[0] || 0, col: '#4a3a2c' },
-    { id: 'mastered', l: 'mastered', c: stats?.by_mastery?.[2] || 0, col: T.sageDeep },
-    { id: 'any', l: 'any', c: concepts?.length || 0, col: T.ink, def: true },
-  ], [stats, concepts]);
+    { id: 'weak', label: 'weak', count: countStatus(concepts, 'weak'), color: T.blushDeep },
+    { id: 'drifting', label: 'drifting', count: countStatus(concepts, 'drifting'), color: '#c8b89c' },
+    { id: 'cold', label: 'cold', count: countStatus(concepts, 'cold'), color: '#4a3a2c' },
+    { id: 'mastered', label: 'mastered', count: countStatus(concepts, 'mastered'), color: T.sageDeep },
+    { id: 'any', label: 'any', count: concepts.length, color: T.ink },
+  ], [concepts]);
 
-  const filteredPool = useMemo(() => {
-    let f = concepts || [];
-    if (!sStatus.has('any')) f = f.filter(c => [...sStatus].some(s => 
-      (s === 'mastered' && c.mastery_data?.mastery_level === 2) ||
-      (s === 'weak' && c.mastery_data?.mastery_level === 1) ||
-      (s === 'cold' && !c.mastery_data?.mastery_level && !c.mastery_data?.attempts) ||
-      (s === 'drifting' && !c.mastery_data?.mastery_level && c.mastery_data?.attempts)
-    ));
-    if (sAreas.size) f = f.filter(c => [...sAreas].some(a => c.custom_filters?.includes(a)));
-    if (!sConditions.has('any')) f = f.filter(c => [...sConditions].some(condition => c.custom_filters?.includes(condition)));
-    if (!sPres.has('any')) f = f.filter(c => [...sPres].some(p => c.custom_filters?.includes(p)));
-    if (!sFacets.has('any')) f = f.filter(c => [...sFacets].some(facet => c.custom_filters?.includes(facet)));
-    return f;
-  }, [concepts, sStatus, sAreas, sConditions, sPres, sFacets]);
-
-  const available = filteredPool.length;
-
-  const toggle = (set: Set<string>, v: string, fn: (s: Set<string>) => void, hasAny = true) => {
-    const n = new Set(set);
-    if (v === 'any') { fn(new Set(['any'])); return; }
-    n.has(v) ? n.delete(v) : (n.delete('any'), n.add(v));
-    if (!n.size && hasAny) n.add('any');
-    fn(n);
+  const toggle = (current: Set<string>, value: string, setter: (next: Set<string>) => void, useAny = true) => {
+    if (value === 'any') { setter(new Set(['any'])); return; }
+    const next = new Set(current);
+    next.delete('any');
+    next.has(value) ? next.delete(value) : next.add(value);
+    if (!next.size && useAny) next.add('any');
+    setter(next);
   };
+
   const toggleArea = (id: string) => toggle(sAreas, id, setSAreas, false);
-  const reset = () => { setSize(10); setSStatus(new Set(['any'])); setSAreas(new Set()); setSConditions(new Set(['any'])); setConditionSearch(''); setConditionExpanded(false); setSPres(new Set(['any'])); setPresSearch(''); setPresExpanded(false); setSFacets(new Set(['any'])); setFacetExpanded(false); };
+  const reset = () => {
+    setSize(10);
+    setSStatus(new Set(['any']));
+    setSAreas(new Set());
+    setSConditions(new Set(['any']));
+    setSPres(new Set(['any']));
+    setSFacets(new Set(['any']));
+    setConditionSearch('');
+    setPresentationSearch('');
+    setConditionExpanded(false);
+    setPresentationExpanded(false);
+    setFacetExpanded(false);
+  };
 
   const active = useMemo(() => {
-    const a: {t: string, v: string, l: string}[] = [];
-    if (!sStatus.has('any')) [...sStatus].forEach(v => { const found = statusChips.find(s => s.id === v); if (found) a.push({t: 'status', v, l: found.l}); });
-    if (sAreas.size) [...sAreas].forEach(v => { const found = areas.find(ar => ar.id === v); if (found) a.push({t: 'area', v, l: found.name}); });
-    if (!sConditions.has('any')) [...sConditions].forEach(v => { const found = conditions.find(cn => cn.id === v); if (found) a.push({t: 'condition', v, l: found.label}); });
-    if (!sPres.has('any')) [...sPres].forEach(v => { const found = presentations.find(p => p.id === v); if (found) a.push({t: 'presentation', v, l: found.label}); });
-    if (!sFacets.has('any')) [...sFacets].forEach(v => { const found = facets.find(facet => facet.id === v); if (found) a.push({t: 'facet', v, l: found.label}); });
-    return a;
-  }, [sStatus, sAreas, sConditions, sPres, sFacets, statusChips, areas, conditions, presentations, facets]);
+    const result: { type: string; value: string; label: string }[] = [];
+    if (!hasAny(sStatus)) [...sStatus].forEach(value => result.push({ type: 'status', value, label: value }));
+    [...sAreas].forEach(value => result.push({ type: 'area', value, label: labelFor(value) }));
+    if (!hasAny(sConditions)) [...sConditions].forEach(value => result.push({ type: 'condition', value, label: labelFor(value) }));
+    if (!hasAny(sPres)) [...sPres].forEach(value => result.push({ type: 'presentation', value, label: labelFor(value) }));
+    if (!hasAny(sFacets)) [...sFacets].forEach(value => result.push({ type: 'about', value, label: labelFor(value) }));
+    return result;
+  }, [sStatus, sAreas, sConditions, sPres, sFacets]);
 
-  const preview = useMemo(() => {
-    const st = !sStatus.has('any') ? [...sStatus].map(s => `<em>${s}</em>`).join(', ') : '<em>any</em> status';
-    const ar = sAreas.size ? [...sAreas].map(a => `<em>${areas.find(x => x.id === a)?.name.toLowerCase() || a}</em>`).join(', ') : '<em>anywhere</em> on the map';
-    return `<strong>${Math.min(size, available)} concepts</strong> — ${st}, ${ar}.`;
-  }, [size, available, sStatus, sAreas, areas]);
+  const removeActive = (item: { type: string; value: string }) => {
+    if (item.type === 'status') toggle(sStatus, item.value, setSStatus);
+    else if (item.type === 'area') toggleArea(item.value);
+    else if (item.type === 'condition') toggle(sConditions, item.value, setSConditions);
+    else if (item.type === 'presentation') toggle(sPres, item.value, setSPres);
+    else toggle(sFacets, item.value, setSFacets);
+  };
+
+  const available = filteredPool.length;
+  const preview = `${Math.min(size, available)} concepts${sAreas.size ? ` in ${[...sAreas].map(labelFor).join(', ')}` : ''}${!hasAny(sConditions) ? ` · ${[...sConditions].map(labelFor).join(', ')}` : ''}${!hasAny(sPres) ? ` · ${[...sPres].map(labelFor).join(', ')}` : ''}`;
 
   if (!isOpen) return null;
 
+  const Chip = ({ selected, onClick, children }: { selected: boolean; onClick: () => void; children: React.ReactNode }) => (
+    <button onClick={onClick} className="inline-flex items-center gap-1.5 px-3 py-2 rounded-full text-[12.5px] font-medium border transition-all" style={{ backgroundColor: selected ? T.espresso : T.cream, color: selected ? T.cream : T.ink, borderColor: selected ? T.espresso : T.line }}>
+      {children}
+    </button>
+  );
+
   return (
-    <div className="fixed inset-0 flex items-center justify-center z-[100] p-0 md:p-4" style={{ backgroundColor: 'rgba(31, 20, 12, 0.4)' }} onClick={onClose}>
-      <div className="w-full h-full md:h-auto md:max-w-[460px] flex flex-col overflow-hidden shadow-2xl" style={{ backgroundColor: T.cream, borderRadius: '38px', maxHeight: '95vh', fontFamily: "'Inter', sans-serif" }} onClick={e => e.stopPropagation()}>
-        {/* Header */}
-        <div className="px-6 pt-6 pb-3 flex items-start justify-between gap-4">
-          <div className="flex-1">
-            <h1 className="text-[28px] leading-[1.05] mb-1.5" style={{ fontFamily: "'Fraunces', serif", fontWeight: 300, color: T.ink, letterSpacing: '-0.025em' }}>Practise <em style={{ color: T.blushDeep, fontStyle: 'italic' }}>your way</em></h1>
-            <p className="text-[13px]" style={{ fontFamily: "'Fraunces', serif", fontStyle: 'italic', color: T.inkMuted }}>Stack filters to sculpt exactly the slice you want.</p>
+    <div className="fixed inset-0 z-[100] flex items-center justify-center p-0 md:p-4" style={{ backgroundColor: 'rgba(31,20,12,0.4)' }} onClick={onClose}>
+      <div className="flex h-full w-full flex-col overflow-hidden shadow-2xl md:h-auto md:max-w-[460px]" style={{ backgroundColor: T.cream, borderRadius: '38px', maxHeight: '95vh', fontFamily: "'Inter', sans-serif" }} onClick={e => e.stopPropagation()}>
+        <div className="flex items-start justify-between gap-4 px-6 pb-3 pt-6">
+          <div>
+            <h1 className="mb-1.5 text-[28px] leading-[1.05]" style={{ fontFamily: "'Fraunces', serif", fontWeight: 300, color: T.ink }}>Practise <em style={{ color: T.blushDeep }}>your way</em></h1>
+            <p className="text-[13px] italic" style={{ fontFamily: "'Fraunces', serif", color: T.inkMuted }}>Start broad. Each choice narrows what comes next.</p>
           </div>
           <div className="flex gap-2">
-            {active.length > 0 && <button onClick={reset} className="px-3 py-1.5 rounded-full text-[11px] font-medium transition-all border" style={{ borderColor: T.line, color: T.inkMuted }}>Reset</button>}
-            <button onClick={onClose} className="w-7 h-7 rounded-full flex items-center justify-center transition-all border" style={{ borderColor: T.line, color: T.inkMuted }}><X className="w-4 h-4" /></button>
+            {!!active.length && <button onClick={reset} className="rounded-full border px-3 py-1.5 text-[11px]" style={{ borderColor: T.line, color: T.inkMuted }}>Reset</button>}
+            <button onClick={onClose} className="flex h-7 w-7 items-center justify-center rounded-full border" style={{ borderColor: T.line, color: T.inkMuted }}><X className="h-4 w-4" /></button>
           </div>
         </div>
 
-        {/* Active */}
-        {active.length > 0 && (
-          <div className="px-6 pb-4 flex flex-wrap gap-1.5 items-center">
-            <span className="text-[9.5px] uppercase tracking-[0.22em] font-medium mr-1" style={{ color: T.inkMuted }}>Stacked</span>
-            {active.map(f => (
-              <button key={`${f.t}-${f.v}`} onClick={() => f.t === 'status' ? toggle(sStatus, f.v, setSStatus) : f.t === 'area' ? toggleArea(f.v) : f.t === 'condition' ? toggle(sConditions, f.v, setSConditions) : f.t === 'presentation' ? toggle(sPres, f.v, setSPres) : toggle(sFacets, f.v, setSFacets)}
-                className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11.5px] transition-all" style={{ backgroundColor: T.espresso, color: T.cream }}>
-                <span className="text-[11px]" style={{ fontFamily: "'Fraunces', serif", fontStyle: 'italic', color: T.blush }}>{f.t}</span>
-                <span>{f.l}</span>
-                <span className="w-4 h-4 rounded-full inline-flex items-center justify-center text-[10px] ml-0.5" style={{ backgroundColor: 'rgba(245,239,227,0.18)' }}>×</span>
-              </button>
-            ))}
-          </div>
-        )}
+        {!!active.length && <div className="flex flex-wrap items-center gap-1.5 px-6 pb-4">
+          <span className="mr-1 text-[9.5px] font-medium uppercase tracking-[0.22em]" style={{ color: T.inkMuted }}>Stacked</span>
+          {active.map(item => <button key={`${item.type}-${item.value}`} onClick={() => removeActive(item)} className="inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[11.5px]" style={{ backgroundColor: T.espresso, color: T.cream }}>
+            <em style={{ color: T.blush, fontFamily: "'Fraunces', serif" }}>{item.type}</em><span>{item.label}</span><span>×</span>
+          </button>)}
+        </div>}
 
-        {/* Scrollable */}
         <div className="flex-1 overflow-y-auto px-6 pb-4">
-          
-          {/* Size */}
-          <div className="py-4 border-t" style={{ borderColor: T.lineSoft }}>
-            <div className="mb-3"><span className="text-[18px]" style={{ fontFamily: "'Fraunces', serif", fontStyle: 'italic', color: T.inkMuted }}>A session of</span></div>
-            <div className="flex items-center justify-between gap-4 pl-1">
-              <div className="flex items-center rounded-full p-1" style={{ backgroundColor: T.parchment, border: `1px solid ${T.line}` }}>
-                <button onClick={() => setSize(Math.max(5, size - 5))} disabled={size <= 5} className="w-[30px] h-[30px] rounded-full flex items-center justify-center text-[17px] font-light disabled:opacity-35" style={{ color: T.ink }}>−</button>
-                <span className="min-w-[88px] text-center text-[19px]" style={{ fontFamily: "'Fraunces', serif", fontWeight: 400, color: T.ink, letterSpacing: '-0.02em' }}>{size}<span className="text-[12.5px] italic ml-1" style={{ fontFamily: "'Fraunces', serif", color: T.inkMuted }}>concepts</span></span>
-                <button onClick={() => setSize(Math.min(50, size + 5))} disabled={size >= 50} className="w-[30px] h-[30px] rounded-full flex items-center justify-center text-[17px] font-light disabled:opacity-35" style={{ color: T.ink }}>+</button>
+          <section className="border-t py-4" style={{ borderColor: T.lineSoft }}>
+            <div className="mb-3 text-[18px] italic" style={{ fontFamily: "'Fraunces', serif", color: T.inkMuted }}>A session of</div>
+            <div className="flex items-center justify-between gap-4">
+              <div className="flex items-center rounded-full border p-1" style={{ backgroundColor: T.parchment, borderColor: T.line }}>
+                <button onClick={() => setSize(Math.max(5, size - 5))} disabled={size <= 5} className="h-[30px] w-[30px] disabled:opacity-30">−</button>
+                <span className="min-w-[92px] text-center text-[19px]" style={{ fontFamily: "'Fraunces', serif" }}>{size}<em className="ml-1 text-[12px]" style={{ color: T.inkMuted }}>concepts</em></span>
+                <button onClick={() => setSize(Math.min(50, size + 5))} disabled={size >= 50} className="h-[30px] w-[30px] disabled:opacity-30">+</button>
               </div>
-              <span className="text-[12.5px] italic text-right" style={{ fontFamily: "'Fraunces', serif", color: T.inkMuted }}>≈ {Math.round(size * 2)} min</span>
+              <span className="text-[12.5px] italic" style={{ fontFamily: "'Fraunces', serif", color: T.inkMuted }}>≈ {Math.round(size * 2)} min</span>
             </div>
-          </div>
+          </section>
 
-          {/* Status */}
-          <div className="py-4 border-t" style={{ borderColor: T.lineSoft }}>
-            <div className="mb-3"><span className="text-[18px]" style={{ fontFamily: "'Fraunces', serif", fontStyle: 'italic', color: T.inkMuted }}>that are</span></div>
-            <div className="flex flex-wrap gap-2 pl-1">
-              {statusChips.map(ch => {
-                const sel = sStatus.has(ch.id);
-                return <button key={ch.id} onClick={() => toggle(sStatus, ch.id, setSStatus)} className="inline-flex items-center gap-1.5 px-3 py-2 rounded-full text-[12.5px] font-medium transition-all border" style={{ backgroundColor: sel ? T.espresso : T.cream, color: sel ? T.cream : T.ink, borderColor: sel ? T.espresso : T.line, whiteSpace: 'nowrap' }}>
-                  <span className="w-[7px] h-[7px] rounded-full" style={{ backgroundColor: ch.col }} /><span className="capitalize">{ch.l}</span><span className="text-[11.5px] italic ml-0.5" style={{ fontFamily: "'Fraunces', serif", color: sel ? T.blush : T.inkMuted }}>{ch.c}</span>
-                </button>;
-              })}
+          <section className="border-t py-4" style={{ borderColor: T.lineSoft }}>
+            <div className="mb-3 text-[18px] italic" style={{ fontFamily: "'Fraunces', serif", color: T.inkMuted }}>that are</div>
+            <div className="flex flex-wrap gap-2">
+              {statusChips.map(option => <Chip key={option.id} selected={sStatus.has(option.id)} onClick={() => toggle(sStatus, option.id, setSStatus)}>
+                <span className="h-[7px] w-[7px] rounded-full" style={{ backgroundColor: option.color }} /><span className="capitalize">{option.label}</span><em className="text-[11.5px]" style={{ color: sStatus.has(option.id) ? T.blush : T.inkMuted, fontFamily: "'Fraunces', serif" }}>{option.count}</em>
+              </Chip>)}
             </div>
-          </div>
+          </section>
 
-          {/* Areas */}
-          {areas.length > 0 && <div className="py-4 border-t" style={{ borderColor: T.lineSoft }}>
-            <div className="mb-3"><span className="text-[18px]" style={{ fontFamily: "'Fraunces', serif", fontStyle: 'italic', color: T.inkMuted }}>in</span></div>
-            <div className="pl-1">
-              <button onClick={() => setAreaOpen(!areaOpen)} className="w-full flex items-center justify-between gap-3 p-3 rounded-[14px] text-left transition-all" style={{ backgroundColor: T.cream, border: `1px solid ${T.line}` }}>
-                <div className="flex flex-col gap-0.5 flex-1">
-                  <span className="text-[9.5px] uppercase tracking-[0.2em] font-medium" style={{ color: T.inkMuted }}>Area of the map</span>
-                  <span className="text-[15px]" style={{ fontFamily: "'Fraunces', serif", color: T.ink }}>{sAreas.size === 0 ? <em style={{ color: T.blushDeep }}>anywhere</em> : [...sAreas].map(a => areas.find(ar => ar.id === a)?.name).join(', ')} on the map</span>
-                </div>
-                <ChevronDown className="w-4 h-4 transition-transform" style={{ color: T.inkMuted, transform: areaOpen ? 'rotate(180deg)' : 'rotate(0deg)' }} />
-              </button>
-              {areaOpen && <div className="mt-2 rounded-[14px] overflow-hidden" style={{ backgroundColor: T.parchment, border: `1px solid ${T.line}` }}>
-                {areas.map(ar => {
-                  const sel = sAreas.has(ar.id);
-                  return <button key={ar.id} onClick={() => toggleArea(ar.id)} className="w-full flex items-center gap-2.5 px-3.5 py-2.5 text-left transition-all border-b last:border-b-0" style={{ borderColor: T.lineSoft, backgroundColor: sel ? 'rgba(250,245,236,0.5)' : 'transparent' }}>
-                    <span className="w-[17px] h-[17px] rounded flex items-center justify-center text-[10px] border transition-all" style={{ backgroundColor: sel ? T.espresso : T.cream, borderColor: sel ? T.espresso : T.line, color: sel ? T.cream : 'transparent' }}>{sel && '✓'}</span>
-                    <span className="text-[13px] flex-1" style={{ color: T.ink }}>{ar.name}</span>
-                    <div className="w-11 h-1 rounded-sm overflow-hidden flex" style={{ backgroundColor: T.lineSoft }}>
-                      <span className="h-full" style={{ width: `${ar.seg.m}%`, backgroundColor: T.sageDeep }} />
-                      <span className="h-full" style={{ width: `${ar.seg.w}%`, backgroundColor: T.blushDeep }} />
-                      <span className="h-full" style={{ width: `${ar.seg.a}%`, backgroundColor: '#c8b89c' }} />
-                      <span className="h-full" style={{ width: `${ar.seg.c}%`, backgroundColor: '#4a3a2c' }} />
-                    </div>
-                    <span className="text-[12px] italic min-w-[42px] text-right" style={{ fontFamily: "'Fraunces', serif", color: T.inkMuted }}>{ar.count.toLocaleString()}</span>
-                  </button>;
-                })}
-              </div>}
-              <div className="mt-2.5 text-center"><button className="text-[13px] transition-all hover:text-ink" style={{ fontFamily: "'Fraunces', serif", fontStyle: 'italic', color: T.inkMuted }}>narrow further by condition<span className="not-italic ml-1">→</span></button></div>
-            </div>
-          </div>}
+          {!!areas.length && <section className="border-t py-4" style={{ borderColor: T.lineSoft }}>
+            <div className="mb-3 text-[18px] italic" style={{ fontFamily: "'Fraunces', serif", color: T.inkMuted }}>in specialty</div>
+            <button onClick={() => setAreaOpen(!areaOpen)} className="flex w-full items-center justify-between rounded-[14px] border p-3 text-left" style={{ borderColor: T.line }}>
+              <span style={{ fontFamily: "'Fraunces', serif", color: T.ink }}>{sAreas.size ? [...sAreas].map(labelFor).join(', ') : <em style={{ color: T.blushDeep }}>any specialty</em>}</span>
+              <ChevronDown className="h-4 w-4" style={{ color: T.inkMuted, transform: areaOpen ? 'rotate(180deg)' : undefined }} />
+            </button>
+            {areaOpen && <div className="mt-2 overflow-hidden rounded-[14px] border" style={{ backgroundColor: T.parchment, borderColor: T.line }}>
+              {areas.map(option => <button key={option.id} onClick={() => toggleArea(option.id)} className="flex w-full items-center gap-2.5 border-b px-3.5 py-2.5 text-left last:border-b-0" style={{ borderColor: T.lineSoft }}>
+                <span className="flex h-[17px] w-[17px] items-center justify-center rounded border text-[10px]" style={{ backgroundColor: sAreas.has(option.id) ? T.espresso : T.cream, borderColor: sAreas.has(option.id) ? T.espresso : T.line, color: sAreas.has(option.id) ? T.cream : 'transparent' }}>✓</span>
+                <span className="flex-1 text-[13px]" style={{ color: T.ink }}>{option.name}</span>
+                <div className="flex h-1 w-11 overflow-hidden rounded-sm" style={{ backgroundColor: T.lineSoft }}><span style={{ width: `${option.seg.m}%`, backgroundColor: T.sageDeep }} /><span style={{ width: `${option.seg.w}%`, backgroundColor: T.blushDeep }} /><span style={{ width: `${option.seg.a}%`, backgroundColor: '#c8b89c' }} /><span style={{ width: `${option.seg.c}%`, backgroundColor: '#4a3a2c' }} /></div>
+                <em className="min-w-[38px] text-right text-[12px]" style={{ color: T.inkMuted, fontFamily: "'Fraunces', serif" }}>{option.count}</em>
+              </button>)}
+            </div>}
+          </section>}
 
-          {/* Presentations */}
-          <div className="py-4 border-t" style={{ borderColor: T.lineSoft }}>
-            <div className="mb-3"><span className="text-[18px]" style={{ fontFamily: "'Fraunces', serif", fontStyle: 'italic', color: T.inkMuted }}>presenting as</span></div>
-            {/* Search box for presentations */}
-            <div className="relative pl-1 mb-3">
-              <input
-                type="text"
-                placeholder="Search presentations..."
-                value={presSearch}
-                onChange={(e) => setPresSearch(e.target.value)}
-                className="w-full px-4 py-2 rounded-full text-[12px] border outline-none"
-                style={{ backgroundColor: T.parchment, borderColor: T.line, color: T.ink }}
-              />
-              {presSearch && (
-                <button onClick={() => setPresSearch('')} className="absolute right-3 top-1/2 -translate-y-1/2 text-[10px]" style={{ color: T.inkMuted }}>✕</button>
-              )}
+          {!!conditions.length && <section className="border-t py-4" style={{ borderColor: T.lineSoft }}>
+            <div className="mb-1 text-[18px] italic" style={{ fontFamily: "'Fraunces', serif", color: T.inkMuted }}>with condition</div>
+            {sAreas.size > 0 && <div className="mb-3 text-[11px]" style={{ color: T.inkMuted }}>Only conditions found in your selected {sAreas.size === 1 ? 'specialty' : 'specialties'}.</div>}
+            <input value={conditionSearch} onChange={e => setConditionSearch(e.target.value)} placeholder="Search conditions…" className="mb-3 w-full rounded-full border px-4 py-2 text-[12px] outline-none" style={{ backgroundColor: T.parchment, borderColor: T.line }} />
+            <div className="flex flex-wrap gap-2">
+              {(conditionExpanded || conditionSearch ? conditions : conditions.filter((_, i) => i < 10 || [...sConditions].some(id => id === conditions[i]?.id))).filter(option => !conditionSearch || option.label.toLowerCase().includes(conditionSearch.toLowerCase())).map(option => <Chip key={option.id} selected={sConditions.has(option.id)} onClick={() => toggle(sConditions, option.id, setSConditions)}><span>{option.label}</span><em className="text-[11.5px]" style={{ color: sConditions.has(option.id) ? T.blush : T.inkMuted, fontFamily: "'Fraunces', serif" }}>{option.count}</em></Chip>)}
+              <Chip selected={hasAny(sConditions)} onClick={() => toggle(sConditions, 'any', setSConditions)}><span>any</span><em style={{ color: hasAny(sConditions) ? T.blush : T.inkMuted, fontFamily: "'Fraunces', serif" }}>{specialtyPool.length}</em></Chip>
+              {!conditionSearch && conditions.length > 10 && <button onClick={() => setConditionExpanded(!conditionExpanded)} className="px-3 py-2 text-[12.5px] italic" style={{ color: T.inkMuted, fontFamily: "'Fraunces', serif" }}>{conditionExpanded ? 'show less' : `+${conditions.length - 10} more`}</button>}
             </div>
-            <div className="flex flex-wrap gap-2 pl-1">
-              {(() => {
-                const filtered = presentations.filter(p => !presSearch || p.label.toLowerCase().includes(presSearch.toLowerCase()));
-                const visible = presExpanded || presSearch
-                  ? filtered
-                  : filtered.filter((p, i) => i < 10 || sPres.has(p.id));
-                return visible;
-              })().map(p => {
-                const sel = sPres.has(p.id);
-                return <button key={p.id} onClick={() => toggle(sPres, p.id, setSPres)} className="inline-flex items-center gap-1.5 px-3 py-2 rounded-full text-[12.5px] font-medium transition-all border" style={{ backgroundColor: sel ? T.espresso : T.cream, color: sel ? T.cream : T.ink, borderColor: sel ? T.espresso : T.line, whiteSpace: 'nowrap' }}>
-                  <span>{p.label}</span><span className="text-[11.5px] italic ml-0.5" style={{ fontFamily: "'Fraunces', serif", color: sel ? T.blush : T.inkMuted }}>{p.count}</span>
-                </button>;
-              })}
-              <button onClick={() => toggle(sPres, 'any', setSPres)} className="inline-flex items-center gap-1.5 px-3 py-2 rounded-full text-[12.5px] font-medium transition-all border" style={{ backgroundColor: sPres.has('any') ? T.espresso : T.cream, color: sPres.has('any') ? T.cream : T.ink, borderColor: sPres.has('any') ? T.espresso : T.line, whiteSpace: 'nowrap' }}>
-                <span>any</span><span className="text-[11.5px] italic ml-0.5" style={{ fontFamily: "'Fraunces', serif", color: sPres.has('any') ? T.blush : T.inkMuted }}>{concepts?.length || 0}</span>
-              </button>
-              {!presSearch && presentations.length > 10 && (
-                <button onClick={() => setPresExpanded(!presExpanded)} className="inline-flex items-center gap-1 px-3 py-2 rounded-full text-[12.5px] transition-all" style={{ color: T.inkMuted, fontFamily: "'Fraunces', serif", fontStyle: 'italic' }}>
-                  {presExpanded ? 'show less' : `+${presentations.length - 10} more`}
-                </button>
-              )}
-            </div>
-          </div>
+          </section>}
 
-          {/* Conditions */}
-          {conditions.length > 0 && <div className="py-4 border-t" style={{ borderColor: T.lineSoft }}>
-            <div className="mb-3"><span className="text-[18px]" style={{ fontFamily: "'Fraunces', serif", fontStyle: 'italic', color: T.inkMuted }}>with condition</span></div>
-            <div className="relative pl-1 mb-3">
-              <input
-                type="text"
-                placeholder="Search conditions..."
-                value={conditionSearch}
-                onChange={(e) => setConditionSearch(e.target.value)}
-                className="w-full px-4 py-2 rounded-full text-[12px] border outline-none"
-                style={{ backgroundColor: T.parchment, borderColor: T.line, color: T.ink }}
-              />
-              {conditionSearch && (
-                <button onClick={() => setConditionSearch('')} className="absolute right-3 top-1/2 -translate-y-1/2 text-[10px]" style={{ color: T.inkMuted }}>✕</button>
-              )}
+          {!!presentations.length && <section className="border-t py-4" style={{ borderColor: T.lineSoft }}>
+            <div className="mb-1 text-[18px] italic" style={{ fontFamily: "'Fraunces', serif", color: T.inkMuted }}>presenting as</div>
+            {(!hasAny(sConditions) || sAreas.size > 0) && <div className="mb-3 text-[11px]" style={{ color: T.inkMuted }}>Only presentations compatible with the choices above.</div>}
+            <input value={presentationSearch} onChange={e => setPresentationSearch(e.target.value)} placeholder="Search presentations…" className="mb-3 w-full rounded-full border px-4 py-2 text-[12px] outline-none" style={{ backgroundColor: T.parchment, borderColor: T.line }} />
+            <div className="flex flex-wrap gap-2">
+              {(presentationExpanded || presentationSearch ? presentations : presentations.filter((_, i) => i < 10 || [...sPres].some(id => id === presentations[i]?.id))).filter(option => !presentationSearch || option.label.toLowerCase().includes(presentationSearch.toLowerCase())).map(option => <Chip key={option.id} selected={sPres.has(option.id)} onClick={() => toggle(sPres, option.id, setSPres)}><span>{option.label}</span><em className="text-[11.5px]" style={{ color: sPres.has(option.id) ? T.blush : T.inkMuted, fontFamily: "'Fraunces', serif" }}>{option.count}</em></Chip>)}
+              <Chip selected={hasAny(sPres)} onClick={() => toggle(sPres, 'any', setSPres)}><span>any</span><em style={{ color: hasAny(sPres) ? T.blush : T.inkMuted, fontFamily: "'Fraunces', serif" }}>{conditionPool.length}</em></Chip>
+              {!presentationSearch && presentations.length > 10 && <button onClick={() => setPresentationExpanded(!presentationExpanded)} className="px-3 py-2 text-[12.5px] italic" style={{ color: T.inkMuted, fontFamily: "'Fraunces', serif" }}>{presentationExpanded ? 'show less' : `+${presentations.length - 10} more`}</button>}
             </div>
-            <div className="flex flex-wrap gap-2 pl-1">
-              {(() => {
-                const filtered = conditions.filter(c => !conditionSearch || c.label.toLowerCase().includes(conditionSearch.toLowerCase()));
-                return conditionExpanded || conditionSearch
-                  ? filtered
-                  : filtered.filter((c, i) => i < 10 || sConditions.has(c.id));
-              })().map(c => {
-                const sel = sConditions.has(c.id);
-                return <button key={c.id} onClick={() => toggle(sConditions, c.id, setSConditions)} className="inline-flex items-center gap-1.5 px-3 py-2 rounded-full text-[12.5px] font-medium transition-all border" style={{ backgroundColor: sel ? T.espresso : T.cream, color: sel ? T.cream : T.ink, borderColor: sel ? T.espresso : T.line, whiteSpace: 'nowrap' }}>
-                  <span>{c.label}</span><span className="text-[11.5px] italic ml-0.5" style={{ fontFamily: "'Fraunces', serif", color: sel ? T.blush : T.inkMuted }}>{c.count}</span>
-                </button>;
-              })}
-              <button onClick={() => toggle(sConditions, 'any', setSConditions)} className="inline-flex items-center gap-1.5 px-3 py-2 rounded-full text-[12.5px] font-medium transition-all border" style={{ backgroundColor: sConditions.has('any') ? T.espresso : T.cream, color: sConditions.has('any') ? T.cream : T.ink, borderColor: sConditions.has('any') ? T.espresso : T.line, whiteSpace: 'nowrap' }}>
-                <span>any</span><span className="text-[11.5px] italic ml-0.5" style={{ fontFamily: "'Fraunces', serif", color: sConditions.has('any') ? T.blush : T.inkMuted }}>{concepts?.length || 0}</span>
-              </button>
-              {!conditionSearch && conditions.length > 10 && (
-                <button onClick={() => setConditionExpanded(!conditionExpanded)} className="inline-flex items-center gap-1 px-3 py-2 rounded-full text-[12.5px] transition-all" style={{ color: T.inkMuted, fontFamily: "'Fraunces', serif", fontStyle: 'italic' }}>
-                  {conditionExpanded ? 'show less' : `+${conditions.length - 10} more`}
-                </button>
-              )}
-            </div>
-          </div>}
+          </section>}
 
-          {/* Facets */}
-          <div className="py-4 border-t" style={{ borderColor: T.lineSoft }}>
-            <div className="mb-3"><span className="text-[18px]" style={{ fontFamily: "'Fraunces', serif", fontStyle: 'italic', color: T.inkMuted }}>about</span></div>
-            <div className="flex flex-wrap gap-2 pl-1">
-              {(facetExpanded ? facets : facets.filter((f, i) => i < 10 || sFacets.has(f.id))).map(f => {
-                const sel = sFacets.has(f.id);
-                return <button key={f.id} onClick={() => toggle(sFacets, f.id, setSFacets)} className="inline-flex items-center gap-1.5 px-3 py-2 rounded-full text-[12.5px] font-medium transition-all border" style={{ backgroundColor: sel ? T.espresso : T.cream, color: sel ? T.cream : T.ink, borderColor: sel ? T.espresso : T.line, whiteSpace: 'nowrap' }}>
-                  <span>{f.label}</span><span className="text-[11.5px] italic ml-0.5" style={{ fontFamily: "'Fraunces', serif", color: sel ? T.blush : T.inkMuted }}>{f.count}</span>
-                </button>;
-              })}
-              <button onClick={() => toggle(sFacets, 'any', setSFacets)} className="inline-flex items-center gap-1.5 px-3 py-2 rounded-full text-[12.5px] font-medium transition-all border" style={{ backgroundColor: sFacets.has('any') ? T.espresso : T.cream, color: sFacets.has('any') ? T.cream : T.ink, borderColor: sFacets.has('any') ? T.espresso : T.line, whiteSpace: 'nowrap' }}>
-                <span>any</span><span className="text-[11.5px] italic ml-0.5" style={{ fontFamily: "'Fraunces', serif", color: sFacets.has('any') ? T.blush : T.inkMuted }}>{concepts?.length || 0}</span>
-              </button>
-              {facets.length > 10 && (
-                <button onClick={() => setFacetExpanded(!facetExpanded)} className="inline-flex items-center gap-1 px-3 py-2 rounded-full text-[12.5px] transition-all" style={{ color: T.inkMuted, fontFamily: "'Fraunces', serif", fontStyle: 'italic' }}>
-                  {facetExpanded ? 'show less' : `+${facets.length - 10} more`}
-                </button>
-              )}
+          {!!facets.length && <section className="border-t py-4" style={{ borderColor: T.lineSoft }}>
+            <div className="mb-1 text-[18px] italic" style={{ fontFamily: "'Fraunces', serif", color: T.inkMuted }}>about</div>
+            <div className="mb-3 text-[11px]" style={{ color: T.inkMuted }}>This narrows the knowledge facet within the clinical slice above.</div>
+            <div className="flex flex-wrap gap-2">
+              {(facetExpanded ? facets : facets.filter((_, i) => i < 10 || [...sFacets].some(id => id === facets[i]?.id))).map(option => <Chip key={option.id} selected={sFacets.has(option.id)} onClick={() => toggle(sFacets, option.id, setSFacets)}><span>{option.label}</span><em className="text-[11.5px]" style={{ color: sFacets.has(option.id) ? T.blush : T.inkMuted, fontFamily: "'Fraunces', serif" }}>{option.count}</em></Chip>)}
+              <Chip selected={hasAny(sFacets)} onClick={() => toggle(sFacets, 'any', setSFacets)}><span>any</span><em style={{ color: hasAny(sFacets) ? T.blush : T.inkMuted, fontFamily: "'Fraunces', serif" }}>{presentationPool.length}</em></Chip>
+              {facets.length > 10 && <button onClick={() => setFacetExpanded(!facetExpanded)} className="px-3 py-2 text-[12.5px] italic" style={{ color: T.inkMuted, fontFamily: "'Fraunces', serif" }}>{facetExpanded ? 'show less' : `+${facets.length - 10} more`}</button>}
             </div>
-          </div>
-
+          </section>}
         </div>
 
-        {/* Footer */}
-        <div className="px-6 pt-3 pb-5" style={{ background: `linear-gradient(to top, ${T.cream} 70%, rgba(250,245,236,0))` }}>
-          <div className="relative rounded-2xl p-4 mb-2.5" style={{ backgroundColor: T.blushSoft }}>
-            <div className="absolute left-0 top-3.5 bottom-3.5 w-0.5 rounded-full" style={{ backgroundColor: T.blushDeep }} />
-            <div className="text-[9.5px] uppercase tracking-[0.22em] font-medium mb-1.5" style={{ color: T.blushDeep }}>You'll practise</div>
-            <div className="text-[14.5px] leading-[1.5]" style={{ fontFamily: "'Fraunces', serif", fontWeight: 300, color: T.ink }} dangerouslySetInnerHTML={{ __html: preview }} />
+        <div className="px-6 pb-5 pt-3" style={{ background: `linear-gradient(to top, ${T.cream} 70%, rgba(250,245,236,0))` }}>
+          <div className="relative mb-2.5 rounded-2xl p-4" style={{ backgroundColor: T.blushSoft }}>
+            <div className="absolute bottom-3.5 left-0 top-3.5 w-0.5 rounded-full" style={{ backgroundColor: T.blushDeep }} />
+            <div className="mb-1.5 text-[9.5px] font-medium uppercase tracking-[0.22em]" style={{ color: T.blushDeep }}>You'll practise</div>
+            <div className="text-[14.5px] leading-[1.5]" style={{ fontFamily: "'Fraunces', serif", color: T.ink }}>{preview}</div>
           </div>
-          {available === 0 && <div className="text-[12.5px] italic text-center mb-2" style={{ fontFamily: "'Fraunces', serif", color: T.inkMuted }}>No concepts match your filters. <em style={{ color: T.blushDeep }}>Try removing some</em>.</div>}
+          {available === 0 && <div className="mb-2 text-center text-[12.5px] italic" style={{ fontFamily: "'Fraunces', serif", color: T.inkMuted }}>No concepts match this combination. Try removing one choice.</div>}
           <button onClick={() => {
             const selectedIds = filteredPool.slice(0, size).map(c => c.concept_id);
             setPracticeSelection(selectedIds);
-            onApplyFilters?.({
-              size,
-              statuses: [...sStatus],
-              areas: [...sAreas],
-              conditions: [...sConditions],
-              presentations: [...sPres],
-              facets: [...sFacets]
-            });
+            onApplyFilters?.({ size, statuses: [...sStatus], areas: [...sAreas], conditions: [...sConditions], presentations: [...sPres], facets: [...sFacets] });
             onClose();
-          }} disabled={available === 0} className="w-full py-4 rounded-full text-[14px] font-medium transition-all flex items-center justify-center gap-3 disabled:cursor-not-allowed" style={{ backgroundColor: available === 0 ? T.inkMuted : T.espresso, color: T.cream, fontFamily: "'Inter', sans-serif" }}>
-            <span>Begin</span><span className="text-[14.5px] italic" style={{ fontFamily: "'Fraunces', serif", color: T.blush }}>{Math.min(size, available)} concepts</span><span className="transition-transform">→</span>
+          }} disabled={available === 0} className="flex w-full items-center justify-center gap-3 rounded-full py-4 text-[14px] font-medium disabled:cursor-not-allowed" style={{ backgroundColor: available ? T.espresso : T.inkMuted, color: T.cream }}>
+            <span>Begin</span><em className="text-[14.5px]" style={{ fontFamily: "'Fraunces', serif", color: T.blush }}>{Math.min(size, available)} concepts</em><span>→</span>
           </button>
         </div>
       </div>
