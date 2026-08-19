@@ -1,5 +1,6 @@
 const LEGACY_CURRICULUM_ID = 'default';
 const UKMLA_SCOPE = 'ukmla-akt';
+const LEGACY_OWNER_KEY = 'studyedit_legacy_progress_owner_v1';
 
 const CURRICULUM_KEY_SUFFIXES = [
   'user_concepts',
@@ -18,12 +19,9 @@ export function getUserCurriculumId(userId?: string | null) {
 }
 
 /**
- * Before launch, StudyEdit stored concept progress under the shared `default_*`
- * localStorage namespace. Copy that state once into the first signed-in user's
- * scoped namespace so an existing learner does not appear to lose progress.
- *
- * This is deliberately a copy, not a move: the legacy data remains available
- * for rollback while all new writes go to the user-scoped keys.
+ * Older StudyEdit builds stored progress under a shared `default_*` namespace.
+ * The first signed-in account on an upgraded browser may claim that legacy state;
+ * subsequent accounts start clean, preventing cross-account progress leakage.
  */
 export function migrateLegacyCurriculumState(userId?: string | null) {
   if (!userId || typeof window === 'undefined') return;
@@ -31,6 +29,23 @@ export function migrateLegacyCurriculumState(userId?: string | null) {
   const scopedId = getUserCurriculumId(userId);
   const marker = `${scopedId}_legacy_progress_migrated_v1`;
   if (window.localStorage.getItem(marker) === 'true') return;
+
+  const existingOwner = window.localStorage.getItem(LEGACY_OWNER_KEY);
+  if (existingOwner && existingOwner !== userId) {
+    window.localStorage.setItem(marker, 'true');
+    return;
+  }
+
+  const hasLegacyProgress = CURRICULUM_KEY_SUFFIXES.some(suffix =>
+    window.localStorage.getItem(`${LEGACY_CURRICULUM_ID}_${suffix}`) !== null
+  );
+
+  if (!hasLegacyProgress) {
+    window.localStorage.setItem(marker, 'true');
+    return;
+  }
+
+  if (!existingOwner) window.localStorage.setItem(LEGACY_OWNER_KEY, userId);
 
   CURRICULUM_KEY_SUFFIXES.forEach(suffix => {
     const oldKey = `${LEGACY_CURRICULUM_ID}_${suffix}`;
