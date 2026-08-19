@@ -1,86 +1,60 @@
 # Deployment Instructions
 
-## Security Setup
+## Security setup
 
-This application uses Netlify serverless functions to protect the DeepSeek API key from being exposed in the client-side code.
+StudyEdit uses Netlify serverless functions for AI generation so provider credentials stay on the server and are never bundled into the browser application.
 
-### How It Works
+### How it works
 
-1. **Frontend** → Calls `/.netlify/functions/ai-generate`
-2. **Serverless Function** → Uses API key (stored securely) to call DeepSeek API
-3. **Response** → Returns to frontend
+1. **Frontend** calls `/.netlify/functions/ai-generate`.
+2. **Serverless function** reads the AI provider credential from Netlify environment variables.
+3. **Response** returns the generated content to the frontend.
 
-The API key never reaches the browser! ✅
+No real API key should ever be committed to this repository, documentation, a `VITE_*` variable, or client-side code.
 
-## Deployment Steps
+## Deployment steps
 
-### 1. Set Environment Variable in Netlify
+### 1. Configure environment variables in Netlify
 
-After deploying, you MUST set the API key in Netlify dashboard:
+In the Netlify project dashboard, open **Project configuration → Environment variables** and configure the variables required by the serverless functions and client application.
 
-1. Go to your Netlify site dashboard
-2. Navigate to **Site settings** → **Environment variables**
-3. Add a new variable:
-   - **Key**: `VITE_OPENAI_API_KEY`
-   - **Value**: `sk-a239650378b640c6a182dbc501b9cd5f`
-4. Click **Save**
-5. **Trigger a new deploy** for the changes to take effect
+For AI-provider credentials, use server-only names such as `OPENAI_API_KEY` or the provider-specific variable expected by the relevant function. Do **not** prefix secret credentials with `VITE_`, because Vite exposes `VITE_*` variables to client bundles.
 
-### 2. Deploy with Netlify CLI
+Use a placeholder in documentation only:
 
-```bash
-# Deploy to production
-netlify deploy --prod
+```text
+OPENAI_API_KEY=<set securely in Netlify>
 ```
 
-### 3. Verify Deployment
+If a credential has ever been committed to Git history, treat it as compromised and rotate it with the provider.
+
+### 2. Build
+
+Netlify builds the site using the repository `netlify.toml` configuration:
+
+```bash
+npm ci
+npm run build
+```
+
+### 3. Verify deployment
 
 After deployment:
-1. Check that the serverless function is working: `https://your-site.netlify.app/.netlify/functions/ai-generate`
-2. Test AI generation features in your app
-3. Verify in browser DevTools that the API key is NOT visible in network requests
+
+1. Open the deployed application and complete a normal practice session.
+2. Confirm AI generation succeeds through `/.netlify/functions/ai-generate`.
+3. Confirm no provider secret is visible in browser source, client JavaScript, or network request headers.
+4. Confirm authenticated progress and question generation behave correctly in a deploy preview before promoting to production.
 
 ## Development
 
-In development mode, the app will:
-1. Try to use the serverless function first
-2. Fall back to direct API calls if the function is unavailable
-3. Use the `VITE_OPENAI_API_KEY` from your local `.env` file
+Local development should use a local `.env` file that is excluded from version control. Server-side functions should read provider credentials from environment variables rather than from client-side `VITE_*` variables.
 
-## Migration Guide
+## Security requirements
 
-If you need to update existing code to use the secure service:
-
-### Before (Insecure):
-```typescript
-const apiKey = import.meta.env.VITE_OPENAI_API_KEY;
-const response = await fetch('https://api.deepseek.com/v1/chat/completions', {
-  headers: { 'Authorization': `Bearer ${apiKey}` },
-  // ...
-});
-```
-
-### After (Secure):
-```typescript
-import { generateWithAI, createPrompt } from '@/services/aiService';
-
-const response = await generateWithAI({
-  messages: createPrompt(systemPrompt, userPrompt),
-  temperature: 0.7,
-  max_tokens: 4000
-});
-```
-
-## Files Created
-
-- `netlify/functions/ai-generate.ts` - Serverless function that proxies AI requests
-- `src/services/aiService.ts` - Frontend service to call the serverless function
-- `netlify.toml` - Updated with functions directory configuration
-
-## Security Benefits
-
-✅ API key never exposed in browser  
-✅ API key not in source code  
-✅ API key stored securely in Netlify environment  
-✅ Rate limiting can be added to serverless function  
-✅ Request validation can be added to serverless function  
+- Never commit live API keys or access tokens.
+- Never place provider secrets in documentation.
+- Never expose a secret through `VITE_*` variables.
+- Store production secrets in Netlify environment variables with the minimum required scope.
+- Rotate any credential that has previously appeared in Git history.
+- Keep Supabase public/anon configuration separate from privileged service-role credentials.
