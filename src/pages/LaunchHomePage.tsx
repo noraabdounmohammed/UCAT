@@ -85,7 +85,7 @@ function HomeContent() {
           <div className="mt-6 grid grid-cols-3 divide-x" style={{ borderColor: palette.line }}>
             <Metric label="Tested coverage" value={isLoading ? '—' : `${preparation.coverage}%`} detail="of mapped concepts" />
             <Metric label="Retrieval" value={isLoading ? '—' : `${preparation.retrieval}%`} detail="across attempts" />
-            <Metric label="Priority gaps" value={isLoading ? '—' : String(preparation.weakCount)} detail="currently weak" />
+            <Metric label="Current gaps" value={isLoading ? '—' : String(preparation.weakCount)} detail="currently weak" />
           </div>
         </section>
 
@@ -128,7 +128,7 @@ function HomeContent() {
                     <div className="font-medium" style={{ color: palette.espresso }}>{concept.title}</div>
                     <div className="mt-1 text-sm" style={{ color: palette.muted }}>{accuracy}% retrieval across {attempts} attempt{attempts === 1 ? '' : 's'}</div>
                   </div>
-                  <span className="shrink-0 rounded-full px-3 py-1 text-xs font-medium" style={{ backgroundColor: palette.blushSoft, color: '#8A433A' }}>High priority</span>
+                  <span className="shrink-0 rounded-full px-3 py-1 text-xs font-medium" style={{ backgroundColor: palette.blushSoft, color: '#8A433A' }}>Needs work</span>
                 </div>
               );
             }) : (
