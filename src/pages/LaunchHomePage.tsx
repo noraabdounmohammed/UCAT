@@ -5,15 +5,8 @@ import { ConceptStoreProvider, useConceptStore } from '@/contexts/ConceptStoreCo
 import { useAuth } from '@/contexts/AuthContext';
 
 const palette = {
-  cream: '#FAF5EC',
-  parchment: '#F4ECDF',
-  espresso: '#1F140C',
-  ink: '#2A1E16',
-  muted: '#8A7560',
-  blush: '#E5A89D',
-  blushSoft: '#F9E4DF',
-  sage: '#8FA379',
-  line: '#E8DCC4',
+  cream: '#FAF5EC', espresso: '#1F140C', ink: '#2A1E16', muted: '#8A7560',
+  blushSoft: '#F9E4DF', line: '#E8DCC4',
 };
 
 function getGreeting() {
@@ -47,7 +40,6 @@ function HomeContent() {
     const unseen = all.filter((c: any) => (c.mastery_data?.attempts || 0) === 0);
 
     return {
-      total: all.length,
       coverage: all.length ? Math.round((attempted.length / all.length) * 100) : 0,
       retrieval: attempts ? Math.round((correct / attempts) * 100) : 0,
       weakCount: weak.length,
@@ -65,8 +57,8 @@ function HomeContent() {
     };
   }, [concepts]);
 
-  const openPractice = () => navigate('/concept-practice');
-  const openCustomPractice = () => navigate('/concept-practice?custom=1');
+  const openRecommended = () => navigate('/recommended-practice');
+  const openCustomPractice = () => navigate('/concept-practice');
 
   return (
     <main className="min-h-screen" style={{ backgroundColor: palette.cream, color: palette.ink }}>
@@ -76,11 +68,7 @@ function HomeContent() {
             <div className="text-xl font-semibold tracking-tight" style={{ color: palette.espresso }}>StudyEdit</div>
             <div className="mt-1 text-xs uppercase tracking-[0.2em]" style={{ color: palette.muted }}>UKMLA AKT</div>
           </div>
-          <button
-            onClick={openCustomPractice}
-            className="rounded-full border px-4 py-2 text-sm transition hover:-translate-y-0.5"
-            style={{ borderColor: palette.line, color: palette.ink }}
-          >
+          <button onClick={openCustomPractice} className="rounded-full border px-4 py-2 text-sm transition hover:-translate-y-0.5" style={{ borderColor: palette.line, color: palette.ink }}>
             Practice
           </button>
         </header>
@@ -105,9 +93,7 @@ function HomeContent() {
           <div className="text-[11px] font-medium uppercase tracking-[0.22em]" style={{ color: '#9C655D' }}>Your next best session</div>
           <div className="mt-4 grid gap-8 md:grid-cols-[1.4fr_0.8fr] md:items-end">
             <div>
-              <h2 className="text-3xl font-light tracking-[-0.03em] sm:text-4xl" style={{ fontFamily: "'Fraunces', serif", color: palette.espresso }}>
-                Focus on what will move the needle.
-              </h2>
+              <h2 className="text-3xl font-light tracking-[-0.03em] sm:text-4xl" style={{ fontFamily: "'Fraunces', serif", color: palette.espresso }}>Focus on what will move the needle.</h2>
               <p className="mt-3 max-w-xl text-sm leading-6" style={{ color: '#6F4B45' }}>
                 StudyEdit will mix concepts due for retrieval, weak areas and under-tested territory using your current learning history.
               </p>
@@ -118,11 +104,7 @@ function HomeContent() {
               </div>
             </div>
             <div className="flex flex-col gap-3 md:items-end">
-              <button
-                onClick={openPractice}
-                className="inline-flex w-full items-center justify-center gap-2 rounded-full px-6 py-4 text-sm font-medium text-white transition hover:-translate-y-0.5 md:w-auto"
-                style={{ backgroundColor: palette.espresso }}
-              >
+              <button onClick={openRecommended} className="inline-flex w-full items-center justify-center gap-2 rounded-full px-6 py-4 text-sm font-medium text-white transition hover:-translate-y-0.5 md:w-auto" style={{ backgroundColor: palette.espresso }}>
                 Start recommended session <ArrowRight className="h-4 w-4" />
               </button>
               <button onClick={openCustomPractice} className="inline-flex items-center justify-center gap-2 text-sm" style={{ color: '#7F514A' }}>
@@ -133,13 +115,8 @@ function HomeContent() {
         </section>
 
         <section className="mt-10 pb-16">
-          <div className="flex items-end justify-between gap-4">
-            <div>
-              <div className="text-[11px] font-medium uppercase tracking-[0.22em]" style={{ color: palette.muted }}>Where you’re most exposed</div>
-              <h2 className="mt-2 text-2xl font-light" style={{ fontFamily: "'Fraunces', serif" }}>Your clearest current gaps</h2>
-            </div>
-          </div>
-
+          <div className="text-[11px] font-medium uppercase tracking-[0.22em]" style={{ color: palette.muted }}>Where you’re most exposed</div>
+          <h2 className="mt-2 text-2xl font-light" style={{ fontFamily: "'Fraunces', serif" }}>Your clearest current gaps</h2>
           <div className="mt-5 divide-y rounded-[24px] border px-5" style={{ borderColor: palette.line, backgroundColor: '#FFFDF8' }}>
             {preparation.exposed.length ? preparation.exposed.map((concept: any) => {
               const attempts = concept.mastery_data?.attempts || 0;
@@ -155,9 +132,7 @@ function HomeContent() {
                 </div>
               );
             }) : (
-              <div className="py-7 text-sm" style={{ color: palette.muted }}>
-                {isLoading ? 'Building your preparation picture…' : 'No weak concepts yet. Start a session so StudyEdit can learn where you need the most help.'}
-              </div>
+              <div className="py-7 text-sm" style={{ color: palette.muted }}>{isLoading ? 'Building your preparation picture…' : 'No weak concepts yet. Start a session so StudyEdit can learn where you need the most help.'}</div>
             )}
           </div>
         </section>
@@ -167,13 +142,7 @@ function HomeContent() {
 }
 
 function Metric({ label, value, detail }: { label: string; value: string; detail: string }) {
-  return (
-    <div className="px-3 first:pl-0 last:pr-0 sm:px-7">
-      <div className="text-xs" style={{ color: palette.muted }}>{label}</div>
-      <div className="mt-2 text-3xl font-light tracking-tight sm:text-4xl" style={{ fontFamily: "'Fraunces', serif", color: palette.espresso }}>{value}</div>
-      <div className="mt-1 text-[11px] sm:text-xs" style={{ color: palette.muted }}>{detail}</div>
-    </div>
-  );
+  return <div className="px-3 first:pl-0 last:pr-0 sm:px-7"><div className="text-xs" style={{ color: palette.muted }}>{label}</div><div className="mt-2 text-3xl font-light tracking-tight sm:text-4xl" style={{ fontFamily: "'Fraunces', serif", color: palette.espresso }}>{value}</div><div className="mt-1 text-[11px] sm:text-xs" style={{ color: palette.muted }}>{detail}</div></div>;
 }
 
 function Pill({ children }: { children: React.ReactNode }) {
@@ -181,9 +150,5 @@ function Pill({ children }: { children: React.ReactNode }) {
 }
 
 export function LaunchHomePage() {
-  return (
-    <ConceptStoreProvider curriculumId="default">
-      <HomeContent />
-    </ConceptStoreProvider>
-  );
+  return <ConceptStoreProvider curriculumId="default"><HomeContent /></ConceptStoreProvider>;
 }
