@@ -1,9 +1,9 @@
 name: Launch Verify
 
 on:
-  push:
+  pull_request:
     branches:
-      - launch/home-practice-v1
+      - master
   workflow_dispatch:
 
 jobs:
