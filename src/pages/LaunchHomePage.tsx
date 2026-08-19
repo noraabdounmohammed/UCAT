@@ -40,6 +40,7 @@ function HomeContent() {
     const unseen = all.filter((c: any) => (c.mastery_data?.attempts || 0) === 0);
 
     return {
+      hasEvidence: attempts > 0,
       coverage: all.length ? Math.round((attempted.length / all.length) * 100) : 0,
       retrieval: attempts ? Math.round((correct / attempts) * 100) : 0,
       weakCount: weak.length,
@@ -84,8 +85,8 @@ function HomeContent() {
           <div className="text-[11px] font-medium uppercase tracking-[0.22em]" style={{ color: palette.muted }}>Your preparation</div>
           <div className="mt-6 grid grid-cols-3 divide-x" style={{ borderColor: palette.line }}>
             <Metric label="Tested coverage" value={isLoading ? '—' : `${preparation.coverage}%`} detail="of mapped concepts" />
-            <Metric label="Retrieval" value={isLoading ? '—' : `${preparation.retrieval}%`} detail="across attempts" />
-            <Metric label="Current gaps" value={isLoading ? '—' : String(preparation.weakCount)} detail="currently weak" />
+            <Metric label="Retrieval" value={isLoading || !preparation.hasEvidence ? '—' : `${preparation.retrieval}%`} detail={preparation.hasEvidence ? 'across attempts' : 'not enough evidence yet'} />
+            <Metric label="Current gaps" value={isLoading || !preparation.hasEvidence ? '—' : String(preparation.weakCount)} detail={preparation.hasEvidence ? 'currently weak' : 'not enough evidence yet'} />
           </div>
         </section>
 
@@ -95,11 +96,13 @@ function HomeContent() {
             <div>
               <h2 className="text-3xl font-light tracking-[-0.03em] sm:text-4xl" style={{ fontFamily: "'Fraunces', serif", color: palette.espresso }}>Focus on what will move the needle.</h2>
               <p className="mt-3 max-w-xl text-sm leading-6" style={{ color: '#6F4B45' }}>
-                StudyEdit will mix concepts due for retrieval, weak areas and under-tested territory using your current learning history.
+                {preparation.hasEvidence
+                  ? 'StudyEdit will mix concepts due for retrieval, weak areas and under-tested territory using your current learning history.'
+                  : 'Your first sessions will map what you know while steadily expanding coverage across the curriculum.'}
               </p>
               <div className="mt-5 flex flex-wrap gap-2 text-xs">
-                <Pill>{preparation.dueCount} due</Pill>
-                <Pill>{preparation.weakCount} weak</Pill>
+                {preparation.hasEvidence && <Pill>{preparation.dueCount} due</Pill>}
+                {preparation.hasEvidence && <Pill>{preparation.weakCount} weak</Pill>}
                 <Pill>{preparation.unseenCount} untested</Pill>
               </div>
             </div>
@@ -132,7 +135,7 @@ function HomeContent() {
                 </div>
               );
             }) : (
-              <div className="py-7 text-sm" style={{ color: palette.muted }}>{isLoading ? 'Building your preparation picture…' : 'No weak concepts yet. Start a session so StudyEdit can learn where you need the most help.'}</div>
+              <div className="py-7 text-sm" style={{ color: palette.muted }}>{isLoading ? 'Building your preparation picture…' : 'No clear gaps yet. Start a session so StudyEdit can gather enough evidence to find them.'}</div>
             )}
           </div>
         </section>
