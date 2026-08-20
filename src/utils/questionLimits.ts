@@ -8,7 +8,8 @@ const STORAGE_KEY = 'daily_question_count';
 
 // Users with unlimited access (no daily limit)
 const UNLIMITED_USERS = [
-  'noraabdounmohammed@gmail.com'
+  'noraabdounmohammed@gmail.com',
+  'norabdoun@gmail.com'
 ];
 
 // Check if email has unlimited access
