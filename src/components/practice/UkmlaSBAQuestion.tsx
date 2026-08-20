@@ -99,6 +99,40 @@ function formatClinicalVignette(text: string): string {
   return paragraphs.map(paragraph => paragraph.sentences.join(' ')).join('\n\n');
 }
 
+function isLikelyLeadIn(text: string, vignette: string): boolean {
+  const clean = text.replace(/\s+/g, ' ').trim();
+  if (!clean || clean.length > 180 || !clean.endsWith('?')) return false;
+  const vignetteClean = vignette.replace(/\s+/g, ' ').trim();
+  return !vignetteClean || clean !== vignetteClean;
+}
+
+function extractLeadIn(question: QuestionData, vignette: string): string {
+  const explicit = String(
+    (question as any).question_text
+      || (question as any).stem_question
+      || (question as any).individual_question
+      || '',
+  ).trim();
+  if (isLikelyLeadIn(explicit, vignette)) return explicit;
+
+  const questionField = String(question.question || '').trim();
+  if (isLikelyLeadIn(questionField, vignette)) return questionField;
+
+  const combinedStem = String(question.question_stem || '').trim();
+  const stemParts = combinedStem
+    .split(/\n\s*\n/)
+    .map(value => value.trim())
+    .filter(Boolean);
+  for (let i = stemParts.length - 1; i >= 0; i -= 1) {
+    if (isLikelyLeadIn(stemParts[i], vignette)) return stemParts[i];
+  }
+
+  const finalQuestionSentence = combinedStem.match(/([^.!?]{8,180}\?)\s*$/)?.[1]?.trim() || '';
+  if (isLikelyLeadIn(finalQuestionSentence, vignette)) return finalQuestionSentence;
+
+  return '';
+}
+
 const emphasisStyle: React.CSSProperties = {
   fontWeight: 800,
   textDecorationLine: 'underline',
@@ -232,11 +266,7 @@ export const UkmlaSBAQuestion: React.FC<UkmlaSBAQuestionProps> = ({
   const rawQuestionContent = (question as any).clinical_vignette || question.question_stem || question.question || '';
   const questionContent = formatClinicalVignette(rawQuestionContent);
   const vignetteParagraphs = questionContent.split(/\n\s*\n/).map(value => value.trim()).filter(Boolean);
-  const askLine = (question as any).question_text
-    || (question as any).stem_question
-    || (question as any).individual_question
-    || ((question as any).clinical_vignette ? question.question : '')
-    || '';
+  const askLine = extractLeadIn(question, rawQuestionContent);
 
   const explanation = sanitiseExplanation(question.explanation || question.worked_solution || '');
   const keyFact = sanitiseExplanation((question as any).key_fact || '');
