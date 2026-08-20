@@ -77,7 +77,9 @@ function clinicalSectionForSentence(sentence: string, current: ClinicalSection):
 function formatClinicalVignette(text: string): string {
   const clean = text.trim();
   if (!clean) return '';
-  if (/\n\s*\n/.test(clean)) return clean;
+
+  const authoredParagraphs = clean.split(/\n\s*\n/).map(value => value.trim()).filter(Boolean);
+  if (authoredParagraphs.length > 1) return authoredParagraphs.join('\n\n');
 
   const sentences = clean
     .split(/(?<=[.!?])\s+(?=[A-Z])/)
@@ -227,9 +229,18 @@ export const UkmlaSBAQuestion: React.FC<UkmlaSBAQuestionProps> = ({
 
   const rawCorrectAnswer = question.correctAnswer ?? question.correct_answer ?? 'A';
   const correctAnswerId = typeof rawCorrectAnswer === 'number' ? String.fromCharCode(65 + rawCorrectAnswer) : String(rawCorrectAnswer);
-  const rawQuestionContent = question.question_stem || question.question || '';
+
+  // New generated UKMLA questions already carry the vignette and lead-in separately.
+  // Render those fields directly. Only fall back to question_stem for older cached questions.
+  const rawQuestionContent = (question as any).clinical_vignette || question.question_stem || question.question || '';
   const questionContent = formatClinicalVignette(rawQuestionContent);
-  const askLine = (question as any).question_text || (question as any).stem_question || (question as any).individual_question || '';
+  const vignetteParagraphs = questionContent.split(/\n\s*\n/).map(value => value.trim()).filter(Boolean);
+  const askLine = (question as any).question_text
+    || (question as any).stem_question
+    || (question as any).individual_question
+    || ((question as any).clinical_vignette ? question.question : '')
+    || '';
+
   const explanation = sanitiseExplanation(question.explanation || question.worked_solution || '');
   const keyFact = sanitiseExplanation((question as any).key_fact || '');
   const conceptTitle = (question as any).concept_title || question.title || (question as any).topic || 'Clinical concept';
@@ -345,13 +356,17 @@ export const UkmlaSBAQuestion: React.FC<UkmlaSBAQuestionProps> = ({
         <main className="mx-auto w-full max-w-[620px] px-5 pb-10 pt-5 sm:px-8 sm:pt-7">
           <section aria-label="Question">
             <div className="text-[21px] font-semibold leading-[1.68] tracking-[-0.01em] sm:text-[22px]" style={{ color: C.espresso, fontFamily: 'Inter, sans-serif' }}>
-              <ReactMarkdown components={{ p: ({ children }) => <p className="mb-6 last:mb-0">{children}</p>, strong: ({ children }) => <strong className="font-bold">{children}</strong> }}>
-                {questionContent}
-              </ReactMarkdown>
+              {vignetteParagraphs.map((paragraph, index) => (
+                <p key={`${question.id || 'question'}-vignette-${index}`} className="mb-7 last:mb-0">
+                  <ReactMarkdown components={{ p: ({ children }) => <>{children}</>, strong: ({ children }) => <strong className="font-bold">{children}</strong> }}>
+                    {paragraph}
+                  </ReactMarkdown>
+                </p>
+              ))}
             </div>
 
             {askLine && (
-              <div className="mt-7 border-t pt-6 text-[19px] font-bold leading-[1.5] sm:text-[20px]" style={{ borderColor: C.line, color: C.espresso }}>
+              <div className="mt-8 border-t pt-7 text-[19px] font-bold leading-[1.5] sm:text-[20px]" style={{ borderColor: C.line, color: C.espresso }}>
                 {askLine}
               </div>
             )}
