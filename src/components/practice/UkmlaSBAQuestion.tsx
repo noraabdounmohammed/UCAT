@@ -180,7 +180,6 @@ export const UkmlaSBAQuestion: React.FC<UkmlaSBAQuestionProps> = ({
   const [selectedOption, setSelectedOption] = useState<string | null>(preSelectedAnswer || null);
   const [hasSubmitted, setHasSubmitted] = useState(preSubmitted);
   const [showAllDistractors, setShowAllDistractors] = useState(false);
-  const [showSourceExplanation, setShowSourceExplanation] = useState(preSubmitted);
   const [primaryExplanation, setPrimaryExplanation] = useState('');
   const [followUpResponse, setFollowUpResponse] = useState('');
   const [aiPrompt, setAiPrompt] = useState('');
@@ -195,7 +194,6 @@ export const UkmlaSBAQuestion: React.FC<UkmlaSBAQuestionProps> = ({
     if (preSubmitted) {
       setSelectedOption(preSelectedAnswer || null);
       setHasSubmitted(true);
-      setShowSourceExplanation(true);
     } else {
       const savedState = sessionStorage.getItem(getStorageKey());
       if (savedState) {
@@ -211,7 +209,6 @@ export const UkmlaSBAQuestion: React.FC<UkmlaSBAQuestionProps> = ({
         setSelectedOption(null);
         setHasSubmitted(false);
       }
-      setShowSourceExplanation(false);
     }
 
     setShowAllDistractors(false);
@@ -448,21 +445,8 @@ export const UkmlaSBAQuestion: React.FC<UkmlaSBAQuestionProps> = ({
                 )}
               </div>
 
-              <div className="mt-6 border-t pt-4" style={{ borderColor: C.line }}>
-                <button type="button" onClick={() => setShowSourceExplanation(value => !value)} className="flex w-full items-center justify-between py-2 text-left text-[14px] font-semibold" style={{ color: C.muted }}>
-                  <span>{showSourceExplanation ? 'Hide source explanation' : 'See source explanation'}</span>
-                  <ChevronDown className={`h-4 w-4 transition-transform ${showSourceExplanation ? 'rotate-180' : ''}`} />
-                </button>
-                {showSourceExplanation && (
-                  <div className="mt-2">
-                    {takeaway && <div className="rounded-[16px] border p-4" style={{ backgroundColor: C.blushSoft, borderColor: '#F0D2CA' }}><SkimmableMarkdown text={takeaway} className="text-[17px] font-bold leading-[1.55]" /></div>}
-                    {explanation && <SkimmableMarkdown text={explanation} className="mt-4 text-[15px] font-medium leading-[1.72] text-[#4C3A2E]" />}
-                  </div>
-                )}
-              </div>
-
               {Object.keys(distractors).length > 0 && (
-                <div className="mt-2 border-t pt-4" style={{ borderColor: C.line }}>
+                <div className="mt-6 border-t pt-4" style={{ borderColor: C.line }}>
                   <button type="button" onClick={() => setShowAllDistractors(value => !value)} className="flex w-full items-center justify-between py-2 text-left text-[14px] font-semibold" style={{ color: C.muted }}>
                     <span>{showAllDistractors ? 'Hide other options' : 'Why the other options are wrong'}</span>
                     <ChevronDown className={`h-4 w-4 transition-transform ${showAllDistractors ? 'rotate-180' : ''}`} />
