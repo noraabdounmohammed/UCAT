@@ -84,34 +84,41 @@ function HomeContent() {
 
         <section className="pt-10 sm:pt-14">
           <p className="text-sm" style={{ color: palette.muted }}>{getGreeting()}{firstName ? `, ${firstName}` : ''}.</p>
-          <h1 className="mt-3 max-w-2xl text-4xl font-light leading-tight tracking-[-0.035em] sm:text-5xl" style={{ fontFamily: "'Fraunces', serif" }}>
-            Here’s what will move you closer to the UKMLA today.
+          <h1 className="mt-3 max-w-3xl text-4xl font-light leading-tight tracking-[-0.035em] sm:text-5xl" style={{ fontFamily: "'Fraunces', serif" }}>
+            Your UKMLA knowledge, mapped.
           </h1>
+          <p className="mt-4 max-w-2xl text-base font-medium leading-7 sm:text-lg" style={{ color: palette.ink }}>
+            StudyEdit learns what you know, what you’re forgetting, and what is worth practising next.
+          </p>
         </section>
 
         <section className="mt-10 rounded-[28px] border p-6 sm:p-8" style={{ borderColor: palette.line, backgroundColor: '#FFFDF8' }}>
-          <div className="text-[11px] font-medium uppercase tracking-[0.22em]" style={{ color: palette.muted }}>Your preparation</div>
+          <div className="text-[11px] font-medium uppercase tracking-[0.22em]" style={{ color: palette.muted }}>Your preparation map</div>
           <div className="mt-6 grid grid-cols-1 divide-y sm:grid-cols-3 sm:divide-x sm:divide-y-0" style={{ borderColor: palette.line }}>
             <Metric label="Tested coverage" value={isLoading ? '—' : `${preparation.coverage}%`} detail="of mapped concepts" />
             <Metric label="Retrieval" value={isLoading || !preparation.hasEvidence ? '—' : `${preparation.retrieval}%`} detail={preparation.hasEvidence ? 'across attempts' : 'not enough evidence yet'} />
-            <Metric label="Current gaps" value={isLoading || !preparation.hasEvidence ? '—' : String(preparation.weakCount)} detail={preparation.hasEvidence ? 'currently weak' : 'not enough evidence yet'} />
+            <Metric label="Current gaps" value={isLoading || !preparation.hasEvidence ? '—' : String(preparation.weakCount)} detail={preparation.hasEvidence ? 'need another pass' : 'not enough evidence yet'} />
           </div>
         </section>
 
         <section className="mt-6 overflow-hidden rounded-[30px] p-7 sm:p-9" style={{ backgroundColor: palette.blushSoft }}>
-          <div className="text-[11px] font-medium uppercase tracking-[0.22em]" style={{ color: '#9C655D' }}>Your next best session</div>
+          <div className="text-[11px] font-medium uppercase tracking-[0.22em]" style={{ color: '#9C655D' }}>
+            {preparation.hasEvidence ? 'Why StudyEdit is choosing these next' : 'We’re building your map'}
+          </div>
           <div className="mt-4 grid gap-8 md:grid-cols-[1.4fr_0.8fr] md:items-end">
             <div>
-              <h2 className="text-3xl font-light tracking-[-0.03em] sm:text-4xl" style={{ fontFamily: "'Fraunces', serif", color: palette.espresso }}>Focus on what will move the needle.</h2>
+              <h2 className="text-3xl font-light tracking-[-0.03em] sm:text-4xl" style={{ fontFamily: "'Fraunces', serif", color: palette.espresso }}>
+                {preparation.hasEvidence ? 'Practise what deserves attention now.' : 'Your first answers teach StudyEdit where to look next.'}
+              </h2>
               <p className="mt-3 max-w-xl text-sm leading-6" style={{ color: '#6F4B45' }}>
                 {preparation.hasEvidence
-                  ? 'StudyEdit will mix concepts due for retrieval, weak areas and under-tested territory using your current learning history.'
-                  : 'Your first sessions will map what you know while steadily expanding coverage across the curriculum.'}
+                  ? 'Your recommended session prioritises concepts that are due for retrieval, showing repeated difficulty, or still need stronger evidence.'
+                  : 'StudyEdit starts with under-tested curriculum areas, then adapts as your evidence grows. Every answer makes the next recommendation more informed.'}
               </p>
               <div className="mt-5 flex flex-wrap gap-2 text-xs">
-                {preparation.hasEvidence && <Pill>{preparation.dueCount} due</Pill>}
-                {preparation.hasEvidence && <Pill>{preparation.weakCount} weak</Pill>}
-                <Pill>{preparation.unseenCount} untested</Pill>
+                {preparation.hasEvidence && preparation.dueCount > 0 && <Pill>{preparation.dueCount} due for retrieval</Pill>}
+                {preparation.hasEvidence && preparation.weakCount > 0 && <Pill>{preparation.weakCount} need another pass</Pill>}
+                {preparation.unseenCount > 0 && <Pill>{preparation.unseenCount} untested</Pill>}
               </div>
             </div>
             <div className="flex flex-col gap-3 md:items-end">
@@ -139,7 +146,7 @@ function HomeContent() {
                     <div className="font-medium" style={{ color: palette.espresso }}>{concept.title}</div>
                     <div className="mt-1 text-sm" style={{ color: palette.muted }}>{accuracy}% retrieval across {attempts} attempt{attempts === 1 ? '' : 's'}</div>
                   </div>
-                  <span className="shrink-0 rounded-full px-3 py-1 text-xs font-medium" style={{ backgroundColor: palette.blushSoft, color: '#8A433A' }}>Needs work</span>
+                  <span className="shrink-0 rounded-full px-3 py-1 text-xs font-medium" style={{ backgroundColor: palette.blushSoft, color: '#8A433A' }}>Needs another pass</span>
                 </div>
               );
             }) : (
