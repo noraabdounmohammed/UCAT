@@ -1,6 +1,6 @@
 /**
  * Cached Question Generator
- * 
+ *
  * Checks Supabase cache first, generates with AI if missing, saves to cache.
  * Uses your existing AI prompts from aiQuestionGenerator.ts
  */
@@ -22,6 +22,43 @@ export interface GeneratedQuestion {
   fromCache: boolean;
 }
 
+const normalise = (value: unknown) => String(value || '').replace(/\s+/g, ' ').trim();
+
+function isLeadIn(value: unknown): boolean {
+  const clean = normalise(value);
+  return Boolean(clean && clean.length <= 180 && clean.endsWith('?'));
+}
+
+function finalQuestionSentence(value: unknown): string {
+  const clean = normalise(value);
+  if (!clean) return '';
+  const match = clean.match(/([^.!?]{8,180}\?)\s*$/);
+  return match?.[1]?.trim() || '';
+}
+
+function getCachedLeadIn(cached: CachedQuestion): string {
+  if (isLeadIn(cached.question_text)) return normalise(cached.question_text);
+  const fromStem = finalQuestionSentence(cached.question_stem);
+  return isLeadIn(fromStem) ? fromStem : '';
+}
+
+function stripLeadInFromStem(stem: unknown, leadIn: string): string {
+  const cleanStem = normalise(stem);
+  const cleanLeadIn = normalise(leadIn);
+  if (!cleanStem || !cleanLeadIn) return cleanStem;
+  if (cleanStem.endsWith(cleanLeadIn)) {
+    return cleanStem.slice(0, -cleanLeadIn.length).trim();
+  }
+  return cleanStem;
+}
+
+function isUsableCachedQuestion(cached: CachedQuestion, requestedFormat: string): boolean {
+  if (!Array.isArray(cached.options) || cached.options.length < 2 || !normalise(cached.correct_answer)) return false;
+  const format = cached.question_format || requestedFormat;
+  if (format !== 'ukmla_sba') return true;
+  return Boolean(getCachedLeadIn(cached));
+}
+
 export const cachedQuestionGenerator = {
   /**
    * Get questions for concepts - checks cache first, generates if needed
@@ -34,26 +71,36 @@ export const cachedQuestionGenerator = {
     const results: GeneratedQuestion[] = [];
 
     for (const conceptId of conceptIds) {
-      // 1. Check cache
+      // 1. Check cache, but never surface malformed UKMLA questions.
       const cached = await questionCacheService.getQuestionsForConcepts([conceptId]);
-      
-      if (cached.length > 0) {
-        // Use cached questions
-        const toUse = cached.slice(0, questionCount);
+      const usableCached = cached.filter(q => isUsableCachedQuestion(q, questionFormat));
+
+      if (usableCached.length > 0) {
+        const toUse = usableCached.slice(0, questionCount);
         for (const q of toUse) {
           results.push({
             question: this.cachedToQuestionData(q),
             fromCache: true
           });
         }
+
+        // Top up if filtering malformed cache entries left us short.
+        if (toUse.length < questionCount) {
+          const generated = await this.generateAndCache(conceptId, {
+            questionCount: questionCount - toUse.length,
+            questionFormat,
+            difficulty
+          });
+          generated.forEach(q => results.push({ question: q, fromCache: false }));
+        }
       } else {
-        // 2. Generate with AI
+        // 2. Generate with AI when cache is empty or malformed.
         const generated = await this.generateAndCache(conceptId, {
           questionCount,
           questionFormat,
           difficulty
         });
-        
+
         for (const q of generated) {
           results.push({
             question: q,
@@ -74,31 +121,24 @@ export const cachedQuestionGenerator = {
     options: GenerateOptions = {}
   ): Promise<GeneratedQuestion[]> {
     const { questionCount = 10, questionFormat = 'ukmla_sba' } = options;
-    
-    // Get concepts with this filter
+
     const concepts = await jsonConceptLoader.getConceptsByFilter(filterName);
-    
-    // Check which have cached questions
     const conceptIds = concepts.map(c => c.concept_id);
     const cached = await questionCacheService.getQuestionsForConcepts(conceptIds);
-    
-    // Group by concept
+
     const cachedByConcept: Record<string, CachedQuestion[]> = {};
     for (const q of cached) {
-      if (!cachedByConcept[q.concept_id]) {
-        cachedByConcept[q.concept_id] = [];
-      }
+      if (!isUsableCachedQuestion(q, questionFormat)) continue;
+      if (!cachedByConcept[q.concept_id]) cachedByConcept[q.concept_id] = [];
       cachedByConcept[q.concept_id].push(q);
     }
-    
+
     const results: GeneratedQuestion[] = [];
-    
-    // For each concept, use cache or generate
+
     for (const concept of concepts) {
       const cachedForConcept = cachedByConcept[concept.concept_id] || [];
-      
+
       if (cachedForConcept.length > 0) {
-        // Use cached
         const toUse = cachedForConcept.slice(0, questionCount);
         for (const q of toUse) {
           results.push({
@@ -107,12 +147,11 @@ export const cachedQuestionGenerator = {
           });
         }
       } else {
-        // Generate and cache
         const generated = await this.generateAndCache(concept.concept_id, {
           ...options,
           questionCount
         });
-        
+
         for (const q of generated) {
           results.push({
             question: q,
@@ -121,8 +160,7 @@ export const cachedQuestionGenerator = {
         }
       }
     }
-    
-    // Shuffle results for variety
+
     return results.sort(() => Math.random() - 0.5).slice(0, questionCount * 10);
   },
 
@@ -133,15 +171,13 @@ export const cachedQuestionGenerator = {
     conceptId: string,
     options: GenerateOptions
   ): Promise<QuestionData[]> {
-    // Load concept
     const concept = await jsonConceptLoader.getConceptById(conceptId);
     if (!concept) {
       console.error(`Concept not found: ${conceptId}`);
       return [];
     }
-    
+
     try {
-      // Create ConceptNode for AI generator
       const conceptNode: ConceptNode = {
         concept_id: conceptId,
         title: concept.title,
@@ -156,24 +192,32 @@ export const cachedQuestionGenerator = {
           last_practiced: null
         }
       };
-      
-      // Generate with existing AI service
+
       const count = options.questionCount || 1;
       const format = options.questionFormat || 'ukmla_sba';
       const results: QuestionData[] = [];
       const questionsToCache: QuestionInsert[] = [];
-      
+
       for (let i = 0; i < count; i++) {
-        const aiQuestion = await generateQuestionFromConcept(
-          conceptNode,
-          format as any
-        );
-        
+        const aiQuestion = await generateQuestionFromConcept(conceptNode, format as any);
+
+        const leadIn = normalise((aiQuestion as any).question);
+        const vignette = normalise((aiQuestion as any).clinical_vignette);
+        const fullStem = normalise((aiQuestion as any).question_stem || (aiQuestion as any).stem || [vignette, leadIn].filter(Boolean).join(' '));
+
+        // UKMLA questions without a real lead-in are unsafe to cache/display.
+        if (format === 'ukmla_sba' && !isLeadIn(leadIn)) {
+          console.warn('Skipping malformed generated UKMLA question with no valid lead-in', { conceptId });
+          continue;
+        }
+
         const questionData: QuestionData = {
           id: `${conceptId}_${Date.now()}_${i}_${Math.random().toString(36).substr(2, 9)}`,
           format: format as any,
-          stem: (aiQuestion as any).question_stem || (aiQuestion as any).stem || concept.title,
-          question: (aiQuestion as any).question || (aiQuestion as any).clinical_vignette || '',
+          stem: fullStem || concept.title,
+          question_stem: fullStem,
+          clinical_vignette: vignette,
+          question: leadIn || fullStem,
           options: (aiQuestion as any).options || [],
           correctAnswer: (aiQuestion as any).correct_answer || (aiQuestion as any).correctAnswer || '',
           explanation: (aiQuestion as any).explanation || '',
@@ -181,10 +225,9 @@ export const cachedQuestionGenerator = {
           citation_id: (aiQuestion as any).citation_id || null,
           concept_id: conceptId
         };
-        
+
         results.push(questionData);
-        
-        // Prepare for caching
+
         questionsToCache.push({
           concept_id: conceptId,
           concept_title: concept.title,
@@ -192,8 +235,9 @@ export const cachedQuestionGenerator = {
           specialty: concept.curriculum,
           custom_filters: concept.custom_filters,
           filter_categories: concept.filter_categories,
-          question_stem: (aiQuestion as any).question_stem || (aiQuestion as any).stem || '',
-          question_text: (aiQuestion as any).question || (aiQuestion as any).clinical_vignette || '',
+          question_stem: fullStem,
+          // question_text is deliberately the lead-in only, never a vignette fallback.
+          question_text: leadIn,
           options: (aiQuestion as any).options || [],
           correct_answer: (aiQuestion as any).correct_answer || (aiQuestion as any).correctAnswer || '',
           key_fact: (aiQuestion as any).key_fact || (aiQuestion as any).keyFact || '',
@@ -203,14 +247,13 @@ export const cachedQuestionGenerator = {
           difficulty: options.difficulty || 'medium'
         });
       }
-      
-      // Save to cache (fire and forget)
+
       if (questionsToCache.length > 0) {
         questionCacheService.saveQuestions(questionsToCache).catch(err => {
           console.error('Failed to cache questions:', err);
         });
       }
-      
+
       return results;
     } catch (error) {
       console.error(`Failed to generate questions for ${conceptId}:`, error);
@@ -219,14 +262,19 @@ export const cachedQuestionGenerator = {
   },
 
   /**
-   * Convert cached question to QuestionData format
+   * Convert cached question to QuestionData format while restoring UKMLA structure.
    */
   cachedToQuestionData(cached: CachedQuestion): QuestionData {
+    const leadIn = getCachedLeadIn(cached);
+    const clinicalVignette = leadIn ? stripLeadInFromStem(cached.question_stem, leadIn) : normalise(cached.question_stem);
+
     return {
       id: cached.id,
       format: cached.question_format as any,
       stem: cached.question_stem,
-      question: cached.question_text,
+      question_stem: cached.question_stem,
+      clinical_vignette: cached.question_format === 'ukmla_sba' ? clinicalVignette : undefined,
+      question: leadIn || cached.question_text,
       options: cached.options,
       correctAnswer: cached.correct_answer,
       explanation: cached.explanation || '',
@@ -243,18 +291,16 @@ export const cachedQuestionGenerator = {
     totalCached: number;
     bySpecialty: Record<string, number>;
     totalConcepts: number;
-    coverage: number; // % of concepts with cached questions
+    coverage: number;
   }> {
     const [cachedBySpecialty, totalConcepts] = await Promise.all([
       questionCacheService.getQuestionCountBySpecialty(),
       jsonConceptLoader.getTotalConceptCount()
     ]);
-    
+
     const totalCached = Object.values(cachedBySpecialty).reduce((a, b) => a + b, 0);
-    
-    // Estimate unique concepts covered (rough)
-    const uniqueConceptsCovered = Math.floor(totalCached / 1.5); // Assume ~1.5 questions per concept
-    
+    const uniqueConceptsCovered = Math.floor(totalCached / 1.5);
+
     return {
       totalCached,
       bySpecialty: cachedBySpecialty,
@@ -265,7 +311,6 @@ export const cachedQuestionGenerator = {
 
   /**
    * Pre-generate questions for a set of concepts
-   * Useful for bulk seeding
    */
   async preGenerateForConcepts(
     conceptIds: string[],
@@ -273,20 +318,19 @@ export const cachedQuestionGenerator = {
   ): Promise<{ generated: number; cached: number }> {
     let generated = 0;
     let cached = 0;
-    
+
     for (const conceptId of conceptIds) {
-      const hasCached = await questionCacheService.hasQuestionsForConcept(conceptId);
-      
-      if (hasCached) {
+      const existing = await questionCacheService.getQuestionsForConcepts([conceptId]);
+      const hasUsableCached = existing.some(q => isUsableCachedQuestion(q, options.questionFormat || 'ukmla_sba'));
+
+      if (hasUsableCached) {
         cached++;
       } else {
         const newQuestions = await this.generateAndCache(conceptId, options);
-        if (newQuestions.length > 0) {
-          generated++;
-        }
+        if (newQuestions.length > 0) generated++;
       }
     }
-    
+
     return { generated, cached };
   }
 };
