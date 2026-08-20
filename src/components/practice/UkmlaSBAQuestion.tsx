@@ -68,50 +68,32 @@ type ClinicalSection = 'history' | 'examination' | 'investigations' | 'treatment
 
 function clinicalSectionForSentence(sentence: string, current: ClinicalSection): ClinicalSection {
   const value = sentence.trim();
-
-  if (/^(?:On examination|Physical examination|Clinical examination|Neurological examination|Cardiovascular examination|Respiratory examination|Abdominal examination|On auscultation|Observations|Vital signs|His observations|Her observations)\b/i.test(value)) {
-    return 'examination';
-  }
-
-  if (/^(?:Investigations|Initial investigations|Blood tests|Laboratory tests|Blood results|An ECG|ECG|Electrocardiogram|Chest X-ray|Chest radiograph|CXR|X-ray|CT|MRI|Ultrasound|Urinalysis|Troponin|Blood gas|ABG)\b/i.test(value)) {
-    return 'investigations';
-  }
-
-  if (/^(?:He is treated|She is treated|Treatment is started|Treatment|Following treatment|Following|Subsequently|Later|Hours later|Days later|During admission|While in hospital|The patient is given)\b/i.test(value)) {
-    return 'treatment';
-  }
-
+  if (/^(?:On examination|Physical examination|Clinical examination|Neurological examination|Cardiovascular examination|Respiratory examination|Abdominal examination|On auscultation|Observations|Vital signs|His observations|Her observations)\b/i.test(value)) return 'examination';
+  if (/^(?:Investigations|Initial investigations|Blood tests|Laboratory tests|Blood results|An ECG|ECG|Electrocardiogram|Chest X-ray|Chest radiograph|CXR|X-ray|CT|MRI|Ultrasound|Urinalysis|Troponin|Blood gas|ABG)\b/i.test(value)) return 'investigations';
+  if (/^(?:He is treated|She is treated|Treatment is started|Treatment|Following treatment|Following|Subsequently|Later|Hours later|Days later|During admission|While in hospital|The patient is given)\b/i.test(value)) return 'treatment';
   return current;
 }
 
 function formatClinicalVignette(text: string): string {
   const clean = text.trim();
   if (!clean) return '';
-
   if (/\n\s*\n/.test(clean)) return clean;
 
   const sentences = clean
     .split(/(?<=[.!?])\s+(?=[A-Z])/)
     .map(sentence => sentence.trim())
     .filter(Boolean);
-
   if (sentences.length < 2) return clean;
 
   const paragraphs: Array<{ section: ClinicalSection; sentences: string[] }> = [];
   let currentSection: ClinicalSection = 'history';
-
   for (const sentence of sentences) {
     const section = clinicalSectionForSentence(sentence, currentSection);
     currentSection = section;
     const last = paragraphs[paragraphs.length - 1];
-
-    if (!last || last.section !== section) {
-      paragraphs.push({ section, sentences: [sentence] });
-    } else {
-      last.sentences.push(sentence);
-    }
+    if (!last || last.section !== section) paragraphs.push({ section, sentences: [sentence] });
+    else last.sentences.push(sentence);
   }
-
   return paragraphs.map(paragraph => paragraph.sentences.join(' ')).join('\n\n');
 }
 
@@ -141,6 +123,47 @@ function SkimmableMarkdown({ text, className = '' }: { text: string; className?:
   );
 }
 
+interface PriorEvidence {
+  attempts: number;
+  correct: number;
+  incorrect: number;
+  lastPracticed?: string | null;
+}
+
+function readPriorConceptEvidence(question: QuestionData, conceptTitle: string): PriorEvidence | null {
+  try {
+    const conceptId = String(question.concept_id || (question as any).conceptId || '');
+    let best: PriorEvidence | null = null;
+
+    for (let i = 0; i < localStorage.length; i += 1) {
+      const key = localStorage.key(i);
+      if (!key || !key.endsWith('_user_concepts')) continue;
+      const raw = localStorage.getItem(key);
+      if (!raw) continue;
+
+      const concepts = JSON.parse(raw);
+      if (!Array.isArray(concepts)) continue;
+      const match = concepts.find((concept: any) => {
+        if (conceptId && String(concept.concept_id || concept.id || '') === conceptId) return true;
+        return String(concept.title || '').trim().toLowerCase() === conceptTitle.trim().toLowerCase();
+      });
+      if (!match?.mastery_data) continue;
+
+      const md = match.mastery_data;
+      const evidence = {
+        attempts: Number(md.attempts || 0),
+        correct: Number(md.correct || 0),
+        incorrect: Number(md.incorrect || 0),
+        lastPracticed: md.last_practiced || md.fsrs_last_review || null,
+      };
+      if (!best || evidence.attempts > best.attempts) best = evidence;
+    }
+    return best;
+  } catch {
+    return null;
+  }
+}
+
 export const UkmlaSBAQuestion: React.FC<UkmlaSBAQuestionProps> = ({
   question,
   onAnswer,
@@ -154,12 +177,13 @@ export const UkmlaSBAQuestion: React.FC<UkmlaSBAQuestionProps> = ({
 }) => {
   const [selectedOption, setSelectedOption] = useState<string | null>(preSelectedAnswer || null);
   const [hasSubmitted, setHasSubmitted] = useState(preSubmitted);
-  const [showFullExplanation, setShowFullExplanation] = useState(preSubmitted);
   const [showAllDistractors, setShowAllDistractors] = useState(false);
+  const [showSourceExplanation, setShowSourceExplanation] = useState(preSubmitted);
   const [aiResponse, setAiResponse] = useState('');
   const [aiPrompt, setAiPrompt] = useState('');
   const [aiQuestion, setAiQuestion] = useState('');
   const [aiStreaming, setAiStreaming] = useState(false);
+  const [personalisedStarted, setPersonalisedStarted] = useState(preSubmitted);
   const abortControllerRef = useRef<AbortController | null>(null);
 
   const getStorageKey = () => `sba_answer_${question.id || question.question?.substring(0, 50)}`;
@@ -168,8 +192,7 @@ export const UkmlaSBAQuestion: React.FC<UkmlaSBAQuestionProps> = ({
     if (preSubmitted) {
       setSelectedOption(preSelectedAnswer || null);
       setHasSubmitted(true);
-      setShowFullExplanation(true);
-      setShowAllDistractors(false);
+      setShowSourceExplanation(true);
     } else {
       const savedState = sessionStorage.getItem(getStorageKey());
       if (savedState) {
@@ -185,14 +208,15 @@ export const UkmlaSBAQuestion: React.FC<UkmlaSBAQuestionProps> = ({
         setSelectedOption(null);
         setHasSubmitted(false);
       }
-      setShowFullExplanation(false);
-      setShowAllDistractors(false);
+      setShowSourceExplanation(false);
     }
 
+    setShowAllDistractors(false);
     setAiResponse('');
     setAiPrompt('');
     setAiQuestion('');
     setAiStreaming(false);
+    setPersonalisedStarted(preSubmitted);
     abortControllerRef.current?.abort();
   }, [question.id, question.question, question.question_stem, preSubmitted, preSelectedAnswer]);
 
@@ -202,13 +226,10 @@ export const UkmlaSBAQuestion: React.FC<UkmlaSBAQuestionProps> = ({
   }), [question.options]);
 
   const rawCorrectAnswer = question.correctAnswer ?? question.correct_answer ?? 'A';
-  const correctAnswerId = typeof rawCorrectAnswer === 'number'
-    ? String.fromCharCode(65 + rawCorrectAnswer)
-    : String(rawCorrectAnswer);
-
+  const correctAnswerId = typeof rawCorrectAnswer === 'number' ? String.fromCharCode(65 + rawCorrectAnswer) : String(rawCorrectAnswer);
   const rawQuestionContent = question.question_stem || question.question || '';
   const questionContent = formatClinicalVignette(rawQuestionContent);
-  const askLine = (question as any).question_text || (question as any).stem_question || '';
+  const askLine = (question as any).question_text || (question as any).stem_question || (question as any).individual_question || '';
   const explanation = sanitiseExplanation(question.explanation || question.worked_solution || '');
   const keyFact = sanitiseExplanation((question as any).key_fact || '');
   const conceptTitle = (question as any).concept_title || question.title || (question as any).topic || 'Clinical concept';
@@ -225,43 +246,37 @@ export const UkmlaSBAQuestion: React.FC<UkmlaSBAQuestionProps> = ({
     sessionStorage.setItem(getStorageKey(), JSON.stringify({ selectedOption: optionId, hasSubmitted: false }));
   };
 
-  const handleCheckAnswer = () => {
-    if (!selectedOption || hasSubmitted) return;
-    const correct = selectedOption === correctAnswerId;
-    setHasSubmitted(true);
-    sessionStorage.setItem(getStorageKey(), JSON.stringify({ selectedOption, hasSubmitted: true }));
-    onAnswer(correct);
-  };
-
-  const askStudyEdit = async (prompt: string) => {
+  const askStudyEdit = async (prompt: string, priorEvidence?: PriorEvidence | null, isDefaultExplanation = false) => {
     const cleanPrompt = prompt.trim();
     if (!cleanPrompt || aiStreaming) return;
 
-    setAiPrompt(cleanPrompt);
+    setAiPrompt(isDefaultExplanation ? '' : cleanPrompt);
     setAiQuestion('');
     setAiResponse('');
     setAiStreaming(true);
+    if (isDefaultExplanation) setPersonalisedStarted(true);
 
     const optionLines = options.map((option: any) => `${option.id}. ${option.text}`).join('\n');
-    const selectedLine = selectedOption
-      ? `${selectedOption}. ${selectedOptionText || 'Selected option'}`
-      : 'No option selected';
+    const selectedLine = selectedOption ? `${selectedOption}. ${selectedOptionText || 'Selected option'}` : 'No option selected';
     const correctLine = `${correctAnswerId}. ${correctOptionText || 'Correct option'}`;
     const selectedFeedback = selectedDistractor || 'No specific distractor explanation supplied.';
+    const evidence = priorEvidence ?? readPriorConceptEvidence(question, conceptTitle);
+    const evidenceLine = evidence && evidence.attempts > 0
+      ? `Before this answer: ${evidence.attempts} prior attempt${evidence.attempts === 1 ? '' : 's'} on this concept; ${evidence.correct} correct; ${evidence.incorrect} incorrect.`
+      : 'No meaningful prior concept evidence is available yet.';
     const questionRef = String(question.id || question.concept_id || `${currentIndex + 1}-${rawQuestionContent.slice(0, 32)}`)
       .replace(/\s+/g, '-')
       .slice(0, 80);
 
-    // The generic AI service currently compresses its question context, so put the
-    // learner-specific facts first. This packet is deliberately self-contained and
-    // rebuilt for every question so the tutor cannot confuse one SBA with another.
     const tutorContextPacket = [
       `STUDENT SELECTED: ${selectedLine}`,
       `CORRECT ANSWER: ${correctLine}`,
       `QUESTION ASKED: ${askLine || 'Use the clinical vignette to answer the SBA.'}`,
       `CONCEPT: ${conceptTitle}`,
-      `KEY POINT: ${keyFact || takeaway || 'Not supplied'}`,
-      `WHY THE STUDENT'S OPTION IS WRONG: ${selectedFeedback}`,
+      `PRIOR LEARNER EVIDENCE: ${evidenceLine}`,
+      `KEY POINT / GROUND TRUTH: ${keyFact || takeaway || 'Not supplied'}`,
+      `VERIFIED QUESTION EXPLANATION: ${explanation || 'Not supplied'}`,
+      `VERIFIED DISTRACTOR FEEDBACK FOR STUDENT'S CHOICE: ${selectedFeedback}`,
       `OPTIONS:\n${optionLines}`,
       `FULL CLINICAL VIGNETTE:\n${rawQuestionContent}`,
     ].join('\n\n');
@@ -274,9 +289,8 @@ export const UkmlaSBAQuestion: React.FC<UkmlaSBAQuestionProps> = ({
       explanation: explanation || keyFact || takeaway,
     };
 
-    // Prefix with a per-question reference so the existing response cache cannot
-    // accidentally reuse a response from another SBA with the same answer letter.
-    const modelPrompt = `QuestionRef ${questionRef} Selected ${selectedOption || 'none'}. ${cleanPrompt}\n\nUse ONLY the supplied current-question context. The student's selected answer is explicitly provided. Never say it was not provided. Compare their exact selected option with the exact correct option and the decisive clues in this vignette.`;
+    const defaultInstruction = `Give this student their personalised post-answer teaching explanation. Start with their exact answer and whether it was right or wrong. Then explain the decisive clue(s) in this vignette in very simple language, similar to an excellent "explain this simply" response. Use the verified explanation and key point as ground truth. End with one short carry-forward rule for the next vignette. Keep it around 90-140 words. Bold the few phrases worth skimming. If prior learner evidence shows at least 2 previous attempts, you may briefly mention the factual attempt/correct/incorrect pattern, but do not claim a recurring misconception unless the supplied evidence explicitly proves one.`;
+    const modelPrompt = `QuestionRef ${questionRef} Selected ${selectedOption || 'none'}. ${isDefaultExplanation ? defaultInstruction : cleanPrompt}\n\nUse ONLY the supplied current-question context. The student's selected answer is explicitly provided. Never say it was not provided. Do not contradict the verified explanation. Do not invent prior attempts or patterns.`;
 
     const controller = new AbortController();
     abortControllerRef.current = controller;
@@ -295,13 +309,23 @@ export const UkmlaSBAQuestion: React.FC<UkmlaSBAQuestionProps> = ({
       );
     } catch (error) {
       if (!controller.signal.aborted) {
-        console.error('StudyEdit inline help failed:', error);
-        setAiResponse('I could not answer that just now. Try again in a moment.');
+        console.error('StudyEdit personalised feedback failed:', error);
+        setAiResponse(explanation || takeaway || 'Review the correct answer and the decisive clues in the vignette before moving on.');
       }
     } finally {
       if (!controller.signal.aborted) setAiStreaming(false);
       abortControllerRef.current = null;
     }
+  };
+
+  const handleCheckAnswer = () => {
+    if (!selectedOption || hasSubmitted) return;
+    const priorEvidence = readPriorConceptEvidence(question, conceptTitle);
+    const correct = selectedOption === correctAnswerId;
+    setHasSubmitted(true);
+    sessionStorage.setItem(getStorageKey(), JSON.stringify({ selectedOption, hasSubmitted: true }));
+    onAnswer(correct);
+    void askStudyEdit('personalised explanation', priorEvidence, true);
   };
 
   return (
@@ -321,12 +345,9 @@ export const UkmlaSBAQuestion: React.FC<UkmlaSBAQuestionProps> = ({
         <main className="mx-auto w-full max-w-[620px] px-5 pb-10 pt-5 sm:px-8 sm:pt-7">
           <section aria-label="Question">
             <div className="text-[21px] font-semibold leading-[1.68] tracking-[-0.01em] sm:text-[22px]" style={{ color: C.espresso, fontFamily: 'Inter, sans-serif' }}>
-              <ReactMarkdown
-                components={{
-                  p: ({ children }) => <p className="mb-6 last:mb-0">{children}</p>,
-                  strong: ({ children }) => <strong className="font-bold">{children}</strong>,
-                }}
-              >{questionContent}</ReactMarkdown>
+              <ReactMarkdown components={{ p: ({ children }) => <p className="mb-6 last:mb-0">{children}</p>, strong: ({ children }) => <strong className="font-bold">{children}</strong> }}>
+                {questionContent}
+              </ReactMarkdown>
             </div>
 
             {askLine && (
@@ -342,7 +363,6 @@ export const UkmlaSBAQuestion: React.FC<UkmlaSBAQuestionProps> = ({
                 const wrongSelected = hasSubmitted && selected && !correct;
                 const correctAfterSubmit = hasSubmitted && correct;
                 const mutedAfterSubmit = hasSubmitted && !selected && !correct;
-
                 return (
                   <button
                     key={option.id}
@@ -357,13 +377,7 @@ export const UkmlaSBAQuestion: React.FC<UkmlaSBAQuestionProps> = ({
                       opacity: mutedAfterSubmit ? 0.52 : 1,
                     }}
                   >
-                    <span
-                      className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-[14px] font-bold"
-                      style={{
-                        backgroundColor: correctAfterSubmit ? 'rgba(143,163,121,.22)' : wrongSelected ? 'rgba(229,168,157,.25)' : selected && !hasSubmitted ? C.espresso : 'rgba(31,20,12,.06)',
-                        color: selected && !hasSubmitted ? C.cream : C.espresso,
-                      }}
-                    >{option.id}</span>
+                    <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-[14px] font-bold" style={{ backgroundColor: correctAfterSubmit ? 'rgba(143,163,121,.22)' : wrongSelected ? 'rgba(229,168,157,.25)' : selected && !hasSubmitted ? C.espresso : 'rgba(31,20,12,.06)', color: selected && !hasSubmitted ? C.cream : C.espresso }}>{option.id}</span>
                     <span className="flex-1 text-[17px] font-semibold leading-[1.45] sm:text-[18px]" style={{ color: C.espresso }}>{option.text}</span>
                     {correctAfterSubmit && <span className="font-bold" style={{ color: '#62734F' }}>✓</span>}
                     {wrongSelected && <span className="font-bold" style={{ color: '#9B5146' }}>×</span>}
@@ -373,13 +387,7 @@ export const UkmlaSBAQuestion: React.FC<UkmlaSBAQuestionProps> = ({
             </div>
 
             {!hasSubmitted && (
-              <button
-                type="button"
-                onClick={handleCheckAnswer}
-                disabled={!selectedOption}
-                className="mt-6 flex w-full items-center justify-center rounded-full px-6 py-[18px] text-[16px] font-bold transition active:scale-[0.99] disabled:cursor-not-allowed"
-                style={{ backgroundColor: selectedOption ? C.espresso : '#D9CCB6', color: selectedOption ? C.cream : C.muted }}
-              >
+              <button type="button" onClick={handleCheckAnswer} disabled={!selectedOption} className="mt-6 flex w-full items-center justify-center rounded-full px-6 py-[18px] text-[16px] font-bold transition active:scale-[0.99] disabled:cursor-not-allowed" style={{ backgroundColor: selectedOption ? C.espresso : '#D9CCB6', color: selectedOption ? C.cream : C.muted }}>
                 Check answer
               </button>
             )}
@@ -388,9 +396,7 @@ export const UkmlaSBAQuestion: React.FC<UkmlaSBAQuestionProps> = ({
           {hasSubmitted && (
             <section className="mt-8 border-t pt-7" style={{ borderColor: C.line }} aria-label="Answer feedback">
               <div className="flex items-center gap-2.5 text-[15px] font-bold" style={{ color: isCorrect ? '#62734F' : '#94483D' }}>
-                <span className="flex h-7 w-7 items-center justify-center rounded-full text-white" style={{ backgroundColor: isCorrect ? C.sage : C.blush }}>
-                  {isCorrect ? '✓' : '×'}
-                </span>
+                <span className="flex h-7 w-7 items-center justify-center rounded-full text-white" style={{ backgroundColor: isCorrect ? C.sage : C.blush }}>{isCorrect ? '✓' : '×'}</span>
                 {isCorrect ? 'Correct' : 'Not quite'}
               </div>
 
@@ -400,32 +406,40 @@ export const UkmlaSBAQuestion: React.FC<UkmlaSBAQuestionProps> = ({
                 </div>
               )}
 
-              {takeaway && (
-                <div className="mt-6 rounded-[20px] border p-5 sm:p-6" style={{ backgroundColor: C.blushSoft, borderColor: '#F0D2CA' }}>
-                  <div className="text-[10px] font-bold uppercase tracking-[0.2em]" style={{ color: '#A9675D' }}>Key point</div>
-                  <SkimmableMarkdown text={takeaway} className="mt-3 text-[21px] font-bold leading-[1.45] tracking-[-0.015em] sm:text-[23px]" />
-                </div>
-              )}
+              <div className="mt-7">
+                <div className="text-[10px] font-bold uppercase tracking-[0.2em]" style={{ color: '#A9675D' }}>Your explanation</div>
+                {aiStreaming && !aiResponse && (
+                  <div className="mt-3 border-l-[3px] pl-4 text-[16px] font-semibold leading-7" style={{ borderColor: C.blush, color: C.muted }}>
+                    StudyEdit is tailoring this to your answer…
+                  </div>
+                )}
+                {aiResponse && (
+                  <div className="mt-3 border-l-[3px] pl-4" style={{ borderColor: C.blush }}>
+                    <SkimmableMarkdown text={aiResponse} className="text-[17px] font-semibold leading-[1.72] text-[#3B2A1E]" />
+                  </div>
+                )}
+                {!personalisedStarted && preSubmitted && (
+                  <div className="mt-3 border-l-[3px] pl-4" style={{ borderColor: C.blush }}>
+                    <SkimmableMarkdown text={explanation || takeaway} className="text-[17px] font-semibold leading-[1.72] text-[#3B2A1E]" />
+                  </div>
+                )}
+              </div>
 
-              {explanation && (
-                <div className="mt-6">
-                  <div className="text-[10px] font-bold uppercase tracking-[0.2em]" style={{ color: C.muted }}>Why</div>
-                  <SkimmableMarkdown text={firstUsefulSentence(explanation)} className="mt-2 text-[17px] font-semibold leading-[1.65] text-[#3B2A1E]" />
-                </div>
-              )}
-
-              {!isCorrect && selectedOption && (
-                <div className="mt-6 border-l-[3px] pl-4" style={{ borderColor: C.blush }}>
-                  <div className="text-[10px] font-bold uppercase tracking-[0.18em]" style={{ color: C.muted }}>You chose {selectedOption}</div>
-                  <div className="mt-2 text-[16px] font-bold leading-6" style={emphasisStyle}>{selectedOptionText}</div>
-                  <p className="mt-2 text-[15px] font-medium leading-6" style={{ color: '#59483B' }}>
-                    {selectedDistractor || 'This option does not fit the decisive clinical clues as well as the correct answer.'}
-                  </p>
-                </div>
-              )}
+              <div className="mt-6 border-t pt-4" style={{ borderColor: C.line }}>
+                <button type="button" onClick={() => setShowSourceExplanation(value => !value)} className="flex w-full items-center justify-between py-2 text-left text-[14px] font-semibold" style={{ color: C.muted }}>
+                  <span>{showSourceExplanation ? 'Hide source explanation' : 'See source explanation'}</span>
+                  <ChevronDown className={`h-4 w-4 transition-transform ${showSourceExplanation ? 'rotate-180' : ''}`} />
+                </button>
+                {showSourceExplanation && (
+                  <div className="mt-2">
+                    {takeaway && <div className="rounded-[16px] border p-4" style={{ backgroundColor: C.blushSoft, borderColor: '#F0D2CA' }}><SkimmableMarkdown text={takeaway} className="text-[17px] font-bold leading-[1.55]" /></div>}
+                    {explanation && <SkimmableMarkdown text={explanation} className="mt-4 text-[15px] font-medium leading-[1.72] text-[#4C3A2E]" />}
+                  </div>
+                )}
+              </div>
 
               {Object.keys(distractors).length > 0 && (
-                <div className="mt-5 border-t pt-4" style={{ borderColor: C.line }}>
+                <div className="mt-2 border-t pt-4" style={{ borderColor: C.line }}>
                   <button type="button" onClick={() => setShowAllDistractors(value => !value)} className="flex w-full items-center justify-between py-2 text-left text-[14px] font-semibold" style={{ color: C.muted }}>
                     <span>{showAllDistractors ? 'Hide other options' : 'Why the other options are wrong'}</span>
                     <ChevronDown className={`h-4 w-4 transition-transform ${showAllDistractors ? 'rotate-180' : ''}`} />
@@ -442,56 +456,27 @@ export const UkmlaSBAQuestion: React.FC<UkmlaSBAQuestionProps> = ({
                 </div>
               )}
 
-              {explanation && explanation !== firstUsefulSentence(explanation) && (
-                <div className="mt-2 border-t pt-4" style={{ borderColor: C.line }}>
-                  <button type="button" onClick={() => setShowFullExplanation(value => !value)} className="flex w-full items-center justify-between py-2 text-left text-[14px] font-semibold" style={{ color: C.muted }}>
-                    <span>{showFullExplanation ? 'Hide full reasoning' : 'Show full reasoning'}</span>
-                    <ChevronDown className={`h-4 w-4 transition-transform ${showFullExplanation ? 'rotate-180' : ''}`} />
-                  </button>
-                  {showFullExplanation && <SkimmableMarkdown text={explanation} className="mt-2 text-[16px] font-medium leading-[1.75] text-[#4C3A2E]" />}
-                </div>
-              )}
-
               <div className="mt-7 border-t pt-5" style={{ borderColor: C.line }}>
-                <div className="flex items-baseline justify-between gap-4">
-                  <div>
-                    <div className="text-[15px] font-bold" style={{ color: C.espresso }}>Ask StudyEdit</div>
-                    <div className="mt-1 text-[12px]" style={{ color: C.muted }}>Only if something still isn’t clicking.</div>
-                  </div>
-                </div>
+                <div className="text-[15px] font-bold" style={{ color: C.espresso }}>Ask StudyEdit</div>
+                <div className="mt-1 text-[12px]" style={{ color: C.muted }}>Go deeper only if you need to.</div>
 
                 <div className="mt-3 flex flex-wrap gap-2">
-                  <button type="button" onClick={() => askStudyEdit('Explain this more simply and briefly.')} className="rounded-full border px-3 py-2 text-[13px] font-semibold" style={{ borderColor: C.line, backgroundColor: C.paper, color: C.ink }}>Explain simply</button>
-                  {!isCorrect && <button type="button" onClick={() => askStudyEdit('Why was the answer I chose wrong? Focus on the decisive clue I missed.')} className="rounded-full border px-3 py-2 text-[13px] font-semibold" style={{ borderColor: C.line, backgroundColor: C.paper, color: C.ink }}>Why was mine wrong?</button>}
-                  <button type="button" onClick={() => askStudyEdit('What clue should I notice next time I see this concept in a different vignette?')} className="rounded-full border px-3 py-2 text-[13px] font-semibold" style={{ borderColor: C.line, backgroundColor: C.paper, color: C.ink }}>What should I spot next time?</button>
+                  <button type="button" onClick={() => askStudyEdit('Explain this even more simply in under 80 words.')} className="rounded-full border px-3 py-2 text-[13px] font-semibold" style={{ borderColor: C.line, backgroundColor: C.paper, color: C.ink }}>Explain another way</button>
+                  {!isCorrect && <button type="button" onClick={() => askStudyEdit('Why was my answer tempting, and what exact clue rules it out here?')} className="rounded-full border px-3 py-2 text-[13px] font-semibold" style={{ borderColor: C.line, backgroundColor: C.paper, color: C.ink }}>Why was mine tempting?</button>}
+                  <button type="button" onClick={() => askStudyEdit('What clue should I notice next time I see this concept in a different vignette? Keep it brief.')} className="rounded-full border px-3 py-2 text-[13px] font-semibold" style={{ borderColor: C.line, backgroundColor: C.paper, color: C.ink }}>What should I spot next time?</button>
+                  <button type="button" onClick={() => askStudyEdit('Give me one short different clinical example that tests the same concept.')} className="rounded-full border px-3 py-2 text-[13px] font-semibold" style={{ borderColor: C.line, backgroundColor: C.paper, color: C.ink }}>Another example</button>
                 </div>
 
-                {(aiPrompt || aiStreaming) && (
+                {aiPrompt && aiResponse && (
                   <div className="mt-5 border-l-[3px] pl-4" style={{ borderColor: C.blush }}>
-                    {aiPrompt && <div className="text-[12px] font-semibold" style={{ color: '#A9675D' }}>StudyEdit · {aiPrompt}</div>}
-                    {aiStreaming && !aiResponse && <div className="mt-2 text-[15px] font-medium" style={{ color: C.muted }}>Thinking…</div>}
-                    {aiResponse && <SkimmableMarkdown text={aiResponse} className="mt-2 text-[16px] font-medium leading-[1.7] text-[#3B2A1E]" />}
+                    <div className="text-[12px] font-semibold" style={{ color: '#A9675D' }}>StudyEdit · {aiPrompt}</div>
+                    <SkimmableMarkdown text={aiResponse} className="mt-2 text-[16px] font-medium leading-[1.7] text-[#3B2A1E]" />
                   </div>
                 )}
 
-                <form
-                  className="mt-4 flex items-center gap-2 border-b pb-2"
-                  style={{ borderColor: C.line }}
-                  onSubmit={(event) => {
-                    event.preventDefault();
-                    void askStudyEdit(aiQuestion);
-                  }}
-                >
-                  <input
-                    value={aiQuestion}
-                    onChange={(event) => setAiQuestion(event.target.value)}
-                    placeholder="Ask about this question…"
-                    className="min-w-0 flex-1 bg-transparent py-2 text-[14px] font-medium outline-none placeholder:text-[#A89582]"
-                    style={{ color: C.espresso }}
-                  />
-                  <button type="submit" disabled={!aiQuestion.trim() || aiStreaming} className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full disabled:opacity-35" style={{ backgroundColor: C.espresso, color: C.cream }} aria-label="Ask StudyEdit">
-                    <Send className="h-4 w-4" />
-                  </button>
+                <form className="mt-4 flex items-center gap-2 border-b pb-2" style={{ borderColor: C.line }} onSubmit={(event) => { event.preventDefault(); void askStudyEdit(aiQuestion); }}>
+                  <input value={aiQuestion} onChange={(event) => setAiQuestion(event.target.value)} placeholder="Ask about this question…" className="min-w-0 flex-1 bg-transparent py-2 text-[14px] font-medium outline-none placeholder:text-[#A89582]" style={{ color: C.espresso }} />
+                  <button type="submit" disabled={!aiQuestion.trim() || aiStreaming} className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full disabled:opacity-35" style={{ backgroundColor: C.espresso, color: C.cream }} aria-label="Ask StudyEdit"><Send className="h-4 w-4" /></button>
                 </form>
               </div>
 
