@@ -53,6 +53,14 @@ export const SessionReviewScreen: React.FC<SessionReviewScreenProps> = ({
   const total = questions.length;
   const correct = answers.filter(answer => answer.isCorrect).length;
   const needsReview = answers.filter(answer => !answer.isCorrect).length;
+  const evidenceConceptCount = useMemo(() => {
+    const ids = new Set(
+      questions.map((question, index) =>
+        String(question?.concept_id || question?.concept_title || question?.title || question?.topic || `question-${index}`)
+      )
+    );
+    return ids.size;
+  }, [questions]);
 
   const concepts = useMemo(() => {
     return questions.map((question, index) => {
@@ -93,31 +101,40 @@ export const SessionReviewScreen: React.FC<SessionReviewScreenProps> = ({
 
         <section className="pt-9">
           <div className="text-[10px] font-medium uppercase tracking-[0.22em]" style={{ color: T.muted }}>
-            Session complete · {total} concept{total === 1 ? '' : 's'}{sessionDuration ? ` · ${formatDuration(sessionDuration)}` : ''}
+            Session complete · {total} question{total === 1 ? '' : 's'}{sessionDuration ? ` · ${formatDuration(sessionDuration)}` : ''}
           </div>
           <h1
             className="mt-3 text-[38px] font-light leading-[1.04] tracking-[-0.035em]"
             style={{ fontFamily: "'Fraunces', serif", color: T.espresso }}
           >
-            You tested the map.<br />
-            <em className="font-light" style={{ color: T.blushDeep }}>Now we know more.</em>
+            StudyEdit learned from this session.
           </h1>
           <p className="mt-4 max-w-md text-sm leading-6" style={{ color: T.muted }}>
-            This session is evidence, not a grade. StudyEdit will use it to decide what deserves attention next.
+            Every answer adds evidence to your map. This is not a grade or a mastery verdict — it helps decide what deserves attention next.
           </p>
         </section>
 
         <section className="mt-7 grid grid-cols-2 gap-3">
           <div className="rounded-[22px] border p-5" style={{ backgroundColor: T.paper, borderColor: T.line }}>
-            <div className="text-[10px] uppercase tracking-[0.18em]" style={{ color: T.muted }}>Retrieved</div>
+            <div className="text-[10px] uppercase tracking-[0.18em]" style={{ color: T.muted }}>Retrieved this time</div>
             <div className="mt-2 text-4xl font-light" style={{ fontFamily: "'Fraunces', serif", color: T.espresso }}>{correct}</div>
-            <div className="mt-1 text-xs" style={{ color: T.muted }}>correct this session</div>
+            <div className="mt-1 text-xs" style={{ color: T.muted }}>of {total} questions</div>
           </div>
           <div className="rounded-[22px] border p-5" style={{ backgroundColor: needsReview ? T.blushSoft : T.paper, borderColor: needsReview ? T.blushDeep : T.line }}>
             <div className="text-[10px] uppercase tracking-[0.18em]" style={{ color: needsReview ? '#9C655D' : T.muted }}>Needs another pass</div>
             <div className="mt-2 text-4xl font-light" style={{ fontFamily: "'Fraunces', serif", color: T.espresso }}>{needsReview}</div>
             <div className="mt-1 text-xs" style={{ color: T.muted }}>missed this session</div>
           </div>
+        </section>
+
+        <section className="mt-3 rounded-[22px] border p-5" style={{ backgroundColor: T.paper, borderColor: T.line }}>
+          <div className="text-[10px] font-medium uppercase tracking-[0.2em]" style={{ color: T.muted }}>What changed</div>
+          <p className="mt-2 text-[15px] font-medium leading-6" style={{ color: T.espresso }}>
+            Your map now has fresh evidence from {evidenceConceptCount} concept{evidenceConceptCount === 1 ? '' : 's'}.
+            {needsReview > 0
+              ? ` ${needsReview} answer${needsReview === 1 ? '' : 's'} showed where another pass may be useful.`
+              : ' Everything retrieved this time, so StudyEdit can use that evidence when choosing what comes next.'}
+          </p>
         </section>
 
         {weakConcepts.length > 0 ? (
