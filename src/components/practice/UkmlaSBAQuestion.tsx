@@ -182,6 +182,14 @@ interface PriorEvidence {
   lastPracticed?: string | null;
 }
 
+interface AnswerSnapshot {
+  selectedId: string;
+  selectedText: string;
+  correctId: string;
+  correctText: string;
+  selectedDistractor: string;
+}
+
 function readPriorConceptEvidence(question: QuestionData, conceptTitle: string): PriorEvidence | null {
   try {
     const conceptId = String(question.concept_id || (question as any).conceptId || '');
@@ -228,6 +236,7 @@ export const UkmlaSBAQuestion: React.FC<UkmlaSBAQuestionProps> = ({
   nextButtonText,
 }) => {
   const [selectedOption, setSelectedOption] = useState<string | null>(preSelectedAnswer || null);
+  const [committedAnswer, setCommittedAnswer] = useState<string | null>(preSubmitted ? preSelectedAnswer || null : null);
   const [hasSubmitted, setHasSubmitted] = useState(preSubmitted);
   const [showAllDistractors, setShowAllDistractors] = useState(false);
   const [primaryExplanation, setPrimaryExplanation] = useState('');
@@ -243,20 +252,25 @@ export const UkmlaSBAQuestion: React.FC<UkmlaSBAQuestionProps> = ({
   useEffect(() => {
     if (preSubmitted) {
       setSelectedOption(preSelectedAnswer || null);
+      setCommittedAnswer(preSelectedAnswer || null);
       setHasSubmitted(true);
     } else {
       const savedState = sessionStorage.getItem(getStorageKey());
       if (savedState) {
         try {
           const parsed = JSON.parse(savedState);
-          setSelectedOption(parsed.selectedOption || null);
+          const restoredSelected = parsed.selectedOption || null;
+          setSelectedOption(restoredSelected);
+          setCommittedAnswer(parsed.hasSubmitted ? restoredSelected : null);
           setHasSubmitted(Boolean(parsed.hasSubmitted));
         } catch {
           setSelectedOption(null);
+          setCommittedAnswer(null);
           setHasSubmitted(false);
         }
       } else {
         setSelectedOption(null);
+        setCommittedAnswer(null);
         setHasSubmitted(false);
       }
     }
@@ -289,10 +303,10 @@ export const UkmlaSBAQuestion: React.FC<UkmlaSBAQuestionProps> = ({
   const keyFact = sanitiseExplanation((question as any).key_fact || '');
   const conceptTitle = (question as any).concept_title || question.title || (question as any).topic || 'Clinical concept';
   const distractors = ((question as any).distractorExplanations || {}) as Record<string, string>;
-  const selectedDistractor = selectedOption && selectedOption !== correctAnswerId ? distractors[selectedOption] : '';
-  const selectedOptionText = options.find((option: any) => option.id === selectedOption)?.text || '';
+  const displayedSelectedId = committedAnswer || selectedOption;
+  const displayedSelectedText = options.find((option: any) => option.id === displayedSelectedId)?.text || '';
   const correctOptionText = options.find((option: any) => option.id === correctAnswerId)?.text || '';
-  const isCorrect = hasSubmitted && selectedOption === correctAnswerId;
+  const isCorrect = hasSubmitted && committedAnswer === correctAnswerId;
   const takeaway = keyFact || firstUsefulSentence(explanation);
 
   const handleOptionSelect = (optionId: string) => {
@@ -301,9 +315,25 @@ export const UkmlaSBAQuestion: React.FC<UkmlaSBAQuestionProps> = ({
     sessionStorage.setItem(getStorageKey(), JSON.stringify({ selectedOption: optionId, hasSubmitted: false }));
   };
 
-  const askStudyEdit = async (prompt: string, priorEvidence?: PriorEvidence | null, isDefaultExplanation = false) => {
+  const buildAnswerSnapshot = (selectedId: string): AnswerSnapshot => ({
+    selectedId,
+    selectedText: options.find((option: any) => option.id === selectedId)?.text || 'Selected option',
+    correctId: correctAnswerId,
+    correctText: correctOptionText || 'Correct option',
+    selectedDistractor: selectedId !== correctAnswerId ? (distractors[selectedId] || '') : '',
+  });
+
+  const askStudyEdit = async (
+    prompt: string,
+    priorEvidence?: PriorEvidence | null,
+    isDefaultExplanation = false,
+    answerSnapshot?: AnswerSnapshot,
+  ) => {
     const cleanPrompt = prompt.trim();
     if (!cleanPrompt || aiStreaming) return;
+
+    const snapshot = answerSnapshot || (committedAnswer ? buildAnswerSnapshot(committedAnswer) : null);
+    if (!snapshot) return;
 
     setAiPrompt(isDefaultExplanation ? '' : cleanPrompt);
     setAiQuestion('');
@@ -316,9 +346,9 @@ export const UkmlaSBAQuestion: React.FC<UkmlaSBAQuestionProps> = ({
     setAiStreaming(true);
 
     const optionLines = options.map((option: any) => `${option.id}. ${option.text}`).join('\n');
-    const selectedLine = selectedOption ? `${selectedOption}. ${selectedOptionText || 'Selected option'}` : 'No option selected';
-    const correctLine = `${correctAnswerId}. ${correctOptionText || 'Correct option'}`;
-    const selectedFeedback = selectedDistractor || 'No specific distractor explanation supplied.';
+    const selectedLine = `${snapshot.selectedId}. ${snapshot.selectedText}`;
+    const correctLine = `${snapshot.correctId}. ${snapshot.correctText}`;
+    const selectedFeedback = snapshot.selectedDistractor || 'No specific distractor explanation supplied.';
     const evidence = priorEvidence ?? readPriorConceptEvidence(question, conceptTitle);
     const evidenceLine = evidence && evidence.attempts > 0
       ? `Before this answer: ${evidence.attempts} prior attempt${evidence.attempts === 1 ? '' : 's'} on this concept; ${evidence.correct} correct; ${evidence.incorrect} incorrect.`
@@ -348,9 +378,12 @@ export const UkmlaSBAQuestion: React.FC<UkmlaSBAQuestionProps> = ({
       explanation: explanation || keyFact || takeaway,
     };
 
-    const defaultInstruction = `Give this student their personalised post-answer teaching explanation. Start with their exact answer and whether it was right or wrong. Then explain the decisive clue(s) in this vignette in very simple language, similar to an excellent "explain this simply" response. Use the verified explanation and key point as ground truth. End with one short carry-forward rule for the next vignette. Keep it around 90-140 words. Bold the few phrases worth skimming. If prior learner evidence shows at least 2 previous attempts, you may briefly mention the factual attempt/correct/incorrect pattern, but do not claim a recurring misconception unless the supplied evidence explicitly proves one.`;
+    const wasCorrect = snapshot.selectedId === snapshot.correctId;
+    const defaultInstruction = wasCorrect
+      ? `Give this student their personalised post-answer teaching explanation. The interface already states exactly what they selected and the correct answer, so DO NOT restate either option or letter. Explain why their choice was correct, identify the decisive clue(s) in this vignette in very simple language, and end with one short carry-forward rule for the next vignette. Use the verified explanation and key point as ground truth. Keep it around 90-140 words and bold the few phrases worth skimming. If prior learner evidence shows at least 2 previous attempts, you may briefly mention the factual attempt/correct/incorrect pattern, but do not claim a recurring misconception unless the supplied evidence explicitly proves one.`
+      : `Give this student their personalised post-answer teaching explanation. The interface already states exactly what they selected and the correct answer, so DO NOT restate either option or letter. Focus first on WHY THE STUDENT'S EXACT CHOICE WAS TEMPTING, then explain why it is wrong in THIS vignette, what decisive clue should have changed their mind, and end with one short carry-forward rule for the next vignette. Use the verified distractor feedback, explanation and key point as ground truth. Keep it around 90-140 words and bold the few phrases worth skimming. If prior learner evidence shows at least 2 previous attempts, you may briefly mention the factual attempt/correct/incorrect pattern, but do not claim a recurring misconception unless the supplied evidence explicitly proves one.`;
     const intentPrompt = isDefaultExplanation ? 'Personalised default explanation' : cleanPrompt;
-    const modelPrompt = `${intentPrompt}\nQuestionRef ${questionRef} Selected ${selectedOption || 'none'}. ${isDefaultExplanation ? defaultInstruction : cleanPrompt}\n\nUse ONLY the supplied current-question context. The student's selected answer is explicitly provided. Never say it was not provided. Do not contradict the verified explanation. Do not invent prior attempts or patterns. For a follow-up, answer the follow-up request directly and do not simply repeat the original explanation.`;
+    const modelPrompt = `${intentPrompt}\nQuestionRef ${questionRef} Selected ${snapshot.selectedId}. ${isDefaultExplanation ? defaultInstruction : cleanPrompt}\n\nUse ONLY the supplied current-question context. The student's selected answer is explicitly provided. Never substitute another option. Do not contradict the verified explanation. Do not invent prior attempts or patterns. For a follow-up, answer the follow-up request directly and do not simply repeat the original explanation.`;
 
     const controller = new AbortController();
     abortControllerRef.current = controller;
@@ -383,12 +416,16 @@ export const UkmlaSBAQuestion: React.FC<UkmlaSBAQuestionProps> = ({
 
   const handleCheckAnswer = () => {
     if (!selectedOption || hasSubmitted) return;
+
+    const answerSnapshot = buildAnswerSnapshot(selectedOption);
     const priorEvidence = readPriorConceptEvidence(question, conceptTitle);
-    const correct = selectedOption === correctAnswerId;
+    const correct = answerSnapshot.selectedId === answerSnapshot.correctId;
+
+    setCommittedAnswer(answerSnapshot.selectedId);
     setHasSubmitted(true);
-    sessionStorage.setItem(getStorageKey(), JSON.stringify({ selectedOption, hasSubmitted: true }));
+    sessionStorage.setItem(getStorageKey(), JSON.stringify({ selectedOption: answerSnapshot.selectedId, hasSubmitted: true }));
     onAnswer(correct);
-    void askStudyEdit('personalised explanation', priorEvidence, true);
+    void askStudyEdit('personalised explanation', priorEvidence, true, answerSnapshot);
   };
 
   return (
@@ -427,9 +464,9 @@ export const UkmlaSBAQuestion: React.FC<UkmlaSBAQuestionProps> = ({
               {options.map((option: { id: string; text: string }) => {
                 const selected = selectedOption === option.id;
                 const correct = option.id === correctAnswerId;
-                const wrongSelected = hasSubmitted && selected && !correct;
+                const wrongSelected = hasSubmitted && committedAnswer === option.id && !correct;
                 const correctAfterSubmit = hasSubmitted && correct;
-                const mutedAfterSubmit = hasSubmitted && !selected && !correct;
+                const mutedAfterSubmit = hasSubmitted && committedAnswer !== option.id && !correct;
                 return (
                   <button
                     key={option.id}
@@ -470,6 +507,12 @@ export const UkmlaSBAQuestion: React.FC<UkmlaSBAQuestionProps> = ({
               {!isCorrect && (
                 <div className="mt-4 text-[16px] font-semibold leading-6" style={{ color: C.espresso }}>
                   Correct answer: <strong style={emphasisStyle}>{correctAnswerId} — {correctOptionText}</strong>
+                </div>
+              )}
+
+              {committedAnswer && (
+                <div className="mt-3 text-[15px] font-medium leading-6" style={{ color: C.muted }}>
+                  You chose: <strong style={{ color: C.espresso }}>{committedAnswer} — {displayedSelectedText}</strong>
                 </div>
               )}
 
