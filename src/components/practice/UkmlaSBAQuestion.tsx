@@ -64,17 +64,59 @@ function firstUsefulSentence(text: string): string {
   return match?.[1] || clean;
 }
 
+type ClinicalSection = 'history' | 'examination' | 'investigations' | 'treatment';
+
+function clinicalSectionForSentence(sentence: string, current: ClinicalSection): ClinicalSection {
+  const value = sentence.trim();
+
+  if (/^(?:On examination|Physical examination|Clinical examination|Neurological examination|Cardiovascular examination|Respiratory examination|Abdominal examination|On auscultation|Observations|Vital signs|His observations|Her observations)\b/i.test(value)) {
+    return 'examination';
+  }
+
+  if (/^(?:Investigations|Initial investigations|Blood tests|Laboratory tests|Blood results|An ECG|ECG|Electrocardiogram|Chest X-ray|Chest radiograph|CXR|X-ray|CT|MRI|Ultrasound|Urinalysis|Troponin|Blood gas|ABG)\b/i.test(value)) {
+    return 'investigations';
+  }
+
+  if (/^(?:He is treated|She is treated|Treatment is started|Treatment|Following treatment|Following|Subsequently|Later|Hours later|Days later|During admission|While in hospital|The patient is given)\b/i.test(value)) {
+    return 'treatment';
+  }
+
+  return current;
+}
+
 function formatClinicalVignette(text: string): string {
   const clean = text.trim();
   if (!clean) return '';
+
+  // Preserve intentional paragraphing from authored questions.
   if (/\n\s*\n/.test(clean)) return clean;
 
-  const clinicalTransition = new RegExp(
-    String.raw`\s+(?=(?:On examination|Examination|Physical examination|Clinical examination|Neurological examination|Cardiovascular examination|Respiratory examination|Abdominal examination|On auscultation|Observations|Vital signs|His observations|Her observations|Investigations|Initial investigations|Blood tests|Laboratory tests|Blood results|An ECG|ECG|Electrocardiogram|Chest X-ray|Chest radiograph|CXR|X-ray|CT|MRI|Ultrasound|Urinalysis|He is treated|She is treated|Treatment is started|Treatment|Following treatment|Following|Subsequently|Later|Hours later|Days later|During admission|While in hospital|The patient is given)\b)`,
-    'gi',
-  );
+  // Group whole clinical sections rather than inserting a break before every
+  // matching phrase. This prevents artefacts such as "On" / "examination"
+  // being split across separate paragraphs.
+  const sentences = clean
+    .split(/(?<=[.!?])\s+(?=[A-Z])/)
+    .map(sentence => sentence.trim())
+    .filter(Boolean);
 
-  return clean.replace(clinicalTransition, '\n\n');
+  if (sentences.length < 2) return clean;
+
+  const paragraphs: Array<{ section: ClinicalSection; sentences: string[] }> = [];
+  let currentSection: ClinicalSection = 'history';
+
+  for (const sentence of sentences) {
+    const section = clinicalSectionForSentence(sentence, currentSection);
+    currentSection = section;
+    const last = paragraphs[paragraphs.length - 1];
+
+    if (!last || last.section !== section) {
+      paragraphs.push({ section, sentences: [sentence] });
+    } else {
+      last.sentences.push(sentence);
+    }
+  }
+
+  return paragraphs.map(paragraph => paragraph.sentences.join(' ')).join('\n\n');
 }
 
 const emphasisStyle: React.CSSProperties = {
