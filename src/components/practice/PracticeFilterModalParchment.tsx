@@ -111,7 +111,6 @@ export const PracticeFilterModalParchment: React.FC<Props> = ({ isOpen, onClose,
   const presentationIds = presentationCategory ? tagsByCategory[presentationCategory.id] || [] : [];
   const facetIds = facetCategory ? tagsByCategory[facetCategory.id] || [] : [];
 
-  // Cascade rule: OR within one dimension, AND between dimensions.
   const statusPool = useMemo(() => concepts.filter(c => matchesStatus(c, sStatus)), [concepts, sStatus]);
   const specialtyPool = useMemo(() => statusPool.filter(c => matchesAnyTag(c, sAreas)), [statusPool, sAreas]);
   const conditionPool = useMemo(() => specialtyPool.filter(c => matchesAnyTag(c, sConditions)), [specialtyPool, sConditions]);
@@ -143,7 +142,6 @@ export const PracticeFilterModalParchment: React.FC<Props> = ({ isOpen, onClose,
     count: presentationPool.filter(c => c.custom_filters?.includes(id)).length,
   })).filter(option => option.count > 0 || sFacets.has(option.id)), [facetIds, presentationPool, sFacets]);
 
-  // If an upstream choice makes an old downstream choice impossible, remove it automatically.
   useEffect(() => {
     if (hasAny(sConditions)) return;
     const valid = new Set(conditions.filter(o => o.count > 0).map(o => o.id));
@@ -216,122 +214,206 @@ export const PracticeFilterModalParchment: React.FC<Props> = ({ isOpen, onClose,
   };
 
   const available = filteredPool.length;
-  const preview = `${Math.min(size, available)} concepts${sAreas.size ? ` in ${[...sAreas].map(labelFor).join(', ')}` : ''}${!hasAny(sConditions) ? ` · ${[...sConditions].map(labelFor).join(', ')}` : ''}${!hasAny(sPres) ? ` · ${[...sPres].map(labelFor).join(', ')}` : ''}`;
+  const selectedCount = Math.min(size, available);
+  const statusSummary = hasAny(sStatus) ? 'Any status' : [...sStatus].map(labelFor).join(', ');
+  const specialtySummary = sAreas.size ? [...sAreas].map(labelFor).join(', ') : 'Any specialty';
+  const summaryParts = [
+    `${selectedCount} concepts`,
+    statusSummary,
+    specialtySummary,
+    `≈ ${Math.round(size * 2)} min`,
+  ];
 
   if (!isOpen) return null;
 
   const Chip = ({ selected, onClick, children }: { selected: boolean; onClick: () => void; children: React.ReactNode }) => (
-    <button onClick={onClick} className="inline-flex items-center gap-1.5 px-3 py-2 rounded-full text-[12.5px] font-medium border transition-all" style={{ backgroundColor: selected ? T.espresso : T.cream, color: selected ? T.cream : T.ink, borderColor: selected ? T.espresso : T.line }}>
+    <button
+      onClick={onClick}
+      className="inline-flex items-center gap-1.5 rounded-full border px-3.5 py-2.5 text-[13px] font-semibold transition duration-150 active:scale-[0.98]"
+      style={{
+        backgroundColor: selected ? T.espresso : 'rgba(255,253,248,.72)',
+        color: selected ? T.cream : T.ink,
+        borderColor: selected ? T.espresso : T.line,
+        boxShadow: selected ? 'inset 0 1px 0 rgba(255,255,255,.08)' : '0 1px 0 rgba(31,20,12,.02)',
+      }}
+    >
       {children}
     </button>
   );
 
   return (
-    <div className="fixed inset-0 z-[100] flex items-center justify-center p-0 md:p-4" style={{ backgroundColor: 'rgba(31,20,12,0.4)' }} onClick={onClose}>
-      <div className="flex h-full w-full flex-col overflow-hidden shadow-2xl md:h-auto md:max-w-[460px]" style={{ backgroundColor: T.cream, borderRadius: '38px', maxHeight: '95vh', fontFamily: "'Inter', sans-serif" }} onClick={e => e.stopPropagation()}>
-        <div className="flex items-start justify-between gap-4 px-6 pb-3 pt-6">
-          <div>
-            <h1 className="mb-1.5 text-[28px] leading-[1.05]" style={{ fontFamily: "'Fraunces', serif", fontWeight: 300, color: T.ink }}>Practise <em style={{ color: T.blushDeep }}>your way</em></h1>
-            <p className="text-[13px] italic" style={{ fontFamily: "'Fraunces', serif", color: T.inkMuted }}>Start broad. Each choice narrows what comes next.</p>
-          </div>
-          <div className="flex gap-2">
-            {!!active.length && <button onClick={reset} className="rounded-full border px-3 py-1.5 text-[11px]" style={{ borderColor: T.line, color: T.inkMuted }}>Reset</button>}
-            <button onClick={onClose} className="flex h-7 w-7 items-center justify-center rounded-full border" style={{ borderColor: T.line, color: T.inkMuted }}><X className="h-4 w-4" /></button>
+    <div
+      className="fixed inset-0 z-[100] flex items-end justify-center md:items-center md:p-5"
+      style={{ backgroundColor: 'rgba(31,20,12,0.24)', backdropFilter: 'blur(10px)', WebkitBackdropFilter: 'blur(10px)' }}
+      onClick={onClose}
+    >
+      <style>{`
+        @keyframes studyedit-sheet-in {
+          from { opacity: 0; transform: translateY(28px) scale(.992); }
+          to { opacity: 1; transform: translateY(0) scale(1); }
+        }
+        @keyframes studyedit-backdrop-in {
+          from { opacity: 0; }
+          to { opacity: 1; }
+        }
+      `}</style>
+      <div
+        className="flex h-[92dvh] w-full flex-col overflow-hidden rounded-t-[30px] rounded-b-none border-t shadow-[0_-18px_60px_rgba(31,20,12,0.16)] md:h-auto md:max-h-[90vh] md:max-w-[470px] md:rounded-[30px] md:border"
+        style={{
+          backgroundColor: T.cream,
+          borderColor: 'rgba(217,204,182,.8)',
+          fontFamily: "'Inter', sans-serif",
+          animation: 'studyedit-sheet-in 260ms cubic-bezier(.2,.8,.2,1) both',
+        }}
+        onClick={e => e.stopPropagation()}
+      >
+        <div className="shrink-0 px-6 pb-4 pt-4 md:pt-6">
+          <div className="mx-auto mb-4 h-1 w-10 rounded-full bg-[#D9CCB6] md:hidden" />
+          <div className="flex items-start justify-between gap-4">
+            <div className="min-w-0">
+              <h1 className="text-[31px] leading-[1.03] tracking-[-0.035em]" style={{ fontFamily: "'Fraunces', serif", fontWeight: 300, color: T.ink }}>
+                Practise <em style={{ color: T.blushDeep }}>your way</em>
+              </h1>
+              <p className="mt-2 text-[13px] leading-5" style={{ color: T.inkMuted }}>Build a focused session in seconds.</p>
+            </div>
+            <div className="flex shrink-0 items-center gap-2">
+              {!!active.length && (
+                <button onClick={reset} className="rounded-full px-3 py-2 text-[11px] font-semibold transition hover:bg-black/[0.03]" style={{ color: T.inkMuted }}>
+                  Reset
+                </button>
+              )}
+              <button onClick={onClose} className="flex h-10 w-10 items-center justify-center rounded-full border transition active:scale-[0.96]" style={{ borderColor: T.line, color: T.inkMuted, backgroundColor: 'rgba(255,253,248,.55)' }} aria-label="Close practice builder">
+                <X className="h-[18px] w-[18px]" />
+              </button>
+            </div>
           </div>
         </div>
 
-        {!!active.length && <div className="flex flex-wrap items-center gap-1.5 px-6 pb-4">
-          <span className="mr-1 text-[9.5px] font-medium uppercase tracking-[0.22em]" style={{ color: T.inkMuted }}>Stacked</span>
-          {active.map(item => <button key={`${item.type}-${item.value}`} onClick={() => removeActive(item)} className="inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[11.5px]" style={{ backgroundColor: T.espresso, color: T.cream }}>
-            <em style={{ color: T.blush, fontFamily: "'Fraunces', serif" }}>{item.type}</em><span>{item.label}</span><span>×</span>
-          </button>)}
-        </div>}
+        {!!active.length && (
+          <div className="flex shrink-0 gap-2 overflow-x-auto px-6 pb-3 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+            {active.map(item => (
+              <button key={`${item.type}-${item.value}`} onClick={() => removeActive(item)} className="inline-flex shrink-0 items-center gap-1.5 rounded-full border px-3 py-1.5 text-[11px] font-medium" style={{ borderColor: T.line, backgroundColor: 'rgba(255,253,248,.65)', color: T.ink }}>
+                <span>{item.label}</span><span style={{ color: T.inkMuted }}>×</span>
+              </button>
+            ))}
+          </div>
+        )}
 
-        <div className="flex-1 overflow-y-auto px-6 pb-4">
-          <section className="border-t py-4" style={{ borderColor: T.lineSoft }}>
-            <div className="mb-3 text-[18px] italic" style={{ fontFamily: "'Fraunces', serif", color: T.inkMuted }}>A session of</div>
+        <div className="flex-1 overflow-y-auto px-6 pb-5">
+          <section className="border-t py-5" style={{ borderColor: T.lineSoft }}>
+            <div className="mb-3 text-[19px] italic" style={{ fontFamily: "'Fraunces', serif", color: T.inkMuted }}>A session of</div>
             <div className="flex items-center justify-between gap-4">
-              <div className="flex items-center rounded-full border p-1" style={{ backgroundColor: T.parchment, borderColor: T.line }}>
-                <button onClick={() => setSize(Math.max(5, size - 5))} disabled={size <= 5} className="h-[30px] w-[30px] disabled:opacity-30">−</button>
-                <span className="min-w-[92px] text-center text-[19px]" style={{ fontFamily: "'Fraunces', serif" }}>{size}<em className="ml-1 text-[12px]" style={{ color: T.inkMuted }}>concepts</em></span>
-                <button onClick={() => setSize(Math.min(50, size + 5))} disabled={size >= 50} className="h-[30px] w-[30px] disabled:opacity-30">+</button>
+              <div className="flex items-center rounded-full border p-1.5" style={{ backgroundColor: 'rgba(244,236,223,.72)', borderColor: T.line }}>
+                <button onClick={() => setSize(Math.max(5, size - 5))} disabled={size <= 5} className="flex h-9 w-9 items-center justify-center rounded-full text-lg transition hover:bg-white/40 disabled:opacity-25">−</button>
+                <span className="min-w-[108px] text-center text-[21px]" style={{ fontFamily: "'Fraunces', serif", color: T.ink }}>{size}<em className="ml-1.5 text-[12px]" style={{ color: T.inkMuted }}>concepts</em></span>
+                <button onClick={() => setSize(Math.min(50, size + 5))} disabled={size >= 50} className="flex h-9 w-9 items-center justify-center rounded-full text-lg transition hover:bg-white/40 disabled:opacity-25">+</button>
               </div>
-              <span className="text-[12.5px] italic" style={{ fontFamily: "'Fraunces', serif", color: T.inkMuted }}>≈ {Math.round(size * 2)} min</span>
+              <span className="shrink-0 text-[13px] italic" style={{ fontFamily: "'Fraunces', serif", color: T.inkMuted }}>≈ {Math.round(size * 2)} min</span>
             </div>
           </section>
 
-          <section className="border-t py-4" style={{ borderColor: T.lineSoft }}>
-            <div className="mb-3 text-[18px] italic" style={{ fontFamily: "'Fraunces', serif", color: T.inkMuted }}>that are</div>
+          <section className="border-t py-5" style={{ borderColor: T.lineSoft }}>
+            <div className="mb-3 text-[19px] italic" style={{ fontFamily: "'Fraunces', serif", color: T.inkMuted }}>that are</div>
             <div className="flex flex-wrap gap-2">
-              {statusChips.map(option => <Chip key={option.id} selected={sStatus.has(option.id)} onClick={() => toggle(sStatus, option.id, setSStatus)}>
-                <span className="h-[7px] w-[7px] rounded-full" style={{ backgroundColor: option.color }} /><span className="capitalize">{option.label}</span><em className="text-[11.5px]" style={{ color: sStatus.has(option.id) ? T.blush : T.inkMuted, fontFamily: "'Fraunces', serif" }}>{option.count}</em>
-              </Chip>)}
+              {statusChips.map(option => (
+                <Chip key={option.id} selected={sStatus.has(option.id)} onClick={() => toggle(sStatus, option.id, setSStatus)}>
+                  <span className="h-[7px] w-[7px] rounded-full" style={{ backgroundColor: option.color }} />
+                  <span className="capitalize">{option.label}</span>
+                  <em className="text-[11.5px] font-normal" style={{ color: sStatus.has(option.id) ? T.blush : T.inkMuted, fontFamily: "'Fraunces', serif" }}>{option.count}</em>
+                </Chip>
+              ))}
             </div>
           </section>
 
-          {!!areas.length && <section className="border-t py-4" style={{ borderColor: T.lineSoft }}>
-            <div className="mb-3 text-[18px] italic" style={{ fontFamily: "'Fraunces', serif", color: T.inkMuted }}>in specialty</div>
-            <button onClick={() => setAreaOpen(!areaOpen)} className="flex w-full items-center justify-between rounded-[14px] border p-3 text-left" style={{ borderColor: T.line }}>
-              <span style={{ fontFamily: "'Fraunces', serif", color: T.ink }}>{sAreas.size ? [...sAreas].map(labelFor).join(', ') : <em style={{ color: T.blushDeep }}>any specialty</em>}</span>
-              <ChevronDown className="h-4 w-4" style={{ color: T.inkMuted, transform: areaOpen ? 'rotate(180deg)' : undefined }} />
-            </button>
-            {areaOpen && <div className="mt-2 overflow-hidden rounded-[14px] border" style={{ backgroundColor: T.parchment, borderColor: T.line }}>
-              {areas.map(option => <button key={option.id} onClick={() => toggleArea(option.id)} className="flex w-full items-center gap-2.5 border-b px-3.5 py-2.5 text-left last:border-b-0" style={{ borderColor: T.lineSoft }}>
-                <span className="flex h-[17px] w-[17px] items-center justify-center rounded border text-[10px]" style={{ backgroundColor: sAreas.has(option.id) ? T.espresso : T.cream, borderColor: sAreas.has(option.id) ? T.espresso : T.line, color: sAreas.has(option.id) ? T.cream : 'transparent' }}>✓</span>
-                <span className="flex-1 text-[13px]" style={{ color: T.ink }}>{option.name}</span>
-                <div className="flex h-1 w-11 overflow-hidden rounded-sm" style={{ backgroundColor: T.lineSoft }}><span style={{ width: `${option.seg.m}%`, backgroundColor: T.sageDeep }} /><span style={{ width: `${option.seg.w}%`, backgroundColor: T.blushDeep }} /><span style={{ width: `${option.seg.a}%`, backgroundColor: '#c8b89c' }} /><span style={{ width: `${option.seg.c}%`, backgroundColor: '#4a3a2c' }} /></div>
-                <em className="min-w-[38px] text-right text-[12px]" style={{ color: T.inkMuted, fontFamily: "'Fraunces', serif" }}>{option.count}</em>
-              </button>)}
-            </div>}
-          </section>}
+          {!!areas.length && (
+            <section className="border-t py-5" style={{ borderColor: T.lineSoft }}>
+              <div className="mb-3 text-[19px] italic" style={{ fontFamily: "'Fraunces', serif", color: T.inkMuted }}>in specialty</div>
+              <button onClick={() => setAreaOpen(!areaOpen)} className="flex w-full items-center justify-between rounded-[16px] border px-4 py-4 text-left transition active:scale-[0.995]" style={{ borderColor: T.line, backgroundColor: 'rgba(255,253,248,.52)' }}>
+                <span className="text-[15px]" style={{ color: T.ink }}>{sAreas.size ? [...sAreas].map(labelFor).join(', ') : <em style={{ fontFamily: "'Fraunces', serif", color: T.blushDeep }}>Any specialty</em>}</span>
+                <ChevronDown className="h-4 w-4 transition-transform" style={{ color: T.inkMuted, transform: areaOpen ? 'rotate(180deg)' : undefined }} />
+              </button>
+              {areaOpen && (
+                <div className="mt-2 overflow-hidden rounded-[16px] border" style={{ backgroundColor: T.parchment, borderColor: T.line }}>
+                  {areas.map(option => (
+                    <button key={option.id} onClick={() => toggleArea(option.id)} className="flex w-full items-center gap-2.5 border-b px-3.5 py-3 text-left last:border-b-0" style={{ borderColor: T.lineSoft }}>
+                      <span className="flex h-[18px] w-[18px] items-center justify-center rounded border text-[10px]" style={{ backgroundColor: sAreas.has(option.id) ? T.espresso : T.cream, borderColor: sAreas.has(option.id) ? T.espresso : T.line, color: sAreas.has(option.id) ? T.cream : 'transparent' }}>✓</span>
+                      <span className="flex-1 text-[13px] font-medium" style={{ color: T.ink }}>{option.name}</span>
+                      <div className="flex h-1 w-11 overflow-hidden rounded-sm" style={{ backgroundColor: T.lineSoft }}><span style={{ width: `${option.seg.m}%`, backgroundColor: T.sageDeep }} /><span style={{ width: `${option.seg.w}%`, backgroundColor: T.blushDeep }} /><span style={{ width: `${option.seg.a}%`, backgroundColor: '#c8b89c' }} /><span style={{ width: `${option.seg.c}%`, backgroundColor: '#4a3a2c' }} /></div>
+                      <em className="min-w-[38px] text-right text-[12px]" style={{ color: T.inkMuted, fontFamily: "'Fraunces', serif" }}>{option.count}</em>
+                    </button>
+                  ))}
+                </div>
+              )}
+            </section>
+          )}
 
-          {!!conditions.length && <section className="border-t py-4" style={{ borderColor: T.lineSoft }}>
-            <div className="mb-1 text-[18px] italic" style={{ fontFamily: "'Fraunces', serif", color: T.inkMuted }}>with condition</div>
-            {sAreas.size > 0 && <div className="mb-3 text-[11px]" style={{ color: T.inkMuted }}>Only conditions found in your selected {sAreas.size === 1 ? 'specialty' : 'specialties'}.</div>}
-            <input value={conditionSearch} onChange={e => setConditionSearch(e.target.value)} placeholder="Search conditions…" className="mb-3 w-full rounded-full border px-4 py-2 text-[12px] outline-none" style={{ backgroundColor: T.parchment, borderColor: T.line }} />
-            <div className="flex flex-wrap gap-2">
-              {(conditionExpanded || conditionSearch ? conditions : conditions.filter((_, i) => i < 10 || [...sConditions].some(id => id === conditions[i]?.id))).filter(option => !conditionSearch || option.label.toLowerCase().includes(conditionSearch.toLowerCase())).map(option => <Chip key={option.id} selected={sConditions.has(option.id)} onClick={() => toggle(sConditions, option.id, setSConditions)}><span>{option.label}</span><em className="text-[11.5px]" style={{ color: sConditions.has(option.id) ? T.blush : T.inkMuted, fontFamily: "'Fraunces', serif" }}>{option.count}</em></Chip>)}
-              <Chip selected={hasAny(sConditions)} onClick={() => toggle(sConditions, 'any', setSConditions)}><span>any</span><em style={{ color: hasAny(sConditions) ? T.blush : T.inkMuted, fontFamily: "'Fraunces', serif" }}>{specialtyPool.length}</em></Chip>
-              {!conditionSearch && conditions.length > 10 && <button onClick={() => setConditionExpanded(!conditionExpanded)} className="px-3 py-2 text-[12.5px] italic" style={{ color: T.inkMuted, fontFamily: "'Fraunces', serif" }}>{conditionExpanded ? 'show less' : `+${conditions.length - 10} more`}</button>}
-            </div>
-          </section>}
+          {!!conditions.length && (
+            <section className="border-t py-5" style={{ borderColor: T.lineSoft }}>
+              <div className="mb-2 text-[19px] italic" style={{ fontFamily: "'Fraunces', serif", color: T.inkMuted }}>with condition</div>
+              {sAreas.size > 0 && <div className="mb-3 text-[11px]" style={{ color: T.inkMuted }}>Only conditions in the selected {sAreas.size === 1 ? 'specialty' : 'specialties'}.</div>}
+              <input value={conditionSearch} onChange={e => setConditionSearch(e.target.value)} placeholder="Search conditions…" className="mb-3 w-full rounded-full border px-4 py-3 text-[13px] outline-none transition focus:border-[#A89582]" style={{ backgroundColor: 'rgba(244,236,223,.62)', borderColor: T.line, color: T.ink }} />
+              <div className="flex flex-wrap gap-2">
+                {(conditionExpanded || conditionSearch ? conditions : conditions.filter((_, i) => i < 10 || [...sConditions].some(id => id === conditions[i]?.id))).filter(option => !conditionSearch || option.label.toLowerCase().includes(conditionSearch.toLowerCase())).map(option => (
+                  <Chip key={option.id} selected={sConditions.has(option.id)} onClick={() => toggle(sConditions, option.id, setSConditions)}><span>{option.label}</span><em className="text-[11.5px] font-normal" style={{ color: sConditions.has(option.id) ? T.blush : T.inkMuted, fontFamily: "'Fraunces', serif" }}>{option.count}</em></Chip>
+                ))}
+                <Chip selected={hasAny(sConditions)} onClick={() => toggle(sConditions, 'any', setSConditions)}><span>Any</span><em className="text-[11.5px] font-normal" style={{ color: hasAny(sConditions) ? T.blush : T.inkMuted, fontFamily: "'Fraunces', serif" }}>{specialtyPool.length}</em></Chip>
+                {!conditionSearch && conditions.length > 10 && <button onClick={() => setConditionExpanded(!conditionExpanded)} className="px-3 py-2 text-[12.5px] italic" style={{ color: T.inkMuted, fontFamily: "'Fraunces', serif" }}>{conditionExpanded ? 'Show less' : `+${conditions.length - 10} more`}</button>}
+              </div>
+            </section>
+          )}
 
-          {!!presentations.length && <section className="border-t py-4" style={{ borderColor: T.lineSoft }}>
-            <div className="mb-1 text-[18px] italic" style={{ fontFamily: "'Fraunces', serif", color: T.inkMuted }}>presenting as</div>
-            {(!hasAny(sConditions) || sAreas.size > 0) && <div className="mb-3 text-[11px]" style={{ color: T.inkMuted }}>Only presentations compatible with the choices above.</div>}
-            <input value={presentationSearch} onChange={e => setPresentationSearch(e.target.value)} placeholder="Search presentations…" className="mb-3 w-full rounded-full border px-4 py-2 text-[12px] outline-none" style={{ backgroundColor: T.parchment, borderColor: T.line }} />
-            <div className="flex flex-wrap gap-2">
-              {(presentationExpanded || presentationSearch ? presentations : presentations.filter((_, i) => i < 10 || [...sPres].some(id => id === presentations[i]?.id))).filter(option => !presentationSearch || option.label.toLowerCase().includes(presentationSearch.toLowerCase())).map(option => <Chip key={option.id} selected={sPres.has(option.id)} onClick={() => toggle(sPres, option.id, setSPres)}><span>{option.label}</span><em className="text-[11.5px]" style={{ color: sPres.has(option.id) ? T.blush : T.inkMuted, fontFamily: "'Fraunces', serif" }}>{option.count}</em></Chip>)}
-              <Chip selected={hasAny(sPres)} onClick={() => toggle(sPres, 'any', setSPres)}><span>any</span><em style={{ color: hasAny(sPres) ? T.blush : T.inkMuted, fontFamily: "'Fraunces', serif" }}>{conditionPool.length}</em></Chip>
-              {!presentationSearch && presentations.length > 10 && <button onClick={() => setPresentationExpanded(!presentationExpanded)} className="px-3 py-2 text-[12.5px] italic" style={{ color: T.inkMuted, fontFamily: "'Fraunces', serif" }}>{presentationExpanded ? 'show less' : `+${presentations.length - 10} more`}</button>}
-            </div>
-          </section>}
+          {!!presentations.length && (
+            <section className="border-t py-5" style={{ borderColor: T.lineSoft }}>
+              <div className="mb-2 text-[19px] italic" style={{ fontFamily: "'Fraunces', serif", color: T.inkMuted }}>presenting as</div>
+              {(!hasAny(sConditions) || sAreas.size > 0) && <div className="mb-3 text-[11px]" style={{ color: T.inkMuted }}>Only presentations compatible with the choices above.</div>}
+              <input value={presentationSearch} onChange={e => setPresentationSearch(e.target.value)} placeholder="Search presentations…" className="mb-3 w-full rounded-full border px-4 py-3 text-[13px] outline-none transition focus:border-[#A89582]" style={{ backgroundColor: 'rgba(244,236,223,.62)', borderColor: T.line, color: T.ink }} />
+              <div className="flex flex-wrap gap-2">
+                {(presentationExpanded || presentationSearch ? presentations : presentations.filter((_, i) => i < 10 || [...sPres].some(id => id === presentations[i]?.id))).filter(option => !presentationSearch || option.label.toLowerCase().includes(presentationSearch.toLowerCase())).map(option => (
+                  <Chip key={option.id} selected={sPres.has(option.id)} onClick={() => toggle(sPres, option.id, setSPres)}><span>{option.label}</span><em className="text-[11.5px] font-normal" style={{ color: sPres.has(option.id) ? T.blush : T.inkMuted, fontFamily: "'Fraunces', serif" }}>{option.count}</em></Chip>
+                ))}
+                <Chip selected={hasAny(sPres)} onClick={() => toggle(sPres, 'any', setSPres)}><span>Any</span><em className="text-[11.5px] font-normal" style={{ color: hasAny(sPres) ? T.blush : T.inkMuted, fontFamily: "'Fraunces', serif" }}>{conditionPool.length}</em></Chip>
+                {!presentationSearch && presentations.length > 10 && <button onClick={() => setPresentationExpanded(!presentationExpanded)} className="px-3 py-2 text-[12.5px] italic" style={{ color: T.inkMuted, fontFamily: "'Fraunces', serif" }}>{presentationExpanded ? 'Show less' : `+${presentations.length - 10} more`}</button>}
+              </div>
+            </section>
+          )}
 
-          {!!facets.length && <section className="border-t py-4" style={{ borderColor: T.lineSoft }}>
-            <div className="mb-1 text-[18px] italic" style={{ fontFamily: "'Fraunces', serif", color: T.inkMuted }}>about</div>
-            <div className="mb-3 text-[11px]" style={{ color: T.inkMuted }}>This narrows the knowledge facet within the clinical slice above.</div>
-            <div className="flex flex-wrap gap-2">
-              {(facetExpanded ? facets : facets.filter((_, i) => i < 10 || [...sFacets].some(id => id === facets[i]?.id))).map(option => <Chip key={option.id} selected={sFacets.has(option.id)} onClick={() => toggle(sFacets, option.id, setSFacets)}><span>{option.label}</span><em className="text-[11.5px]" style={{ color: sFacets.has(option.id) ? T.blush : T.inkMuted, fontFamily: "'Fraunces', serif" }}>{option.count}</em></Chip>)}
-              <Chip selected={hasAny(sFacets)} onClick={() => toggle(sFacets, 'any', setSFacets)}><span>any</span><em style={{ color: hasAny(sFacets) ? T.blush : T.inkMuted, fontFamily: "'Fraunces', serif" }}>{presentationPool.length}</em></Chip>
-              {facets.length > 10 && <button onClick={() => setFacetExpanded(!facetExpanded)} className="px-3 py-2 text-[12.5px] italic" style={{ color: T.inkMuted, fontFamily: "'Fraunces', serif" }}>{facetExpanded ? 'show less' : `+${facets.length - 10} more`}</button>}
-            </div>
-          </section>}
+          {!!facets.length && (
+            <section className="border-t py-5" style={{ borderColor: T.lineSoft }}>
+              <div className="mb-2 text-[19px] italic" style={{ fontFamily: "'Fraunces', serif", color: T.inkMuted }}>about</div>
+              <div className="mb-3 text-[11px]" style={{ color: T.inkMuted }}>Optional — narrow the knowledge angle.</div>
+              <div className="flex flex-wrap gap-2">
+                {(facetExpanded ? facets : facets.filter((_, i) => i < 10 || [...sFacets].some(id => id === facets[i]?.id))).map(option => (
+                  <Chip key={option.id} selected={sFacets.has(option.id)} onClick={() => toggle(sFacets, option.id, setSFacets)}><span>{option.label}</span><em className="text-[11.5px] font-normal" style={{ color: sFacets.has(option.id) ? T.blush : T.inkMuted, fontFamily: "'Fraunces', serif" }}>{option.count}</em></Chip>
+                ))}
+                <Chip selected={hasAny(sFacets)} onClick={() => toggle(sFacets, 'any', setSFacets)}><span>Any</span><em className="text-[11.5px] font-normal" style={{ color: hasAny(sFacets) ? T.blush : T.inkMuted, fontFamily: "'Fraunces', serif" }}>{presentationPool.length}</em></Chip>
+                {facets.length > 10 && <button onClick={() => setFacetExpanded(!facetExpanded)} className="px-3 py-2 text-[12.5px] italic" style={{ color: T.inkMuted, fontFamily: "'Fraunces', serif" }}>{facetExpanded ? 'Show less' : `+${facets.length - 10} more`}</button>}
+              </div>
+            </section>
+          )}
         </div>
 
-        <div className="px-6 pb-5 pt-3" style={{ background: `linear-gradient(to top, ${T.cream} 70%, rgba(250,245,236,0))` }}>
-          <div className="relative mb-2.5 rounded-2xl p-4" style={{ backgroundColor: T.blushSoft }}>
-            <div className="absolute bottom-3.5 left-0 top-3.5 w-0.5 rounded-full" style={{ backgroundColor: T.blushDeep }} />
-            <div className="mb-1.5 text-[9.5px] font-medium uppercase tracking-[0.22em]" style={{ color: T.blushDeep }}>You'll practise</div>
-            <div className="text-[14.5px] leading-[1.5]" style={{ fontFamily: "'Fraunces', serif", color: T.ink }}>{preview}</div>
+        <div className="shrink-0 border-t px-6 pb-[calc(env(safe-area-inset-bottom)+16px)] pt-3" style={{ borderColor: T.lineSoft, backgroundColor: 'rgba(250,245,236,.97)', boxShadow: '0 -12px 28px rgba(31,20,12,.035)' }}>
+          <div className="mb-3 flex gap-1.5 overflow-x-auto whitespace-nowrap text-[11px] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden" style={{ color: T.inkMuted }}>
+            {summaryParts.map((part, index) => (
+              <React.Fragment key={`${part}-${index}`}>
+                {index > 0 && <span aria-hidden="true">·</span>}
+                <span>{part}</span>
+              </React.Fragment>
+            ))}
           </div>
-          {available === 0 && <div className="mb-2 text-center text-[12.5px] italic" style={{ fontFamily: "'Fraunces', serif", color: T.inkMuted }}>No concepts match this combination. Try removing one choice.</div>}
-          <button onClick={() => {
-            const selectedIds = filteredPool.slice(0, size).map(c => c.concept_id);
-            setPracticeSelection(selectedIds);
-            onApplyFilters?.({ size, statuses: [...sStatus], areas: [...sAreas], conditions: [...sConditions], presentations: [...sPres], facets: [...sFacets] });
-            onClose();
-          }} disabled={available === 0} className="flex w-full items-center justify-center gap-3 rounded-full py-4 text-[14px] font-medium disabled:cursor-not-allowed" style={{ backgroundColor: available ? T.espresso : T.inkMuted, color: T.cream }}>
-            <span>Begin</span><em className="text-[14.5px]" style={{ fontFamily: "'Fraunces', serif", color: T.blush }}>{Math.min(size, available)} concepts</em><span>→</span>
+          {available === 0 && <div className="mb-2 text-center text-[12px]" style={{ color: T.inkMuted }}>Nothing matches this combination yet. Remove one filter.</div>}
+          <button
+            onClick={() => {
+              const selectedIds = filteredPool.slice(0, size).map(c => c.concept_id);
+              setPracticeSelection(selectedIds);
+              onApplyFilters?.({ size, statuses: [...sStatus], areas: [...sAreas], conditions: [...sConditions], presentations: [...sPres], facets: [...sFacets] });
+              onClose();
+            }}
+            disabled={available === 0}
+            className="flex w-full items-center justify-center gap-3 rounded-full py-[17px] text-[15px] font-semibold transition active:scale-[0.99] disabled:cursor-not-allowed"
+            style={{ backgroundColor: available ? T.espresso : T.inkMuted, color: T.cream, boxShadow: available ? '0 8px 22px rgba(31,20,12,.14)' : 'none' }}
+          >
+            <span>Begin session</span><span aria-hidden="true" style={{ color: T.blush }}>→</span>
           </button>
         </div>
       </div>
