@@ -88,12 +88,8 @@ function formatClinicalVignette(text: string): string {
   const clean = text.trim();
   if (!clean) return '';
 
-  // Preserve intentional paragraphing from authored questions.
   if (/\n\s*\n/.test(clean)) return clean;
 
-  // Group whole clinical sections rather than inserting a break before every
-  // matching phrase. This prevents artefacts such as "On" / "examination"
-  // being split across separate paragraphs.
   const sentences = clean
     .split(/(?<=[.!?])\s+(?=[A-Z])/)
     .map(sentence => sentence.trim())
@@ -246,13 +242,41 @@ export const UkmlaSBAQuestion: React.FC<UkmlaSBAQuestionProps> = ({
     setAiResponse('');
     setAiStreaming(true);
 
+    const optionLines = options.map((option: any) => `${option.id}. ${option.text}`).join('\n');
+    const selectedLine = selectedOption
+      ? `${selectedOption}. ${selectedOptionText || 'Selected option'}`
+      : 'No option selected';
+    const correctLine = `${correctAnswerId}. ${correctOptionText || 'Correct option'}`;
+    const selectedFeedback = selectedDistractor || 'No specific distractor explanation supplied.';
+    const questionRef = String(question.id || question.concept_id || `${currentIndex + 1}-${rawQuestionContent.slice(0, 32)}`)
+      .replace(/\s+/g, '-')
+      .slice(0, 80);
+
+    // The generic AI service currently compresses its question context, so put the
+    // learner-specific facts first. This packet is deliberately self-contained and
+    // rebuilt for every question so the tutor cannot confuse one SBA with another.
+    const tutorContextPacket = [
+      `STUDENT SELECTED: ${selectedLine}`,
+      `CORRECT ANSWER: ${correctLine}`,
+      `QUESTION ASKED: ${askLine || 'Use the clinical vignette to answer the SBA.'}`,
+      `CONCEPT: ${conceptTitle}`,
+      `KEY POINT: ${keyFact || takeaway || 'Not supplied'}`,
+      `WHY THE STUDENT'S OPTION IS WRONG: ${selectedFeedback}`,
+      `OPTIONS:\n${optionLines}`,
+      `FULL CLINICAL VIGNETTE:\n${rawQuestionContent}`,
+    ].join('\n\n');
+
     const context: QuestionContext = {
-      question: rawQuestionContent,
-      options: options.map((option: any) => option.text),
-      correctAnswer: correctAnswerId,
-      selectedAnswer: selectedOption || '',
-      explanation,
+      question: tutorContextPacket,
+      options: options.map((option: any) => `${option.id}. ${option.text}`),
+      correctAnswer: correctLine,
+      selectedAnswer: selectedLine,
+      explanation: explanation || keyFact || takeaway,
     };
+
+    // Prefix with a per-question reference so the existing response cache cannot
+    // accidentally reuse a response from another SBA with the same answer letter.
+    const modelPrompt = `QuestionRef ${questionRef} Selected ${selectedOption || 'none'}. ${cleanPrompt}\n\nUse ONLY the supplied current-question context. The student's selected answer is explicitly provided. Never say it was not provided. Compare their exact selected option with the exact correct option and the decisive clues in this vignette.`;
 
     const controller = new AbortController();
     abortControllerRef.current = controller;
@@ -260,7 +284,7 @@ export const UkmlaSBAQuestion: React.FC<UkmlaSBAQuestionProps> = ({
 
     try {
       await generateAIResponseStream(
-        cleanPrompt,
+        modelPrompt,
         context,
         (token: string) => {
           streamed += token;
