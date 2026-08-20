@@ -181,7 +181,8 @@ export const UkmlaSBAQuestion: React.FC<UkmlaSBAQuestionProps> = ({
   const [hasSubmitted, setHasSubmitted] = useState(preSubmitted);
   const [showAllDistractors, setShowAllDistractors] = useState(false);
   const [showSourceExplanation, setShowSourceExplanation] = useState(preSubmitted);
-  const [aiResponse, setAiResponse] = useState('');
+  const [primaryExplanation, setPrimaryExplanation] = useState('');
+  const [followUpResponse, setFollowUpResponse] = useState('');
   const [aiPrompt, setAiPrompt] = useState('');
   const [aiQuestion, setAiQuestion] = useState('');
   const [aiStreaming, setAiStreaming] = useState(false);
@@ -214,7 +215,8 @@ export const UkmlaSBAQuestion: React.FC<UkmlaSBAQuestionProps> = ({
     }
 
     setShowAllDistractors(false);
-    setAiResponse('');
+    setPrimaryExplanation('');
+    setFollowUpResponse('');
     setAiPrompt('');
     setAiQuestion('');
     setAiStreaming(false);
@@ -230,8 +232,6 @@ export const UkmlaSBAQuestion: React.FC<UkmlaSBAQuestionProps> = ({
   const rawCorrectAnswer = question.correctAnswer ?? question.correct_answer ?? 'A';
   const correctAnswerId = typeof rawCorrectAnswer === 'number' ? String.fromCharCode(65 + rawCorrectAnswer) : String(rawCorrectAnswer);
 
-  // New generated UKMLA questions already carry the vignette and lead-in separately.
-  // Render those fields directly. Only fall back to question_stem for older cached questions.
   const rawQuestionContent = (question as any).clinical_vignette || question.question_stem || question.question || '';
   const questionContent = formatClinicalVignette(rawQuestionContent);
   const vignetteParagraphs = questionContent.split(/\n\s*\n/).map(value => value.trim()).filter(Boolean);
@@ -263,9 +263,13 @@ export const UkmlaSBAQuestion: React.FC<UkmlaSBAQuestionProps> = ({
 
     setAiPrompt(isDefaultExplanation ? '' : cleanPrompt);
     setAiQuestion('');
-    setAiResponse('');
+    if (isDefaultExplanation) {
+      setPrimaryExplanation('');
+      setPersonalisedStarted(true);
+    } else {
+      setFollowUpResponse('');
+    }
     setAiStreaming(true);
-    if (isDefaultExplanation) setPersonalisedStarted(true);
 
     const optionLines = options.map((option: any) => `${option.id}. ${option.text}`).join('\n');
     const selectedLine = selectedOption ? `${selectedOption}. ${selectedOptionText || 'Selected option'}` : 'No option selected';
@@ -301,7 +305,8 @@ export const UkmlaSBAQuestion: React.FC<UkmlaSBAQuestionProps> = ({
     };
 
     const defaultInstruction = `Give this student their personalised post-answer teaching explanation. Start with their exact answer and whether it was right or wrong. Then explain the decisive clue(s) in this vignette in very simple language, similar to an excellent "explain this simply" response. Use the verified explanation and key point as ground truth. End with one short carry-forward rule for the next vignette. Keep it around 90-140 words. Bold the few phrases worth skimming. If prior learner evidence shows at least 2 previous attempts, you may briefly mention the factual attempt/correct/incorrect pattern, but do not claim a recurring misconception unless the supplied evidence explicitly proves one.`;
-    const modelPrompt = `QuestionRef ${questionRef} Selected ${selectedOption || 'none'}. ${isDefaultExplanation ? defaultInstruction : cleanPrompt}\n\nUse ONLY the supplied current-question context. The student's selected answer is explicitly provided. Never say it was not provided. Do not contradict the verified explanation. Do not invent prior attempts or patterns.`;
+    const intentPrompt = isDefaultExplanation ? 'Personalised default explanation' : cleanPrompt;
+    const modelPrompt = `${intentPrompt}\nQuestionRef ${questionRef} Selected ${selectedOption || 'none'}. ${isDefaultExplanation ? defaultInstruction : cleanPrompt}\n\nUse ONLY the supplied current-question context. The student's selected answer is explicitly provided. Never say it was not provided. Do not contradict the verified explanation. Do not invent prior attempts or patterns. For a follow-up, answer the follow-up request directly and do not simply repeat the original explanation.`;
 
     const controller = new AbortController();
     abortControllerRef.current = controller;
@@ -313,7 +318,8 @@ export const UkmlaSBAQuestion: React.FC<UkmlaSBAQuestionProps> = ({
         context,
         (token: string) => {
           streamed += token;
-          setAiResponse(streamed);
+          if (isDefaultExplanation) setPrimaryExplanation(streamed);
+          else setFollowUpResponse(streamed);
         },
         () => undefined,
         controller.signal,
@@ -321,7 +327,9 @@ export const UkmlaSBAQuestion: React.FC<UkmlaSBAQuestionProps> = ({
     } catch (error) {
       if (!controller.signal.aborted) {
         console.error('StudyEdit personalised feedback failed:', error);
-        setAiResponse(explanation || takeaway || 'Review the correct answer and the decisive clues in the vignette before moving on.');
+        const fallback = explanation || takeaway || 'Review the correct answer and the decisive clues in the vignette before moving on.';
+        if (isDefaultExplanation) setPrimaryExplanation(fallback);
+        else setFollowUpResponse('I could not rework that just now. Try another prompt in a moment.');
       }
     } finally {
       if (!controller.signal.aborted) setAiStreaming(false);
@@ -423,14 +431,14 @@ export const UkmlaSBAQuestion: React.FC<UkmlaSBAQuestionProps> = ({
 
               <div className="mt-7">
                 <div className="text-[10px] font-bold uppercase tracking-[0.2em]" style={{ color: '#A9675D' }}>Your explanation</div>
-                {aiStreaming && !aiResponse && (
+                {aiStreaming && !aiPrompt && !primaryExplanation && (
                   <div className="mt-3 border-l-[3px] pl-4 text-[16px] font-semibold leading-7" style={{ borderColor: C.blush, color: C.muted }}>
                     StudyEdit is tailoring this to your answer…
                   </div>
                 )}
-                {aiResponse && (
+                {primaryExplanation && (
                   <div className="mt-3 border-l-[3px] pl-4" style={{ borderColor: C.blush }}>
-                    <SkimmableMarkdown text={aiResponse} className="text-[17px] font-semibold leading-[1.72] text-[#3B2A1E]" />
+                    <SkimmableMarkdown text={primaryExplanation} className="text-[17px] font-semibold leading-[1.72] text-[#3B2A1E]" />
                   </div>
                 )}
                 {!personalisedStarted && preSubmitted && (
@@ -476,16 +484,17 @@ export const UkmlaSBAQuestion: React.FC<UkmlaSBAQuestionProps> = ({
                 <div className="mt-1 text-[12px]" style={{ color: C.muted }}>Go deeper only if you need to.</div>
 
                 <div className="mt-3 flex flex-wrap gap-2">
-                  <button type="button" onClick={() => askStudyEdit('Explain this even more simply in under 80 words.')} className="rounded-full border px-3 py-2 text-[13px] font-semibold" style={{ borderColor: C.line, backgroundColor: C.paper, color: C.ink }}>Explain another way</button>
-                  {!isCorrect && <button type="button" onClick={() => askStudyEdit('Why was my answer tempting, and what exact clue rules it out here?')} className="rounded-full border px-3 py-2 text-[13px] font-semibold" style={{ borderColor: C.line, backgroundColor: C.paper, color: C.ink }}>Why was mine tempting?</button>}
-                  <button type="button" onClick={() => askStudyEdit('What clue should I notice next time I see this concept in a different vignette? Keep it brief.')} className="rounded-full border px-3 py-2 text-[13px] font-semibold" style={{ borderColor: C.line, backgroundColor: C.paper, color: C.ink }}>What should I spot next time?</button>
-                  <button type="button" onClick={() => askStudyEdit('Give me one short different clinical example that tests the same concept.')} className="rounded-full border px-3 py-2 text-[13px] font-semibold" style={{ borderColor: C.line, backgroundColor: C.paper, color: C.ink }}>Another example</button>
+                  <button type="button" onClick={() => askStudyEdit('Explain this even more simply in under 80 words.')} disabled={aiStreaming} className="rounded-full border px-3 py-2 text-[13px] font-semibold disabled:opacity-50" style={{ borderColor: C.line, backgroundColor: C.paper, color: C.ink }}>Explain another way</button>
+                  {!isCorrect && <button type="button" onClick={() => askStudyEdit('Why was my answer tempting, and what exact clue rules it out here?')} disabled={aiStreaming} className="rounded-full border px-3 py-2 text-[13px] font-semibold disabled:opacity-50" style={{ borderColor: C.line, backgroundColor: C.paper, color: C.ink }}>Why was mine tempting?</button>}
+                  <button type="button" onClick={() => askStudyEdit('What clue should I notice next time I see this concept in a different vignette? Keep it brief.')} disabled={aiStreaming} className="rounded-full border px-3 py-2 text-[13px] font-semibold disabled:opacity-50" style={{ borderColor: C.line, backgroundColor: C.paper, color: C.ink }}>What should I spot next time?</button>
+                  <button type="button" onClick={() => askStudyEdit('Give me one short different clinical example that tests the same concept.')} disabled={aiStreaming} className="rounded-full border px-3 py-2 text-[13px] font-semibold disabled:opacity-50" style={{ borderColor: C.line, backgroundColor: C.paper, color: C.ink }}>Another example</button>
                 </div>
 
-                {aiPrompt && aiResponse && (
+                {aiPrompt && (
                   <div className="mt-5 border-l-[3px] pl-4" style={{ borderColor: C.blush }}>
                     <div className="text-[12px] font-semibold" style={{ color: '#A9675D' }}>StudyEdit · {aiPrompt}</div>
-                    <SkimmableMarkdown text={aiResponse} className="mt-2 text-[16px] font-medium leading-[1.7] text-[#3B2A1E]" />
+                    {aiStreaming && !followUpResponse && <div className="mt-2 text-[15px] font-medium" style={{ color: C.muted }}>Reworking this for you…</div>}
+                    {followUpResponse && <SkimmableMarkdown text={followUpResponse} className="mt-2 text-[16px] font-medium leading-[1.7] text-[#3B2A1E]" />}
                   </div>
                 )}
 
