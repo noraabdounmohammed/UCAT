@@ -1,9 +1,8 @@
-import { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { lazy, Suspense, useCallback, useEffect, useMemo, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ConceptStoreProvider, useConceptStore } from '@/contexts/ConceptStoreContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { AuthForm } from '@/components/auth/AuthForm';
-import { GenerationLoadingScreen } from '@/components/practice/GenerationLoadingScreen';
 import { getUserCurriculumId, migrateLegacyCurriculumState } from '@/utils/curriculumScope';
 
 const ApplePracticeSession = lazy(() => import('@/components/practice/ApplePracticeSession').then(m => ({ default: m.ApplePracticeSession })));
@@ -51,6 +50,17 @@ function chooseRecommendedConcepts(concepts: any[], count: number) {
     .map(item => item.concept);
 }
 
+function QuietLoadingState() {
+  return (
+    <main className="flex min-h-screen items-center justify-center bg-[#FAF5EC] px-6 text-[#2A1E16]">
+      <div className="text-center">
+        <div className="mx-auto h-5 w-5 animate-spin rounded-full border-2 border-[#D9CCB6] border-t-[#1F140C]" />
+        <p className="mt-4 text-sm text-[#8A7560]">Preparing your questions…</p>
+      </div>
+    </main>
+  );
+}
+
 function RecommendedPracticeContent() {
   const navigate = useNavigate();
   const { user } = useAuth();
@@ -62,14 +72,12 @@ function RecommendedPracticeContent() {
     startPractice,
     endPractice,
     updateMastery,
-    generatingQuestionCount,
     practiceError,
     filterOptions,
     setPracticeSelection,
   } = useConceptStore() as any;
 
   const startedRef = useRef(false);
-  const [userDismissedLoading, setUserDismissedLoading] = useState(false);
 
   const startRecommended = useCallback((count: number) => {
     if (!concepts?.length) return;
@@ -127,33 +135,9 @@ function RecommendedPracticeContent() {
     );
   }
 
-  if (!concepts?.length && !isPracticing) {
-    return (
-      <main className="flex min-h-screen items-center justify-center bg-[#F4EFE8] px-6 text-[#2A1E16]">
-        <div className="text-center">
-          <div className="text-[11px] font-medium uppercase tracking-[0.22em] text-[#8A7560]">Recommended session</div>
-          <p className="mt-3 text-sm text-[#8A7560]">Loading your curriculum…</p>
-        </div>
-      </main>
-    );
-  }
-
-  if (isLoading || (isPracticing && !userDismissedLoading)) {
-    return (
-      <GenerationLoadingScreen
-        conceptCount={Math.max(5, generatingQuestionCount || 10)}
-        isReady={!isLoading && Array.isArray(practiceQuestions) && practiceQuestions.length > 0}
-        concepts={concepts || []}
-        allConcepts={concepts || []}
-        practiceQuestions={practiceQuestions || []}
-        onComplete={() => setUserDismissedLoading(true)}
-      />
-    );
-  }
-
   if (isPracticing && practiceQuestions?.length > 0) {
     return (
-      <Suspense fallback={<GenerationLoadingScreen conceptCount={practiceQuestions.length} />}>
+      <Suspense fallback={<QuietLoadingState />}>
         <ApplePracticeSession
           questions={practiceQuestions}
           onComplete={handleComplete}
@@ -161,16 +145,17 @@ function RecommendedPracticeContent() {
           availableFilters={(filterOptions?.custom_filters as string[] | undefined) ?? []}
           section="UKMLA AKT"
           currentFormat="ukmla_sba"
-          onAnotherFive={() => {
-            setUserDismissedLoading(false);
-            startRecommended(5);
-          }}
+          onAnotherFive={() => startRecommended(5)}
         />
       </Suspense>
     );
   }
 
-  return <div className="h-screen w-screen bg-[#F4EFE8]" />;
+  if (isLoading || isPracticing || !concepts?.length) {
+    return <QuietLoadingState />;
+  }
+
+  return <QuietLoadingState />;
 }
 
 export function RecommendedPracticePage() {
