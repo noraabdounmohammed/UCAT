@@ -64,31 +64,35 @@ function firstUsefulSentence(text: string): string {
   return match?.[1] || clean;
 }
 
+const normaliseWhitespace = (value: string) => value.replace(/\s+/g, ' ').trim();
+
+function splitSentences(text: string): string[] {
+  return normaliseWhitespace(text)
+    .split(/(?<=[.!?])\s+(?=[A-Z])/)
+    .map(sentence => sentence.trim())
+    .filter(Boolean);
+}
+
 type ClinicalSection = 'history' | 'examination' | 'investigations' | 'treatment';
 
 function clinicalSectionForSentence(sentence: string, current: ClinicalSection): ClinicalSection {
   const value = sentence.trim();
   if (/^(?:On examination|Physical examination|Clinical examination|Neurological examination|Cardiovascular examination|Respiratory examination|Abdominal examination|On auscultation|Observations|Vital signs|His observations|Her observations)\b/i.test(value)) return 'examination';
-  if (/^(?:Investigations|Initial investigations|Blood tests|Laboratory tests|Blood results|An ECG|ECG|Electrocardiogram|Chest X-ray|Chest radiograph|CXR|X-ray|CT|MRI|Ultrasound|Urinalysis|Troponin|Blood gas|ABG)\b/i.test(value)) return 'investigations';
-  if (/^(?:He is treated|She is treated|Treatment is started|Treatment|Following treatment|Following|Subsequently|Later|Hours later|Days later|During admission|While in hospital|The patient is given)\b/i.test(value)) return 'treatment';
+  if (/^(?:Investigations|Initial investigations|Blood tests|Laboratory tests|Blood results|An ECG|ECG|Electrocardiogram|Chest X-ray|Chest radiograph|CXR|X-ray|CT|MRI|Ultrasound|Urinalysis|Troponin|Blood gas|ABG|Echocardiogram|Echo|D-dimer|Spirometry|Lumbar puncture|LP)\b/i.test(value)) return 'investigations';
+  if (/^(?:He is treated|She is treated|Treatment is started|Treatment|Following treatment|Following|Subsequently|Later|Hours later|Days later|During admission|While in hospital|The patient is given|Management|He is started|She is started)\b/i.test(value)) return 'treatment';
   return current;
 }
 
 function formatClinicalVignette(text: string): string {
-  const clean = text.trim();
+  const clean = normaliseWhitespace(text);
   if (!clean) return '';
 
-  const authoredParagraphs = clean.split(/\n\s*\n/).map(value => value.trim()).filter(Boolean);
-  if (authoredParagraphs.length > 1) return authoredParagraphs.join('\n\n');
-
-  const sentences = clean
-    .split(/(?<=[.!?])\s+(?=[A-Z])/)
-    .map(sentence => sentence.trim())
-    .filter(Boolean);
+  const sentences = splitSentences(clean);
   if (sentences.length < 2) return clean;
 
   const paragraphs: Array<{ section: ClinicalSection; sentences: string[] }> = [];
   let currentSection: ClinicalSection = 'history';
+
   for (const sentence of sentences) {
     const section = clinicalSectionForSentence(sentence, currentSection);
     currentSection = section;
@@ -96,66 +100,53 @@ function formatClinicalVignette(text: string): string {
     if (!last || last.section !== section) paragraphs.push({ section, sentences: [sentence] });
     else last.sentences.push(sentence);
   }
+
   return paragraphs.map(paragraph => paragraph.sentences.join(' ')).join('\n\n');
 }
 
-function isLikelyLeadIn(text: string, vignette: string): boolean {
-  const clean = text.replace(/\s+/g, ' ').trim();
-  if (!clean || clean.length > 180 || !clean.endsWith('?')) return false;
-  const vignetteClean = vignette.replace(/\s+/g, ' ').trim();
-  return !vignetteClean || clean !== vignetteClean;
+function isLikelyLeadIn(text: string): boolean {
+  const clean = normaliseWhitespace(text);
+  return Boolean(clean && clean.length <= 180 && clean.endsWith('?'));
+}
+
+function finalQuestionSentence(text: string): string {
+  const sentences = splitSentences(text);
+  for (let i = sentences.length - 1; i >= 0; i -= 1) {
+    if (isLikelyLeadIn(sentences[i])) return sentences[i];
+  }
+  return '';
 }
 
 function extractLeadIn(question: QuestionData, vignette: string): string {
-  const explicit = String(
-    (question as any).question_text
-      || (question as any).stem_question
-      || (question as any).individual_question
-      || '',
-  ).trim();
-  if (isLikelyLeadIn(explicit, vignette)) return explicit;
+  const candidates = [
+    (question as any).question_text,
+    (question as any).stem_question,
+    (question as any).individual_question,
+    question.question,
+    question.question_stem,
+    vignette,
+  ].map(value => String(value || '').trim()).filter(Boolean);
 
-  const questionField = String(question.question || '').trim();
-  if (isLikelyLeadIn(questionField, vignette)) return questionField;
-
-  const combinedStem = String(question.question_stem || '').trim();
-  const stemParts = combinedStem
-    .split(/\n\s*\n/)
-    .map(value => value.trim())
-    .filter(Boolean);
-  for (let i = stemParts.length - 1; i >= 0; i -= 1) {
-    if (isLikelyLeadIn(stemParts[i], vignette)) return stemParts[i];
+  for (const candidate of candidates.slice(0, 4)) {
+    if (isLikelyLeadIn(candidate)) return normaliseWhitespace(candidate);
   }
 
-  const finalQuestionSentence = combinedStem.match(/([^.!?]{8,180}\?)\s*$/)?.[1]?.trim() || '';
-  if (isLikelyLeadIn(finalQuestionSentence, vignette)) return finalQuestionSentence;
+  for (const candidate of candidates) {
+    const found = finalQuestionSentence(candidate);
+    if (found) return normaliseWhitespace(found);
+  }
 
   return '';
 }
 
-function stripTrailingLeadIn(vignette: string, leadIn: string): string {
-  const cleanVignette = vignette.trim();
-  const cleanLeadIn = leadIn.trim();
+function stripLeadInFromVignette(vignette: string, leadIn: string): string {
+  const cleanVignette = normaliseWhitespace(vignette);
+  const cleanLeadIn = normaliseWhitespace(leadIn);
   if (!cleanVignette || !cleanLeadIn) return cleanVignette;
 
-  if (cleanVignette.endsWith(cleanLeadIn)) {
-    return cleanVignette.slice(0, -cleanLeadIn.length).trim();
-  }
-
-  const normalise = (value: string) => value.replace(/\s+/g, ' ').trim();
-  const normalisedVignette = normalise(cleanVignette);
-  const normalisedLeadIn = normalise(cleanLeadIn);
-  if (!normalisedVignette.endsWith(normalisedLeadIn)) return cleanVignette;
-
-  const questionStart = cleanVignette.lastIndexOf('?') >= 0
-    ? cleanVignette.lastIndexOf('\n', cleanVignette.length - cleanLeadIn.length)
-    : -1;
-  if (questionStart >= 0) return cleanVignette.slice(0, questionStart).trim();
-
-  const sentenceMatch = cleanVignette.match(/^(.*?)([^.!?]{8,180}\?)\s*$/s);
-  if (sentenceMatch && normalise(sentenceMatch[2]) === normalisedLeadIn) return sentenceMatch[1].trim();
-
-  return cleanVignette;
+  const leadKey = cleanLeadIn.toLowerCase();
+  const remaining = splitSentences(cleanVignette).filter(sentence => normaliseWhitespace(sentence).toLowerCase() !== leadKey);
+  return remaining.join(' ').trim();
 }
 
 const emphasisStyle: React.CSSProperties = {
@@ -288,9 +279,9 @@ export const UkmlaSBAQuestion: React.FC<UkmlaSBAQuestionProps> = ({
   const rawCorrectAnswer = question.correctAnswer ?? question.correct_answer ?? 'A';
   const correctAnswerId = typeof rawCorrectAnswer === 'number' ? String.fromCharCode(65 + rawCorrectAnswer) : String(rawCorrectAnswer);
 
-  const rawQuestionContent = (question as any).clinical_vignette || question.question_stem || question.question || '';
+  const rawQuestionContent = String((question as any).clinical_vignette || question.question_stem || question.question || '');
   const askLine = extractLeadIn(question, rawQuestionContent);
-  const displayQuestionContent = stripTrailingLeadIn(rawQuestionContent, askLine);
+  const displayQuestionContent = stripLeadInFromVignette(rawQuestionContent, askLine);
   const questionContent = formatClinicalVignette(displayQuestionContent);
   const vignetteParagraphs = questionContent.split(/\n\s*\n/).map(value => value.trim()).filter(Boolean);
 
