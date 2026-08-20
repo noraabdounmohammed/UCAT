@@ -44,24 +44,45 @@ const C = {
 
 function sanitiseExplanation(text: string): string {
   return text
-    .replace(/[Tt]he content explicitly states? that ['\\\"]/g, '')
-    .replace(/['\\\"]\\s*\\.\\s*(?=Option|The correct)/g, '. ')
-    .replace(/[Tt]he content (explicitly )?(states?|says?|mentions?|indicates?|notes?)[^.]*\\.\\s*/g, '')
-    .replace(/[Bb]ased on (the )?(concept |provided )?content[^,.]*[,.]?\\s*/g, '')
-    .replace(/[Aa]ccording to (the )?(concept |provided )?content[^,.]*[,.]?\\s*/g, '')
-    .replace(/[Aa]s (stated|mentioned|described|provided|outlined|given) in (the )?(concept |provided )?content[^,.]*[,.]?\\s*/g, '')
-    .replace(/[Ff]rom (the )?(concept )?content[^,.]*[,.]?\\s*/g, '')
-    .replace(/[Aa]s per (the )?(concept )?content[^,.]*[,.]?\\s*/g, '')
-    .replace(/[Bb]ased on (the )?(provided|given) (information|material|concept)[^,.]*[,.]?\\s*/g, '')
-    .replace(/\\s{2,}/g, ' ')
+    .replace(/[Tt]he content explicitly states? that ['\"]/g, '')
+    .replace(/['\"]\s*\.\s*(?=Option|The correct)/g, '. ')
+    .replace(/[Tt]he content (explicitly )?(states?|says?|mentions?|indicates?|notes?)[^.]*\.\s*/g, '')
+    .replace(/[Bb]ased on (the )?(concept |provided )?content[^,.]*[,.]?\s*/g, '')
+    .replace(/[Aa]ccording to (the )?(concept |provided )?content[^,.]*[,.]?\s*/g, '')
+    .replace(/[Aa]s (stated|mentioned|described|provided|outlined|given) in (the )?(concept |provided )?content[^,.]*[,.]?\s*/g, '')
+    .replace(/[Ff]rom (the )?(concept )?content[^,.]*[,.]?\s*/g, '')
+    .replace(/[Aa]s per (the )?(concept )?content[^,.]*[,.]?\s*/g, '')
+    .replace(/[Bb]ased on (the )?(provided|given) (information|material|concept)[^,.]*[,.]?\s*/g, '')
+    .replace(/\s{2,}/g, ' ')
     .trim();
 }
 
 function firstUsefulSentence(text: string): string {
-  const clean = text.replace(/\\s+/g, ' ').trim();
+  const clean = text.replace(/\s+/g, ' ').trim();
   if (!clean) return '';
-  const match = clean.match(/^(.+?[.!?])(?:\\s|$)/);
+  const match = clean.match(/^(.+?[.!?])(?:\s|$)/);
   return match?.[1] || clean;
+}
+
+/**
+ * Question-generation output is not always paragraphised consistently.
+ * Keep authored paragraph breaks, but when a vignette arrives as one block,
+ * add breaks at natural clinical transitions so it scans like a clinical note:
+ * presentation/history -> examination -> investigations -> treatment/evolution.
+ */
+function formatClinicalVignette(text: string): string {
+  const clean = text.trim();
+  if (!clean) return '';
+
+  // Respect meaningful paragraphing already supplied by the question author/generator.
+  if (/\n\s*\n/.test(clean)) return clean;
+
+  const clinicalTransition = new RegExp(
+    String.raw`\s+(?=(?:On examination|Examination|Physical examination|Clinical examination|Neurological examination|Cardiovascular examination|Respiratory examination|Abdominal examination|On auscultation|Observations|Vital signs|His observations|Her observations|Investigations|Initial investigations|Blood tests|Laboratory tests|Blood results|An ECG|ECG|Electrocardiogram|Chest X-ray|Chest radiograph|CXR|X-ray|CT|MRI|Ultrasound|Urinalysis|He is treated|She is treated|Treatment is started|Treatment|Following treatment|Following|Subsequently|Later|Hours later|Days later|During admission|While in hospital|The patient is given)\b)`,
+    'gi',
+  );
+
+  return clean.replace(clinicalTransition, '\n\n');
 }
 
 export const UkmlaSBAQuestion: React.FC<UkmlaSBAQuestionProps> = ({
@@ -122,7 +143,8 @@ export const UkmlaSBAQuestion: React.FC<UkmlaSBAQuestionProps> = ({
     ? String.fromCharCode(65 + rawCorrectAnswer)
     : String(rawCorrectAnswer);
 
-  const questionContent = question.question_stem || question.question || '';
+  const rawQuestionContent = question.question_stem || question.question || '';
+  const questionContent = formatClinicalVignette(rawQuestionContent);
   const askLine = (question as any).question_text || (question as any).stem_question || '';
   const explanation = sanitiseExplanation(question.explanation || question.worked_solution || '');
   const keyFact = sanitiseExplanation((question as any).key_fact || '');
@@ -164,10 +186,10 @@ export const UkmlaSBAQuestion: React.FC<UkmlaSBAQuestionProps> = ({
       <div className="flex-1 overflow-y-auto">
         <main className="mx-auto w-full max-w-[620px] px-5 pb-10 pt-5 sm:px-8 sm:pt-7">
           <section aria-label="Question">
-            <div className="text-[21px] font-semibold leading-[1.68] tracking-[-0.01em] sm:text-[22px]" style={{ color: C.espresso, fontFamily: "Inter, sans-serif" }}>
+            <div className="text-[21px] font-semibold leading-[1.68] tracking-[-0.01em] sm:text-[22px]" style={{ color: C.espresso, fontFamily: 'Inter, sans-serif' }}>
               <ReactMarkdown
                 components={{
-                  p: ({ children }) => <p className="mb-5 last:mb-0">{children}</p>,
+                  p: ({ children }) => <p className="mb-6 last:mb-0">{children}</p>,
                   strong: ({ children }) => <strong className="font-bold">{children}</strong>,
                 }}
               >{questionContent}</ReactMarkdown>
