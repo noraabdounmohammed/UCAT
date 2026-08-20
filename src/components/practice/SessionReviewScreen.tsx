@@ -103,16 +103,24 @@ export const SessionReviewScreen: React.FC<SessionReviewScreenProps> = ({
 
   const evidenceConceptCount = useMemo(() => new Set(concepts.map(concept => concept.title)).size, [concepts]);
 
+  const repeatedMiss = useMemo(() => {
+    const counts = new Map<string, number>();
+    weakConcepts.forEach(concept => counts.set(concept.title, (counts.get(concept.title) || 0) + 1));
+    return Array.from(counts.entries()).sort((a, b) => b[1] - a[1]).find(([, count]) => count >= 2) || null;
+  }, [weakConcepts]);
+
   const deterministicObservation = useMemo(() => {
-    if (needsReview === 0) return `Everything retrieved this time. That is useful evidence, but it is still one session rather than a permanent mastery verdict.`;
-    if (needsReview === 1) return `One answer needs another pass. That is not enough evidence to label a broad weakness, but it is enough to bring that concept back.`;
-    return `${needsReview} answers did not retrieve cleanly. I’ll treat those as signals to revisit, not as a verdict on an entire specialty.`;
-  }, [needsReview]);
+    if (needsReview === 0) return `Nothing obvious needs chasing from this session. I’d keep the concepts in rotation and let spacing do the work.`;
+    if (repeatedMiss) return `${repeatedMiss[0]} caught you more than once today. That is enough evidence for me to bring that distinction back deliberately.`;
+    if (needsReview === 1) return `One concept needs another look, but there isn’t enough evidence here to call it a broader pattern.`;
+    return `The misses were spread across different concepts, so I wouldn’t call a broader pattern yet.`;
+  }, [needsReview, repeatedMiss]);
 
   const deterministicNext = useMemo(() => {
-    if (needsReview === 0) return `I can use today’s successful retrieval as fresh evidence when choosing what deserves attention next.`;
-    return `I’d bring the missed concepts back in different questions, so we test the underlying knowledge rather than memory for the wording.`;
-  }, [needsReview]);
+    if (needsReview === 0) return `I’ll use today’s successful retrieval to decide what can wait and what should come back later.`;
+    if (repeatedMiss) return `I’ll bring ${repeatedMiss[0]} back soon in a different vignette, and space the other misses separately.`;
+    return `I’ll bring the missed concepts back in different vignettes, spaced apart rather than repeated immediately.`;
+  }, [needsReview, repeatedMiss]);
 
   useEffect(() => {
     if (total === 0 || answers.length === 0) return;
@@ -132,7 +140,7 @@ export const SessionReviewScreen: React.FC<SessionReviewScreenProps> = ({
     }).join('\n');
 
     const sessionSignature = questions.map(q => q?.id || q?.concept_id || '').join('-').slice(0, 90);
-    const prompt = `SessionDebrief-${sessionSignature}-${correct}-${needsReview}.\n\nYou are giving a concise UKMLA tutor debrief from REAL SESSION EVIDENCE only. Return EXACTLY two single-line fields and nothing else:\nOBSERVATION: [max 28 words]\nNEXT: [max 24 words]\n\nRules:\n- Sound natural, calm and human; no congratulations, emojis, hype, motivational filler or generic AI language.\n- Never use "mastered", "strong at", "weak at" or readiness percentages.\n- Only claim a pattern if at least TWO separate questions in the supplied session support it.\n- If fewer than two questions support a pattern, say there is not enough evidence for a broader pattern yet and name what this session did show.\n- Do not invent medical facts, prior history, learner traits, question categories or causal explanations.\n- NEXT should describe what StudyEdit should do with the evidence, not tell the student to read a textbook.\n\nSESSION:\n${sessionRows}`;
+    const prompt = `SessionDebrief-${sessionSignature}-${correct}-${needsReview}.\n\nYou are StudyEdit giving a short, perceptive UKMLA tutor debrief from REAL SESSION EVIDENCE only. Return EXACTLY two single-line fields and nothing else:\nOBSERVATION: [max 22 words]\nNEXT: [max 20 words]\n\nRules:\n- Sound like a sharp human tutor who has just watched the session: calm, specific, economical.\n- Do NOT restate the score or say how many answers were wrong; that is already visible on screen.\n- Do NOT use vague phrases such as "broad diagnostic uncertainty", "varied topics", "areas of weakness", "performance pattern", "knowledge gaps" or similar report language.\n- No congratulations, emojis, hype, motivational filler, coaching clichés or generic AI language.\n- Never use "mastered", "strong at", "weak at" or readiness percentages.\n- Only claim a repeated pattern when at least TWO separate questions genuinely support the SAME concept, distinction or reasoning feature.\n- A repeated concept is valid evidence. A vague category such as diagnosis/management is NOT valid unless the supplied lead-ins clearly support it at least twice.\n- If there is no supported repeated signal, say so simply: e.g. "The misses were spread across different concepts, so I wouldn’t call a broader pattern yet."\n- Do not invent medical facts, prior history, learner traits, question categories or causal explanations.\n- NEXT must sound like StudyEdit taking the next action: use "I’ll bring...", "I’ll space...", "I’ll vary...". Never use engineering words such as flag, log, item, queue, algorithm or dataset.\n- NEXT should normally prioritise a repeated missed concept first, then space unrelated misses separately.\n\nSESSION:\n${sessionRows}`;
 
     const context: QuestionContext = {
       question: sessionRows,
@@ -193,7 +201,7 @@ export const SessionReviewScreen: React.FC<SessionReviewScreenProps> = ({
             That was useful.
           </h1>
           <p className="mt-4 max-w-md text-[15px] font-medium leading-6" style={{ color: T.ink }}>
-            I’ve got fresh evidence from <strong>{evidenceConceptCount}</strong> concept{evidenceConceptCount === 1 ? '' : 's'} now. Here’s what I’d take from this session.
+            I’ve got fresh evidence from <strong>{evidenceConceptCount}</strong> concept{evidenceConceptCount === 1 ? '' : 's'}. Here’s what changed.
           </p>
         </section>
 
@@ -228,7 +236,7 @@ export const SessionReviewScreen: React.FC<SessionReviewScreenProps> = ({
 
         <section className="mt-8 border-l-[3px] pl-5" style={{ borderColor: T.blushDeep }}>
           <div className="text-[10px] font-bold uppercase tracking-[0.2em]" style={{ color: T.muted }}>Something I noticed</div>
-          <p className="mt-2 text-[18px] font-semibold leading-[1.55] tracking-[-0.01em]" style={{ color: T.espresso }}>
+          <p className="mt-2 text-[18px] font-semibold leading-[1.5] tracking-[-0.01em]" style={{ color: T.espresso }}>
             {debriefLoading && !debrief ? deterministicObservation : observation}
           </p>
         </section>
@@ -242,19 +250,23 @@ export const SessionReviewScreen: React.FC<SessionReviewScreenProps> = ({
 
         {weakConcepts.length > 0 && (
           <section className="mt-7">
-            <div className="text-[10px] font-medium uppercase tracking-[0.22em]" style={{ color: T.muted }}>The misses, if you want to revisit them</div>
-            <div className="mt-3 overflow-hidden rounded-[20px] border" style={{ backgroundColor: T.paper, borderColor: T.line }}>
-              {weakConcepts.map((concept, position) => (
-                <button key={concept.index} onClick={() => onViewQuestion?.(concept.index)} disabled={!onViewQuestion} className="flex w-full items-center gap-3 px-4 py-4 text-left disabled:cursor-default" style={{ borderTop: position ? `1px solid ${T.line}` : 'none' }}>
-                  <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-xs" style={{ backgroundColor: T.blushSoft, border: `1px solid ${T.blushDeep}`, color: '#9C655D' }}>×</span>
-                  <div className="min-w-0 flex-1">
-                    <div className="text-[15px] font-semibold" style={{ color: T.espresso }}>{concept.title}</div>
-                    {concept.preview && <div className="mt-1 truncate text-xs" style={{ color: T.muted }}>{concept.preview}</div>}
-                  </div>
-                  {onViewQuestion && <ArrowRight className="h-4 w-4 shrink-0" style={{ color: T.muted }} />}
-                </button>
-              ))}
-            </div>
+            <details>
+              <summary className="cursor-pointer list-none rounded-[18px] border px-4 py-4 text-[13px] font-semibold" style={{ backgroundColor: T.paper, borderColor: T.line, color: T.espresso }}>
+                Review the {needsReview} miss{needsReview === 1 ? '' : 'es'} <span className="ml-1" style={{ color: T.muted }}>↓</span>
+              </summary>
+              <div className="mt-3 overflow-hidden rounded-[20px] border" style={{ backgroundColor: T.paper, borderColor: T.line }}>
+                {weakConcepts.map((concept, position) => (
+                  <button key={concept.index} onClick={() => onViewQuestion?.(concept.index)} disabled={!onViewQuestion} className="flex w-full items-center gap-3 px-4 py-4 text-left disabled:cursor-default" style={{ borderTop: position ? `1px solid ${T.line}` : 'none' }}>
+                    <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-xs" style={{ backgroundColor: T.blushSoft, border: `1px solid ${T.blushDeep}`, color: '#9C655D' }}>×</span>
+                    <div className="min-w-0 flex-1">
+                      <div className="text-[15px] font-semibold" style={{ color: T.espresso }}>{concept.title}</div>
+                      {concept.preview && <div className="mt-1 truncate text-xs" style={{ color: T.muted }}>{concept.preview}</div>}
+                    </div>
+                    {onViewQuestion && <ArrowRight className="h-4 w-4 shrink-0" style={{ color: T.muted }} />}
+                  </button>
+                ))}
+              </div>
+            </details>
           </section>
         )}
 
