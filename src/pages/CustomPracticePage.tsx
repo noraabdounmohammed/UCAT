@@ -3,30 +3,37 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { AuthForm } from '@/components/auth/AuthForm';
 import { ConceptStoreProvider, useConceptStore } from '@/contexts/ConceptStoreContext';
-import { GenerationLoadingScreen } from '@/components/practice/GenerationLoadingScreen';
 import { getUserCurriculumId, migrateLegacyCurriculumState } from '@/utils/curriculumScope';
 import type { FilterState } from '@/components/practice/PracticeFilterModalParchment';
 
 const PracticeFilterModalParchment = lazy(() => import('@/components/practice/PracticeFilterModalParchment').then(m => ({ default: m.PracticeFilterModalParchment })));
 const ApplePracticeSession = lazy(() => import('@/components/practice/ApplePracticeSession').then(m => ({ default: m.ApplePracticeSession })));
 
+function QuietPreparingState() {
+  return (
+    <main className="flex min-h-screen items-center justify-center bg-[#FAF5EC] px-6 text-[#2A1E16]">
+      <div className="text-center">
+        <div className="mx-auto h-5 w-5 animate-spin rounded-full border-2 border-[#D9CCB6] border-t-[#1F140C]" />
+        <p className="mt-4 text-sm text-[#8A7560]">Preparing your questions…</p>
+      </div>
+    </main>
+  );
+}
+
 function CustomPracticeContent() {
   const navigate = useNavigate();
   const {
-    concepts,
     isLoading,
     isPracticing,
     practiceQuestions,
     startPractice,
     endPractice,
     updateMastery,
-    generatingQuestionCount,
     practiceError,
     filterOptions,
   } = useConceptStore() as any;
 
   const [showFilters, setShowFilters] = useState(true);
-  const [userDismissedLoading, setUserDismissedLoading] = useState(false);
   const beginningSessionRef = useRef(false);
 
   const goHome = () => {
@@ -35,9 +42,6 @@ function CustomPracticeContent() {
   };
 
   const handleFilterClose = () => {
-    // PracticeFilterModalParchment calls onClose immediately after onApplyFilters.
-    // Ignore that one close event so Begin continues into the session; a genuine
-    // X/backdrop close still returns the student to the new Home.
     if (beginningSessionRef.current) {
       beginningSessionRef.current = false;
       return;
@@ -48,7 +52,6 @@ function CustomPracticeContent() {
   const startCustomSession = (filters: FilterState) => {
     beginningSessionRef.current = true;
     setShowFilters(false);
-    setUserDismissedLoading(false);
     startPractice({
       study_mode: 'custom',
       target_formats: ['ukmla_sba'],
@@ -85,22 +88,9 @@ function CustomPracticeContent() {
     );
   }
 
-  if (isLoading || (isPracticing && !userDismissedLoading)) {
-    return (
-      <GenerationLoadingScreen
-        conceptCount={Math.max(5, generatingQuestionCount || 10)}
-        isReady={!isLoading && Array.isArray(practiceQuestions) && practiceQuestions.length > 0}
-        concepts={concepts || []}
-        allConcepts={concepts || []}
-        practiceQuestions={practiceQuestions || []}
-        onComplete={() => setUserDismissedLoading(true)}
-      />
-    );
-  }
-
   if (isPracticing && practiceQuestions?.length > 0) {
     return (
-      <Suspense fallback={<GenerationLoadingScreen conceptCount={practiceQuestions.length} />}>
+      <Suspense fallback={<QuietPreparingState />}>
         <ApplePracticeSession
           questions={practiceQuestions}
           onComplete={goHome}
@@ -109,19 +99,19 @@ function CustomPracticeContent() {
           section="UKMLA AKT"
           currentFormat="ukmla_sba"
           onAnotherFive={() => {
-            setUserDismissedLoading(false);
             startPractice({ study_mode: 'custom', target_formats: ['ukmla_sba'], question_count: 5 });
           }}
           onRestartWithFilters={() => {
             endPractice();
             beginningSessionRef.current = false;
             setShowFilters(true);
-            setUserDismissedLoading(false);
           }}
         />
       </Suspense>
     );
   }
+
+  if (isLoading || isPracticing) return <QuietPreparingState />;
 
   return <div className="h-screen w-screen bg-[#F4EFE8]" />;
 }
