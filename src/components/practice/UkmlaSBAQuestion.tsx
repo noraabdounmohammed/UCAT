@@ -133,6 +133,31 @@ function extractLeadIn(question: QuestionData, vignette: string): string {
   return '';
 }
 
+function stripTrailingLeadIn(vignette: string, leadIn: string): string {
+  const cleanVignette = vignette.trim();
+  const cleanLeadIn = leadIn.trim();
+  if (!cleanVignette || !cleanLeadIn) return cleanVignette;
+
+  if (cleanVignette.endsWith(cleanLeadIn)) {
+    return cleanVignette.slice(0, -cleanLeadIn.length).trim();
+  }
+
+  const normalise = (value: string) => value.replace(/\s+/g, ' ').trim();
+  const normalisedVignette = normalise(cleanVignette);
+  const normalisedLeadIn = normalise(cleanLeadIn);
+  if (!normalisedVignette.endsWith(normalisedLeadIn)) return cleanVignette;
+
+  const questionStart = cleanVignette.lastIndexOf('?') >= 0
+    ? cleanVignette.lastIndexOf('\n', cleanVignette.length - cleanLeadIn.length)
+    : -1;
+  if (questionStart >= 0) return cleanVignette.slice(0, questionStart).trim();
+
+  const sentenceMatch = cleanVignette.match(/^(.*?)([^.!?]{8,180}\?)\s*$/s);
+  if (sentenceMatch && normalise(sentenceMatch[2]) === normalisedLeadIn) return sentenceMatch[1].trim();
+
+  return cleanVignette;
+}
+
 const emphasisStyle: React.CSSProperties = {
   fontWeight: 800,
   textDecorationLine: 'underline',
@@ -264,9 +289,10 @@ export const UkmlaSBAQuestion: React.FC<UkmlaSBAQuestionProps> = ({
   const correctAnswerId = typeof rawCorrectAnswer === 'number' ? String.fromCharCode(65 + rawCorrectAnswer) : String(rawCorrectAnswer);
 
   const rawQuestionContent = (question as any).clinical_vignette || question.question_stem || question.question || '';
-  const questionContent = formatClinicalVignette(rawQuestionContent);
-  const vignetteParagraphs = questionContent.split(/\n\s*\n/).map(value => value.trim()).filter(Boolean);
   const askLine = extractLeadIn(question, rawQuestionContent);
+  const displayQuestionContent = stripTrailingLeadIn(rawQuestionContent, askLine);
+  const questionContent = formatClinicalVignette(displayQuestionContent);
+  const vignetteParagraphs = questionContent.split(/\n\s*\n/).map(value => value.trim()).filter(Boolean);
 
   const explanation = sanitiseExplanation(question.explanation || question.worked_solution || '');
   const keyFact = sanitiseExplanation((question as any).key_fact || '');
@@ -320,7 +346,7 @@ export const UkmlaSBAQuestion: React.FC<UkmlaSBAQuestionProps> = ({
       `VERIFIED QUESTION EXPLANATION: ${explanation || 'Not supplied'}`,
       `VERIFIED DISTRACTOR FEEDBACK FOR STUDENT'S CHOICE: ${selectedFeedback}`,
       `OPTIONS:\n${optionLines}`,
-      `FULL CLINICAL VIGNETTE:\n${rawQuestionContent}`,
+      `FULL CLINICAL VIGNETTE:\n${displayQuestionContent}`,
     ].join('\n\n');
 
     const context: QuestionContext = {
