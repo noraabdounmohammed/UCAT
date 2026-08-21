@@ -9,6 +9,7 @@ import { questionCacheService, type CachedQuestion, type QuestionInsert } from '
 import { jsonConceptLoader, type ResolvedJsonConcept } from './jsonConceptLoader';
 import { generateQuestionFromConcept } from './aiQuestionGenerator';
 import { UKMLA_QUALITY_INSTRUCTIONS, reviewUKMLAQuestion, validateUKMLAQuestion } from './questionQuality';
+import { buildEvidencePacketInstructions } from './evidencePackets';
 import type { QuestionData } from '@/components/practice/questionTypes';
 import type { ConceptNode } from '@/types/conceptTypes';
 
@@ -244,6 +245,9 @@ export const cachedQuestionGenerator = {
       const format = options.questionFormat || 'ukmla_sba';
       const results: QuestionData[] = [];
       const questionsToCache: QuestionInsert[] = [];
+      const evidenceInstructions = format === 'ukmla_sba'
+        ? buildEvidencePacketInstructions(concept.canonical_concept_id || conceptId)
+        : '';
 
       for (let i = 0; i < count; i++) {
         let aiQuestion: any = null;
@@ -255,7 +259,7 @@ export const cachedQuestionGenerator = {
           const candidate = await generateQuestionFromConcept(
             conceptNode,
             format as any,
-            format === 'ukmla_sba' ? UKMLA_QUALITY_INSTRUCTIONS : undefined
+            format === 'ukmla_sba' ? `${UKMLA_QUALITY_INSTRUCTIONS}${evidenceInstructions}` : undefined
           );
 
           if (format !== 'ukmla_sba') {
