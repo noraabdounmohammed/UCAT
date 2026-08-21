@@ -1,4 +1,5 @@
 import type { ConceptNode } from '@/types/conceptTypes';
+import { assessClinicalTruthRisk, getVerifiedSourcesForConcept } from './clinicalTruth';
 
 export const UKMLA_QUALITY_INSTRUCTIONS = `You are writing a UK Medical Licensing Assessment (MLA) Applied Knowledge Test single-best-answer item.
 
@@ -10,54 +11,43 @@ ITEM BLUEPRINT — decide this before writing:
 - Build the correct answer first.
 - Build four distractors that represent realistic near-miss decisions or misconceptions, not random wrong answers.
 - Difficulty should come from clinical discrimination, NOT obscure trivia, hidden assumptions, deliberately deceptive wording, or an implausibly rare exception.
-- If the source concept is merely a factual property (for example route of administration, half-life, mechanism, one adverse effect, or one score component), DO NOT disguise that fact as a patient-management decision. Test the fact directly or generate a simple application that does not require invented management guidance.
-- Never turn a thin factual concept into a treatment-selection question unless the supplied source explicitly supports the treatment decision and the competing options.
+- If the source concept is merely a factual property (for example route of administration, half-life, mechanism, one adverse effect, or one score component), DO NOT disguise that fact as a patient-management decision.
+- Never turn a thin factual concept into a treatment-selection question unless the supplied source explicitly supports the treatment decision and competing options.
 
-VIGNETTE (the "vignette" field):
+VIGNETTE:
 - Start with age + gender where clinically appropriate.
-- Use short readable paragraphs separated by a blank line:
-  Paragraph 1: presentation and relevant history.
-  Paragraph 2: examination and observations, if relevant.
-  Paragraph 3: investigations/results, if relevant.
-  Paragraph 4: treatment or subsequent clinical change, if relevant.
+- Use short readable paragraphs separated by a blank line: presentation/history; examination/observations; investigations/results; treatment/change if relevant.
 - Do not put the lead-in question inside the vignette.
-- Include only information that belongs naturally in the case. Do NOT make every detail a giveaway.
-- Usually only one or two features should be truly discriminative; other details may establish realistic context.
-- Avoid classic buzzwords when a more natural clinical description can test the same reasoning.
-- Never split phrases such as "On examination" or "Cardiovascular examination" across paragraphs.
-- Reference ranges are required for laboratory values when interpretation depends on whether the value is abnormal. Do not add pointless reference ranges to ordinary observations such as heart rate, BP or oxygen saturation.
-- For medication-management questions, include every clinically relevant discriminator needed to choose safely between the options, such as indication, renal function, haemodynamic status, bleeding history, pregnancy status, prior adverse reactions, planned PCI/thrombolysis, or interacting antithrombotic treatment when relevant.
+- Include realistic context without making every detail a giveaway.
+- Usually only one or two features should be genuinely discriminative.
+- Avoid famous buzzwords when natural clinical description can test the same reasoning.
+- Reference ranges are required for laboratory values when interpretation depends on abnormality; do not add pointless ranges to ordinary observations.
+- For medication-management questions include every discriminator needed to choose safely, including indication, renal function, haemodynamic status, bleeding history, pregnancy, prior adverse reactions, procedure/reperfusion plan and interacting antithrombotics when relevant.
 
-LEAD-IN (the "question" field):
-- One short, direct sentence outside the vignette and ending with "?".
-- It must be answerable in principle before seeing the options (the cover test).
-- Natural UKMLA-style variants are allowed. Examples include:
-  "What is the most likely diagnosis?"
-  "Which investigation is most appropriate now?"
-  "What is the most appropriate initial management?"
-  "Which drug should be stopped?"
-  "What is the most likely underlying mechanism?"
-- Do not repeat the lead-in inside the vignette.
-- Do not ask a management question when the source concept only supports a descriptive fact.
+LEAD-IN:
+- One short direct sentence outside the vignette, ending with ?.
+- It must pass the cover test: a knowledgeable learner could formulate an answer before seeing the options.
+- Natural UKMLA-style wording is allowed.
+- Do not ask a management question when the source only supports a descriptive fact.
 
 OPTIONS:
-- Exactly 5 options, IDs A–E.
-- All options must belong to the same semantic category and answer the lead-in grammatically.
-- Keep options concise and similar in style/length.
-- Every distractor must be clinically plausible before the decisive clue is applied.
-- No "all of the above", "none of the above", joke options, obvious opposites, or one conspicuously detailed option.
-- Exactly ONE option must be defensibly best from the information given.
-- If two options are both true statements about the concept, rewrite the lead-in so only one answers the question, or replace one option.
-- Do not create distractors by asserting that a real property of a drug, score or disease is false.
+- Exactly 5, IDs A-E.
+- Same semantic category and grammatically answer the lead-in.
+- Concise and similar in style/length.
+- Every distractor must be a clinically plausible near miss before the decisive clue is applied.
+- No all/none of the above, joke answers, obvious opposites or conspicuously detailed correct options.
+- Exactly ONE answer must be defensibly best.
+- If two options are both clinically true, rewrite the lead-in or replace one option.
+- Never make a distractor by falsely denying a real property of a drug, score, disease, investigation or treatment.
 
 ANTI-PATTERN-RECOGNITION:
-- Do not make the diagnosis obvious from one famous buzzword alone.
-- Do not reproduce the concept title verbatim in the vignette unless clinically unavoidable.
-- Make the student integrate at least two pieces of information whenever the source content supports it.
+- Do not make the answer recoverable from one famous buzzword alone.
+- Do not reproduce the concept title verbatim in the vignette unless unavoidable.
+- Make the learner integrate at least two pieces of information whenever the source supports it.
 - Prefer realistic competing diagnoses/actions over obscure trivia.
-- Avoid gratuitous "sausage-shaped", "tumour plop", "tearing" or similar textbook labels when the same concept can be tested with natural findings; if such a clue is used, do not let it be the only discriminating evidence.
+- Avoid gratuitous textbook labels such as sausage-shaped, tumour plop or tearing when a natural description can test the same concept; if used, they must not be the only discriminator.
 
-OUTPUT JSON — return exactly this shape:
+OUTPUT JSON:
 {
   "vignette": "clinical vignette with blank lines between clinical sections",
   "question": "one short lead-in ending in ?",
@@ -85,7 +75,7 @@ OUTPUT JSON — return exactly this shape:
   }
 }
 
-Use only facts supported by the supplied concept content. If the source content is too thin to support a fair applied item, prefer a simple factual/application question over inventing unsupported clinical management detail.`;
+Use only facts supported by the supplied concept content. If the source is too thin for a fair applied item, prefer a simple factual/application question rather than inventing clinical management detail.`;
 
 export interface QuestionQualityResult {
   pass: boolean;
@@ -109,8 +99,8 @@ export function validateUKMLAQuestion(question: any): QuestionQualityResult {
 
   const expectedIds = ['A', 'B', 'C', 'D', 'E'];
   const optionIds = options.map((option: any) => normalise(option?.id).toUpperCase());
-  if (optionIds.length === 5 && expectedIds.some((id, index) => optionIds[index] !== id)) reasons.push('Option IDs must be A–E in order.');
-  if (!expectedIds.includes(correct)) reasons.push('Correct answer must be one of A–E.');
+  if (optionIds.length === 5 && expectedIds.some((id, index) => optionIds[index] !== id)) reasons.push('Option IDs must be A-E in order.');
+  if (!expectedIds.includes(correct)) reasons.push('Correct answer must be one of A-E.');
   if (correct && !optionIds.includes(correct)) reasons.push('Correct answer does not match an option ID.');
 
   const texts = options.map((option: any) => normalise(typeof option === 'string' ? option : option?.text));
@@ -126,7 +116,7 @@ export function validateUKMLAQuestion(question: any): QuestionQualityResult {
     if (max > 70 && max / min > 3.2) reasons.push('One option is conspicuously longer than the others and may cue the answer.');
   }
 
-  if (leadIn && /\b(?:except|not true|least likely)\b/i.test(leadIn)) reasons.push('Negative lead-ins are avoided because they add test-taking difficulty rather than clinical reasoning.');
+  if (leadIn && /\b(?:except|not true|least likely)\b/i.test(leadIn)) reasons.push('Negative lead-ins add test-taking difficulty rather than clinical reasoning.');
   if (vignette && /\b(?:pathognomonic|classic triad|textbook presentation)\b/i.test(vignette)) reasons.push('Vignette contains overt cueing language.');
 
   const score = Math.max(0, 100 - reasons.length * 18);
@@ -140,11 +130,11 @@ async function callReviewer(prompt: string): Promise<any> {
     body: JSON.stringify({
       model: 'deepseek-chat',
       temperature: 0.1,
-      max_tokens: 700,
+      max_tokens: 800,
       messages: [
         {
           role: 'system',
-          content: 'You are a hostile reviewer for a national medical licensing exam. Reject ambiguous, cueable, unfair, unsupported, trivial, or clinically unsafe questions. Check every option independently for truth and defensibility. Do not reward eloquent wording. Respond with valid JSON only.'
+          content: 'You are a hostile reviewer for a national medical licensing exam. Reject ambiguous, cueable, unfair, unsupported, trivial, stale or clinically unsafe questions. Check every option independently for truth and defensibility. Do not reward eloquent wording. Respond with valid JSON only.'
         },
         { role: 'user', content: prompt }
       ]
@@ -164,7 +154,22 @@ export async function reviewUKMLAQuestion(question: any, concept: ConceptNode): 
   const deterministic = validateUKMLAQuestion(question);
   if (!deterministic.pass) return deterministic;
 
+  const truthRisk = assessClinicalTruthRisk(concept);
+  const verifiedSources = getVerifiedSourcesForConcept(concept);
+  const sourceContext = verifiedSources.length
+    ? verifiedSources.map(source => `- ${source.title} | ${source.url} | verified ${source.verifiedOn}${source.scopeNotes ? ` | ${source.scopeNotes}` : ''}`).join('\n')
+    : '- No topic-specific authoritative source has yet been verified in StudyEdit. Treat guideline-sensitive claims cautiously.';
+
   const prompt = `Review this proposed UKMLA SBA against the supplied source concept.
+
+TRUTH RISK
+Level: ${truthRisk.risk}
+Reasons: ${truthRisk.reasons.join('; ') || 'No high-risk claim pattern detected.'}
+
+VERIFIED SOURCE REGISTRY
+${sourceContext}
+
+Important: the registry tells you which authoritative sources are current for this topic. It does NOT prove that the supplied concept or question matches the source. For high/critical-risk claims, reject if the concept is too thin, outdated, context-free or internally insufficient to support a safe single-best answer.
 
 SOURCE CONCEPT
 Title: ${concept.title}
@@ -177,7 +182,7 @@ Options: ${JSON.stringify(question?.options || [])}
 Claimed correct answer: ${normalise(question?.correct_answer ?? question?.correct)}
 Explanation: ${normalise(question?.explanation)}
 
-Score these dimensions:
+Score:
 - clinical/source accuracy: 25
 - single-best-answer integrity: 20
 - distractor plausibility: 15
@@ -187,23 +192,25 @@ Score these dimensions:
 - clarity: 5
 - fairness: 5
 
-Before scoring, explicitly test every answer option independently:
+Before scoring, test every answer option independently:
 1. Is the statement/action itself clinically true?
 2. Could it reasonably answer this lead-in in this patient?
 3. Is any claimed distinction dependent on context absent from the stem?
 4. Does the explanation dismiss a true alternative merely because the source concept did not mention it?
+5. For high/critical-risk claims, is the concept sufficiently complete and current to justify the answer safely?
 
 MANDATORY REJECTION if:
-- more than one option is reasonably defensible from the information given
+- more than one option is reasonably defensible
 - the claimed correct answer is unsupported by the supplied concept
 - the vignette relies on an invented fact that changes the answer
-- management could be clinically unsafe
+- management could be unsafe or guideline-sensitive without sufficient context
 - difficulty is mainly obscurity or trick wording
 - the answer is given away by buzzwords or option construction
-- a descriptive source fact has been disguised as a treatment/management decision
-- the item requires choosing between medicines but omits context needed to determine the preferred agent
-- the explanation says an alternative is wrong merely because the source content did not mention it
-- an option claimed to be false is actually a true property of the drug, score, disease, investigation, or treatment
+- a descriptive fact has been disguised as a treatment decision
+- medicine selection omits context needed to determine the preferred agent
+- the explanation says an alternative is wrong merely because the source did not mention it
+- an option claimed false is actually a true property
+- a high/critical-risk concept is too thin or stale to support the item
 
 Return ONLY:
 {
@@ -225,7 +232,14 @@ Pass only if score >= 88 and there is no mandatory rejection.`;
     const pass = Boolean(review?.pass) && score >= 88 && !unsafe && ambiguous.length === 0;
     return { pass, score, reasons: reasons.length ? reasons : pass ? [] : ['Adversarial reviewer did not approve this item.'] };
   } catch (error) {
-    console.warn('Question reviewer unavailable; accepting only deterministic validation.', error);
+    console.warn('Question reviewer unavailable.', error);
+    if (truthRisk.risk === 'high' || truthRisk.risk === 'critical') {
+      return {
+        pass: false,
+        score: 0,
+        reasons: [`Clinical reviewer unavailable for ${truthRisk.risk}-risk source claim; item rejected rather than trusted without review.`]
+      };
+    }
     return deterministic;
   }
 }
