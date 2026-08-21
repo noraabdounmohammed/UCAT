@@ -1,5 +1,6 @@
 import type { ConceptNode } from '@/types/conceptTypes';
 import { assessClinicalTruthRisk, getVerifiedSourcesForConcept } from './clinicalTruth';
+import { getEvidencePacket } from './evidencePackets';
 
 export const UKMLA_QUALITY_INSTRUCTIONS = `You are writing a UK Medical Licensing Assessment (MLA) Applied Knowledge Test single-best-answer item.
 
@@ -75,7 +76,7 @@ OUTPUT JSON:
   }
 }
 
-Use only facts supported by the supplied concept content. If the source is too thin for a fair applied item, prefer a simple factual/application question rather than inventing clinical management detail.`;
+Use only facts supported by the supplied concept content and any attached evidence packet. If the source is too thin for a fair applied item, prefer a simple factual/application question rather than inventing clinical management detail.`;
 
 export interface QuestionQualityResult {
   pass: boolean;
@@ -85,9 +86,22 @@ export interface QuestionQualityResult {
 
 const normalise = (value: unknown) => String(value ?? '').trim();
 
+function cleanVignetteForValidation(question: any): string {
+  const raw = normalise(question?.clinical_vignette ?? question?.vignette);
+  const leadIn = normalise(question?.question);
+  if (!raw || !leadIn) return raw;
+
+  const rawLower = raw.toLowerCase();
+  const leadLower = leadIn.toLowerCase();
+  if (rawLower.endsWith(leadLower)) {
+    return raw.slice(0, raw.length - leadIn.length).trim();
+  }
+  return raw;
+}
+
 export function validateUKMLAQuestion(question: any): QuestionQualityResult {
   const reasons: string[] = [];
-  const vignette = normalise(question?.clinical_vignette ?? question?.vignette);
+  const vignette = cleanVignetteForValidation(question);
   const leadIn = normalise(question?.question);
   const options = Array.isArray(question?.options) ? question.options : [];
   const correct = normalise(question?.correct_answer ?? question?.correct).toUpperCase();
@@ -156,11 +170,16 @@ export async function reviewUKMLAQuestion(question: any, concept: ConceptNode): 
 
   const truthRisk = assessClinicalTruthRisk(concept);
   const verifiedSources = getVerifiedSourcesForConcept(concept);
+  const evidence = getEvidencePacket(concept.concept_id);
   const sourceContext = verifiedSources.length
     ? verifiedSources.map(source => `- ${source.title} | ${source.url} | verified ${source.verifiedOn}${source.scopeNotes ? ` | ${source.scopeNotes}` : ''}`).join('\n')
     : '- No topic-specific authoritative source has yet been verified in StudyEdit. Treat guideline-sensitive claims cautiously.';
+  const evidenceContext = evidence
+    ? `Risk: ${evidence.risk}\nVerified claim: ${evidence.claim}\nRequired context: ${evidence.requiredContext.join('; ')}\nAllowed question targets: ${evidence.allowedTargets.join('; ')}\nForbidden inferences: ${evidence.forbiddenInferences.join('; ')}\nDistractor intents: ${evidence.distractorIntents.join('; ')}\nSource: ${evidence.source}`
+    : 'No launch evidence packet exists for this concept.';
+  const vignette = cleanVignetteForValidation(question);
 
-  const prompt = `Review this proposed UKMLA SBA against the supplied source concept.
+  const prompt = `Review this proposed UKMLA SBA against the supplied source concept AND evidence packet.
 
 TRUTH RISK
 Level: ${truthRisk.risk}
@@ -169,14 +188,21 @@ Reasons: ${truthRisk.reasons.join('; ') || 'No high-risk claim pattern detected.
 VERIFIED SOURCE REGISTRY
 ${sourceContext}
 
-Important: the registry tells you which authoritative sources are current for this topic. It does NOT prove that the supplied concept or question matches the source. For high/critical-risk claims, reject if the concept is too thin, outdated, context-free or internally insufficient to support a safe single-best answer.
+EVIDENCE PACKET
+${evidenceContext}
+
+Important:
+- The source registry identifies current authoritative sources but does not itself prove a claim.
+- When an evidence packet is present, treat the packet as the verified launch boundary for what the item may test. Its required context, allowed targets and forbidden inferences are part of the support for the item.
+- Do NOT reject an item merely because the older source concept is concise if the evidence packet explicitly supplies the missing decision boundary.
+- Still reject any question that contradicts the packet, omits context needed to distinguish the options, invents unsupported medicine, or leaves more than one defensible answer.
 
 SOURCE CONCEPT
 Title: ${concept.title}
 Content: ${concept.content || ''}
 
 QUESTION
-Vignette: ${normalise(question?.clinical_vignette ?? question?.vignette)}
+Vignette: ${vignette}
 Lead-in: ${normalise(question?.question)}
 Options: ${JSON.stringify(question?.options || [])}
 Claimed correct answer: ${normalise(question?.correct_answer ?? question?.correct)}
@@ -195,22 +221,22 @@ Score:
 Before scoring, test every answer option independently:
 1. Is the statement/action itself clinically true?
 2. Could it reasonably answer this lead-in in this patient?
-3. Is any claimed distinction dependent on context absent from the stem?
-4. Does the explanation dismiss a true alternative merely because the source concept did not mention it?
-5. For high/critical-risk claims, is the concept sufficiently complete and current to justify the answer safely?
+3. Is any claimed distinction dependent on context absent from the stem or evidence packet?
+4. Does the explanation dismiss a true alternative without support from the concept or evidence packet?
+5. For high/critical-risk claims, does the concept plus evidence packet provide enough verified boundary to justify the answer safely?
 
 MANDATORY REJECTION if:
 - more than one option is reasonably defensible
-- the claimed correct answer is unsupported by the supplied concept
+- the claimed correct answer is unsupported by the concept plus evidence packet
 - the vignette relies on an invented fact that changes the answer
 - management could be unsafe or guideline-sensitive without sufficient context
 - difficulty is mainly obscurity or trick wording
 - the answer is given away by buzzwords or option construction
-- a descriptive fact has been disguised as a treatment decision
+- a descriptive fact has been disguised as a treatment decision outside the packet's allowed targets
 - medicine selection omits context needed to determine the preferred agent
-- the explanation says an alternative is wrong merely because the source did not mention it
-- an option claimed false is actually a true property
-- a high/critical-risk concept is too thin or stale to support the item
+- the explanation says an alternative is wrong without support from the concept or evidence packet
+- an option claimed false is actually a true property in the scenario
+- a high/critical-risk item exceeds the verified boundary supplied by the concept plus evidence packet
 
 Return ONLY:
 {
