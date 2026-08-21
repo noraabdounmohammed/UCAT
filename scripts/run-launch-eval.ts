@@ -2,6 +2,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { generateQuestionFromConcept } from '../src/services/aiQuestionGenerator';
 import { UKMLA_QUALITY_INSTRUCTIONS, reviewUKMLAQuestion, validateUKMLAQuestion } from '../src/services/questionQuality';
+import { buildEvidencePacketInstructions } from '../src/services/evidencePackets';
 import type { ConceptNode } from '../src/types/conceptTypes';
 
 const AI_PROXY_BASE = process.env.STUDYEDIT_BASE_URL || 'https://studyedit.com';
@@ -84,7 +85,7 @@ async function run() {
       const candidate: any = await generateQuestionFromConcept(
         target.concept,
         'ukmla_sba',
-        UKMLA_QUALITY_INSTRUCTIONS,
+        `${UKMLA_QUALITY_INSTRUCTIONS}${buildEvidencePacketInstructions(target.concept.concept_id)}`,
       );
       const deterministic = validateUKMLAQuestion(candidate);
       const review = deterministic.pass
