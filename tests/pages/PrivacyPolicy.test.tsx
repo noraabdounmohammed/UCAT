@@ -15,7 +15,7 @@ describe('<PrivacyPolicy />', () => {
         <PrivacyPolicy />
       </MemoryRouter>
     );
-    expect(screen.getByRole('heading', { name: /privacy.*cookies/i, level: 1 })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: /privacy.*data/i, level: 1 })).toBeInTheDocument();
     // The contact email should appear at least once (data-deletion + made-by-doctor sections).
     const emails = screen.getAllByText(/nora@studyedit\.com/i);
     expect(emails.length).toBeGreaterThanOrEqual(1);
