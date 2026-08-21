@@ -9,15 +9,13 @@ vi.mock('@/hooks/useUserRole', () => ({ useUserRole: vi.fn(() => ({ isCreator: f
 import { PrivacyPolicy } from '@/pages/PrivacyPolicy';
 
 describe('<PrivacyPolicy />', () => {
-  it('renders the heading and contact email', () => {
+  it('renders the heading and contact link', () => {
     render(
       <MemoryRouter>
         <PrivacyPolicy />
       </MemoryRouter>
     );
     expect(screen.getByRole('heading', { name: /privacy.*data/i, level: 1 })).toBeInTheDocument();
-    // The contact email should appear at least once (data-deletion + made-by-doctor sections).
-    const emails = screen.getAllByText(/nora@studyedit\.com/i);
-    expect(emails.length).toBeGreaterThanOrEqual(1);
+    expect(screen.getByRole('link', { name: /^contact$/i })).toHaveAttribute('href', 'mailto:nora@studyedit.com');
   });
 });
