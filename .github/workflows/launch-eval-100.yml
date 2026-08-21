@@ -1,8 +1,7 @@
 name: Launch Eval 100
 
 on:
-  push:
-    branches: [ launch-eval-100 ]
+  workflow_dispatch:
 
 jobs:
   launch-eval-100:
