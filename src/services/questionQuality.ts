@@ -10,6 +10,8 @@ ITEM BLUEPRINT — decide this before writing:
 - Build the correct answer first.
 - Build four distractors that represent realistic near-miss decisions or misconceptions, not random wrong answers.
 - Difficulty should come from clinical discrimination, NOT obscure trivia, hidden assumptions, deliberately deceptive wording, or an implausibly rare exception.
+- If the source concept is merely a factual property (for example route of administration, half-life, mechanism, one adverse effect, or one score component), DO NOT disguise that fact as a patient-management decision. Test the fact directly or generate a simple application that does not require invented management guidance.
+- Never turn a thin factual concept into a treatment-selection question unless the supplied source explicitly supports the treatment decision and the competing options.
 
 VIGNETTE (the "vignette" field):
 - Start with age + gender where clinically appropriate.
@@ -24,6 +26,7 @@ VIGNETTE (the "vignette" field):
 - Avoid classic buzzwords when a more natural clinical description can test the same reasoning.
 - Never split phrases such as "On examination" or "Cardiovascular examination" across paragraphs.
 - Reference ranges are required for laboratory values when interpretation depends on whether the value is abnormal. Do not add pointless reference ranges to ordinary observations such as heart rate, BP or oxygen saturation.
+- For medication-management questions, include every clinically relevant discriminator needed to choose safely between the options, such as indication, renal function, haemodynamic status, bleeding history, pregnancy status, prior adverse reactions, planned PCI/thrombolysis, or interacting antithrombotic treatment when relevant.
 
 LEAD-IN (the "question" field):
 - One short, direct sentence outside the vignette and ending with "?".
@@ -35,6 +38,7 @@ LEAD-IN (the "question" field):
   "Which drug should be stopped?"
   "What is the most likely underlying mechanism?"
 - Do not repeat the lead-in inside the vignette.
+- Do not ask a management question when the source concept only supports a descriptive fact.
 
 OPTIONS:
 - Exactly 5 options, IDs A–E.
@@ -43,12 +47,15 @@ OPTIONS:
 - Every distractor must be clinically plausible before the decisive clue is applied.
 - No "all of the above", "none of the above", joke options, obvious opposites, or one conspicuously detailed option.
 - Exactly ONE option must be defensibly best from the information given.
+- If two options are both true statements about the concept, rewrite the lead-in so only one answers the question, or replace one option.
+- Do not create distractors by asserting that a real property of a drug, score or disease is false.
 
 ANTI-PATTERN-RECOGNITION:
 - Do not make the diagnosis obvious from one famous buzzword alone.
 - Do not reproduce the concept title verbatim in the vignette unless clinically unavoidable.
 - Make the student integrate at least two pieces of information whenever the source content supports it.
 - Prefer realistic competing diagnoses/actions over obscure trivia.
+- Avoid gratuitous "sausage-shaped", "tumour plop", "tearing" or similar textbook labels when the same concept can be tested with natural findings; if such a clue is used, do not let it be the only discriminating evidence.
 
 OUTPUT JSON — return exactly this shape:
 {
@@ -78,7 +85,7 @@ OUTPUT JSON — return exactly this shape:
   }
 }
 
-Use only facts supported by the supplied concept content. If the source content is too thin to support a fair applied item, keep the case simple rather than inventing unsupported medical detail.`;
+Use only facts supported by the supplied concept content. If the source content is too thin to support a fair applied item, prefer a simple factual/application question over inventing unsupported clinical management detail.`;
 
 export interface QuestionQualityResult {
   pass: boolean;
@@ -137,7 +144,7 @@ async function callReviewer(prompt: string): Promise<any> {
       messages: [
         {
           role: 'system',
-          content: 'You are a hostile reviewer for a national medical licensing exam. Reject ambiguous, cueable, unfair, unsupported, trivial, or clinically unsafe questions. Do not reward eloquent wording. Respond with valid JSON only.'
+          content: 'You are a hostile reviewer for a national medical licensing exam. Reject ambiguous, cueable, unfair, unsupported, trivial, or clinically unsafe questions. Check every option independently for truth and defensibility. Do not reward eloquent wording. Respond with valid JSON only.'
         },
         { role: 'user', content: prompt }
       ]
@@ -180,6 +187,12 @@ Score these dimensions:
 - clarity: 5
 - fairness: 5
 
+Before scoring, explicitly test every answer option independently:
+1. Is the statement/action itself clinically true?
+2. Could it reasonably answer this lead-in in this patient?
+3. Is any claimed distinction dependent on context absent from the stem?
+4. Does the explanation dismiss a true alternative merely because the source concept did not mention it?
+
 MANDATORY REJECTION if:
 - more than one option is reasonably defensible from the information given
 - the claimed correct answer is unsupported by the supplied concept
@@ -187,6 +200,10 @@ MANDATORY REJECTION if:
 - management could be clinically unsafe
 - difficulty is mainly obscurity or trick wording
 - the answer is given away by buzzwords or option construction
+- a descriptive source fact has been disguised as a treatment/management decision
+- the item requires choosing between medicines but omits context needed to determine the preferred agent
+- the explanation says an alternative is wrong merely because the source content did not mention it
+- an option claimed to be false is actually a true property of the drug, score, disease, investigation, or treatment
 
 Return ONLY:
 {
@@ -209,7 +226,6 @@ Pass only if score >= 88 and there is no mandatory rejection.`;
     return { pass, score, reasons: reasons.length ? reasons : pass ? [] : ['Adversarial reviewer did not approve this item.'] };
   } catch (error) {
     console.warn('Question reviewer unavailable; accepting only deterministic validation.', error);
-    // Reviewer failure must not surface a malformed question, but should not make practice unusable.
     return deterministic;
   }
 }
