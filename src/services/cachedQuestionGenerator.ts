@@ -6,7 +6,7 @@
  */
 
 import { questionCacheService, type CachedQuestion, type QuestionInsert } from './questionCacheService';
-import { jsonConceptLoader } from './jsonConceptLoader';
+import { jsonConceptLoader, type ResolvedJsonConcept } from './jsonConceptLoader';
 import { generateQuestionFromConcept } from './aiQuestionGenerator';
 import { UKMLA_QUALITY_INSTRUCTIONS, reviewUKMLAQuestion, validateUKMLAQuestion } from './questionQuality';
 import type { QuestionData } from '@/components/practice/questionTypes';
@@ -78,6 +78,18 @@ function isUsableCachedQuestion(cached: CachedQuestion, requestedFormat: string)
   }).pass;
 }
 
+/**
+ * A structurally valid cached item is still stale if it was generated from an
+ * older source atom. This comparison gives us automatic cache invalidation
+ * whenever the canonical concept content changes.
+ */
+function isCacheSourceCurrent(cached: CachedQuestion, concept: ResolvedJsonConcept | null): boolean {
+  if (!concept) return false;
+  const currentContent = normalise(concept.content);
+  const cachedContent = normalise(cached.concept_content);
+  return Boolean(currentContent && cachedContent && currentContent === cachedContent);
+}
+
 export const cachedQuestionGenerator = {
   /**
    * Get questions for concepts - checks cache first, generates if needed
@@ -90,9 +102,23 @@ export const cachedQuestionGenerator = {
     const results: GeneratedQuestion[] = [];
 
     for (const conceptId of conceptIds) {
-      // 1. Check cache, but never surface malformed UKMLA questions.
+      // Resolve source truth before trusting cache. A cached question generated
+      // from superseded concept content is treated as a cache miss.
+      const concept = await jsonConceptLoader.getConceptById(conceptId);
       const cached = await questionCacheService.getQuestionsForConcepts([conceptId]);
-      const usableCached = cached.filter(q => isUsableCachedQuestion(q, questionFormat));
+      const usableCached = cached.filter(q =>
+        isUsableCachedQuestion(q, questionFormat) && isCacheSourceCurrent(q, concept)
+      );
+
+      if (cached.length > usableCached.length && process.env.NODE_ENV === 'development') {
+        console.log('Ignoring stale or malformed cached questions', {
+          conceptId,
+          cached: cached.length,
+          usable: usableCached.length,
+          canonicalConceptId: concept?.canonical_concept_id,
+          sourceTruth: concept?.source_truth,
+        });
+      }
 
       if (usableCached.length > 0) {
         const toUse = usableCached.slice(0, questionCount);
@@ -103,7 +129,7 @@ export const cachedQuestionGenerator = {
           });
         }
 
-        // Top up if filtering malformed cache entries left us short.
+        // Top up if filtering malformed/stale cache entries left us short.
         if (toUse.length < questionCount) {
           const generated = await this.generateAndCache(conceptId, {
             questionCount: questionCount - toUse.length,
@@ -113,7 +139,7 @@ export const cachedQuestionGenerator = {
           generated.forEach(q => results.push({ question: q, fromCache: false }));
         }
       } else {
-        // 2. Generate with AI when cache is empty or malformed.
+        // Generate with AI when cache is empty, malformed or source-stale.
         const generated = await this.generateAndCache(conceptId, {
           questionCount,
           questionFormat,
@@ -155,7 +181,9 @@ export const cachedQuestionGenerator = {
     const results: GeneratedQuestion[] = [];
 
     for (const concept of concepts) {
-      const cachedForConcept = cachedByConcept[concept.concept_id] || [];
+      const canonicalConcept = await jsonConceptLoader.getConceptById(concept.concept_id);
+      const cachedForConcept = (cachedByConcept[concept.concept_id] || [])
+        .filter(q => isCacheSourceCurrent(q, canonicalConcept));
 
       if (cachedForConcept.length > 0) {
         const toUse = cachedForConcept.slice(0, questionCount);
@@ -378,8 +406,14 @@ export const cachedQuestionGenerator = {
     let cached = 0;
 
     for (const conceptId of conceptIds) {
-      const existing = await questionCacheService.getQuestionsForConcepts([conceptId]);
-      const hasUsableCached = existing.some(q => isUsableCachedQuestion(q, options.questionFormat || 'ukmla_sba'));
+      const [existing, concept] = await Promise.all([
+        questionCacheService.getQuestionsForConcepts([conceptId]),
+        jsonConceptLoader.getConceptById(conceptId)
+      ]);
+      const hasUsableCached = existing.some(q =>
+        isUsableCachedQuestion(q, options.questionFormat || 'ukmla_sba') &&
+        isCacheSourceCurrent(q, concept)
+      );
 
       if (hasUsableCached) {
         cached++;
