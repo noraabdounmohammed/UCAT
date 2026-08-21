@@ -8,6 +8,7 @@
 import { questionCacheService, type CachedQuestion, type QuestionInsert } from './questionCacheService';
 import { jsonConceptLoader } from './jsonConceptLoader';
 import { generateQuestionFromConcept } from './aiQuestionGenerator';
+import { UKMLA_QUALITY_INSTRUCTIONS, reviewUKMLAQuestion, validateUKMLAQuestion } from './questionQuality';
 import type { QuestionData } from '@/components/practice/questionTypes';
 import type { ConceptNode } from '@/types/conceptTypes';
 
@@ -23,6 +24,13 @@ export interface GeneratedQuestion {
 }
 
 const normalise = (value: unknown) => String(value || '').replace(/\s+/g, ' ').trim();
+const cleanBlock = (value: unknown) => String(value || '')
+  .replace(/\r\n?/g, '\n')
+  .split('\n')
+  .map(line => line.replace(/[\t ]+/g, ' ').trim())
+  .join('\n')
+  .replace(/\n{3,}/g, '\n\n')
+  .trim();
 
 function isLeadIn(value: unknown): boolean {
   const clean = normalise(value);
@@ -43,20 +51,31 @@ function getCachedLeadIn(cached: CachedQuestion): string {
 }
 
 function stripLeadInFromStem(stem: unknown, leadIn: string): string {
-  const cleanStem = normalise(stem);
+  const rawStem = cleanBlock(stem);
   const cleanLeadIn = normalise(leadIn);
-  if (!cleanStem || !cleanLeadIn) return cleanStem;
-  if (cleanStem.endsWith(cleanLeadIn)) {
-    return cleanStem.slice(0, -cleanLeadIn.length).trim();
+  if (!rawStem || !cleanLeadIn) return rawStem;
+  const stemAsOneLine = normalise(rawStem);
+  if (stemAsOneLine.endsWith(cleanLeadIn)) {
+    const lastIndex = rawStem.toLowerCase().lastIndexOf(cleanLeadIn.toLowerCase());
+    if (lastIndex >= 0) return rawStem.slice(0, lastIndex).trim();
   }
-  return cleanStem;
+  return rawStem;
 }
 
 function isUsableCachedQuestion(cached: CachedQuestion, requestedFormat: string): boolean {
   if (!Array.isArray(cached.options) || cached.options.length < 2 || !normalise(cached.correct_answer)) return false;
   const format = cached.question_format || requestedFormat;
   if (format !== 'ukmla_sba') return true;
-  return Boolean(getCachedLeadIn(cached));
+
+  const leadIn = getCachedLeadIn(cached);
+  if (!leadIn) return false;
+  const clinicalVignette = stripLeadInFromStem(cached.question_stem, leadIn);
+  return validateUKMLAQuestion({
+    clinical_vignette: clinicalVignette,
+    question: leadIn,
+    options: cached.options,
+    correct_answer: cached.correct_answer,
+  }).pass;
 }
 
 export const cachedQuestionGenerator = {
@@ -199,13 +218,52 @@ export const cachedQuestionGenerator = {
       const questionsToCache: QuestionInsert[] = [];
 
       for (let i = 0; i < count; i++) {
-        const aiQuestion = await generateQuestionFromConcept(conceptNode, format as any);
+        let aiQuestion: any = null;
 
-        const leadIn = normalise((aiQuestion as any).question);
-        const vignette = normalise((aiQuestion as any).clinical_vignette);
-        const fullStem = normalise((aiQuestion as any).question_stem || (aiQuestion as any).stem || [vignette, leadIn].filter(Boolean).join(' '));
+        // New UKMLA items pass through a generation brief + deterministic lint + adversarial review.
+        // A single retry keeps quality high without creating an unbounded latency/cost loop.
+        const maxAttempts = format === 'ukmla_sba' ? 2 : 1;
+        for (let attempt = 0; attempt < maxAttempts; attempt++) {
+          const candidate = await generateQuestionFromConcept(
+            conceptNode,
+            format as any,
+            format === 'ukmla_sba' ? UKMLA_QUALITY_INSTRUCTIONS : undefined
+          );
 
-        // UKMLA questions without a real lead-in are unsafe to cache/display.
+          if (format !== 'ukmla_sba') {
+            aiQuestion = candidate;
+            break;
+          }
+
+          const quality = await reviewUKMLAQuestion(candidate, conceptNode);
+          if (quality.pass) {
+            aiQuestion = candidate;
+            if (process.env.NODE_ENV === 'development') {
+              console.log('✅ UKMLA item passed quality gate', { conceptId, score: quality.score, attempt: attempt + 1 });
+            }
+            break;
+          }
+
+          console.warn('Rejecting generated UKMLA item', {
+            conceptId,
+            score: quality.score,
+            reasons: quality.reasons,
+            attempt: attempt + 1,
+          });
+        }
+
+        if (!aiQuestion) {
+          console.warn('No generated UKMLA item passed the quality gate', { conceptId });
+          continue;
+        }
+
+        const leadIn = normalise(aiQuestion.question);
+        const vignette = format === 'ukmla_sba' ? cleanBlock(aiQuestion.clinical_vignette) : normalise(aiQuestion.clinical_vignette);
+        // For UKMLA, rebuild the combined stem from the two canonical fields rather than trusting AI formatting.
+        const fullStem = format === 'ukmla_sba'
+          ? [vignette, leadIn].filter(Boolean).join('\n\n')
+          : normalise(aiQuestion.question_stem || aiQuestion.stem || [vignette, leadIn].filter(Boolean).join(' '));
+
         if (format === 'ukmla_sba' && !isLeadIn(leadIn)) {
           console.warn('Skipping malformed generated UKMLA question with no valid lead-in', { conceptId });
           continue;
@@ -218,11 +276,11 @@ export const cachedQuestionGenerator = {
           question_stem: fullStem,
           clinical_vignette: vignette,
           question: leadIn || fullStem,
-          options: (aiQuestion as any).options || [],
-          correctAnswer: (aiQuestion as any).correct_answer || (aiQuestion as any).correctAnswer || '',
-          explanation: (aiQuestion as any).explanation || '',
-          keyFact: (aiQuestion as any).key_fact || (aiQuestion as any).keyFact || '',
-          citation_id: (aiQuestion as any).citation_id || null,
+          options: aiQuestion.options || [],
+          correctAnswer: aiQuestion.correct_answer || aiQuestion.correctAnswer || '',
+          explanation: aiQuestion.explanation || '',
+          keyFact: aiQuestion.key_fact || aiQuestion.keyFact || '',
+          citation_id: aiQuestion.citation_id || null,
           concept_id: conceptId
         };
 
@@ -238,11 +296,11 @@ export const cachedQuestionGenerator = {
           question_stem: fullStem,
           // question_text is deliberately the lead-in only, never a vignette fallback.
           question_text: leadIn,
-          options: (aiQuestion as any).options || [],
-          correct_answer: (aiQuestion as any).correct_answer || (aiQuestion as any).correctAnswer || '',
-          key_fact: (aiQuestion as any).key_fact || (aiQuestion as any).keyFact || '',
-          explanation: (aiQuestion as any).explanation || '',
-          citation_id: (aiQuestion as any).citation_id || null,
+          options: aiQuestion.options || [],
+          correct_answer: aiQuestion.correct_answer || aiQuestion.correctAnswer || '',
+          key_fact: aiQuestion.key_fact || aiQuestion.keyFact || '',
+          explanation: aiQuestion.explanation || '',
+          citation_id: aiQuestion.citation_id || null,
           question_format: format,
           difficulty: options.difficulty || 'medium'
         });
@@ -266,7 +324,7 @@ export const cachedQuestionGenerator = {
    */
   cachedToQuestionData(cached: CachedQuestion): QuestionData {
     const leadIn = getCachedLeadIn(cached);
-    const clinicalVignette = leadIn ? stripLeadInFromStem(cached.question_stem, leadIn) : normalise(cached.question_stem);
+    const clinicalVignette = leadIn ? stripLeadInFromStem(cached.question_stem, leadIn) : cleanBlock(cached.question_stem);
 
     return {
       id: cached.id,
