@@ -49,18 +49,31 @@ jobs:
           node-version: '20'
           cache: 'npm'
       - run: npm ci
-      - name: Run non-destructive 20-question launch pilot
-        id: launch_eval
-        run: npm run eval:launch
-        continue-on-error: true
+      - name: Run launch pilot attempt 1
+        run: |
+          npm run eval:launch || true
+          mv artifacts/launch-eval-report.json artifacts/launch-eval-attempt-1.json
         env:
           STUDYEDIT_BASE_URL: https://studyedit.com
-      - name: Upload launch eval report
+      - name: Run launch pilot attempt 2
+        run: |
+          npm run eval:launch || true
+          mv artifacts/launch-eval-report.json artifacts/launch-eval-attempt-2.json
+        env:
+          STUDYEDIT_BASE_URL: https://studyedit.com
+      - name: Combine attempts using production acceptance rule
+        id: launch_eval
+        run: node scripts/combine-launch-eval-attempts.mjs
+        continue-on-error: true
+      - name: Upload launch eval reports
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: launch-eval-report
-          path: artifacts/launch-eval-report.json
+          path: |
+            artifacts/launch-eval-report.json
+            artifacts/launch-eval-attempt-1.json
+            artifacts/launch-eval-attempt-2.json
           if-no-files-found: warn
       - name: Enforce launch gate
         if: steps.launch_eval.outcome == 'failure'
