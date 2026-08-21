@@ -37,7 +37,7 @@ OPTIONS:
 - Every distractor must be a clinically plausible near miss before the decisive clue is applied.
 - No all/none of the above, joke answers, obvious opposites or conspicuously detailed correct options.
 - Exactly ONE answer must be defensibly best.
-- If two options are both clinically true, rewrite the lead-in or replace one option.
+- If more than one answer choice is clinically true, rewrite the lead-in or replace an option.
 - Never make a distractor by falsely denying a real property of a drug, score, disease, investigation or treatment.
 
 ANTI-PATTERN-RECOGNITION:
