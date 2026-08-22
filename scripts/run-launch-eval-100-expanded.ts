@@ -1,8 +1,10 @@
 import { readFile, writeFile } from 'node:fs/promises';
 
 // Eval-only compatibility patch so the 100-concept benchmark measures
-// question quality rather than two known generator/runtime defects.
-// Production changes will be promoted separately after this benchmark is clean.
+// question quality rather than the known dynamic option-count defect.
+// This script is intentionally idempotent because CI runs two attempts in the
+// same checkout: attempt 1 mutates the working tree, so attempt 2 must accept
+// the already-patched state rather than failing the harness.
 const generatorPath = new URL('../src/services/aiQuestionGenerator.ts', import.meta.url);
 let generatorSource = await readFile(generatorPath, 'utf8');
 
@@ -10,11 +12,11 @@ const dynamicOptionBlock = `  // Determine number of options from instructions\n
 
 const lockedOptionBlock = `  // UKMLA AKT questions always use exactly five options.\n  // Do not infer option count from arbitrary instruction text.\n  const optionCount = 5;`;
 
-if (!generatorSource.includes(dynamicOptionBlock)) {
-  throw new Error('Expected UKMLA dynamic option-count block was not found; refusing to patch silently.');
+if (generatorSource.includes(dynamicOptionBlock)) {
+  generatorSource = generatorSource.replace(dynamicOptionBlock, lockedOptionBlock);
+} else if (!generatorSource.includes(lockedOptionBlock)) {
+  throw new Error('Neither the expected dynamic nor already-locked UKMLA option-count block was found; refusing to patch silently.');
 }
-
-generatorSource = generatorSource.replace(dynamicOptionBlock, lockedOptionBlock);
 
 generatorSource = generatorSource.replace(
   `    console.error('Error details:', {\n      message: error instanceof Error ? error.message : 'Unknown error',\n      concept: concept.title,\n      hasApiKey: !!import.meta.env.VITE_OPENAI_API_KEY\n    });`,
