@@ -41,6 +41,19 @@ if (qualitySource.includes(literalBoundary)) {
   throw new Error('Expected generator evidence-boundary text was not found; refusing to patch silently.');
 }
 
+// The dominant residual failure in the 57% run was not harmless enrichment;
+// it was thin source material being inflated into comparative management,
+// referral, timing or treatment-hierarchy decisions that the source did not
+// actually specify. Force the generator to choose the cognitive task only
+// after checking that the verified boundary can support it.
+const blueprintAnchor = `ITEM BLUEPRINT — decide this before writing:\n- Test ONE clinically meaningful decision.`;
+const sufficiencyGate = `ITEM BLUEPRINT — decide this before writing:\n- SOURCE SUFFICIENCY GATE: before choosing the task, ask whether the concept plus evidence packet explicitly supports the comparison needed to make ONE option uniquely best. A management/medication/referral/timing question requires an explicit decision boundary for the preferred action and the qualifiers that distinguish it. Do not manufacture a hierarchy from a broad statement such as “may be altered”, “consider”, “associated with”, a list of causes, or a single factual property.\n- If that comparative boundary is absent, test only the supported fact or a simple application of it. Do not ask “most appropriate”, “next”, “first-line”, “urgent”, “preferred”, “how long”, or “which treatment” unless the verified source boundary itself justifies that ranking.\n- Test ONE clinically meaningful decision.`;
+if (qualitySource.includes(blueprintAnchor)) {
+  qualitySource = qualitySource.replace(blueprintAnchor, sufficiencyGate);
+} else if (!qualitySource.includes('SOURCE SUFFICIENCY GATE:')) {
+  throw new Error('Expected item-blueprint anchor was not found; refusing to add source-sufficiency gate silently.');
+}
+
 const oldImportant = `- Do NOT reject an item merely because the older source concept is concise if the evidence packet explicitly supplies the missing decision boundary.\n- Still reject any question that contradicts the packet, omits context needed to distinguish the options, invents unsupported medicine, or leaves more than one defensible answer.`;
 const newImportant = `- Do NOT reject an item merely because the older source concept is concise if the evidence packet explicitly supplies the missing decision boundary.\n- Separate the SOURCE-LOCKED CORE from CLINICAL ENRICHMENT. The source-locked core is the tested claim, keyed answer, and every discriminator necessary to make that answer uniquely best. Those must be supported by the concept plus evidence packet.\n- Clinically standard context may enrich age/history/examination or make distractors realistic when it is not needed to establish or exclude the keyed answer. Do NOT reject harmless enrichment merely because the exact contextual fact is absent from the source.\n- A distractor does not need to be explicitly named or refuted by the source. Judge distractors using established clinical knowledge, while still requiring exactly one defensibly best answer in the stated patient.\n- Still reject any question that contradicts the packet, omits decision-changing context, treats omission as negative evidence, invents a threshold/hierarchy/preference/contraindication, relies on unsupported medicine to make the answer unique, or leaves more than one defensible answer.\n- For high/critical-risk management, drug, pregnancy, emergency or referral claims, every decision-changing qualifier remains inside the verified boundary; clinical enrichment must never weaken that requirement.`;
 
