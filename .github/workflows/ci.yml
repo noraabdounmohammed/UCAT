@@ -93,7 +93,7 @@ jobs:
       - run: npm ci
       - name: Run distinct 100-concept attempt 1
         run: |
-          npx tsx scripts/run-launch-eval-100-distinct.ts || true
+          npx tsx scripts/run-launch-eval-100-expanded.ts || true
           mv artifacts/launch-eval-report.json artifacts/launch-eval-attempt-1.json
         env:
           STUDYEDIT_BASE_URL: https://studyedit.com
@@ -101,7 +101,7 @@ jobs:
           VITE_SUPABASE_ANON_KEY: sb_publishable_FWNGF1ytdxGbG1RoOiAzJA_tH6NF8Wg
       - name: Run distinct 100-concept attempt 2
         run: |
-          npx tsx scripts/run-launch-eval-100-distinct.ts || true
+          npx tsx scripts/run-launch-eval-100-expanded.ts || true
           mv artifacts/launch-eval-report.json artifacts/launch-eval-attempt-2.json
         env:
           STUDYEDIT_BASE_URL: https://studyedit.com
