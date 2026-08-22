@@ -15,7 +15,7 @@ const fallbackPrototype = new Proxy<Record<string, EvidencePacket>>({}, {
 
     return {
       conceptId: property,
-      claim: 'SOURCE CEILING + DISTRACTOR PROOF: Treat the canonical concept content as the complete evidence boundary. Extract ONE atomic proposition that is explicitly supported. BEFORE writing any vignette, construct five candidate answers at the SAME semantic level and run an internal proof: for the correct option, identify the exact source proposition that supports it; for EACH distractor, identify the exact source proposition or explicit qualifier that makes it wrong. If any distractor can only be rejected using outside medical knowledge, replace it. If five provably distinguishable options cannot be built, NARROW the question to a simpler factual/application distinction. Never broaden the clinical decision to make the item look more realistic.',
+      claim: 'SOURCE CEILING + DISTRACTOR PROOF: Treat the canonical concept content as the complete evidence boundary. Extract ONE atomic proposition that is explicitly supported. BEFORE writing any vignette, construct five candidate answers at the SAME semantic level and run an internal proof: for the correct option, identify the exact source proposition that supports it; for EACH distractor, identify the exact source proposition or explicit qualifier that makes it wrong. If any distractor can only be rejected using outside medical knowledge, replace it. If five provably distinguishable options cannot be built, NARROW the question to a simpler factual/application distinction. Never broaden the clinical decision to make the item look more realistic. OUTPUT CONTRACT: every UKMLA SBA must contain exactly five options labelled A-E.',
       requiredContext: [
         'every qualifier explicitly present in the source that is necessary to make one answer uniquely best',
         'only timing, severity, pregnancy, renal, bleeding, response, setting or eligibility variables whose effect on the answer is itself stated by the source',
@@ -35,6 +35,7 @@ const fallbackPrototype = new Proxy<Record<string, EvidencePacket>>({}, {
         'Do not reject any distractor in the explanation using outside knowledge. Every wrong-option explanation must be traceable to the supplied source content.',
         'Do not add realistic-sounding vignette details that can alter diagnosis, severity, eligibility, prognosis or management unless the source explicitly defines their relevance.',
         'Do not prefer a richer clinical vignette over a narrower fair question. Source-bounded fairness wins over realism every time.',
+        'Formatting is fixed: generate exactly five options A, B, C, D and E even if the source text discusses two alternatives or two formulations.',
       ],
       distractorIntents: [
         'same-level near miss whose falsity is explicitly supported by the source',
