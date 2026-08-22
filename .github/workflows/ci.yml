@@ -83,7 +83,7 @@ jobs:
     runs-on: ubuntu-latest
     needs: test
     if: github.event_name == 'pull_request' && github.head_ref == 'launch-eval-100'
-    timeout-minutes: 90
+    timeout-minutes: 120
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -91,17 +91,36 @@ jobs:
           node-version: '20'
           cache: 'npm'
       - run: npm ci
-      - name: Run 100-question two-attempt launch evaluation
-        run: node scripts/run-launch-eval-100.mjs
+      - name: Run distinct 100-concept attempt 1
+        run: |
+          npx tsx scripts/run-launch-eval-100-distinct.ts || true
+          mv artifacts/launch-eval-report.json artifacts/launch-eval-attempt-1.json
         env:
           STUDYEDIT_BASE_URL: https://studyedit.com
-      - name: Upload 100-question launch eval reports
+          VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
+          VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
+      - name: Run distinct 100-concept attempt 2
+        run: |
+          npx tsx scripts/run-launch-eval-100-distinct.ts || true
+          mv artifacts/launch-eval-report.json artifacts/launch-eval-attempt-2.json
+        env:
+          STUDYEDIT_BASE_URL: https://studyedit.com
+          VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
+          VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
+      - name: Combine attempts using production acceptance rule
+        id: launch_eval_100
+        run: node scripts/combine-launch-eval-attempts.mjs
+        continue-on-error: true
+      - name: Upload distinct 100-concept launch eval reports
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: launch-eval-100-report
+          name: launch-eval-100-distinct-report
           path: |
-            artifacts/launch-eval-100-report.json
-            artifacts/launch-eval-100-replicate-*.json
-            artifacts/launch-eval-100-replicate-*-attempt-*.json
+            artifacts/launch-eval-report.json
+            artifacts/launch-eval-attempt-1.json
+            artifacts/launch-eval-attempt-2.json
           if-no-files-found: warn
+      - name: Enforce distinct 100-concept launch gate
+        if: steps.launch_eval_100.outcome == 'failure'
+        run: exit 1
