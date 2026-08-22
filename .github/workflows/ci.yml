@@ -97,16 +97,16 @@ jobs:
           mv artifacts/launch-eval-report.json artifacts/launch-eval-attempt-1.json
         env:
           STUDYEDIT_BASE_URL: https://studyedit.com
-          VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
-          VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
+          VITE_SUPABASE_URL: https://uivitzexbtsmnspcitgh.supabase.co
+          VITE_SUPABASE_ANON_KEY: sb_publishable_FWNGF1ytdxGbG1RoOiAzJA_tH6NF8Wg
       - name: Run distinct 100-concept attempt 2
         run: |
           npx tsx scripts/run-launch-eval-100-distinct.ts || true
           mv artifacts/launch-eval-report.json artifacts/launch-eval-attempt-2.json
         env:
           STUDYEDIT_BASE_URL: https://studyedit.com
-          VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
-          VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
+          VITE_SUPABASE_URL: https://uivitzexbtsmnspcitgh.supabase.co
+          VITE_SUPABASE_ANON_KEY: sb_publishable_FWNGF1ytdxGbG1RoOiAzJA_tH6NF8Wg
       - name: Combine attempts using production acceptance rule
         id: launch_eval_100
         run: node scripts/combine-launch-eval-attempts.mjs
