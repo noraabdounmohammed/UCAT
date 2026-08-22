@@ -41,11 +41,6 @@ if (qualitySource.includes(literalBoundary)) {
   throw new Error('Expected generator evidence-boundary text was not found; refusing to patch silently.');
 }
 
-// The dominant residual failure in the 57% run was not harmless enrichment;
-// it was thin source material being inflated into comparative management,
-// referral, timing or treatment-hierarchy decisions that the source did not
-// actually specify. Force the generator to choose the cognitive task only
-// after checking that the verified boundary can support it.
 const blueprintAnchor = `ITEM BLUEPRINT — decide this before writing:\n- Test ONE clinically meaningful decision.`;
 const sufficiencyGate = `ITEM BLUEPRINT — decide this before writing:\n- SOURCE SUFFICIENCY GATE: before choosing the task, ask whether the concept plus evidence packet explicitly supports the comparison needed to make ONE option uniquely best. A management/medication/referral/timing question requires an explicit decision boundary for the preferred action and the qualifiers that distinguish it. Do not manufacture a hierarchy from a broad statement such as “may be altered”, “consider”, “associated with”, a list of causes, or a single factual property.\n- If that comparative boundary is absent, test only the supported fact or a simple application of it. Do not ask “most appropriate”, “next”, “first-line”, “urgent”, “preferred”, “how long”, or “which treatment” unless the verified source boundary itself justifies that ranking.\n- Test ONE clinically meaningful decision.`;
 if (qualitySource.includes(blueprintAnchor)) {
@@ -75,12 +70,34 @@ if (qualitySource.includes(oldMandatory)) {
   qualitySource = qualitySource.replace(oldMandatory, newMandatory);
 }
 
+// Manual-audit safeguards. These target false-positive passes discovered by
+// direct inspection of accepted items rather than weakening any existing gate.
+const optionsAnchor = `- Exactly ONE answer must be defensibly best.\n- If more than one answer choice is clinically true, rewrite the lead-in or replace an option.`;
+const optionsAudit = `- Exactly ONE answer must be defensibly best.\n- OPTIONS MUST BE MUTUALLY EXCLUSIVE AT THE SAME LEVEL OF SPECIFICITY. Do not place a parent category against its subtype, a diagnosis against a more specific form of itself, synonyms/near-synonyms, or threshold rules that would all recommend the same action for the patient's actual value.\n- If more than one answer choice is clinically true, rewrite the lead-in or replace an option.\n- For scores, thresholds and criteria, independently calculate the result from the raw values in the vignette. Never trust a score, risk label or interpretation merely because the vignette states it.`;
+if (qualitySource.includes(optionsAnchor)) {
+  qualitySource = qualitySource.replace(optionsAnchor, optionsAudit);
+} else if (!qualitySource.includes('OPTIONS MUST BE MUTUALLY EXCLUSIVE AT THE SAME LEVEL OF SPECIFICITY.')) {
+  throw new Error('Expected options anchor was not found; refusing to add manual-audit safeguards silently.');
+}
+
+const independentTestAnchor = `3. Is any claimed distinction dependent on context absent from the stem or evidence packet?`;
+const independentTestAudit = `3. Is any claimed distinction dependent on context absent from the stem or evidence packet?\n3a. Are any two options overlapping, nested, synonymous, parent/child, or simultaneously true at the patient's stated values?\n3b. If the item uses a clinical score, threshold, age band, dose, timing rule or numerical criterion, recompute it independently from the raw vignette data and verified source boundary; reject any arithmetic, threshold or category mismatch.`;
+if (qualitySource.includes(independentTestAnchor)) {
+  qualitySource = qualitySource.replace(independentTestAnchor, independentTestAudit);
+} else if (!qualitySource.includes('3a. Are any two options overlapping')) {
+  throw new Error('Expected reviewer independent-test anchor was not found; refusing to add overlap audit silently.');
+}
+
+const mandatoryAnchor = `- more than one option is reasonably defensible`;
+const mandatoryAudit = `- more than one option is reasonably defensible\n- two options overlap semantically or taxonomically (including parent/subtype, synonym/near-synonym, or multiple threshold formulations that all apply in this patient)\n- a stated score, risk category, threshold interpretation, timing rule or numerical calculation is not independently reproducible from the raw vignette values and verified source boundary`;
+if (qualitySource.includes(mandatoryAnchor)) {
+  qualitySource = qualitySource.replace(mandatoryAnchor, mandatoryAudit);
+} else if (!qualitySource.includes('two options overlap semantically or taxonomically')) {
+  throw new Error('Expected mandatory-rejection anchor was not found; refusing to add overlap rejection silently.');
+}
+
 await writeFile(qualityPath, qualitySource, 'utf8');
 
-// Load the second-wave packet registry and the generic source-granularity
-// fallback before the evaluator imports questionQuality. This keeps the
-// experiment isolated to the launch-eval branch while allowing
-// getEvidencePacket() to see both bespoke and fallback evidence boundaries.
 await import('../src/services/evidencePacketsExpandedPilot.ts');
 await import('../src/services/evidencePacketFallbackPilot.ts');
 await import('./run-launch-eval-100-distinct.ts');
