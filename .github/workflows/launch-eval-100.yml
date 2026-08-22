@@ -1,0 +1,30 @@
+name: Launch Eval 100
+
+on:
+  workflow_dispatch:
+
+jobs:
+  launch-eval-100:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+      - run: npm ci
+      - name: Run 100-question two-attempt launch evaluation
+        run: node scripts/run-launch-eval-100.mjs
+        env:
+          STUDYEDIT_BASE_URL: https://studyedit.com
+      - name: Upload 100-question launch eval reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: launch-eval-100-report
+          path: |
+            artifacts/launch-eval-100-report.json
+            artifacts/launch-eval-100-replicate-*.json
+            artifacts/launch-eval-100-replicate-*-attempt-*.json
+          if-no-files-found: warn

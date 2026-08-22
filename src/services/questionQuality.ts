@@ -99,6 +99,24 @@ function cleanVignetteForValidation(question: any): string {
   return raw;
 }
 
+function isGenericFallbackQuestion(vignette: string, texts: string[]): boolean {
+  const normalizedVignette = vignette.toLowerCase().replace(/\s+/g, ' ').trim();
+  const normalizedTexts = texts.map(text => text.toLowerCase().replace(/\s+/g, ' ').trim());
+  const stockOptions = [
+    'immediate intervention as per guidelines',
+    'further investigation required',
+    'conservative management',
+    'specialist referral',
+    'observation and reassessment',
+  ];
+
+  const exactFallbackVignette = normalizedVignette === 'a patient presents with symptoms and relevant clinical findings.'
+    || normalizedVignette === 'a patient presents with symptoms and relevant clinical findings';
+  const exactFallbackOptions = stockOptions.every(option => normalizedTexts.includes(option));
+
+  return exactFallbackVignette || exactFallbackOptions;
+}
+
 export function validateUKMLAQuestion(question: any): QuestionQualityResult {
   const reasons: string[] = [];
   const vignette = cleanVignetteForValidation(question);
@@ -122,6 +140,7 @@ export function validateUKMLAQuestion(question: any): QuestionQualityResult {
   const uniqueTexts = new Set(texts.map((text: string) => text.toLowerCase()));
   if (texts.length && uniqueTexts.size !== texts.length) reasons.push('Duplicate answer options detected.');
   if (texts.some((text: string) => /\b(?:all|none) of the above\b/i.test(text))) reasons.push('All/none-of-the-above options are not allowed.');
+  if (isGenericFallbackQuestion(vignette, texts)) reasons.push('TEMPLATE_FALLBACK: Generic fallback/template question is not publishable and must never satisfy the release gate.');
 
   const lengths = texts.filter(Boolean).map((text: string) => text.length);
   if (lengths.length === 5) {
