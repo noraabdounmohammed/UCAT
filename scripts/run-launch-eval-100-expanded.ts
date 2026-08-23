@@ -25,20 +25,20 @@ generatorSource = generatorSource.replace(
 
 await writeFile(generatorPath, generatorSource, 'utf8');
 
-// Eval-only evidence-boundary experiment: preserve strict support for the
-// tested claim and decision-changing facts, while allowing harmless clinical
-// context. This distinguishes useful vignette enrichment from answer-making
-// hallucination without weakening safety, ambiguity or source-truth gates.
+// The production quality prompt now already contains the evidence-boundary
+// distinction validated by the previous eval. Keep that boundary intact and
+// add only the stricter source-sufficiency and manual-audit safeguards here.
 const qualityPath = new URL('../src/services/questionQuality.ts', import.meta.url);
 let qualitySource = await readFile(qualityPath, 'utf8');
 
-const literalBoundary = 'Use only facts supported by the supplied concept content and any attached evidence packet. If the source is too thin for a fair applied item, prefer a simple factual/application question rather than inventing clinical management detail.';
-const enrichmentBoundary = 'SOURCE-GROUNDED CLINICAL ENRICHMENT: The tested claim, correct answer, and every fact that changes which option is best MUST be supported by the concept content or evidence packet. You MAY add clinically standard, non-decision-bearing context to make the vignette realistic. Do not use invented details to choose or exclude an answer; do not infer that an omitted risk factor, symptom, contraindication or history is absent; and never invent hierarchy, thresholds, timing, preference or contraindications. Distractors may use standard clinical knowledge and do not each need to be explicitly mentioned in the source, but exactly one option must still be defensibly best in the fully specified vignette. If the source is too thin for a fair applied item, prefer a simple factual/application question rather than manufacturing a management decision.';
+const currentEvidenceBoundary = 'Decision-critical facts that determine the keyed answer, including thresholds, treatment hierarchy, contraindications, timing, dose/route and referral criteria, must be supported by the supplied concept content and any attached evidence packet.';
+if (!qualitySource.includes(currentEvidenceBoundary)) {
+  throw new Error('Expected decision-critical evidence boundary was not found; refusing to patch silently.');
+}
 
-if (qualitySource.includes(literalBoundary)) {
-  qualitySource = qualitySource.replace(literalBoundary, enrichmentBoundary);
-} else if (!qualitySource.includes(enrichmentBoundary)) {
-  throw new Error('Expected generator evidence-boundary text was not found; refusing to patch silently.');
+const currentReviewerBoundary = 'Do NOT require every benign vignette detail or every explanatory sentence about a distractor to be quoted in the concept or packet.';
+if (!qualitySource.includes(currentReviewerBoundary)) {
+  throw new Error('Expected reviewer enrichment boundary was not found; refusing to patch silently.');
 }
 
 const blueprintAnchor = `ITEM BLUEPRINT — decide this before writing:\n- Test ONE clinically meaningful decision.`;
@@ -49,29 +49,8 @@ if (qualitySource.includes(blueprintAnchor)) {
   throw new Error('Expected item-blueprint anchor was not found; refusing to add source-sufficiency gate silently.');
 }
 
-const oldImportant = `- Do NOT reject an item merely because the older source concept is concise if the evidence packet explicitly supplies the missing decision boundary.\n- Still reject any question that contradicts the packet, omits context needed to distinguish the options, invents unsupported medicine, or leaves more than one defensible answer.`;
-const newImportant = `- Do NOT reject an item merely because the older source concept is concise if the evidence packet explicitly supplies the missing decision boundary.\n- Separate the SOURCE-LOCKED CORE from CLINICAL ENRICHMENT. The source-locked core is the tested claim, keyed answer, and every discriminator necessary to make that answer uniquely best. Those must be supported by the concept plus evidence packet.\n- Clinically standard context may enrich age/history/examination or make distractors realistic when it is not needed to establish or exclude the keyed answer. Do NOT reject harmless enrichment merely because the exact contextual fact is absent from the source.\n- A distractor does not need to be explicitly named or refuted by the source. Judge distractors using established clinical knowledge, while still requiring exactly one defensibly best answer in the stated patient.\n- Still reject any question that contradicts the packet, omits decision-changing context, treats omission as negative evidence, invents a threshold/hierarchy/preference/contraindication, relies on unsupported medicine to make the answer unique, or leaves more than one defensible answer.\n- For high/critical-risk management, drug, pregnancy, emergency or referral claims, every decision-changing qualifier remains inside the verified boundary; clinical enrichment must never weaken that requirement.`;
-
-if (qualitySource.includes(oldImportant)) {
-  qualitySource = qualitySource.replace(oldImportant, newImportant);
-} else if (!qualitySource.includes('Separate the SOURCE-LOCKED CORE from CLINICAL ENRICHMENT.')) {
-  throw new Error('Expected reviewer evidence-boundary block was not found; refusing to patch silently.');
-}
-
-const oldReviewQuestion = `4. Does the explanation dismiss a true alternative without support from the concept or evidence packet?`;
-const newReviewQuestion = `4. Does the explanation use clinically incorrect reasoning, omission-as-absence, or an unsupported decision-changing claim to dismiss a true alternative? Standard clinical knowledge may explain a distractor when that explanation is not required to manufacture the keyed answer.`;
-if (qualitySource.includes(oldReviewQuestion)) {
-  qualitySource = qualitySource.replace(oldReviewQuestion, newReviewQuestion);
-}
-
-const oldMandatory = `- the explanation says an alternative is wrong without support from the concept or evidence packet`;
-const newMandatory = `- the explanation relies on clinically incorrect medicine, omission-as-absence, or an unsupported decision-changing claim to make the keyed answer uniquely best`;
-if (qualitySource.includes(oldMandatory)) {
-  qualitySource = qualitySource.replace(oldMandatory, newMandatory);
-}
-
-// Manual-audit safeguards. These target false-positive passes discovered by
-// direct inspection of accepted items rather than weakening any existing gate.
+// Manual-audit safeguards discovered from accepted-item inspection. These
+// tighten single-best-answer integrity and numerical verification only.
 const optionsAnchor = `- Exactly ONE answer must be defensibly best.\n- If more than one answer choice is clinically true, rewrite the lead-in or replace an option.`;
 const optionsAudit = `- Exactly ONE answer must be defensibly best.\n- OPTIONS MUST BE MUTUALLY EXCLUSIVE AT THE SAME LEVEL OF SPECIFICITY. Do not place a parent category against its subtype, a diagnosis against a more specific form of itself, synonyms/near-synonyms, or threshold rules that would all recommend the same action for the patient's actual value.\n- If more than one answer choice is clinically true, rewrite the lead-in or replace an option.\n- For scores, thresholds and criteria, independently calculate the result from the raw values in the vignette. Never trust a score, risk label or interpretation merely because the vignette states it.`;
 if (qualitySource.includes(optionsAnchor)) {
@@ -80,8 +59,8 @@ if (qualitySource.includes(optionsAnchor)) {
   throw new Error('Expected options anchor was not found; refusing to add manual-audit safeguards silently.');
 }
 
-const independentTestAnchor = `3. Is any claimed distinction dependent on context absent from the stem or evidence packet?`;
-const independentTestAudit = `3. Is any claimed distinction dependent on context absent from the stem or evidence packet?\n3a. Are any two options overlapping, nested, synonymous, parent/child, or simultaneously true at the patient's stated values?\n3b. If the item uses a clinical score, threshold, age band, dose, timing rule or numerical criterion, recompute it independently from the raw vignette data and verified source boundary; reject any arithmetic, threshold or category mismatch.`;
+const independentTestAnchor = `3. Is any claimed DECISION-CRITICAL distinction dependent on context absent from the stem or evidence packet?`;
+const independentTestAudit = `3. Is any claimed DECISION-CRITICAL distinction dependent on context absent from the stem or evidence packet?\n3a. Are any two options overlapping, nested, synonymous, parent/child, or simultaneously true at the patient's stated values?\n3b. If the item uses a clinical score, threshold, age band, dose, timing rule or numerical criterion, recompute it independently from the raw vignette data and verified source boundary; reject any arithmetic, threshold or category mismatch.`;
 if (qualitySource.includes(independentTestAnchor)) {
   qualitySource = qualitySource.replace(independentTestAnchor, independentTestAudit);
 } else if (!qualitySource.includes('3a. Are any two options overlapping')) {
