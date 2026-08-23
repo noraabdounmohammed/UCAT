@@ -32,28 +32,38 @@ function applyPassPrecisionGuards() {
   const sourcePath = path.resolve('src/services/questionQuality.ts');
   let source = fs.readFileSync(sourcePath, 'utf8');
 
+  // Run-13 audit: 14/28 failures involved named/derived score assertions, and
+  // those assertions are also a false-PASS risk when arithmetic is subtly wrong.
+  // Fix generation, not the gate: raw components stay in the vignette and the
+  // learner/reviewer must derive the interpretation from verified thresholds.
   const oldInstruction = '- NEVER state a precomputed named clinical score in the vignette (for example CHA2DS2-VASc, HAS-BLED, NEWS2 or CURB-65). Supply the raw components so the score or interpretation is independently reproducible.';
-  const newInstruction = '- NEVER state a precomputed named clinical score in the vignette OR explanation (for example CHA2DS2-VASc, HAS-BLED, NEWS2 or CURB-65). Supply the raw components in the vignette so the score or interpretation is independently reproducible. In the explanation, reason from those raw components and the verified treatment/risk threshold without asserting a numeric named-score total.';
-  if (source.includes(oldInstruction)) {
+  const intermediateInstruction = '- NEVER state a precomputed named clinical score in the vignette OR explanation (for example CHA2DS2-VASc, HAS-BLED, NEWS2 or CURB-65). Supply the raw components in the vignette so the score or interpretation is independently reproducible. In the explanation, reason from those raw components and the verified treatment/risk threshold without asserting a numeric named-score total.';
+  const newInstruction = '- NEVER state, imply, or repeat a precomputed named clinical-score total or named-score numeric assertion ANYWHERE in the generated item (vignette, lead-in, options, key_fact, blueprint, or explanation), including softened forms such as “at least 2”, “about 7”, or “score 0–1”. Examples include CHA2DS2-VASc, HAS-BLED, NEWS2 and CURB-65. Supply the raw clinical components only. Ask or explain the clinically meaningful interpretation directly from those raw components plus the verified threshold/category boundary. Before emitting JSON, self-scan the ENTIRE output and rewrite any named-score numeric assertion you find. Do not weaken or omit raw data needed for independent calculation.';
+  if (source.includes(intermediateInstruction)) {
+    source = source.replace(intermediateInstruction, newInstruction);
+  } else if (source.includes(oldInstruction)) {
     source = source.replace(oldInstruction, newInstruction);
-  } else if (!source.includes('NEVER state a precomputed named clinical score in the vignette OR explanation')) {
-    throw new Error('Named-score explanation instruction anchor missing; refusing silent eval patch.');
+  } else if (!source.includes('self-scan the ENTIRE output and rewrite any named-score numeric assertion')) {
+    throw new Error('Named-score generation instruction anchor missing; refusing silent eval patch.');
   }
 
   const vignetteGuard = "  if (assertedScorePattern.test(vignette)) reasons.push('NUMERICAL_SAFETY: Precomputed named clinical score asserted in vignette; require raw inputs and independent calculation instead.');";
-  const explanationGuard = `${vignetteGuard}\n  const explanation = normalise(question?.explanation);\n  if (assertedScorePattern.test(explanation)) reasons.push('NUMERICAL_SAFETY: Precomputed named clinical score asserted in explanation; require raw inputs and threshold reasoning instead.');`;
-  if (source.includes(vignetteGuard) && !source.includes('Precomputed named clinical score asserted in explanation')) {
-    source = source.replace(vignetteGuard, explanationGuard);
-  } else if (!source.includes('Precomputed named clinical score asserted in explanation')) {
-    throw new Error('Named-score explanation deterministic guard anchor missing; refusing silent eval patch.');
+  const oldExplanationGuard = `${vignetteGuard}\n  const explanation = normalise(question?.explanation);\n  if (assertedScorePattern.test(explanation)) reasons.push('NUMERICAL_SAFETY: Precomputed named clinical score asserted in explanation; require raw inputs and threshold reasoning instead.');`;
+  const fullOutputGuard = `${vignetteGuard}\n  const explanation = normalise(question?.explanation);\n  if (assertedScorePattern.test(explanation)) reasons.push('NUMERICAL_SAFETY: Precomputed named clinical score asserted in explanation; require raw inputs and threshold reasoning instead.');\n  const optionScoreText = texts.join(' ');\n  const relaxedNamedScoreAssertion = /\\b(?:CHA2DS2[- ]?VASc|HAS[- ]?BLED|NEWS2|CURB[- ]?65)\\b[^.\\n]{0,90}\\b(?:score\\s*)?(?:is|was|=|of|only|at\\s+least|about|approximately|around|:)\\s*(?:at\\s+least\\s*)?\\d+(?:\\s*[–-]\\s*\\d+)?\\b/i;\n  if (relaxedNamedScoreAssertion.test(vignette) || relaxedNamedScoreAssertion.test(explanation) || relaxedNamedScoreAssertion.test(optionScoreText)) reasons.push('NUMERICAL_SAFETY: Named clinical-score numeric assertion present in generated output; use raw components and threshold/category reasoning instead.');`;
+  if (source.includes(oldExplanationGuard)) {
+    source = source.replace(oldExplanationGuard, fullOutputGuard);
+  } else if (source.includes(vignetteGuard) && !source.includes('Named clinical-score numeric assertion present in generated output')) {
+    source = source.replace(vignetteGuard, fullOutputGuard);
+  } else if (!source.includes('Named clinical-score numeric assertion present in generated output')) {
+    throw new Error('Named-score full-output deterministic guard anchor missing; refusing silent eval patch.');
   }
 
   fs.writeFileSync(sourcePath, source);
 }
 
 // Strict eval-only pass-precision repair. The workflow has already applied its
-// audited score/SBA guards before this script starts. This extends that guard to
-// explanations after a fresh false PASS exposed an arithmetic hallucination.
+// audited score/SBA guards before this script starts. This extends generation
+// hygiene and fail-closed verification across the complete generated item.
 applyPassPrecisionGuards();
 
 const startedAt = new Date().toISOString();
