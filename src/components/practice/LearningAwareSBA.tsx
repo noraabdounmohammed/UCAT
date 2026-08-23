@@ -29,9 +29,20 @@ interface LearningAwareSBAProps {
   nextButtonText?: string;
 }
 
+type ConfidenceLevel = 'know' | 'unsure' | 'guess';
+
+type EvidenceClass =
+  | 'strong_positive'
+  | 'weak_positive'
+  | 'no_positive_evidence'
+  | 'strong_misconception_signal'
+  | 'weak_negative'
+  | 'uninformative_negative';
+
 const C = {
   paper: '#FFFDF8',
   cream: '#FAF5EC',
+  parchment: '#F4ECDF',
   espresso: '#1F140C',
   ink: '#2A1E16',
   muted: '#8A7560',
@@ -49,6 +60,15 @@ function cleanSelection(value: string) {
   return value.replace(/\s+/g, ' ').replace(/^[\s\p{P}]+|[\s\p{P}]+$/gu, '').trim();
 }
 
+function classifyEvidence(correct: boolean, confidence: ConfidenceLevel): EvidenceClass {
+  if (correct && confidence === 'know') return 'strong_positive';
+  if (correct && confidence === 'unsure') return 'weak_positive';
+  if (correct && confidence === 'guess') return 'no_positive_evidence';
+  if (!correct && confidence === 'know') return 'strong_misconception_signal';
+  if (!correct && confidence === 'unsure') return 'weak_negative';
+  return 'uninformative_negative';
+}
+
 export const LearningAwareSBA: React.FC<LearningAwareSBAProps> = (props) => {
   const [learningOpen, setLearningOpen] = useState(false);
   const [usedLearningMode, setUsedLearningMode] = useState(false);
@@ -56,6 +76,8 @@ export const LearningAwareSBA: React.FC<LearningAwareSBAProps> = (props) => {
   const [explainerOpen, setExplainerOpen] = useState(false);
   const [explainerText, setExplainerText] = useState('');
   const [explainerLoading, setExplainerLoading] = useState(false);
+  const [confidenceOpen, setConfidenceOpen] = useState(false);
+  const [pendingCorrect, setPendingCorrect] = useState<boolean | null>(null);
   const questionRootRef = useRef<HTMLDivElement>(null);
   const abortControllerRef = useRef<AbortController | null>(null);
 
@@ -69,10 +91,10 @@ export const LearningAwareSBA: React.FC<LearningAwareSBAProps> = (props) => {
     return keyFact || firstUsefulSentence(explanation) || 'This is above your current knowledge frontier. We’ll treat it as learning, not a failed retrieval.';
   }, [props.question]);
 
-  const saveSignal = (signal: string, value?: string) => {
+  const saveSignal = (signal: string, value?: string, extra?: Record<string, unknown>) => {
     try {
       const key = `learning_frontier_${props.question.id || props.question.concept_id || props.currentIndex || 0}_${signal}_${value || ''}`;
-      sessionStorage.setItem(key, JSON.stringify({ signal, value, concept: conceptTitle, at: new Date().toISOString() }));
+      sessionStorage.setItem(key, JSON.stringify({ signal, value, concept: conceptTitle, at: new Date().toISOString(), ...extra }));
     } catch {
       // Learning signals must never block practice.
     }
@@ -84,17 +106,43 @@ export const LearningAwareSBA: React.FC<LearningAwareSBAProps> = (props) => {
     saveSignal('dont_know_yet');
   };
 
+  const handleChildAnswer = (isCorrect: boolean) => {
+    setPendingCorrect(isCorrect);
+    setConfidenceOpen(true);
+  };
+
+  const commitConfidence = (confidence: ConfidenceLevel) => {
+    if (pendingCorrect === null) return;
+
+    const evidenceClass = classifyEvidence(pendingCorrect, confidence);
+    const confidenceRank = confidence === 'know' ? 2 : confidence === 'unsure' ? 1 : 0;
+    saveSignal('answer_confidence', confidence, {
+      correct: pendingCorrect,
+      confidence_rank: confidenceRank,
+      evidence_class: evidenceClass,
+    });
+
+    // Keep conventional accuracy unchanged for now. The evidence class is stored
+    // separately so we can calibrate how confidence should alter mastery using
+    // later independent retrieval, rather than inventing arbitrary weights.
+    props.onAnswer(pendingCorrect);
+    setConfidenceOpen(false);
+    setPendingCorrect(null);
+  };
+
   useEffect(() => {
     setSelectedPhrase('');
     setExplainerOpen(false);
     setExplainerText('');
     setExplainerLoading(false);
+    setConfidenceOpen(false);
+    setPendingCorrect(null);
     abortControllerRef.current?.abort();
   }, [props.question.id, props.currentIndex]);
 
   useEffect(() => {
     const readSelection = () => {
-      if (learningOpen || explainerOpen) return;
+      if (learningOpen || explainerOpen || confidenceOpen) return;
       const selection = window.getSelection();
       if (!selection || selection.isCollapsed || selection.rangeCount === 0) return;
 
@@ -110,7 +158,7 @@ export const LearningAwareSBA: React.FC<LearningAwareSBAProps> = (props) => {
 
     document.addEventListener('selectionchange', readSelection);
     return () => document.removeEventListener('selectionchange', readSelection);
-  }, [learningOpen, explainerOpen]);
+  }, [learningOpen, explainerOpen, confidenceOpen]);
 
   const explainSelectedPhrase = async () => {
     const phrase = cleanSelection(selectedPhrase);
@@ -178,10 +226,10 @@ export const LearningAwareSBA: React.FC<LearningAwareSBAProps> = (props) => {
   return (
     <>
       <div ref={questionRootRef} className="contents">
-        <UkmlaSBAQuestion {...props} />
+        <UkmlaSBAQuestion {...props} onAnswer={handleChildAnswer} />
       </div>
 
-      {selectedPhrase && !learningOpen && !explainerOpen && (
+      {selectedPhrase && !learningOpen && !explainerOpen && !confidenceOpen && (
         <div className="pointer-events-none fixed inset-x-0 bottom-[92px] z-40 flex justify-center px-4 sm:bottom-6">
           <button
             type="button"
@@ -195,7 +243,7 @@ export const LearningAwareSBA: React.FC<LearningAwareSBAProps> = (props) => {
         </div>
       )}
 
-      {!props.preSubmitted && !learningOpen && !explainerOpen && !selectedPhrase && (
+      {!props.preSubmitted && !learningOpen && !explainerOpen && !selectedPhrase && !confidenceOpen && (
         <div className="pointer-events-none fixed inset-x-0 bottom-[92px] z-30 flex justify-center px-5 sm:bottom-6">
           <button
             type="button"
@@ -206,6 +254,31 @@ export const LearningAwareSBA: React.FC<LearningAwareSBAProps> = (props) => {
             <BookOpen className="h-4 w-4" />
             I don’t know this yet
           </button>
+        </div>
+      )}
+
+      {confidenceOpen && (
+        <div className="fixed inset-0 z-[70] flex items-center justify-center px-5" style={{ backgroundColor: C.parchment }} role="dialog" aria-modal="true" aria-label="Answer confidence">
+          <div className="w-full max-w-[520px]">
+            <div className="text-[10px] font-bold uppercase tracking-[0.22em]" style={{ color: '#A9675D' }}>Before you see the answer</div>
+            <h2 className="mt-3 text-[31px] font-medium leading-tight" style={{ color: C.espresso, fontFamily: "'Fraunces', serif" }}>How sure were you?</h2>
+            <p className="mt-3 text-[14px] leading-6" style={{ color: C.muted }}>This helps StudyEdit tell real knowledge from a lucky guess.</p>
+
+            <div className="mt-7 flex flex-col gap-3">
+              <button type="button" onClick={() => commitConfidence('know')} className="rounded-[18px] border px-5 py-4 text-left transition active:scale-[0.99]" style={{ borderColor: C.line, backgroundColor: C.paper }}>
+                <div className="text-[16px] font-bold" style={{ color: C.espresso }}>Knew it</div>
+                <div className="mt-1 text-[12px] leading-5" style={{ color: C.muted }}>I could explain why I chose it.</div>
+              </button>
+              <button type="button" onClick={() => commitConfidence('unsure')} className="rounded-[18px] border px-5 py-4 text-left transition active:scale-[0.99]" style={{ borderColor: C.line, backgroundColor: C.paper }}>
+                <div className="text-[16px] font-bold" style={{ color: C.espresso }}>Unsure</div>
+                <div className="mt-1 text-[12px] leading-5" style={{ color: C.muted }}>I had some reasoning, but I wasn’t certain.</div>
+              </button>
+              <button type="button" onClick={() => commitConfidence('guess')} className="rounded-[18px] border px-5 py-4 text-left transition active:scale-[0.99]" style={{ borderColor: '#E5B9B1', backgroundColor: C.blushSoft }}>
+                <div className="text-[16px] font-bold" style={{ color: C.espresso }}>Guessed</div>
+                <div className="mt-1 text-[12px] leading-5" style={{ color: C.muted }}>I didn’t really know — I picked one to move on.</div>
+              </button>
+            </div>
+          </div>
         </div>
       )}
 
