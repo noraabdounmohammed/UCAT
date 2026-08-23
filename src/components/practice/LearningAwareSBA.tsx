@@ -46,6 +46,12 @@ interface SelectionActionPosition {
   placeBelow: boolean;
 }
 
+interface SelectionSnapshot {
+  phrase: string;
+  origin: SelectionOrigin;
+  position: SelectionActionPosition;
+}
+
 const C = {
   paper: '#FFFDF8',
   cream: '#FAF5EC',
@@ -90,7 +96,8 @@ export const LearningAwareSBA: React.FC<LearningAwareSBAProps> = (props) => {
   const questionRootRef = useRef<HTMLDivElement>(null);
   const explainerRootRef = useRef<HTMLDivElement>(null);
   const abortControllerRef = useRef<AbortController | null>(null);
-  const captureTimersRef = useRef<number[]>([]);
+  const settleTimerRef = useRef<number | null>(null);
+  const releaseTimersRef = useRef<number[]>([]);
 
   const conceptTitle = useMemo(() => String(
     (props.question as any).concept_title || props.question.title || (props.question as any).topic || 'this concept'
@@ -124,60 +131,74 @@ export const LearningAwareSBA: React.FC<LearningAwareSBAProps> = (props) => {
     setPendingCorrect(null);
   };
 
-  const clearCaptureTimers = () => {
-    captureTimersRef.current.forEach(id => window.clearTimeout(id));
-    captureTimersRef.current = [];
-  };
-
-  const positionActionForRange = (range: Range) => {
-    const rect = range.getBoundingClientRect();
-    if (!rect || (!rect.width && !rect.height)) {
-      setSelectionActionPosition(null);
-      return;
+  const clearSelectionTimers = () => {
+    if (settleTimerRef.current !== null) {
+      window.clearTimeout(settleTimerRef.current);
+      settleTimerRef.current = null;
     }
-
-    const viewportWidth = window.innerWidth;
-    const estimatedButtonHalfWidth = 72;
-    const left = Math.min(
-      viewportWidth - estimatedButtonHalfWidth - 10,
-      Math.max(estimatedButtonHalfWidth + 10, rect.left + rect.width / 2),
-    );
-    const roomAbove = rect.top > 58;
-
-    setSelectionActionPosition({
-      left,
-      top: roomAbove ? rect.top - 8 : rect.bottom + 8,
-      placeBelow: !roomAbove,
-    });
+    releaseTimersRef.current.forEach(id => window.clearTimeout(id));
+    releaseTimersRef.current = [];
   };
 
-  const captureSelection = () => {
-    if (confidenceOpen) return;
+  const readSelectionSnapshot = (): SelectionSnapshot | null => {
+    if (confidenceOpen) return null;
     const selection = window.getSelection();
-    if (!selection || selection.isCollapsed || selection.rangeCount === 0) return;
+    if (!selection || selection.isCollapsed || selection.rangeCount === 0) return null;
 
     const anchorNode = selection.anchorNode;
     const focusNode = selection.focusNode;
-    if (!anchorNode || !focusNode) return;
+    if (!anchorNode || !focusNode) return null;
 
     const questionRoot = questionRootRef.current;
     const explainerRoot = explainerRootRef.current;
     const insideQuestion = Boolean(questionRoot?.contains(anchorNode) && questionRoot?.contains(focusNode));
     const insideExplainer = Boolean(explainerRoot?.contains(anchorNode) && explainerRoot?.contains(focusNode));
-    if (!insideQuestion && !insideExplainer) return;
+    if (!insideQuestion && !insideExplainer) return null;
 
     const phrase = cleanSelection(selection.toString());
-    if (phrase.length < 2 || phrase.length > 1200) return;
+    if (phrase.length < 2 || phrase.length > 1200) return null;
 
-    setSelectedPhrase(phrase);
-    setSelectionOrigin(insideExplainer ? 'explainer' : 'question');
-    positionActionForRange(selection.getRangeAt(0));
+    const range = selection.getRangeAt(0);
+    const rects = Array.from(range.getClientRects());
+    const rect = (rects[rects.length - 1] || range.getBoundingClientRect()) as DOMRect;
+    if (!rect || (!rect.width && !rect.height)) return null;
+
+    const viewportWidth = window.innerWidth;
+    const estimatedButtonHalfWidth = 54;
+    const left = Math.min(
+      viewportWidth - estimatedButtonHalfWidth - 12,
+      Math.max(estimatedButtonHalfWidth + 12, rect.left + rect.width / 2),
+    );
+    // Keep the action clear of native drag handles. Prefer above with a generous gap.
+    const roomAbove = rect.top > 78;
+    const position: SelectionActionPosition = {
+      left,
+      top: roomAbove ? rect.top - 16 : rect.bottom + 18,
+      placeBelow: !roomAbove,
+    };
+
+    return {
+      phrase,
+      origin: insideExplainer ? 'explainer' : 'question',
+      position,
+    };
   };
 
-  const scheduleCapture = () => {
-    clearCaptureTimers();
-    [0, 60, 140, 260].forEach(delay => {
-      captureTimersRef.current.push(window.setTimeout(captureSelection, delay));
+  const commitSettledSelection = () => {
+    const snapshot = readSelectionSnapshot();
+    if (!snapshot) return;
+    setSelectedPhrase(snapshot.phrase);
+    setSelectionOrigin(snapshot.origin);
+    setSelectionActionPosition(snapshot.position);
+  };
+
+  const scheduleAfterRelease = () => {
+    releaseTimersRef.current.forEach(id => window.clearTimeout(id));
+    releaseTimersRef.current = [];
+    // Do not render anything while the user is dragging native selection handles.
+    // Android/iOS may settle the final range a little after touch/pointer release.
+    [180, 340].forEach(delay => {
+      releaseTimersRef.current.push(window.setTimeout(commitSettledSelection, delay));
     });
   };
 
@@ -192,29 +213,37 @@ export const LearningAwareSBA: React.FC<LearningAwareSBAProps> = (props) => {
     setConfidenceOpen(false);
     setPendingCorrect(null);
     abortControllerRef.current?.abort();
-    clearCaptureTimers();
+    clearSelectionTimers();
   }, [props.question.id, props.currentIndex]);
 
   useEffect(() => {
-    const onSelectionChange = () => window.setTimeout(captureSelection, 20);
+    const onSelectionChange = () => {
+      // Critical UX rule: selectionchange itself must not set React state. Updating the
+      // question tree while native mobile selection is active makes the highlight/handles
+      // feel broken. Only commit after the range has been stable for a moment.
+      if (settleTimerRef.current !== null) window.clearTimeout(settleTimerRef.current);
+      settleTimerRef.current = window.setTimeout(commitSettledSelection, 520);
+    };
+
     document.addEventListener('selectionchange', onSelectionChange);
-    document.addEventListener('pointerup', scheduleCapture);
-    document.addEventListener('touchend', scheduleCapture);
-    document.addEventListener('mouseup', scheduleCapture);
+    document.addEventListener('pointerup', scheduleAfterRelease);
+    document.addEventListener('touchend', scheduleAfterRelease);
+    document.addEventListener('mouseup', scheduleAfterRelease);
+    document.addEventListener('contextmenu', scheduleAfterRelease);
     return () => {
       document.removeEventListener('selectionchange', onSelectionChange);
-      document.removeEventListener('pointerup', scheduleCapture);
-      document.removeEventListener('touchend', scheduleCapture);
-      document.removeEventListener('mouseup', scheduleCapture);
-      clearCaptureTimers();
+      document.removeEventListener('pointerup', scheduleAfterRelease);
+      document.removeEventListener('touchend', scheduleAfterRelease);
+      document.removeEventListener('mouseup', scheduleAfterRelease);
+      document.removeEventListener('contextmenu', scheduleAfterRelease);
+      clearSelectionTimers();
     };
   });
 
   useEffect(() => {
     const reposition = () => {
-      const selection = window.getSelection();
-      if (!selection || selection.isCollapsed || selection.rangeCount === 0) return;
-      positionActionForRange(selection.getRangeAt(0));
+      const snapshot = readSelectionSnapshot();
+      if (snapshot) setSelectionActionPosition(snapshot.position);
     };
     window.addEventListener('resize', reposition);
     return () => window.removeEventListener('resize', reposition);
@@ -334,7 +363,7 @@ export const LearningAwareSBA: React.FC<LearningAwareSBAProps> = (props) => {
     <>
       <div
         ref={questionRootRef}
-        className="contents [&_*]:selection:bg-[#E8C9C2]/70 [&_*]:selection:text-[#1F140C]"
+        className="contents select-text"
         style={{ WebkitUserSelect: 'text', userSelect: 'text', WebkitTouchCallout: 'default' }}
       >
         <UkmlaSBAQuestion {...props} onAnswer={handleChildAnswer} />
@@ -401,14 +430,14 @@ export const LearningAwareSBA: React.FC<LearningAwareSBAProps> = (props) => {
 
             <div
               ref={explainerRootRef}
-              className="mt-5 select-text rounded-[22px] border p-5 [&_*]:selection:bg-[#E8C9C2]/80 [&_*]:selection:text-[#1F140C]"
-              style={{ borderColor: '#E5B9B1', backgroundColor: C.blushSoft, WebkitUserSelect: 'text', userSelect: 'text' }}
+              className="mt-5 select-text rounded-[22px] border p-5"
+              style={{ borderColor: '#E5B9B1', backgroundColor: C.blushSoft, WebkitUserSelect: 'text', userSelect: 'text', WebkitTouchCallout: 'default' }}
             >
               {explainerLoading && !explainerText && <div className="text-[15px] font-medium leading-6" style={{ color: C.muted }}>Building the clinical meaning…</div>}
               {explainerText && <div className="text-[16px] font-medium leading-7" style={{ color: '#4B372A' }}><ReactMarkdown>{explainerText}</ReactMarkdown></div>}
             </div>
 
-            <p className="mt-4 text-[12px] leading-5" style={{ color: C.muted }}><strong>Anything in this explanation unclear?</strong> Highlight it normally. The Explain button will appear beside your selection.</p>
+            <p className="mt-4 text-[12px] leading-5" style={{ color: C.muted }}><strong>Anything in this explanation unclear?</strong> Highlight it normally. Wait until you finish adjusting the native highlight, then tap Explain.</p>
             <button type="button" onClick={closeExplainer} className="mt-5 flex w-full items-center justify-center rounded-full px-6 py-[17px] text-[15px] font-bold" style={{ backgroundColor: C.espresso, color: C.cream }}>Back to the case →</button>
           </div>
         </div>
