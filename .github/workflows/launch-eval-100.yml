@@ -2,6 +2,8 @@ name: Launch Eval 100
 
 on:
   workflow_dispatch:
+  pull_request:
+    branches: [master]
 
 jobs:
   launch-eval-100:
