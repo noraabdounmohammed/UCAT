@@ -18,6 +18,8 @@ jobs:
       - run: npm ci
       - name: Apply audited eval-only compiler, reviewer, and evidence-boundary guards
         run: python scripts/apply-launch-eval-guards.py
+      - name: Apply run-18 upstream generator improvements
+        run: python scripts/apply-run18-generator-improvements.py
       - name: Run 100-question two-attempt launch evaluation
         run: node scripts/run-launch-eval-100.mjs
         env:
