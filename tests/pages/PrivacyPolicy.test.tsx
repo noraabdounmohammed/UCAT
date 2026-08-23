@@ -15,7 +15,7 @@ describe('<PrivacyPolicy />', () => {
         <PrivacyPolicy />
       </MemoryRouter>
     );
-    expect(screen.getByRole('heading', { name: /privacy.*data/i, level: 1 })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: /your data, kept simple/i, level: 1 })).toBeInTheDocument();
     expect(screen.getByRole('link', { name: /^contact$/i })).toHaveAttribute('href', 'mailto:nora@studyedit.com');
   });
 });
