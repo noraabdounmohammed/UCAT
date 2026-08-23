@@ -40,6 +40,12 @@ interface ExplorerNode {
   origin: SelectionOrigin;
 }
 
+interface SelectionActionPosition {
+  left: number;
+  top: number;
+  placeBelow: boolean;
+}
+
 const C = {
   paper: '#FFFDF8',
   cream: '#FAF5EC',
@@ -74,6 +80,7 @@ function selectionMode(text: string): SelectionMode {
 export const LearningAwareSBA: React.FC<LearningAwareSBAProps> = (props) => {
   const [selectedPhrase, setSelectedPhrase] = useState('');
   const [selectionOrigin, setSelectionOrigin] = useState<SelectionOrigin>('question');
+  const [selectionActionPosition, setSelectionActionPosition] = useState<SelectionActionPosition | null>(null);
   const [explainerOpen, setExplainerOpen] = useState(false);
   const [explainerText, setExplainerText] = useState('');
   const [explainerLoading, setExplainerLoading] = useState(false);
@@ -122,6 +129,28 @@ export const LearningAwareSBA: React.FC<LearningAwareSBAProps> = (props) => {
     captureTimersRef.current = [];
   };
 
+  const positionActionForRange = (range: Range) => {
+    const rect = range.getBoundingClientRect();
+    if (!rect || (!rect.width && !rect.height)) {
+      setSelectionActionPosition(null);
+      return;
+    }
+
+    const viewportWidth = window.innerWidth;
+    const estimatedButtonHalfWidth = 72;
+    const left = Math.min(
+      viewportWidth - estimatedButtonHalfWidth - 10,
+      Math.max(estimatedButtonHalfWidth + 10, rect.left + rect.width / 2),
+    );
+    const roomAbove = rect.top > 58;
+
+    setSelectionActionPosition({
+      left,
+      top: roomAbove ? rect.top - 8 : rect.bottom + 8,
+      placeBelow: !roomAbove,
+    });
+  };
+
   const captureSelection = () => {
     if (confidenceOpen) return;
     const selection = window.getSelection();
@@ -142,13 +171,12 @@ export const LearningAwareSBA: React.FC<LearningAwareSBAProps> = (props) => {
 
     setSelectedPhrase(phrase);
     setSelectionOrigin(insideExplainer ? 'explainer' : 'question');
+    positionActionForRange(selection.getRangeAt(0));
   };
 
   const scheduleCapture = () => {
     clearCaptureTimers();
-    // Mobile browsers often update the selection after the long-press / drag gesture has
-    // technically ended. Retry briefly so the action appears without repeated attempts.
-    [0, 70, 160, 320, 520].forEach(delay => {
+    [0, 60, 140, 260].forEach(delay => {
       captureTimersRef.current.push(window.setTimeout(captureSelection, delay));
     });
   };
@@ -156,6 +184,7 @@ export const LearningAwareSBA: React.FC<LearningAwareSBAProps> = (props) => {
   useEffect(() => {
     setSelectedPhrase('');
     setSelectionOrigin('question');
+    setSelectionActionPosition(null);
     setExplainerOpen(false);
     setExplainerText('');
     setExplainerLoading(false);
@@ -167,21 +196,29 @@ export const LearningAwareSBA: React.FC<LearningAwareSBAProps> = (props) => {
   }, [props.question.id, props.currentIndex]);
 
   useEffect(() => {
-    const onSelectionChange = () => window.setTimeout(captureSelection, 30);
+    const onSelectionChange = () => window.setTimeout(captureSelection, 20);
     document.addEventListener('selectionchange', onSelectionChange);
     document.addEventListener('pointerup', scheduleCapture);
     document.addEventListener('touchend', scheduleCapture);
     document.addEventListener('mouseup', scheduleCapture);
-    document.addEventListener('contextmenu', scheduleCapture);
     return () => {
       document.removeEventListener('selectionchange', onSelectionChange);
       document.removeEventListener('pointerup', scheduleCapture);
       document.removeEventListener('touchend', scheduleCapture);
       document.removeEventListener('mouseup', scheduleCapture);
-      document.removeEventListener('contextmenu', scheduleCapture);
       clearCaptureTimers();
     };
   });
+
+  useEffect(() => {
+    const reposition = () => {
+      const selection = window.getSelection();
+      if (!selection || selection.isCollapsed || selection.rangeCount === 0) return;
+      positionActionForRange(selection.getRangeAt(0));
+    };
+    window.addEventListener('resize', reposition);
+    return () => window.removeEventListener('resize', reposition);
+  }, []);
 
   const explainSelectedPhrase = async () => {
     const phrase = cleanSelection(selectedPhrase);
@@ -202,6 +239,7 @@ export const LearningAwareSBA: React.FC<LearningAwareSBAProps> = (props) => {
     setExplainerOpen(true);
     setExplainerText('');
     setExplainerLoading(true);
+    setSelectionActionPosition(null);
     window.getSelection()?.removeAllRanges();
 
     const context: QuestionContext = {
@@ -261,6 +299,7 @@ export const LearningAwareSBA: React.FC<LearningAwareSBAProps> = (props) => {
       if (!controller.signal.aborted) setExplainerLoading(false);
       abortControllerRef.current = null;
       setSelectedPhrase('');
+      setSelectionActionPosition(null);
     }
   };
 
@@ -269,6 +308,7 @@ export const LearningAwareSBA: React.FC<LearningAwareSBAProps> = (props) => {
     setExplainerOpen(false);
     setExplainerLoading(false);
     setSelectedPhrase('');
+    setSelectionActionPosition(null);
     setExplorerStack([]);
     window.getSelection()?.removeAllRanges();
   };
@@ -283,11 +323,12 @@ export const LearningAwareSBA: React.FC<LearningAwareSBAProps> = (props) => {
     setExplorerStack(nextStack);
     setExplainerText(previous.explanation);
     setSelectedPhrase('');
+    setSelectionActionPosition(null);
     window.getSelection()?.removeAllRanges();
   };
 
   const currentExplorerNode = explorerStack[explorerStack.length - 1];
-  const actionVisible = Boolean(selectedPhrase && !confidenceOpen && !explainerLoading);
+  const actionVisible = Boolean(selectedPhrase && selectionActionPosition && !confidenceOpen && !explainerLoading);
 
   return (
     <>
@@ -299,19 +340,27 @@ export const LearningAwareSBA: React.FC<LearningAwareSBAProps> = (props) => {
         <UkmlaSBAQuestion {...props} onAnswer={handleChildAnswer} />
       </div>
 
-      {actionVisible && (
-        <div className="pointer-events-none fixed inset-x-0 bottom-[88px] z-[80] flex justify-center px-4 sm:bottom-6">
-          <button
-            type="button"
-            onPointerDown={event => event.preventDefault()}
-            onClick={() => void explainSelectedPhrase()}
-            className="pointer-events-auto inline-flex max-w-[94vw] items-center gap-2 rounded-full border px-4 py-3 text-[13px] font-bold shadow-[0_12px_34px_rgba(31,20,12,0.18)] backdrop-blur"
-            style={{ borderColor: '#DDB1A8', backgroundColor: 'rgba(255,253,248,.99)', color: C.espresso }}
-          >
-            <Sparkles className="h-4 w-4 shrink-0" />
-            <span className="truncate">Explain highlighted text</span>
-          </button>
-        </div>
+      {actionVisible && selectionActionPosition && (
+        <button
+          type="button"
+          onPointerDown={event => event.preventDefault()}
+          onMouseDown={event => event.preventDefault()}
+          onTouchStart={event => event.preventDefault()}
+          onClick={() => void explainSelectedPhrase()}
+          className="fixed z-[100] inline-flex items-center gap-1.5 rounded-full border px-3 py-2 text-[12px] font-bold shadow-[0_10px_28px_rgba(31,20,12,0.20)] backdrop-blur"
+          style={{
+            left: selectionActionPosition.left,
+            top: selectionActionPosition.top,
+            transform: selectionActionPosition.placeBelow ? 'translate(-50%, 0)' : 'translate(-50%, -100%)',
+            borderColor: '#DDB1A8',
+            backgroundColor: 'rgba(255,253,248,.99)',
+            color: C.espresso,
+          }}
+          aria-label={`Explain ${selectedPhrase}`}
+        >
+          <Sparkles className="h-3.5 w-3.5 shrink-0" />
+          Explain
+        </button>
       )}
 
       {confidenceOpen && (
@@ -359,7 +408,7 @@ export const LearningAwareSBA: React.FC<LearningAwareSBAProps> = (props) => {
               {explainerText && <div className="text-[16px] font-medium leading-7" style={{ color: '#4B372A' }}><ReactMarkdown>{explainerText}</ReactMarkdown></div>}
             </div>
 
-            <p className="mt-4 text-[12px] leading-5" style={{ color: C.muted }}><strong>Anything in this explanation unclear?</strong> Highlight it exactly as you would in the question. You can keep going deeper, then step back through the trail.</p>
+            <p className="mt-4 text-[12px] leading-5" style={{ color: C.muted }}><strong>Anything in this explanation unclear?</strong> Highlight it normally. The Explain button will appear beside your selection.</p>
             <button type="button" onClick={closeExplainer} className="mt-5 flex w-full items-center justify-center rounded-full px-6 py-[17px] text-[15px] font-bold" style={{ backgroundColor: C.espresso, color: C.cream }}>Back to the case →</button>
           </div>
         </div>
