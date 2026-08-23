@@ -52,11 +52,19 @@ if (qualitySource.includes(blueprintAnchor)) {
 // Manual-audit safeguards discovered from accepted-item inspection. These
 // tighten single-best-answer integrity and numerical verification only.
 const optionsAnchor = `- Exactly ONE answer must be defensibly best.\n- If more than one answer choice is clinically true, rewrite the lead-in or replace an option.`;
-const optionsAudit = `- Exactly ONE answer must be defensibly best.\n- OPTIONS MUST BE MUTUALLY EXCLUSIVE AT THE SAME LEVEL OF SPECIFICITY. Do not place a parent category against its subtype, a diagnosis against a more specific form of itself, synonyms/near-synonyms, or threshold rules that would all recommend the same action for the patient's actual value.\n- If more than one answer choice is clinically true, rewrite the lead-in or replace an option.\n- For scores, thresholds and criteria, independently calculate the result from the raw values in the vignette. Never trust a score, risk label or interpretation merely because the vignette states it.`;
+const optionsAudit = `- Exactly ONE answer must be defensibly best.\n- OPTIONS MUST BE MUTUALLY EXCLUSIVE AT THE SAME LEVEL OF SPECIFICITY. Do not place a parent category against its subtype, a diagnosis against a more specific form of itself, synonyms/near-synonyms, or threshold rules that would all recommend the same action for the patient's actual value.\n- If more than one answer choice is clinically true, rewrite the lead-in or replace an option.\n- For scores, thresholds and criteria, independently calculate the result from the raw values in the vignette. Never trust a score, risk label or interpretation merely because the vignette states it.\n- NEVER state a precomputed named clinical score or risk category in the vignette (for example CHA2DS2-VASc, HAS-BLED, NEWS2 or CURB-65). Supply the raw components instead and make any calculation/interpretation reproducible from them.`;
 if (qualitySource.includes(optionsAnchor)) {
   qualitySource = qualitySource.replace(optionsAnchor, optionsAudit);
 } else if (!qualitySource.includes('OPTIONS MUST BE MUTUALLY EXCLUSIVE AT THE SAME LEVEL OF SPECIFICITY.')) {
   throw new Error('Expected options anchor was not found; refusing to add manual-audit safeguards silently.');
+}
+
+const fallbackValidationAnchor = `  if (isGenericFallbackQuestion(vignette, texts)) reasons.push('TEMPLATE_FALLBACK: Generic fallback/template question is not publishable and must never satisfy the release gate.');`;
+const precomputedScoreGuard = `  if (isGenericFallbackQuestion(vignette, texts)) reasons.push('TEMPLATE_FALLBACK: Generic fallback/template question is not publishable and must never satisfy the release gate.');\n  const assertedScorePattern = /\\b(?:CHA2DS2[- ]?VASc|HAS[- ]?BLED|NEWS2|CURB[- ]?65)\\b[^.\\n]{0,80}\\b(?:score\\s*(?:is|=|of)|calculated\\s+as|risk\\s+(?:score|category)\\s*(?:is|=))\\s*\\d+/i;\n  if (assertedScorePattern.test(vignette)) reasons.push('NUMERICAL_SAFETY: Precomputed named clinical score asserted in vignette; require raw inputs and independent calculation instead.');`;
+if (qualitySource.includes(fallbackValidationAnchor)) {
+  qualitySource = qualitySource.replace(fallbackValidationAnchor, precomputedScoreGuard);
+} else if (!qualitySource.includes('NUMERICAL_SAFETY: Precomputed named clinical score asserted in vignette')) {
+  throw new Error('Expected fallback validation anchor was not found; refusing to add deterministic score guard silently.');
 }
 
 const independentTestAnchor = `3. Is any claimed DECISION-CRITICAL distinction dependent on context absent from the stem or evidence packet?`;
