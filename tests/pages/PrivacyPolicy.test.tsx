@@ -9,13 +9,13 @@ vi.mock('@/hooks/useUserRole', () => ({ useUserRole: vi.fn(() => ({ isCreator: f
 import { PrivacyPolicy } from '@/pages/PrivacyPolicy';
 
 describe('<PrivacyPolicy />', () => {
-  it('renders the heading and contact link', () => {
+  it('renders the redesigned heading and contact link', () => {
     render(
       <MemoryRouter>
         <PrivacyPolicy />
       </MemoryRouter>
     );
-    expect(screen.getByRole('heading', { name: /privacy.*data/i, level: 1 })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: /your data, kept simple/i, level: 1 })).toBeInTheDocument();
     expect(screen.getByRole('link', { name: /^contact$/i })).toHaveAttribute('href', 'mailto:nora@studyedit.com');
   });
 });
