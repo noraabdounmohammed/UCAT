@@ -28,6 +28,34 @@ function move(source, destination) {
   fs.renameSync(source, destination);
 }
 
+function applyPassPrecisionGuards() {
+  const sourcePath = path.resolve('src/services/questionQuality.ts');
+  let source = fs.readFileSync(sourcePath, 'utf8');
+
+  const oldInstruction = '- NEVER state a precomputed named clinical score in the vignette (for example CHA2DS2-VASc, HAS-BLED, NEWS2 or CURB-65). Supply the raw components so the score or interpretation is independently reproducible.';
+  const newInstruction = '- NEVER state a precomputed named clinical score in the vignette OR explanation (for example CHA2DS2-VASc, HAS-BLED, NEWS2 or CURB-65). Supply the raw components in the vignette so the score or interpretation is independently reproducible. In the explanation, reason from those raw components and the verified treatment/risk threshold without asserting a numeric named-score total.';
+  if (source.includes(oldInstruction)) {
+    source = source.replace(oldInstruction, newInstruction);
+  } else if (!source.includes('NEVER state a precomputed named clinical score in the vignette OR explanation')) {
+    throw new Error('Named-score explanation instruction anchor missing; refusing silent eval patch.');
+  }
+
+  const vignetteGuard = "  if (assertedScorePattern.test(vignette)) reasons.push('NUMERICAL_SAFETY: Precomputed named clinical score asserted in vignette; require raw inputs and independent calculation instead.');";
+  const explanationGuard = `${vignetteGuard}\n  const explanation = normalise(question?.explanation);\n  if (assertedScorePattern.test(explanation)) reasons.push('NUMERICAL_SAFETY: Precomputed named clinical score asserted in explanation; require raw inputs and threshold reasoning instead.');`;
+  if (source.includes(vignetteGuard) && !source.includes('Precomputed named clinical score asserted in explanation')) {
+    source = source.replace(vignetteGuard, explanationGuard);
+  } else if (!source.includes('Precomputed named clinical score asserted in explanation')) {
+    throw new Error('Named-score explanation deterministic guard anchor missing; refusing silent eval patch.');
+  }
+
+  fs.writeFileSync(sourcePath, source);
+}
+
+// Strict eval-only pass-precision repair. The workflow has already applied its
+// audited score/SBA guards before this script starts. This extends that guard to
+// explanations after a fresh false PASS exposed an arithmetic hallucination.
+applyPassPrecisionGuards();
+
 const startedAt = new Date().toISOString();
 const replicateReports = [];
 
