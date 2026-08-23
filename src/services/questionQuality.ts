@@ -14,6 +14,7 @@ ITEM BLUEPRINT — decide this before writing:
 - Difficulty should come from clinical discrimination, NOT obscure trivia, hidden assumptions, deliberately deceptive wording, or an implausibly rare exception.
 - If the source concept is merely a factual property (for example route of administration, half-life, mechanism, one adverse effect, or one score component), DO NOT disguise that fact as a patient-management decision.
 - Never turn a thin factual concept into a treatment-selection question unless the supplied source explicitly supports the treatment decision and competing options.
+- If no EVIDENCE PACKET section is supplied for a high-risk or guideline-sensitive concept, stay within a narrow factual/application target directly supported by the source rather than inventing a management hierarchy, referral threshold, drug preference, dose, duration, contraindication, or timing rule.
 
 VIGNETTE:
 - Start with age + gender where clinically appropriate.
@@ -24,6 +25,7 @@ VIGNETTE:
 - Avoid famous buzzwords when natural clinical description can test the same reasoning.
 - Reference ranges are required for laboratory values when interpretation depends on abnormality; do not add pointless ranges to ordinary observations.
 - For medication-management questions include every discriminator needed to choose safely, including indication, renal function, haemodynamic status, bleeding history, pregnancy, prior adverse reactions, procedure/reperfusion plan and interacting antithrombotics when relevant.
+- Do not casually add an exception-state or alternative-pathway modifier (for example HRT use, pregnancy, severe renal impairment, shock, recent procedure or interacting treatment) unless the supplied source/evidence explicitly supports how that modifier changes or does not change the keyed decision. If such a modifier is not needed, omit it.
 
 LEAD-IN:
 - One short direct sentence outside the vignette, ending with ?.
@@ -213,6 +215,8 @@ ${evidenceContext}
 Important:
 - The source registry identifies current authoritative sources but does not itself prove a claim.
 - When an evidence packet is present, treat the packet as the verified launch boundary for DECISION-CRITICAL claims: the keyed answer, thresholds, hierarchy, contraindications, timing, dose/route and referral rules.
+- Apply the packet's claim only when the vignette actually satisfies the packet's qualifying conditions. Never silently infer that an exception, competing pathway, contraindication or modifier is absent merely because the keyed answer would otherwise fit.
+- Treat exception-state variables such as HRT use, pregnancy, severe renal impairment, shock, recent procedures and interacting treatments as potentially decision-changing. If one is present and the packet/source does not explicitly resolve its effect on this decision, reject rather than extrapolate the general rule.
 - Do NOT require every benign vignette detail or every explanatory sentence about a distractor to be quoted in the concept or packet. Standard clinical context is allowed when it merely makes the scenario realistic and cannot create, change or exclude the answer.
 - Standard medical knowledge may be used to judge whether distractors are plausible and to explain why an alternative is less appropriate, provided that knowledge does not introduce a new decision-critical rule and no alternative becomes independently defensible.
 - Do NOT reject an item merely because the older source concept is concise if the evidence packet explicitly supplies the missing decision boundary.
@@ -245,6 +249,7 @@ Before scoring, test every answer option independently:
 3. Is any claimed DECISION-CRITICAL distinction dependent on context absent from the stem or evidence packet?
 4. Does the explanation invent a decision-changing rule to dismiss a true alternative, rather than merely using standard clinical knowledge to explain a near miss?
 5. For high/critical-risk claims, does the concept plus evidence packet provide enough verified boundary to justify the KEYED DECISION safely?
+6. Do all qualifiers for the packet/source rule actually apply to this vignette, including any exception-state or alternative-pathway modifiers that are explicitly present?
 
 MANDATORY REJECTION if:
 - more than one option is reasonably defensible
@@ -258,6 +263,7 @@ MANDATORY REJECTION if:
 - the explanation invents a decision-critical distinction, threshold, contraindication or hierarchy outside the concept/evidence packet in order to make an alternative wrong
 - an option claimed false is actually a true property in the scenario and remains a defensible answer to the lead-in
 - a high/critical-risk item exceeds the verified decision boundary supplied by the concept plus evidence packet
+- the vignette contains an exception-state or competing pathway that could change the answer and the source/evidence packet does not explicitly establish how it applies
 
 Return ONLY:
 {
