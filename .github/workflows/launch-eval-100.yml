@@ -54,7 +54,28 @@ jobs:
           elif 'two options overlap semantically or taxonomically' not in s:
               raise SystemExit('Mandatory-rejection anchor missing; refusing silent patch')
 
+          # Evidence context is semantic, not a magic-word check: facts explicitly in
+          # the vignette may satisfy required context without repeating packet wording.
+          semantic_anchor = '- Apply the packet\'s claim only when the vignette actually satisfies the packet\'s qualifying conditions. Never silently infer that an exception, competing pathway, contraindication or modifier is absent merely because the keyed answer would otherwise fit.'
+          semantic_replacement = semantic_anchor + '\n- Required context is satisfied by explicit semantically equivalent facts, not by exact phrase matching. For example, a clearly stated 3-month history can establish persistence. Never infer a fact that is not actually present, but do not reject a supported item merely because the vignette does not repeat the packet\'s exact wording.'
+          if semantic_anchor in s and 'Required context is satisfied by explicit semantically equivalent facts' not in s:
+              s = s.replace(semantic_anchor, semantic_replacement)
+          elif 'Required context is satisfied by explicit semantically equivalent facts' not in s:
+              raise SystemExit('Semantic-context reviewer anchor missing; refusing silent patch')
+
           p.write_text(s)
+
+          # Evidence-boundary repair: carry the exact current NICE NG12 2026 CA125
+          # table into the packet so a numerical decision is independently verifiable.
+          evidence = Path('src/services/evidencePackets.ts')
+          e = evidence.read_text()
+          old_claim = "'In symptomatic people aged 40 or over, NICE 2026 uses age-specific CA125 thresholds for urgent ultrasound rather than a universal 35 IU/mL cutoff.'"
+          new_claim = "'In people aged 40 or over with persistent symptoms suggesting ovarian cancer, NICE NG12 (2026) recommends urgent direct-access ultrasound when CA125 is at or above the age-specific threshold: age 40–49: 35 IU/mL; 50–59: 31 IU/mL; 60–69: 24 IU/mL; 70–79: 25 IU/mL; 80+: 31 IU/mL. Do not use a universal 35 IU/mL cutoff.'"
+          if old_claim in e:
+              e = e.replace(old_claim, new_claim)
+          elif 'age 40–49: 35 IU/mL; 50–59: 31 IU/mL; 60–69: 24 IU/mL; 70–79: 25 IU/mL; 80+: 31 IU/mL' not in e:
+              raise SystemExit('CA125 evidence-packet anchor missing; refusing silent patch')
+          evidence.write_text(e)
 
           # Eval runtime only: do not let a browser-only diagnostic access mask the
           # real provider/generation error under Node. This changes no production logic.
