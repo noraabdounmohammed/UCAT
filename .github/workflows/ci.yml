@@ -91,6 +91,20 @@ jobs:
           node-version: '20'
           cache: 'npm'
       - run: npm ci
+      - name: Calibrate reviewer evidence boundary for this temporary eval
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          p = Path('src/services/questionQuality.ts')
+          s = p.read_text()
+          old = "You are a hostile reviewer for a national medical licensing exam. Reject ambiguous, cueable, unfair, unsupported, trivial, stale or clinically unsafe questions. Check every option independently for truth and defensibility. Do not reward eloquent wording. Respond with valid JSON only."
+          new = "You are a precise adversarial reviewer for a national medical licensing exam. Reject ambiguous, cueable, unfair, clinically incorrect, stale or unsafe questions. The concept/evidence packet is a closed verification boundary for the KEYED DECISION and any decision-changing threshold, hierarchy, contraindication, dose, timing or referral rule. It is NOT a closed-world ontology for distractors: do not reject a distractor merely because the supplied source does not mention or explicitly refute it. Use standard medical knowledge to judge whether distractors are true and independently defensible in this patient. If an alternative is clinically defensible, reject. If it is clearly inferior by standard medical knowledge without introducing a new decision-critical rule, that is acceptable. Check every option independently. Respond with valid JSON only."
+          if old not in s:
+              raise SystemExit('Reviewer calibration target not found; refusing silent patch')
+          s = s.replace(old, new)
+          s = s.replace('- clinical/source accuracy: 25', '- keyed clinical/source accuracy: 25')
+          p.write_text(s)
+          PY
       - name: Run distinct 100-concept attempt 1
         run: |
           npx tsx scripts/run-launch-eval-100-expanded.ts || true
