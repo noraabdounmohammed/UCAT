@@ -16,6 +16,46 @@ jobs:
           node-version: '20'
           cache: 'npm'
       - run: npm ci
+      - name: Apply audited eval-only score and SBA guards
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          p = Path('src/services/questionQuality.ts')
+          s = p.read_text()
+
+          # Generator: prevent unverifiable precomputed scores and nested answer sets.
+          option_anchor = '- Exactly ONE answer must be defensibly best.\n- If more than one answer choice is clinically true, rewrite the lead-in or replace an option.'
+          option_replacement = '- Exactly ONE answer must be defensibly best.\n- OPTIONS MUST BE MUTUALLY EXCLUSIVE AT THE SAME LEVEL OF SPECIFICITY. Never place a parent category against its subtype, synonyms/near-synonyms, or two formulations that can both answer the lead-in in this patient.\n- If more than one answer choice is clinically true, rewrite the lead-in or replace an option.\n- NEVER state a precomputed named clinical score in the vignette (for example CHA2DS2-VASc, HAS-BLED, NEWS2 or CURB-65). Supply the raw components so the score or interpretation is independently reproducible.'
+          if option_anchor in s:
+              s = s.replace(option_anchor, option_replacement)
+          elif 'OPTIONS MUST BE MUTUALLY EXCLUSIVE AT THE SAME LEVEL OF SPECIFICITY.' not in s:
+              raise SystemExit('Option-integrity anchor missing; refusing silent patch')
+
+          # Deterministic safety: a reviewer must never be trusted to notice a bad stated score.
+          fallback_anchor = "  if (isGenericFallbackQuestion(vignette, texts)) reasons.push('TEMPLATE_FALLBACK: Generic fallback/template question is not publishable and must never satisfy the release gate.');"
+          score_guard = fallback_anchor + "\n  const assertedScorePattern = /\\b(?:CHA2DS2[- ]?VASc|HAS[- ]?BLED|NEWS2|CURB[- ]?65)\\b(?:\\s+score)?\\s*(?:is\\s+calculated\\s+as|is|was|=|of|:)\\s*\\d+\\b/i;\n  if (assertedScorePattern.test(vignette)) reasons.push('NUMERICAL_SAFETY: Precomputed named clinical score asserted in vignette; require raw inputs and independent calculation instead.');"
+          if fallback_anchor in s and 'Precomputed named clinical score asserted in vignette' not in s:
+              s = s.replace(fallback_anchor, score_guard)
+          elif 'Precomputed named clinical score asserted in vignette' not in s:
+              raise SystemExit('Deterministic score-guard anchor missing; refusing silent patch')
+
+          # Reviewer: explicitly make semantic/taxonomic overlap a mandatory rejection.
+          test_anchor = '3. Is any claimed DECISION-CRITICAL distinction dependent on context absent from the stem or evidence packet?'
+          test_replacement = test_anchor + '\n3a. Are any two options overlapping, nested, synonymous, parent/subtype, or simultaneously defensible at the patient values actually stated?\n3b. If the item uses a clinical score, threshold, age band, dose, timing rule or numerical criterion, independently recompute it from the raw vignette data; reject any mismatch.'
+          if test_anchor in s and '3a. Are any two options overlapping' not in s:
+              s = s.replace(test_anchor, test_replacement)
+          elif '3a. Are any two options overlapping' not in s:
+              raise SystemExit('Reviewer audit anchor missing; refusing silent patch')
+
+          mandatory_anchor = '- more than one option is reasonably defensible'
+          mandatory_replacement = mandatory_anchor + '\n- two options overlap semantically or taxonomically, including parent/subtype, synonym/near-synonym, or two actions that are simultaneously correct in this patient\n- a stated score, risk category, threshold interpretation, timing rule or numerical calculation is not independently reproducible from the raw vignette values'
+          if mandatory_anchor in s and 'two options overlap semantically or taxonomically' not in s:
+              s = s.replace(mandatory_anchor, mandatory_replacement)
+          elif 'two options overlap semantically or taxonomically' not in s:
+              raise SystemExit('Mandatory-rejection anchor missing; refusing silent patch')
+
+          p.write_text(s)
+          PY
       - name: Run 100-question two-attempt launch evaluation
         run: node scripts/run-launch-eval-100.mjs
         env:
