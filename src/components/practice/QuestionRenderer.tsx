@@ -1,7 +1,7 @@
 import React from 'react';
 import { QuestionData } from './questionTypes';
 import { ModernFlashcard } from './ModernFlashcard';
-import { UkmlaSBAQuestion } from './UkmlaSBAQuestion';
+import { LearningAwareSBA } from './LearningAwareSBA';
 import { SessionAnswer } from './SessionProgressDropdown';
 
 interface QuestionRendererProps {
@@ -41,7 +41,6 @@ export const QuestionRenderer: React.FC<QuestionRendererProps> = ({
   onChangeFormat,
   onRestartWithFilters
 }) => {
-  // Debug logging for mind map rendering
   if (format === 'mindmap' && process.env.NODE_ENV === 'development') {
     console.log('🗺️ Rendering mind map question:', {
       id: question.id,
@@ -52,7 +51,6 @@ export const QuestionRenderer: React.FC<QuestionRendererProps> = ({
     });
   }
 
-  // Render different question formats based on the format prop
   switch (format) {
     case 'flashcard':
       return (
@@ -73,11 +71,11 @@ export const QuestionRenderer: React.FC<QuestionRendererProps> = ({
           onRestartWithFilters={onRestartWithFilters}
         />
       );
-    
+
     case 'sba':
     case 'ukmla_sba':
       return (
-        <UkmlaSBAQuestion
+        <LearningAwareSBA
           question={question}
           onAnswer={onAnswer}
           onNext={onNext}
@@ -85,7 +83,7 @@ export const QuestionRenderer: React.FC<QuestionRendererProps> = ({
           onExit={onExit}
           currentIndex={currentIndex}
           totalQuestions={totalCards}
-          title={title || "UKMLA SBA"}
+          title={title || 'UKMLA SBA'}
           sessionAnswers={sessionAnswers}
           onJumpTo={onJumpTo}
           availableFilters={availableFilters}
@@ -96,28 +94,20 @@ export const QuestionRenderer: React.FC<QuestionRendererProps> = ({
           onRestartWithFilters={onRestartWithFilters}
         />
       );
-    
+
     case 'mindmap':
-      // Mind map feature temporarily disabled
       return (
         <div className="flex items-center justify-center min-h-[400px] bg-gray-50 dark:bg-gray-800 rounded-lg">
           <div className="text-center p-8">
-            <p className="text-gray-600 dark:text-gray-400 mb-4">
-              Mind map feature is currently unavailable
-            </p>
-            <button
-              onClick={onNext}
-              className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
-            >
-              Skip to Next
-            </button>
+            <p className="text-gray-600 dark:text-gray-400 mb-4">Mind map feature is currently unavailable</p>
+            <button onClick={onNext} className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">Skip to Next</button>
           </div>
         </div>
       );
-      
+
     default:
       return (
-        <UkmlaSBAQuestion
+        <LearningAwareSBA
           question={question}
           onAnswer={onAnswer}
           onNext={onNext}
@@ -125,7 +115,7 @@ export const QuestionRenderer: React.FC<QuestionRendererProps> = ({
           onExit={onExit}
           currentIndex={currentIndex}
           totalQuestions={totalCards}
-          title={title || "UKMLA SBA"}
+          title={title || 'UKMLA SBA'}
           sessionAnswers={sessionAnswers}
           onJumpTo={onJumpTo}
           availableFilters={availableFilters}
