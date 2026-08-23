@@ -55,6 +55,31 @@ jobs:
               raise SystemExit('Mandatory-rejection anchor missing; refusing silent patch')
 
           p.write_text(s)
+
+          # Eval runtime only: do not let a browser-only diagnostic access mask the
+          # real provider/generation error under Node. This changes no production logic.
+          generator = Path('src/services/aiQuestionGenerator.ts')
+          g = generator.read_text()
+          bad_log = 'hasApiKey: !!import.meta.env.VITE_OPENAI_API_KEY'
+          safe_log = "hasApiKey: Boolean(process.env.VITE_OPENAI_API_KEY || process.env.OPENAI_API_KEY)"
+          if bad_log in g:
+              g = g.replace(bad_log, safe_log)
+          elif safe_log not in g:
+              raise SystemExit('Generator error-log anchor missing; refusing silent eval patch')
+          generator.write_text(g)
+
+          # Eval fidelity only: an AI/provider failure that falls back to the stock
+          # template is a generation failure, not a generated clinical question.
+          # This prevents infrastructure outages from contaminating quality metrics.
+          runner = Path('scripts/run-launch-eval.ts')
+          r = runner.read_text()
+          candidate_anchor = "      const deterministic = validateUKMLAQuestion(candidate);"
+          fallback_fail_closed = "      if (String(candidate?.id || '').startsWith('template-')) {\n        throw new Error('EVAL_GENERATION_FAILURE: AI generator returned fallback template after provider/generation failure.');\n      }\n      const deterministic = validateUKMLAQuestion(candidate);"
+          if candidate_anchor in r and 'EVAL_GENERATION_FAILURE: AI generator returned fallback template' not in r:
+              r = r.replace(candidate_anchor, fallback_fail_closed)
+          elif 'EVAL_GENERATION_FAILURE: AI generator returned fallback template' not in r:
+              raise SystemExit('Eval runner candidate anchor missing; refusing silent patch')
+          runner.write_text(r)
           PY
       - name: Run 100-question two-attempt launch evaluation
         run: node scripts/run-launch-eval-100.mjs
