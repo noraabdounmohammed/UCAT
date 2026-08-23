@@ -65,16 +65,60 @@ jobs:
 
           p.write_text(s)
 
-          # Evidence-boundary repair: carry the exact current NICE NG12 2026 CA125
-          # table into the packet so a numerical decision is independently verifiable.
+          # Evidence-boundary repair: carry exact decision-critical numeric rules and
+          # require raw score components instead of precomputed score assertions.
           evidence = Path('src/services/evidencePackets.ts')
           e = evidence.read_text()
+
           old_claim = "'In symptomatic people aged 40 or over, NICE 2026 uses age-specific CA125 thresholds for urgent ultrasound rather than a universal 35 IU/mL cutoff.'"
           new_claim = "'In people aged 40 or over with persistent symptoms suggesting ovarian cancer, NICE NG12 (2026) recommends urgent direct-access ultrasound when CA125 is at or above the age-specific threshold: age 40–49: 35 IU/mL; 50–59: 31 IU/mL; 60–69: 24 IU/mL; 70–79: 25 IU/mL; 80+: 31 IU/mL. Do not use a universal 35 IU/mL cutoff.'"
           if old_claim in e:
               e = e.replace(old_claim, new_claim)
           elif 'age 40–49: 35 IU/mL; 50–59: 31 IU/mL; 60–69: 24 IU/mL; 70–79: 25 IU/mL; 80+: 31 IU/mL' not in e:
               raise SystemExit('CA125 evidence-packet anchor missing; refusing silent patch')
+
+          af_context_old = "['sex', 'CHA2DS2-VASc score', 'bleeding risk assessed', 'modifiable bleeding risks addressed or no unaddressed major bleeding issue stated', 'explicit statement that a DOAC is suitable', 'no relevant contraindication']"
+          af_context_new = "['sex', 'raw CHA2DS2-VASc component history sufficient to independently calculate the score; do not state a precomputed score', 'bleeding risk assessed without stating a precomputed bleeding-risk score', 'modifiable bleeding risks addressed or no unaddressed major bleeding issue stated', 'explicit statement that a DOAC is suitable', 'no relevant contraindication']"
+          if af_context_old in e:
+              e = e.replace(af_context_old, af_context_new)
+          elif 'raw CHA2DS2-VASc component history sufficient to independently calculate the score' not in e:
+              raise SystemExit('AF raw-score evidence anchor missing; refusing silent patch')
+
+          acs_forbidden_old = "['Do not ask for an exact drug combination or exact duration from this packet.', 'Do not make a named P2Y12 inhibitor the tested answer.', 'The vignette should contain competing risks so individualisation is an applied decision, not a bare recall statement.']"
+          acs_forbidden_new = "['Do not ask for an exact drug combination or exact duration from this packet.', 'Do not make a named P2Y12 inhibitor the tested answer.', 'Do not state precomputed CHA2DS2-VASc, HAS-BLED or other named risk scores; show concrete bleeding and thromboembolic/cardiovascular risk factors instead.', 'The vignette should contain competing risks so individualisation is an applied decision, not a bare recall statement.']"
+          if acs_forbidden_old in e:
+              e = e.replace(acs_forbidden_old, acs_forbidden_new)
+          elif 'Do not state precomputed CHA2DS2-VASc, HAS-BLED or other named risk scores' not in e:
+              raise SystemExit('ACS raw-risk evidence anchor missing; refusing silent patch')
+
+          sepsis_claim_old = "'Adult sepsis treatment timing is risk-stratified rather than a universal Sepsis-6 bundle; high-risk patients get IV antibiotics within 1 hour and fluids use reassessed 250 mL boluses.'"
+          sepsis_claim_new = "'Adult acute-hospital sepsis treatment is risk-stratified with NEWS2 plus clinical judgement. NICE NG253: high risk = NEWS2 7+ or NEWS2 5–6 with a single parameter scoring 3 or another cause for clinical concern; moderate risk = NEWS2 5–6, or NEWS2 3–4 with a single parameter scoring 3 or another cause for concern; low risk = NEWS2 1–4, or NEWS2 0 with another cause for concern; very low risk = NEWS2 0. High-risk patients receive IV antibiotics within 1 hour. Fluids are an initial 250 mL crystalloid bolus, ideally over 10–15 minutes, with reassessment after each 250 mL bolus, up to 1000 mL total if needed. For adults at risk of hypercapnic respiratory failure, target oxygen saturation is 88–92%.'"
+          if sepsis_claim_old in e:
+              e = e.replace(sepsis_claim_old, sepsis_claim_new)
+          elif 'high risk = NEWS2 7+' not in e:
+              raise SystemExit('Sepsis risk evidence anchor missing; refusing silent patch')
+
+          sepsis_context_old = "['adult 16 or over', 'not pregnant/recently pregnant', 'NEWS2/risk category', 'haemodynamics', 'oxygenation/hypercapnia risk', 'response to fluid']"
+          sepsis_context_new = "['adult 16 or over', 'not pregnant/recently pregnant', 'raw NEWS2 observations sufficient to independently calculate the score and risk category; do not state a precomputed NEWS2 score', 'haemodynamics', 'oxygenation and whether there is hypercapnic respiratory-failure risk', 'response to each fluid bolus when further fluid is being considered']"
+          if sepsis_context_old in e:
+              e = e.replace(sepsis_context_old, sepsis_context_new)
+          elif 'raw NEWS2 observations sufficient to independently calculate the score and risk category' not in e:
+              raise SystemExit('Sepsis raw-score context anchor missing; refusing silent patch')
+
+          curb_context_old = "['adult community-acquired pneumonia', 'CURB-65 components or stated score']"
+          curb_context_new = "['adult community-acquired pneumonia', 'all five raw CURB-65 components sufficient to calculate the score independently; do not state a precomputed CURB-65 score']"
+          if curb_context_old in e:
+              e = e.replace(curb_context_old, curb_context_new)
+          elif 'all five raw CURB-65 components sufficient to calculate the score independently' not in e:
+              raise SystemExit('CURB-65 raw-component context anchor missing; refusing silent patch')
+
+          curb_forbidden_old = "['Do not ask the learner to choose admission versus discharge from this packet.', 'Do not make social circumstances a fabricated tie-breaker for a place-of-care decision.', 'Do not make score 2 automatic admission or score 3-5 automatic ICU.']"
+          curb_forbidden_new = "['Do not ask the learner to choose admission versus discharge from this packet.', 'Do not make social circumstances a fabricated tie-breaker for a place-of-care decision.', 'Do not make score 2 automatic admission or score 3-5 automatic ICU.', 'Risk-category options must be mutually exclusive; never include an exact score option that is a subset of a category option such as low risk 0 alongside low risk 0–1.']"
+          if curb_forbidden_old in e:
+              e = e.replace(curb_forbidden_old, curb_forbidden_new)
+          elif 'never include an exact score option that is a subset of a category option' not in e:
+              raise SystemExit('CURB-65 option-overlap anchor missing; refusing silent patch')
+
           evidence.write_text(e)
 
           # Eval runtime only: do not let a browser-only diagnostic access mask the
