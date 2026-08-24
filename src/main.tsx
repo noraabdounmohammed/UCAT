@@ -10,6 +10,7 @@ import { initPosthog } from '@/instrumentation/posthog';
 import { hasConsented } from '@/instrumentation/consent';
 import { CookieConsent } from '@/components/consent/CookieConsent';
 import './index.css';
+import './styles/native-selection-explain.css';
 
 // Telemetry is consent-gated. initSentry / initPosthog already no-op when
 // their env vars are missing, so this is two layers of opt-in: env + consent.
