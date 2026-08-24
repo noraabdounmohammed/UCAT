@@ -1,7 +1,15 @@
 ::highlight(studyedit-clinical-clues) {
-  background-color: rgba(229, 168, 157, 0.24);
+  background-color: rgba(229, 168, 157, 0.22);
   text-decoration: underline;
-  text-decoration-color: rgba(169, 103, 93, 0.72);
+  text-decoration-color: rgba(169, 103, 93, 0.62);
+  text-decoration-thickness: 2px;
+  text-underline-offset: 3px;
+}
+
+::highlight(studyedit-question-task) {
+  background-color: rgba(143, 163, 121, 0.18);
+  text-decoration: underline;
+  text-decoration-color: rgba(103, 124, 84, 0.62);
   text-decoration-thickness: 2px;
   text-underline-offset: 3px;
 }
