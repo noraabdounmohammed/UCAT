@@ -37,9 +37,12 @@ e = replace_once_semantic(
     'CURB-65 raw-component contract',
 )
 
+# Earlier hardening passes may rename the fourth varicella context from
+# "timing since exposure" to explicit dates/reference-day wording. Match the
+# stable surrounding contract instead of depending on that transient wording.
 e = replace_once_semantic(
     e,
-    r"\['pregnancy',\s*'significant exposure',\s*'susceptibility/non-immunity',\s*'[^']*timing[^']*',\s*'ability to take oral antivirals'\]",
+    r"\['pregnancy',\s*'significant exposure',\s*'susceptibility/non-immunity',\s*'[^']*',\s*'ability to take oral antivirals'\]",
     "['pregnancy', 'significant exposure', 'susceptibility/non-immunity', 'the FIRST DAY of exposure stated explicitly plus the current/reference day so prophylaxis timing is independently reproducible', 'ability to take oral antivirals']",
     'varicella timing contract',
 )
