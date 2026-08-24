@@ -10,6 +10,7 @@ import { initPosthog } from '@/instrumentation/posthog';
 import { hasConsented } from '@/instrumentation/consent';
 import { CookieConsent } from '@/components/consent/CookieConsent';
 import { installClinicalClueHighlighting } from '@/utils/clinicalClueHighlighting';
+import { installNativeMobileSelectionGuard } from '@/utils/nativeMobileSelectionGuard';
 import './index.css';
 import './styles/native-selection-explain.css';
 import './styles/clinical-clue-highlighting.css';
@@ -91,4 +92,5 @@ createRoot(document.getElementById('root')!).render(
   </StrictMode>
 );
 
+installNativeMobileSelectionGuard();
 installClinicalClueHighlighting();
