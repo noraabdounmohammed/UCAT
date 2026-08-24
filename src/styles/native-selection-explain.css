@@ -1,0 +1,32 @@
+/* Keep StudyEdit's Explain affordance out of the browser's native selection UI.
+   On touch devices the selection handles/context menu belong to the browser and
+   must remain unobstructed. The action lives at the bottom of the viewport instead
+   of beside the highlighted text. */
+button[aria-label^="Explain "] {
+  left: 50% !important;
+  top: auto !important;
+  bottom: max(18px, env(safe-area-inset-bottom)) !important;
+  transform: translateX(-50%) !important;
+  max-width: calc(100vw - 32px);
+}
+
+@media (pointer: coarse) {
+  button[aria-label^="Explain "] {
+    min-height: 48px;
+    padding-left: 18px;
+    padding-right: 18px;
+    /* Give the native handles/menu time to settle before the app action appears. */
+    animation: studyedit-explain-after-selection 700ms ease both;
+  }
+}
+
+@keyframes studyedit-explain-after-selection {
+  0%, 78% {
+    opacity: 0;
+    pointer-events: none;
+  }
+  100% {
+    opacity: 1;
+    pointer-events: auto;
+  }
+}
