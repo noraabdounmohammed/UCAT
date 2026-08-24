@@ -20,6 +20,78 @@ function QuietPreparingState() {
   );
 }
 
+function PracticeBuilderLoadingState() {
+  const section = (label: string, control: React.ReactNode) => (
+    <section className="border-t py-5" style={{ borderColor: '#E8DCC4' }}>
+      <div className="mb-3 text-[19px] italic" style={{ fontFamily: "'Fraunces', serif", color: '#8A7560' }}>{label}</div>
+      {control}
+    </section>
+  );
+
+  const chip = (width: string) => (
+    <div className={`h-10 ${width} animate-pulse rounded-full border`} style={{ borderColor: '#D9CCB6', backgroundColor: 'rgba(255,253,248,.72)' }} />
+  );
+
+  return (
+    <div className="fixed inset-0 z-[100] flex items-end justify-center md:items-center md:p-5" style={{ backgroundColor: 'rgba(31,20,12,0.24)', backdropFilter: 'blur(10px)', WebkitBackdropFilter: 'blur(10px)' }}>
+      <div className="flex h-[92dvh] w-full flex-col overflow-hidden rounded-t-[30px] border-t shadow-[0_-18px_60px_rgba(31,20,12,0.16)] md:h-auto md:max-h-[90vh] md:max-w-[470px] md:rounded-[30px] md:border" style={{ backgroundColor: '#FAF5EC', borderColor: 'rgba(217,204,182,.8)' }}>
+        <div className="shrink-0 px-6 pb-4 pt-4 md:pt-6">
+          <div className="mx-auto mb-4 h-1 w-10 rounded-full bg-[#D9CCB6] md:hidden" />
+          <h1 className="text-[31px] leading-[1.03] tracking-[-0.035em]" style={{ fontFamily: "'Fraunces', serif", fontWeight: 300, color: '#2A1E16' }}>
+            Practise <em style={{ color: '#E5A89D' }}>your way</em>
+          </h1>
+          <p className="mt-2 text-[13px] leading-5" style={{ color: '#8A7560' }}>Build a focused session in seconds.</p>
+        </div>
+
+        <div className="flex-1 overflow-y-auto px-6 pb-5">
+          {section('A session of', (
+            <div className="flex items-center justify-between gap-4">
+              <div className="h-12 w-44 rounded-full border" style={{ borderColor: '#D9CCB6', backgroundColor: 'rgba(244,236,223,.72)' }} />
+              <div className="h-5 w-16 animate-pulse rounded-full" style={{ backgroundColor: '#E8DCC4' }} />
+            </div>
+          ))}
+
+          {section('that are', (
+            <div className="flex flex-wrap gap-2">
+              {chip('w-24')}{chip('w-28')}{chip('w-24')}{chip('w-28')}{chip('w-20')}
+            </div>
+          ))}
+
+          {section('in specialty', (
+            <div className="flex h-14 w-full items-center justify-between rounded-[16px] border px-4" style={{ borderColor: '#D9CCB6', backgroundColor: 'rgba(255,253,248,.52)' }}>
+              <span className="text-[15px] italic" style={{ fontFamily: "'Fraunces', serif", color: '#E5A89D' }}>Loading specialties…</span>
+              <div className="h-4 w-4 animate-pulse rounded" style={{ backgroundColor: '#E8DCC4' }} />
+            </div>
+          ))}
+
+          {section('with condition', (
+            <>
+              <div className="mb-3 h-11 w-full animate-pulse rounded-full border" style={{ borderColor: '#D9CCB6', backgroundColor: 'rgba(244,236,223,.62)' }} />
+              <div className="flex flex-wrap gap-2">{chip('w-28')}{chip('w-24')}{chip('w-32')}{chip('w-20')}</div>
+            </>
+          ))}
+
+          {section('presenting as', (
+            <>
+              <div className="mb-3 h-11 w-full animate-pulse rounded-full border" style={{ borderColor: '#D9CCB6', backgroundColor: 'rgba(244,236,223,.62)' }} />
+              <div className="flex flex-wrap gap-2">{chip('w-24')}{chip('w-32')}{chip('w-28')}{chip('w-20')}</div>
+            </>
+          ))}
+
+          {section('about', (
+            <div className="flex flex-wrap gap-2">{chip('w-24')}{chip('w-28')}{chip('w-20')}{chip('w-24')}</div>
+          ))}
+        </div>
+
+        <div className="shrink-0 border-t px-6 py-4" style={{ borderColor: '#E8DCC4', backgroundColor: '#FAF5EC' }}>
+          <div className="h-12 w-full animate-pulse rounded-full" style={{ backgroundColor: '#1F140C', opacity: 0.18 }} />
+          <p className="mt-2 text-center text-[11px]" style={{ color: '#8A7560' }}>Loading your curriculum filters…</p>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function CustomPracticeContent() {
   const navigate = useNavigate();
   const {
@@ -77,8 +149,9 @@ function CustomPracticeContent() {
   }
 
   if (showFilters && !isPracticing) {
+    if (isLoading) return <PracticeBuilderLoadingState />;
     return (
-      <Suspense fallback={<div className="h-screen w-screen bg-[#F4EFE8]" />}>
+      <Suspense fallback={<PracticeBuilderLoadingState />}>
         <PracticeFilterModalParchment
           isOpen={true}
           onClose={handleFilterClose}
