@@ -29,6 +29,8 @@ extra = """  const deterministic = validateUKMLAQuestion(question);
     /has.?bled[^.]{0,260}(?:total(?:\\s+of)?\\s*\\d+|\\d+\\s*points?|(?:one|two|three|four|five|six|seven|eight|nine)\\s+points?|giving\\s+(?:a\\s+)?total)/i,
     /news2[^.]{0,260}(?:score\\s*(?:is|of|=|:)\\s*\\d+|total(?:\\s+of)?\\s*\\d+|\\d+\\s*points?|giving\\s+(?:a\\s+)?total)/i,
     /curb.?65[^.]{0,260}(?:score\\s*(?:is|of|=|:)\\s*\\d+|total(?:\\s+of)?\\s*\\d+|\\d+\\s*points?|(?:one|two|three|four|five)\\s+(?:curb.?65\\s+)?criteria|\\d+\\s+(?:curb.?65\\s+)?criteria)/i,
+    /(?:one|two|three|four|five|\\d+)\\s+curb.?65\\s+criteria/i,
+    /(?:one|two|three|four|five|\\d+)\\s+criteria[^.]{0,80}curb.?65/i,
   ];
   if (namedScoreArithmetic.some((pattern) => pattern.test(derivedScoreText))) {
     return {
