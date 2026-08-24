@@ -9,8 +9,10 @@ import { initSentry } from '@/instrumentation/sentry';
 import { initPosthog } from '@/instrumentation/posthog';
 import { hasConsented } from '@/instrumentation/consent';
 import { CookieConsent } from '@/components/consent/CookieConsent';
+import { installClinicalClueHighlighting } from '@/utils/clinicalClueHighlighting';
 import './index.css';
 import './styles/native-selection-explain.css';
+import './styles/clinical-clue-highlighting.css';
 
 // Telemetry is consent-gated. initSentry / initPosthog already no-op when
 // their env vars are missing, so this is two layers of opt-in: env + consent.
@@ -88,3 +90,5 @@ createRoot(document.getElementById('root')!).render(
     )}
   </StrictMode>
 );
+
+installClinicalClueHighlighting();
