@@ -2,17 +2,13 @@ from pathlib import Path
 import re
 
 # Run-30: align the evidence contract itself with the hardened launch compiler.
-# The remaining failures are dominated by generator instructions that still ask
-# for information the launch gate correctly forbids (especially named scores),
-# plus repeated missing explicit reference-state/context. This patch only
-# tightens/clarifies generation boundaries; it does not relax any gate.
+# This script is intentionally idempotent because earlier eval-only passes mutate
+# the same packet strings before it runs. It may tighten generation instructions;
+# it must never relax the launch gates.
 
 evidence = Path('src/services/evidencePackets.ts')
 e = evidence.read_text()
 
-# Some earlier eval-only scripts mutate these packet strings before this script
-# runs. Use idempotent semantic replacements so the workflow fails closed only
-# when the relevant contract is genuinely absent, not because wording changed.
 
 def replace_once_semantic(text: str, pattern: str, replacement: str, label: str) -> str:
     if replacement in text:
@@ -37,15 +33,17 @@ e = replace_once_semantic(
     'CURB-65 raw-component contract',
 )
 
-# Earlier hardening passes may rename the fourth varicella context from
-# "timing since exposure" to explicit dates/reference-day wording. Match the
-# stable surrounding contract instead of depending on that transient wording.
-e = replace_once_semantic(
-    e,
-    r"\['pregnancy',\s*'significant exposure',\s*'susceptibility/non-immunity',\s*'[^']*',\s*'ability to take oral antivirals'\]",
-    "['pregnancy', 'significant exposure', 'susceptibility/non-immunity', 'the FIRST DAY of exposure stated explicitly plus the current/reference day so prophylaxis timing is independently reproducible', 'ability to take oral antivirals']",
-    'varicella timing contract',
-)
+# Varicella has been hardened by several earlier eval-only passes, so its fourth
+# required-context string can legitimately have several wordings. Anchor on the
+# packet ID and replace the requiredContext array as a whole instead of matching
+# a transient phrase such as "timing since exposure".
+varicella_required = "['pregnancy', 'significant exposure', 'susceptibility/non-immunity', 'the FIRST DAY of exposure stated explicitly plus the current/reference day so prophylaxis timing is independently reproducible', 'ability to take oral antivirals']"
+if varicella_required not in e:
+    varicella_pattern = r"('ukmla-4379':\s*packet\(\s*'ukmla-4379',\s*'[^']*',\s*)\[[^\]]*\]"
+    e, count = re.subn(varicella_pattern, lambda m: m.group(1) + varicella_required, e, count=1, flags=re.S)
+    if count != 1:
+        raise SystemExit('Evidence contract anchor missing: varicella packet')
+
 
 e = replace_once_semantic(
     e,
@@ -54,8 +52,6 @@ e = replace_once_semantic(
     'ACS anticoagulation context contract',
 )
 
-# Run-26 changes the endometrial packet at workflow runtime. Strengthen the
-# resulting instruction so the model does not "helpfully" say HRT is absent.
 old_hrt = "For this cancer-referral target, OMIT HRT from the vignette. NICE 2026 explicitly separates unscheduled bleeding on HRT from unexplained post-menopausal bleeding that cannot be attributed to HRT; do not infer non-attribution merely from the HRT regimen or duration."
 new_hrt = "For this cancer-referral target, OMIT HRT COMPLETELY from the generated item: the literal terms HRT and hormone replacement therapy must not appear even to say the patient is not taking it. NICE 2026 separates unscheduled bleeding on HRT from unexplained post-menopausal bleeding that cannot be attributed to HRT; keep this vignette modifier-free."
 if old_hrt in e:
@@ -65,10 +61,6 @@ elif new_hrt not in e:
 
 evidence.write_text(e)
 
-# Tighten the generic generator's final compliance pass using the packet's own
-# language. This is deliberately generic: it teaches the model to resolve
-# conflicts in favour of raw components + explicit context, not memorised
-# concept-specific answers.
 generator = Path('src/services/aiQuestionGenerator.ts')
 g = generator.read_text()
 anchor = "- Before emitting JSON, perform a literal compliance scan of vignette + lead-in + all options + key_fact + explanation. If any hard rule is violated, rewrite the item before returning it."
