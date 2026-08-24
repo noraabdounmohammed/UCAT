@@ -1,0 +1,7 @@
+::highlight(studyedit-clinical-clues) {
+  background-color: rgba(229, 168, 157, 0.24);
+  text-decoration: underline;
+  text-decoration-color: rgba(169, 103, 93, 0.72);
+  text-decoration-thickness: 2px;
+  text-underline-offset: 3px;
+}
