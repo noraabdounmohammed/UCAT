@@ -1,4 +1,5 @@
 from pathlib import Path
+import re
 
 # Run-30: align the evidence contract itself with the hardened launch compiler.
 # The remaining failures are dominated by generator instructions that still ask
@@ -9,30 +10,46 @@ from pathlib import Path
 evidence = Path('src/services/evidencePackets.ts')
 e = evidence.read_text()
 
-replacements = [
-    (
-        "['sex', 'CHA2DS2-VASc score', 'bleeding risk assessed', 'modifiable bleeding risks addressed or no unaddressed major bleeding issue stated', 'explicit statement that a DOAC is suitable', 'no relevant contraindication']",
-        "['sex', 'raw CHA2DS2-VASc clinical components sufficient to establish anticoagulation indication WITHOUT naming or stating a CHA2DS2-VASc total', 'bleeding risk assessed using concrete clinical factors WITHOUT naming or stating a HAS-BLED total', 'modifiable bleeding risks addressed or no unaddressed major bleeding issue stated', 'explicit statement that a DOAC is suitable', 'no relevant contraindication']",
-    ),
-    (
-        "['adult community-acquired pneumonia', 'CURB-65 components or stated score']",
-        "['adult community-acquired pneumonia', 'all raw CURB-65 components needed to derive the risk category; never state a precomputed CURB-65 total']",
-    ),
-    (
-        "['pregnancy', 'significant exposure', 'susceptibility/non-immunity', 'timing since exposure', 'ability to take oral antivirals']",
-        "['pregnancy', 'significant exposure', 'susceptibility/non-immunity', 'the FIRST DAY of exposure stated explicitly plus the current/reference day so prophylaxis timing is independently reproducible', 'ability to take oral antivirals']",
-    ),
-    (
-        "['recent ACS and/or PCI status', 'separate ongoing indication for anticoagulation', 'at least one bleeding-risk factor', 'at least one thromboembolic/cardiovascular-risk factor']",
-        "['recent ACS and/or PCI status', 'separate ongoing indication for anticoagulation', 'at least one EXPLICIT concrete bleeding-risk factor stated as such (for example prior clinically significant bleeding) rather than inferred from age/hypertension alone', 'at least one EXPLICIT concrete thromboembolic/cardiovascular-risk factor stated without naming a risk score']",
-    ),
-]
+# Some earlier eval-only scripts mutate these packet strings before this script
+# runs. Use idempotent semantic replacements so the workflow fails closed only
+# when the relevant contract is genuinely absent, not because wording changed.
 
-for old, new in replacements:
-    if old in e:
-        e = e.replace(old, new, 1)
-    elif new not in e:
-        raise SystemExit(f'Evidence contract anchor missing: {old[:80]}')
+def replace_once_semantic(text: str, pattern: str, replacement: str, label: str) -> str:
+    if replacement in text:
+        return text
+    updated, count = re.subn(pattern, replacement, text, count=1, flags=re.S)
+    if count != 1:
+        raise SystemExit(f'Evidence contract anchor missing: {label}')
+    return updated
+
+
+e = replace_once_semantic(
+    e,
+    r"\['sex',\s*'[^']*CHA2DS2-VASc[^']*',\s*'bleeding risk assessed[^']*',\s*'modifiable bleeding risks addressed or no unaddressed major bleeding issue stated',\s*'explicit statement that a DOAC is suitable',\s*'no relevant contraindication'\]",
+    "['sex', 'raw CHA2DS2-VASc clinical components sufficient to establish anticoagulation indication WITHOUT naming or stating a CHA2DS2-VASc total', 'bleeding risk assessed using concrete clinical factors WITHOUT naming or stating a HAS-BLED total', 'modifiable bleeding risks addressed or no unaddressed major bleeding issue stated', 'explicit statement that a DOAC is suitable', 'no relevant contraindication']",
+    'anticoagulation raw-score contract',
+)
+
+e = replace_once_semantic(
+    e,
+    r"\['adult community-acquired pneumonia',\s*'[^']*CURB-65[^']*'\]",
+    "['adult community-acquired pneumonia', 'all raw CURB-65 components needed to derive the risk category; never state a precomputed CURB-65 total']",
+    'CURB-65 raw-component contract',
+)
+
+e = replace_once_semantic(
+    e,
+    r"\['pregnancy',\s*'significant exposure',\s*'susceptibility/non-immunity',\s*'[^']*timing[^']*',\s*'ability to take oral antivirals'\]",
+    "['pregnancy', 'significant exposure', 'susceptibility/non-immunity', 'the FIRST DAY of exposure stated explicitly plus the current/reference day so prophylaxis timing is independently reproducible', 'ability to take oral antivirals']",
+    'varicella timing contract',
+)
+
+e = replace_once_semantic(
+    e,
+    r"\['recent ACS and/or PCI status',\s*'separate ongoing indication for anticoagulation',\s*'[^']*bleeding-risk factor[^']*',\s*'[^']*thromboembolic/cardiovascular-risk factor[^']*'\]",
+    "['recent ACS and/or PCI status', 'separate ongoing indication for anticoagulation', 'at least one EXPLICIT concrete bleeding-risk factor stated as such (for example prior clinically significant bleeding) rather than inferred from age/hypertension alone', 'at least one EXPLICIT concrete thromboembolic/cardiovascular-risk factor stated without naming a risk score']",
+    'ACS anticoagulation context contract',
+)
 
 # Run-26 changes the endometrial packet at workflow runtime. Strengthen the
 # resulting instruction so the model does not "helpfully" say HRT is absent.
