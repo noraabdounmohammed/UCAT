@@ -76,9 +76,13 @@ function CustomPracticeContent() {
     );
   }
 
+  // Do not render a half-populated filter sheet. Wait until the concept store has
+  // finished hydrating, then reveal the complete specialty / condition /
+  // presentation hierarchy in one paint.
   if (showFilters && !isPracticing) {
+    if (isLoading) return <QuietPreparingState />;
     return (
-      <Suspense fallback={<div className="h-screen w-screen bg-[#F4EFE8]" />}>
+      <Suspense fallback={<QuietPreparingState />}>
         <PracticeFilterModalParchment
           isOpen={true}
           onClose={handleFilterClose}
