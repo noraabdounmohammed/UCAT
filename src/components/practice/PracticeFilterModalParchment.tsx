@@ -54,15 +54,17 @@ const countStatus = (concepts: ConceptNode[], status: string) => {
   return concepts.filter(concept => matchesStatus(concept, new Set([status]))).length;
 };
 
-const calcSegments = (concepts: ConceptNode[], filter: string) => {
+const calcCoverage = (concepts: ConceptNode[], filter: string) => {
   const matching = concepts.filter(c => c.custom_filters?.includes(filter));
   const total = matching.length;
-  if (!total) return { m: 0, w: 0, a: 0, c: 0 };
+  const covered = matching.filter(c => {
+    const md = c.mastery_data || ({} as any);
+    return Number(md.attempts || 0) > 0 || Number(md.mastery_level || 0) > 0;
+  }).length;
   return {
-    m: Math.round((matching.filter(c => c.mastery_data?.mastery_level === 2).length / total) * 100),
-    w: Math.round((matching.filter(c => c.mastery_data?.mastery_level === 1).length / total) * 100),
-    a: Math.round((matching.filter(c => c.mastery_data?.attempts && !c.mastery_data?.mastery_level).length / total) * 100),
-    c: Math.round((matching.filter(c => !c.mastery_data?.attempts && !c.mastery_data?.mastery_level).length / total) * 100),
+    total,
+    covered,
+    percent: total ? Math.round((covered / total) * 100) : 0,
   };
 };
 
@@ -117,12 +119,19 @@ export const PracticeFilterModalParchment: React.FC<Props> = ({ isOpen, onClose,
   const presentationPool = useMemo(() => conditionPool.filter(c => matchesAnyTag(c, sPres)), [conditionPool, sPres]);
   const filteredPool = useMemo(() => presentationPool.filter(c => matchesAnyTag(c, sFacets)), [presentationPool, sFacets]);
 
-  const areas = useMemo(() => specialtyIds.map(id => ({
-    id,
-    name: labelFor(id),
-    count: statusPool.filter(c => c.custom_filters?.includes(id)).length,
-    seg: calcSegments(statusPool, id),
-  })).filter(option => option.count > 0 || sAreas.has(option.id)), [specialtyIds, statusPool, sAreas]);
+  const areas = useMemo(() => specialtyIds.map(id => {
+    const coverage = calcCoverage(concepts, id);
+    return {
+      id,
+      name: labelFor(id),
+      count: coverage.total,
+      covered: coverage.covered,
+      coveragePercent: coverage.percent,
+      available: statusPool.filter(c => c.custom_filters?.includes(id)).length,
+    };
+  })
+    .filter(option => option.count > 0 || sAreas.has(option.id))
+    .sort((a, b) => b.count - a.count || a.name.localeCompare(b.name)), [specialtyIds, concepts, statusPool, sAreas]);
 
   const conditions = useMemo(() => conditionIds.map(id => ({
     id,
@@ -334,12 +343,22 @@ export const PracticeFilterModalParchment: React.FC<Props> = ({ isOpen, onClose,
               </button>
               {areaOpen && (
                 <div className="mt-2 overflow-hidden rounded-[16px] border" style={{ backgroundColor: T.parchment, borderColor: T.line }}>
+                  <div className="border-b px-3.5 py-2 text-[10px] font-medium uppercase tracking-[0.12em]" style={{ borderColor: T.lineSoft, color: T.inkMuted }}>
+                    Coverage = concepts attempted at least once
+                  </div>
                   {areas.map(option => (
                     <button key={option.id} onClick={() => toggleArea(option.id)} className="flex w-full items-center gap-2.5 border-b px-3.5 py-3 text-left last:border-b-0" style={{ borderColor: T.lineSoft }}>
-                      <span className="flex h-[18px] w-[18px] items-center justify-center rounded border text-[10px]" style={{ backgroundColor: sAreas.has(option.id) ? T.espresso : T.cream, borderColor: sAreas.has(option.id) ? T.espresso : T.line, color: sAreas.has(option.id) ? T.cream : 'transparent' }}>✓</span>
-                      <span className="flex-1 text-[13px] font-medium" style={{ color: T.ink }}>{option.name}</span>
-                      <div className="flex h-1 w-11 overflow-hidden rounded-sm" style={{ backgroundColor: T.lineSoft }}><span style={{ width: `${option.seg.m}%`, backgroundColor: T.sageDeep }} /><span style={{ width: `${option.seg.w}%`, backgroundColor: T.blushDeep }} /><span style={{ width: `${option.seg.a}%`, backgroundColor: '#c8b89c' }} /><span style={{ width: `${option.seg.c}%`, backgroundColor: '#4a3a2c' }} /></div>
-                      <em className="min-w-[38px] text-right text-[12px]" style={{ color: T.inkMuted, fontFamily: "'Fraunces', serif" }}>{option.count}</em>
+                      <span className="flex h-[18px] w-[18px] shrink-0 items-center justify-center rounded border text-[10px]" style={{ backgroundColor: sAreas.has(option.id) ? T.espresso : T.cream, borderColor: sAreas.has(option.id) ? T.espresso : T.line, color: sAreas.has(option.id) ? T.cream : 'transparent' }}>✓</span>
+                      <span className="min-w-0 flex-1 text-[13px] font-medium" style={{ color: T.ink }}>{option.name}</span>
+                      <div className="w-[96px] shrink-0">
+                        <div className="h-[5px] w-full overflow-hidden rounded-full" style={{ backgroundColor: T.lineSoft }}>
+                          <div className="h-full rounded-full transition-[width]" style={{ width: `${option.coveragePercent}%`, backgroundColor: T.sageDeep }} />
+                        </div>
+                        <div className="mt-1 flex items-center justify-between gap-2 text-[10px]" style={{ color: T.inkMuted }}>
+                          <span>{option.coveragePercent}%</span>
+                          <span>{option.covered}/{option.count}</span>
+                        </div>
+                      </div>
                     </button>
                   ))}
                 </div>
