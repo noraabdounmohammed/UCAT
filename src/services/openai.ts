@@ -8,6 +8,12 @@ export interface QuestionContext {
   explanation: string;
 }
 
+export interface ConditionPrimerContext {
+  condition: string;
+  questionContext?: QuestionContext;
+  keyFact?: string;
+}
+
 interface CacheEntry {
   response: string;
   timestamp: number;
@@ -50,6 +56,17 @@ const systemPrompt = `You are StudyEdit, an expert medical education assistant f
 - Use light markdown only when it improves skimming.
 - Do not use motivational filler, emojis or generic AI preambles.
 - If the supplied information is insufficient, say so briefly.`;
+
+const conditionPrimerSystemPrompt = `You are StudyEdit, an expert UK medical education tutor giving a very short orientation to a condition after a student answers a question.
+- The goal is to help a learner who may know almost nothing about the condition build a basic mental model in under one minute.
+- Be clinically careful and concise.
+- Do not contradict the verified question context, correct answer, key fact or explanation supplied.
+- You may use standard stable medical background knowledge to explain what the condition is and its typical clinical pattern.
+- Do NOT invent exact drug doses, numerical thresholds, timing windows, scoring totals, referral cut-offs, or rapidly changing guideline details unless those are explicitly supported by the supplied grounding context.
+- If management is guideline-sensitive, describe the management principle rather than an unsupported exact regimen.
+- Use exactly these short headings: **What it is**, **Typical picture**, **How you recognise it**, **What happens next**, **Do not miss**.
+- Keep the whole response to roughly 100-160 words.
+- No motivational filler, emojis, references, citations, or generic AI preambles.`;
 
 let openai: OpenAI | null = null;
 
@@ -154,6 +171,73 @@ export async function generateAIResponse(userQuery: string, context: QuestionCon
   } catch (error) {
     console.error('DeepSeek API error:', error);
     return generateFallbackResponse(userQuery, context);
+  }
+}
+
+export async function generateConditionPrimerStream(
+  context: ConditionPrimerContext,
+  onToken: (token: string) => void,
+  onStart?: () => void,
+  abortSignal?: AbortSignal,
+): Promise<string> {
+  const condition = context.condition.trim() || 'this clinical condition';
+  const questionContext = context.questionContext;
+  const grounding = [
+    context.keyFact ? `VERIFIED KEY FACT:\n${context.keyFact}` : '',
+    questionContext?.explanation ? `VERIFIED QUESTION EXPLANATION:\n${questionContext.explanation}` : '',
+    questionContext?.question ? `CURRENT VIGNETTE / QUESTION:\n${questionContext.question}` : '',
+    questionContext?.correctAnswer ? `CORRECT ANSWER:\n${questionContext.correctAnswer}` : '',
+  ].filter(Boolean).join('\n\n');
+  const userPrompt = `Teach me ${condition} from scratch as a rapid condition primer. Assume I may have no useful prior knowledge. ${grounding ? `\n\nGround yourself in the verified material below and do not contradict it:\n\n${grounding}` : ''}`;
+  const cacheKey = `condition_${stableHash(userPrompt)}`;
+  const cached = responseCache[cacheKey];
+  if (cached && Date.now() - cached.timestamp < CACHE_EXPIRY_MS) {
+    onStart?.();
+    onToken(cached.response);
+    return cached.response;
+  }
+
+  if (!openai) {
+    const fallback = context.keyFact || questionContext?.explanation || `A quick review of ${condition} is temporarily unavailable.`;
+    onStart?.();
+    onToken(fallback);
+    return fallback;
+  }
+
+  let fullResponse = '';
+  try {
+    onStart?.();
+    const stream = await openai.chat.completions.create({
+      model: 'deepseek-chat',
+      messages: [
+        { role: 'system', content: conditionPrimerSystemPrompt },
+        { role: 'user', content: userPrompt },
+      ],
+      temperature: 0.2,
+      max_tokens: 320,
+      top_p: 0.75,
+      presence_penalty: 0,
+      frequency_penalty: 0.1,
+      response_format: { type: 'text' },
+      stream: true,
+    }, abortSignal ? { signal: abortSignal } : {});
+
+    for await (const chunk of stream as AsyncIterable<{ choices: Array<{ delta?: { content?: string } }> }>) {
+      if (abortSignal?.aborted) throw new Error('Request aborted');
+      const delta = chunk?.choices?.[0]?.delta?.content ?? '';
+      if (!delta) continue;
+      fullResponse += delta;
+      onToken(delta);
+    }
+
+    if (fullResponse) responseCache[cacheKey] = { response: fullResponse, timestamp: Date.now() };
+    return fullResponse;
+  } catch (error) {
+    if (abortSignal?.aborted) throw error;
+    console.error('Condition primer generation failed:', error);
+    const fallback = context.keyFact || questionContext?.explanation || `A quick review of ${condition} is temporarily unavailable.`;
+    onToken(fallback);
+    return fallback;
   }
 }
 
