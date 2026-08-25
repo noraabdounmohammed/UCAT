@@ -8,7 +8,7 @@
 import { questionCacheService, type CachedQuestion, type QuestionInsert } from './questionCacheService';
 import { jsonConceptLoader, type ResolvedJsonConcept } from './jsonConceptLoader';
 import { generateQuestionFromConcept } from './aiQuestionGenerator';
-import { UKMLA_QUALITY_INSTRUCTIONS, reviewUKMLAQuestion, validateUKMLAQuestion } from './questionQuality';
+import { UKMLA_QUALITY_GATE_VERSION, UKMLA_QUALITY_INSTRUCTIONS, reviewUKMLAQuestion, validateUKMLAQuestion } from './questionQuality';
 import { buildEvidencePacketInstructions } from './evidencePackets';
 import type { QuestionData } from '@/components/practice/questionTypes';
 import type { ConceptNode } from '@/types/conceptTypes';
@@ -67,6 +67,11 @@ function isUsableCachedQuestion(cached: CachedQuestion, requestedFormat: string)
   if (!Array.isArray(cached.options) || cached.options.length < 2 || !normalise(cached.correct_answer)) return false;
   const format = cached.question_format || requestedFormat;
   if (format !== 'ukmla_sba') return true;
+
+  // UKMLA cache entries are reusable only if this exact item is proven to have
+  // passed the currently deployed quality gate. Legacy/unversioned items fail closed.
+  if (cached.quality_gate_version !== UKMLA_QUALITY_GATE_VERSION) return false;
+  if (!cached.quality_checked_at || Number(cached.quality_score || 0) < 88) return false;
 
   const leadIn = getCachedLeadIn(cached);
   if (!leadIn) return false;
@@ -251,6 +256,7 @@ export const cachedQuestionGenerator = {
 
       for (let i = 0; i < count; i++) {
         let aiQuestion: any = null;
+        let qualityScore: number | null = null;
 
         // New UKMLA items pass through a generation brief + deterministic lint + adversarial review.
         // A single retry keeps quality high without creating an unbounded latency/cost loop.
@@ -270,6 +276,7 @@ export const cachedQuestionGenerator = {
           const quality = await reviewUKMLAQuestion(candidate, conceptNode);
           if (quality.pass) {
             aiQuestion = candidate;
+            qualityScore = quality.score;
             if (process.env.NODE_ENV === 'development') {
               console.log('✅ UKMLA item passed quality gate', { conceptId, score: quality.score, attempt: attempt + 1 });
             }
@@ -334,7 +341,12 @@ export const cachedQuestionGenerator = {
           explanation: aiQuestion.explanation || '',
           citation_id: aiQuestion.citation_id || null,
           question_format: format,
-          difficulty: options.difficulty || 'medium'
+          difficulty: options.difficulty || 'medium',
+          ...(format === 'ukmla_sba' ? {
+            quality_gate_version: UKMLA_QUALITY_GATE_VERSION,
+            quality_checked_at: new Date().toISOString(),
+            quality_score: qualityScore ?? 0,
+          } : {})
         });
       }
 
