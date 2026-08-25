@@ -12,7 +12,6 @@ export interface FilterState {
   presentations: string[];
   facets: string[];
   essentialsOnly?: boolean;
-  sessionStrategy?: 'balanced' | 'breadth_first';
 }
 
 interface Props {
@@ -106,12 +105,11 @@ const calcPillProgress = (concepts: ConceptNode[], filter: string): PillProgress
 };
 
 /**
- * Build a small, deliberately broad candidate set for a time-crunched first pass.
- * The goal is coverage of distinct condition/presentation territory before depth.
- * We still prefer unseen/weak, safety-critical and core concepts and gently penalise
- * concepts whose prerequisites are not yet mastered.
+ * Cold is the first-pass / breadth route. Among unseen concepts, prefer new
+ * condition/presentation territory before extra depth, while retaining the
+ * existing importance, safety and prerequisite signals.
  */
-const pickBreadthFirst = (
+const pickColdBreadthFirst = (
   pool: ConceptNode[],
   size: number,
   assignments: Record<string, string>,
@@ -137,19 +135,12 @@ const pickBreadthFirst = (
     let bestScore = -Infinity;
 
     remaining.forEach((concept, index) => {
-      const md = concept.mastery_data || ({} as any);
-      const attempts = Number(md.attempts || 0);
-      const level = Number(md.mastery_level || 0);
       const tags = breadthTags(concept);
       const novelTags = tags.filter(tag => !coveredTags.has(tag)).length;
       const unmetPrereqs = (concept.prerequisites || []).filter(id => !masteredIds.has(id)).length;
       const importance = concept.importance || {};
 
-      let score = 0;
-      if (attempts === 0) score += 110;
-      else if (level === 1) score += 75;
-      else if (level === 2) score += 10;
-      score += novelTags * 55;
+      let score = novelTags * 55;
       if (concept.safety_critical || importance.safety_critical) score += 24;
       if (concept.core || importance.core) score += 18;
       score += Number(concept.exam_weight ?? importance.exam_weight ?? 0) * 4;
@@ -174,7 +165,6 @@ export const PracticeFilterModalParchment: React.FC<Props> = ({ isOpen, onClose,
   const { concepts = [], curriculumId, setPracticeSelection } = useConceptStore();
   const [categories, setCategories] = useState<FilterCategory[]>([]);
   const [size, setSize] = useState(10);
-  const [sessionStrategy, setSessionStrategy] = useState<'balanced' | 'breadth_first'>('balanced');
   const [sStatus, setSStatus] = useState<Set<string>>(new Set(['any']));
   const [essentialsOnly, setEssentialsOnly] = useState(false);
   const [sAreas, setSAreas] = useState<Set<string>>(new Set());
@@ -312,7 +302,6 @@ export const PracticeFilterModalParchment: React.FC<Props> = ({ isOpen, onClose,
   const toggleArea = (id: string) => toggle(sAreas, id, setSAreas, false);
   const reset = () => {
     setSize(10);
-    setSessionStrategy('balanced');
     setSStatus(new Set(['any']));
     setEssentialsOnly(false);
     setSAreas(new Set());
@@ -330,18 +319,16 @@ export const PracticeFilterModalParchment: React.FC<Props> = ({ isOpen, onClose,
     const result: { type: string; value: string; label: string }[] = [];
     if (!hasAny(sStatus)) [...sStatus].forEach(value => result.push({ type: 'status', value, label: value }));
     if (essentialsOnly) result.push({ type: 'essentials', value: 'essential', label: 'Essentials' });
-    if (sessionStrategy === 'breadth_first') result.push({ type: 'strategy', value: 'breadth_first', label: 'Breadth first' });
     [...sAreas].forEach(value => result.push({ type: 'area', value, label: labelFor(value) }));
     if (!hasAny(sConditions)) [...sConditions].forEach(value => result.push({ type: 'condition', value, label: labelFor(value) }));
     if (!hasAny(sPres)) [...sPres].forEach(value => result.push({ type: 'presentation', value, label: labelFor(value) }));
     if (!hasAny(sFacets)) [...sFacets].forEach(value => result.push({ type: 'about', value, label: labelFor(value) }));
     return result;
-  }, [sStatus, essentialsOnly, sessionStrategy, sAreas, sConditions, sPres, sFacets]);
+  }, [sStatus, essentialsOnly, sAreas, sConditions, sPres, sFacets]);
 
   const removeActive = (item: { type: string; value: string }) => {
     if (item.type === 'status') toggle(sStatus, item.value, setSStatus);
     else if (item.type === 'essentials') setEssentialsOnly(false);
-    else if (item.type === 'strategy') setSessionStrategy('balanced');
     else if (item.type === 'area') toggleArea(item.value);
     else if (item.type === 'condition') toggle(sConditions, item.value, setSConditions);
     else if (item.type === 'presentation') toggle(sPres, item.value, setSPres);
@@ -354,7 +341,6 @@ export const PracticeFilterModalParchment: React.FC<Props> = ({ isOpen, onClose,
   const specialtySummary = sAreas.size ? [...sAreas].map(labelFor).join(', ') : 'Any specialty';
   const summaryParts = [
     `${selectedCount} concepts`,
-    sessionStrategy === 'breadth_first' ? 'Breadth first' : 'Balanced',
     statusSummary,
     ...(essentialsOnly ? ['Essentials'] : []),
     specialtySummary,
@@ -461,18 +447,6 @@ export const PracticeFilterModalParchment: React.FC<Props> = ({ isOpen, onClose,
               </div>
               <span className="shrink-0 text-[13px] italic" style={{ fontFamily: "'Fraunces', serif", color: T.inkMuted }}>≈ {Math.round(size * 2)} min</span>
             </div>
-            <div className="mt-4">
-              <div className="mb-2 text-[11px]" style={{ color: T.inkMuted }}>Session strategy</div>
-              <div className="flex flex-wrap gap-2">
-                <Chip selected={sessionStrategy === 'balanced'} onClick={() => setSessionStrategy('balanced')}><span>Balanced</span></Chip>
-                <Chip selected={sessionStrategy === 'breadth_first'} onClick={() => setSessionStrategy('breadth_first')}><span>Breadth first</span></Chip>
-              </div>
-              <div className="mt-2 text-[11px] leading-4" style={{ color: T.inkMuted }}>
-                {sessionStrategy === 'breadth_first'
-                  ? 'Maximises new clinical territory: different conditions and presentations before extra depth.'
-                  : 'Uses StudyEdit’s normal adaptive mix of review, new material and reinforcement.'}
-              </div>
-            </div>
           </section>
 
           <section className="border-t py-5" style={{ borderColor: T.lineSoft }}>
@@ -486,6 +460,11 @@ export const PracticeFilterModalParchment: React.FC<Props> = ({ isOpen, onClose,
                 </Chip>
               ))}
             </div>
+            {sStatus.has('cold') && (
+              <div className="mt-2 text-[11px] leading-4" style={{ color: T.inkMuted }}>
+                Cold prioritises breadth automatically: new conditions and presentations before extra depth.
+              </div>
+            )}
           </section>
 
           <section className="border-t py-5" style={{ borderColor: T.lineSoft }}>
@@ -570,11 +549,11 @@ export const PracticeFilterModalParchment: React.FC<Props> = ({ isOpen, onClose,
           {available === 0 && <div className="mb-2 text-center text-[12px]" style={{ color: T.inkMuted }}>Nothing matches this combination yet. Remove one filter.</div>}
           <button
             onClick={() => {
-              const selectedConcepts = sessionStrategy === 'breadth_first'
-                ? pickBreadthFirst(filteredPool, size, assignments, conditionCategory?.id, presentationCategory?.id)
+              const selectedConcepts = sStatus.has('cold')
+                ? pickColdBreadthFirst(filteredPool, size, assignments, conditionCategory?.id, presentationCategory?.id)
                 : filteredPool;
               setPracticeSelection(selectedConcepts.map(c => c.concept_id));
-              onApplyFilters?.({ size, statuses: [...sStatus], areas: [...sAreas], conditions: [...sConditions], presentations: [...sPres], facets: [...sFacets], essentialsOnly, sessionStrategy });
+              onApplyFilters?.({ size, statuses: [...sStatus], areas: [...sAreas], conditions: [...sConditions], presentations: [...sPres], facets: [...sFacets], essentialsOnly });
               onClose();
             }}
             disabled={available === 0}
