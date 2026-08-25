@@ -2,7 +2,7 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { ChevronDown, X } from 'lucide-react';
 import { useConceptStore } from '@/contexts/ConceptStoreContext';
 import type { ConceptNode, FilterCategory } from '@/types/conceptTypes';
-import { isEssentialConcept } from '@/utils/essentialCurriculum';
+import { isEssentialConcept, isEssentialTag } from '@/utils/essentialCurriculum';
 
 export interface FilterState {
   size: number;
@@ -115,6 +115,8 @@ export const PracticeFilterModalParchment: React.FC<Props> = ({ isOpen, onClose,
   const conditionIds = conditionCategory ? tagsByCategory[conditionCategory.id] || [] : [];
   const presentationIds = presentationCategory ? tagsByCategory[presentationCategory.id] || [] : [];
   const facetIds = facetCategory ? tagsByCategory[facetCategory.id] || [] : [];
+  const visibleConditionIds = essentialsOnly ? conditionIds.filter(isEssentialTag) : conditionIds;
+  const visiblePresentationIds = essentialsOnly ? presentationIds.filter(isEssentialTag) : presentationIds;
 
   // Essentials narrows the candidate universe only. Everything downstream — status,
   // specialty, condition, presentation, and the existing practice ranking — remains unchanged.
@@ -142,17 +144,17 @@ export const PracticeFilterModalParchment: React.FC<Props> = ({ isOpen, onClose,
     .filter(option => option.count > 0 || sAreas.has(option.id))
     .sort((a, b) => b.count - a.count || a.name.localeCompare(b.name)), [specialtyIds, scopePool, statusPool, sAreas]);
 
-  const conditions = useMemo(() => conditionIds.map(id => ({
+  const conditions = useMemo(() => visibleConditionIds.map(id => ({
     id,
     label: labelFor(id),
     count: specialtyPool.filter(c => c.custom_filters?.includes(id)).length,
-  })).filter(option => option.count > 0 || sConditions.has(option.id)), [conditionIds, specialtyPool, sConditions]);
+  })).filter(option => option.count > 0 || sConditions.has(option.id)), [visibleConditionIds, specialtyPool, sConditions]);
 
-  const presentations = useMemo(() => presentationIds.map(id => ({
+  const presentations = useMemo(() => visiblePresentationIds.map(id => ({
     id,
     label: labelFor(id),
     count: conditionPool.filter(c => c.custom_filters?.includes(id)).length,
-  })).filter(option => option.count > 0 || sPres.has(option.id)), [presentationIds, conditionPool, sPres]);
+  })).filter(option => option.count > 0 || sPres.has(option.id)), [visiblePresentationIds, conditionPool, sPres]);
 
   const facets = useMemo(() => facetIds.map(id => ({
     id,
@@ -466,7 +468,9 @@ export const PracticeFilterModalParchment: React.FC<Props> = ({ isOpen, onClose,
           {available === 0 && <div className="mb-2 text-center text-[12px]" style={{ color: T.inkMuted }}>Nothing matches this combination yet. Remove one filter.</div>}
           <button
             onClick={() => {
-              const selectedIds = filteredPool.slice(0, size).map(c => c.concept_id);
+              // Pass the entire filtered candidate pool into practice. The session's
+              // existing prioritiser chooses the requested number from within it.
+              const selectedIds = filteredPool.map(c => c.concept_id);
               setPracticeSelection(selectedIds);
               onApplyFilters?.({ size, statuses: [...sStatus], areas: [...sAreas], conditions: [...sConditions], presentations: [...sPres], facets: [...sFacets], essentialsOnly });
               onClose();
