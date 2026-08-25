@@ -18,24 +18,20 @@ function isAnswerOptionButton(target: EventTarget | null): HTMLButtonElement | n
 export function installOptionLongPressElimination() {
   if (typeof document === 'undefined') return () => undefined;
 
-  let timer: number | null = null;
   let activeButton: HTMLButtonElement | null = null;
   let activePointerId: number | null = null;
+  let startedAt = 0;
   let startX = 0;
   let startY = 0;
-  let longPressTriggered = false;
-
-  const clearTimer = () => {
-    if (timer !== null) window.clearTimeout(timer);
-    timer = null;
-  };
+  let cancelled = false;
 
   const resetGesture = () => {
-    clearTimer();
     activeButton = null;
     activePointerId = null;
+    startedAt = 0;
     startX = 0;
     startY = 0;
+    cancelled = false;
   };
 
   const onPointerDown = (event: PointerEvent) => {
@@ -43,37 +39,39 @@ export function installOptionLongPressElimination() {
     if (!button || event.button > 0 || !event.isPrimary) return;
 
     resetGesture();
-    longPressTriggered = false;
     activeButton = button;
     activePointerId = event.pointerId;
+    startedAt = performance.now();
     startX = event.clientX;
     startY = event.clientY;
     button.dataset.studyeditOption = 'true';
-
-    timer = window.setTimeout(() => {
-      if (!activeButton || activeButton !== button || button.disabled || activePointerId !== event.pointerId) return;
-
-      const eliminated = button.dataset.studyeditEliminated === 'true';
-      if (eliminated) delete button.dataset.studyeditEliminated;
-      else button.dataset.studyeditEliminated = 'true';
-
-      longPressTriggered = true;
-      button.dataset.studyeditSuppressClick = 'true';
-      try { navigator.vibrate?.(18); } catch { /* optional haptic */ }
-    }, LONG_PRESS_MS);
   };
 
   const onPointerMove = (event: PointerEvent) => {
     if (!activeButton || activePointerId !== event.pointerId) return;
     const dx = event.clientX - startX;
     const dy = event.clientY - startY;
-    if (Math.hypot(dx, dy) > MOVE_TOLERANCE_PX) resetGesture();
+    if (Math.hypot(dx, dy) > MOVE_TOLERANCE_PX) cancelled = true;
   };
 
   const onPointerUp = (event: PointerEvent) => {
-    if (activePointerId !== event.pointerId) return;
-    // A short press must never toggle elimination. Clearing the timer here guarantees
-    // ordinary taps are left entirely to the React answer-selection handler.
+    if (!activeButton || activePointerId !== event.pointerId) return;
+
+    const button = activeButton;
+    const heldForMs = performance.now() - startedAt;
+    const shouldEliminate = !cancelled && heldForMs >= LONG_PRESS_MS && !button.disabled;
+
+    if (shouldEliminate) {
+      const eliminated = button.dataset.studyeditEliminated === 'true';
+      if (eliminated) delete button.dataset.studyeditEliminated;
+      else button.dataset.studyeditEliminated = 'true';
+
+      // Suppress the synthetic click that browsers emit after pointerup so a long-hold
+      // never also selects the answer.
+      button.dataset.studyeditSuppressClick = 'true';
+      try { navigator.vibrate?.(18); } catch { /* optional haptic */ }
+    }
+
     resetGesture();
   };
 
@@ -86,18 +84,12 @@ export function installOptionLongPressElimination() {
     const button = isAnswerOptionButton(event.target);
     if (!button) return;
 
-    // Browsers commonly emit a click after a completed long press. Suppress exactly
-    // that one click so eliminating an option never also selects it.
-    if (button.dataset.studyeditSuppressClick === 'true' || longPressTriggered) {
+    if (button.dataset.studyeditSuppressClick === 'true') {
       event.preventDefault();
       event.stopImmediatePropagation();
       delete button.dataset.studyeditSuppressClick;
-      longPressTriggered = false;
-      return;
     }
-
-    // Ordinary clicks/taps are intentionally untouched.
-    longPressTriggered = false;
+    // Ordinary short taps are never intercepted and continue to the React answer picker.
   };
 
   const onContextMenu = (event: MouseEvent) => {
