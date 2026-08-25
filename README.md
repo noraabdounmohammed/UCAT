@@ -1,5 +1,7 @@
 # Study Edit (medicu-app)
 
+<!-- deploy-trigger: 2026-08-25-long-press-fix -->
+
 UKMLA exam-prep with FSRS-5 spaced repetition, made by a UK doctor.
 Live at **[studyedit.com](https://studyedit.com)**.
 
