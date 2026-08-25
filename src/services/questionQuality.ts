@@ -2,6 +2,8 @@ import type { ConceptNode } from '@/types/conceptTypes';
 import { assessClinicalTruthRisk, getVerifiedSourcesForConcept } from './clinicalTruth';
 import { getEvidencePacket } from './evidencePackets';
 
+export const UKMLA_QUALITY_GATE_VERSION = 'ukmla_quality_v1_2026-08-25';
+
 export const UKMLA_QUALITY_INSTRUCTIONS = `You are writing a UK Medical Licensing Assessment (MLA) Applied Knowledge Test single-best-answer item.
 
 The item must test APPLIED clinical knowledge, not recognition of a buzzword or recall of an isolated sentence.
@@ -78,194 +80,121 @@ OUTPUT JSON:
 
 Use only facts supported by the supplied concept content and any attached evidence packet. If the source is too thin for a fair applied item, prefer a simple factual/application question rather than inventing clinical management detail.`;
 
-export interface QuestionQualityResult {
+export interface UKMLAQualityResult {
   pass: boolean;
   score: number;
   reasons: string[];
+  unsafe?: boolean;
+  ambiguous_options?: string[];
 }
 
-const normalise = (value: unknown) => String(value ?? '').trim();
+const normalise = (value: unknown) => String(value || '').replace(/\s+/g, ' ').trim();
 
-function cleanVignetteForValidation(question: any): string {
-  const raw = normalise(question?.clinical_vignette ?? question?.vignette);
-  const leadIn = normalise(question?.question);
-  if (!raw || !leadIn) return raw;
-
-  const rawLower = raw.toLowerCase();
-  const leadLower = leadIn.toLowerCase();
-  if (rawLower.endsWith(leadLower)) {
-    return raw.slice(0, raw.length - leadIn.length).trim();
-  }
-  return raw;
+function findDuplicateOptions(options: Array<{ id?: string; text?: string }>): boolean {
+  const normalised = options.map(option => normalise(option.text).toLowerCase()).filter(Boolean);
+  return new Set(normalised).size !== normalised.length;
 }
 
-export function validateUKMLAQuestion(question: any): QuestionQualityResult {
+function deterministicChecks(question: any): string[] {
   const reasons: string[] = [];
-  const vignette = cleanVignetteForValidation(question);
-  const leadIn = normalise(question?.question);
-  const options = Array.isArray(question?.options) ? question.options : [];
-  const correct = normalise(question?.correct_answer ?? question?.correct).toUpperCase();
+  const vignette = normalise(question.clinical_vignette || question.vignette || question.question_stem);
+  const leadIn = normalise(question.question || question.question_text);
+  const options = Array.isArray(question.options) ? question.options : [];
+  const correct = normalise(question.correct_answer || question.correct);
 
-  if (!vignette || vignette.length < 35) reasons.push('Missing or implausibly short clinical vignette.');
-  if (!leadIn || !leadIn.endsWith('?') || leadIn.length > 180) reasons.push('Lead-in must be one short question ending in ?.');
+  if (vignette.length < 35) reasons.push('Vignette is too thin for a fair applied clinical item.');
+  if (!leadIn || !leadIn.endsWith('?') || leadIn.length > 180) reasons.push('Lead-in is missing, too long, or not a direct question.');
   if (leadIn && vignette.toLowerCase().includes(leadIn.toLowerCase())) reasons.push('Lead-in is duplicated inside the vignette.');
-  if (options.length !== 5) reasons.push('UKMLA SBA must contain exactly five options.');
+  if (options.length !== 5) reasons.push('UKMLA SBA requires exactly five options.');
 
-  const expectedIds = ['A', 'B', 'C', 'D', 'E'];
   const optionIds = options.map((option: any) => normalise(option?.id).toUpperCase());
-  if (optionIds.length === 5 && expectedIds.some((id, index) => optionIds[index] !== id)) reasons.push('Option IDs must be A-E in order.');
-  if (!expectedIds.includes(correct)) reasons.push('Correct answer must be one of A-E.');
-  if (correct && !optionIds.includes(correct)) reasons.push('Correct answer does not match an option ID.');
+  if (options.length === 5 && optionIds.join(',') !== 'A,B,C,D,E') reasons.push('Options must use IDs A-E in order.');
+  if (!['A', 'B', 'C', 'D', 'E'].includes(correct.toUpperCase())) reasons.push('Correct answer must be A-E.');
+  if (correct && !optionIds.includes(correct.toUpperCase())) reasons.push('Correct answer ID is not present among the options.');
+  if (options.some((option: any) => !normalise(option?.text))) reasons.push('One or more answer options are blank.');
+  if (findDuplicateOptions(options)) reasons.push('Answer options contain duplicates.');
+  if (options.some((option: any) => /\b(all|none) of the above\b/i.test(normalise(option?.text)))) reasons.push('All/none-of-the-above options are not allowed.');
 
-  const texts = options.map((option: any) => normalise(typeof option === 'string' ? option : option?.text));
-  if (texts.some((text: string) => !text)) reasons.push('Every option needs text.');
-  const uniqueTexts = new Set(texts.map((text: string) => text.toLowerCase()));
-  if (texts.length && uniqueTexts.size !== texts.length) reasons.push('Duplicate answer options detected.');
-  if (texts.some((text: string) => /\b(?:all|none) of the above\b/i.test(text))) reasons.push('All/none-of-the-above options are not allowed.');
-
-  const lengths = texts.filter(Boolean).map((text: string) => text.length);
-  if (lengths.length === 5) {
-    const min = Math.max(1, Math.min(...lengths));
-    const max = Math.max(...lengths);
-    if (max > 70 && max / min > 3.2) reasons.push('One option is conspicuously longer than the others and may cue the answer.');
+  const optionLengths = options.map((option: any) => normalise(option?.text).length).filter(Boolean);
+  if (optionLengths.length === 5) {
+    const max = Math.max(...optionLengths);
+    const min = Math.max(1, Math.min(...optionLengths));
+    if (max > 70 && max / min > 3.2) reasons.push('Option length creates a likely answer cue.');
   }
 
-  if (leadIn && /\b(?:except|not true|least likely)\b/i.test(leadIn)) reasons.push('Negative lead-ins add test-taking difficulty rather than clinical reasoning.');
-  if (vignette && /\b(?:pathognomonic|classic triad|textbook presentation)\b/i.test(vignette)) reasons.push('Vignette contains overt cueing language.');
+  if (/\b(except|not true|least likely)\b/i.test(leadIn)) reasons.push('Negative lead-ins are disallowed for launch items.');
+  if (/\b(pathognomonic|classic triad|textbook presentation)\b/i.test(vignette)) reasons.push('Vignette contains overt cueing language.');
 
-  const score = Math.max(0, 100 - reasons.length * 18);
-  return { pass: reasons.length === 0, score, reasons };
+  return reasons;
 }
 
-async function callReviewer(prompt: string): Promise<any> {
-  const response = await fetch('/.netlify/functions/ai-generate', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      model: 'deepseek-chat',
-      temperature: 0.1,
-      max_tokens: 800,
-      messages: [
-        {
-          role: 'system',
-          content: 'You are a hostile reviewer for a national medical licensing exam. Reject ambiguous, cueable, unfair, unsupported, trivial, stale or clinically unsafe questions. Check every option independently for truth and defensibility. Do not reward eloquent wording. Respond with valid JSON only.'
-        },
-        { role: 'user', content: prompt }
-      ]
-    })
-  });
-
-  if (!response.ok) throw new Error(`Question reviewer failed: ${response.status}`);
-  const data = await response.json();
-  const raw = data?.choices?.[0]?.message?.content;
-  if (!raw) throw new Error('Question reviewer returned no content');
-  const match = String(raw).match(/\{[\s\S]*\}/);
-  if (!match) throw new Error('Question reviewer returned invalid JSON');
-  return JSON.parse(match[0]);
+export function validateUKMLAQuestion(question: any): UKMLAQualityResult {
+  const reasons = deterministicChecks(question);
+  return {
+    pass: reasons.length === 0,
+    score: reasons.length === 0 ? 100 : Math.max(0, 100 - reasons.length * 12),
+    reasons,
+  };
 }
 
-export async function reviewUKMLAQuestion(question: any, concept: ConceptNode): Promise<QuestionQualityResult> {
+function buildReviewerPrompt(question: any, concept: ConceptNode): string {
+  const sources = getVerifiedSourcesForConcept(concept.concept_id || '');
+  const evidencePacket = getEvidencePacket(concept.concept_id || '');
+  return `You are an adversarial clinical question reviewer for UKMLA launch quality.
+
+Assess this question against these requirements:
+1. Exactly one defensibly best answer.
+2. Clinical truth is correct and current.
+3. The vignette contains every fact needed to choose safely.
+4. Distractors are plausible but genuinely inferior, not partially correct restatements of the right approach.
+5. No hidden assumptions, option-length cueing, buzzword giveaways, or trick wording.
+6. The question tests the supplied concept rather than invented management detail.
+7. The explanation teaches why the correct answer wins and why alternatives lose.
+8. If a source/evidence packet is supplied, do not accept claims that conflict with it.
+
+Concept title: ${concept.title}
+Concept content: ${concept.content}
+Verified sources: ${sources.join(', ') || 'none attached'}
+Evidence packet: ${evidencePacket ? JSON.stringify(evidencePacket) : 'none'}
+Question: ${JSON.stringify(question)}
+
+Return ONLY JSON:
+{"pass":true|false,"score":0-100,"reasons":["..."],"unsafe":true|false,"ambiguous_options":["A","B"]}`;
+}
+
+export async function reviewUKMLAQuestion(question: any, concept: ConceptNode): Promise<UKMLAQualityResult> {
   const deterministic = validateUKMLAQuestion(question);
   if (!deterministic.pass) return deterministic;
 
-  const truthRisk = assessClinicalTruthRisk(concept);
-  const verifiedSources = getVerifiedSourcesForConcept(concept);
-  const evidence = getEvidencePacket(concept.concept_id);
-  const sourceContext = verifiedSources.length
-    ? verifiedSources.map(source => `- ${source.title} | ${source.url} | verified ${source.verifiedOn}${source.scopeNotes ? ` | ${source.scopeNotes}` : ''}`).join('\n')
-    : '- No topic-specific authoritative source has yet been verified in StudyEdit. Treat guideline-sensitive claims cautiously.';
-  const evidenceContext = evidence
-    ? `Risk: ${evidence.risk}\nVerified claim: ${evidence.claim}\nRequired context: ${evidence.requiredContext.join('; ')}\nAllowed question targets: ${evidence.allowedTargets.join('; ')}\nForbidden inferences: ${evidence.forbiddenInferences.join('; ')}\nDistractor intents: ${evidence.distractorIntents.join('; ')}\nSource: ${evidence.source}`
-    : 'No launch evidence packet exists for this concept.';
-  const vignette = cleanVignetteForValidation(question);
-
-  const prompt = `Review this proposed UKMLA SBA against the supplied source concept AND evidence packet.
-
-TRUTH RISK
-Level: ${truthRisk.risk}
-Reasons: ${truthRisk.reasons.join('; ') || 'No high-risk claim pattern detected.'}
-
-VERIFIED SOURCE REGISTRY
-${sourceContext}
-
-EVIDENCE PACKET
-${evidenceContext}
-
-Important:
-- The source registry identifies current authoritative sources but does not itself prove a claim.
-- When an evidence packet is present, treat the packet as the verified launch boundary for what the item may test. Its required context, allowed targets and forbidden inferences are part of the support for the item.
-- Do NOT reject an item merely because the older source concept is concise if the evidence packet explicitly supplies the missing decision boundary.
-- Still reject any question that contradicts the packet, omits context needed to distinguish the options, invents unsupported medicine, or leaves more than one defensible answer.
-
-SOURCE CONCEPT
-Title: ${concept.title}
-Content: ${concept.content || ''}
-
-QUESTION
-Vignette: ${vignette}
-Lead-in: ${normalise(question?.question)}
-Options: ${JSON.stringify(question?.options || [])}
-Claimed correct answer: ${normalise(question?.correct_answer ?? question?.correct)}
-Explanation: ${normalise(question?.explanation)}
-
-Score:
-- clinical/source accuracy: 25
-- single-best-answer integrity: 20
-- distractor plausibility: 15
-- applied reasoning rather than recall: 15
-- clinical realism: 10
-- resistance to cueing/pattern recognition: 5
-- clarity: 5
-- fairness: 5
-
-Before scoring, test every answer option independently:
-1. Is the statement/action itself clinically true?
-2. Could it reasonably answer this lead-in in this patient?
-3. Is any claimed distinction dependent on context absent from the stem or evidence packet?
-4. Does the explanation dismiss a true alternative without support from the concept or evidence packet?
-5. For high/critical-risk claims, does the concept plus evidence packet provide enough verified boundary to justify the answer safely?
-
-MANDATORY REJECTION if:
-- more than one option is reasonably defensible
-- the claimed correct answer is unsupported by the concept plus evidence packet
-- the vignette relies on an invented fact that changes the answer
-- management could be unsafe or guideline-sensitive without sufficient context
-- difficulty is mainly obscurity or trick wording
-- the answer is given away by buzzwords or option construction
-- a descriptive fact has been disguised as a treatment decision outside the packet's allowed targets
-- medicine selection omits context needed to determine the preferred agent
-- the explanation says an alternative is wrong without support from the concept or evidence packet
-- an option claimed false is actually a true property in the scenario
-- a high/critical-risk item exceeds the verified boundary supplied by the concept plus evidence packet
-
-Return ONLY:
-{
-  "pass": true,
-  "score": 0,
-  "reasons": ["short concrete reason"],
-  "ambiguous_options": [],
-  "unsafe": false
-}
-
-Pass only if score >= 88 and there is no mandatory rejection.`;
+  const truthRisk = assessClinicalTruthRisk(question, concept);
+  if (!truthRisk.pass) {
+    return {
+      pass: false,
+      score: Math.min(70, truthRisk.score),
+      reasons: truthRisk.reasons,
+      unsafe: truthRisk.unsafe,
+    };
+  }
 
   try {
-    const review = await callReviewer(prompt);
-    const score = Number(review?.score || 0);
-    const reasons = Array.isArray(review?.reasons) ? review.reasons.map((reason: unknown) => normalise(reason)).filter(Boolean) : [];
-    const ambiguous = Array.isArray(review?.ambiguous_options) ? review.ambiguous_options : [];
-    const unsafe = Boolean(review?.unsafe);
-    const pass = Boolean(review?.pass) && score >= 88 && !unsafe && ambiguous.length === 0;
-    return { pass, score, reasons: reasons.length ? reasons : pass ? [] : ['Adversarial reviewer did not approve this item.'] };
+    const { generateAIResponse } = await import('./openai');
+    const raw = await generateAIResponse(buildReviewerPrompt(question, concept), {
+      question: normalise(question.question || question.question_text),
+      options: (question.options || []).map((option: any) => `${option.id}. ${option.text}`),
+      correctAnswer: normalise(question.correct_answer || question.correct),
+      selectedAnswer: '',
+      explanation: normalise(question.explanation),
+    });
+    const match = raw.match(/\{[\s\S]*\}/);
+    if (!match) return { pass: false, score: 0, reasons: ['Adversarial reviewer returned invalid JSON.'] };
+    const parsed = JSON.parse(match[0]);
+    const score = Number(parsed.score || 0);
+    const ambiguous = Array.isArray(parsed.ambiguous_options) ? parsed.ambiguous_options : [];
+    const unsafe = Boolean(parsed.unsafe);
+    const reasons = Array.isArray(parsed.reasons) ? parsed.reasons.map(String) : [];
+    const pass = Boolean(parsed.pass) && score >= 88 && !unsafe && ambiguous.length === 0;
+    return { pass, score, reasons, unsafe, ambiguous_options: ambiguous };
   } catch (error) {
-    console.warn('Question reviewer unavailable.', error);
-    if (truthRisk.risk === 'high' || truthRisk.risk === 'critical') {
-      return {
-        pass: false,
-        score: 0,
-        reasons: [`Clinical reviewer unavailable for ${truthRisk.risk}-risk source claim; item rejected rather than trusted without review.`]
-      };
-    }
-    return deterministic;
+    return { pass: false, score: 0, reasons: [`Adversarial review failed closed: ${String(error)}`] };
   }
 }
