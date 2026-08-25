@@ -51,13 +51,14 @@ extra = """  const deterministic = validateUKMLAQuestion(question);
 
   // NICE NG12 (updated 2026) refers unexplained PMB age 55+ when bleeding cannot
   // be attributed to HRT. Fail closed if HRT use is introduced without explicitly
-  // resolving that qualifier, but allow the safe states "not using HRT" or
-  // "bleeding cannot be attributed to HRT" rather than rejecting the word itself.
+  // resolving that qualifier, but allow explicit non-use in natural clinical prose
+  // (for example "has not used HRT" / "has never taken HRT") as well as
+  // "bleeding cannot be attributed to HRT". Unresolved positive HRT use still fails.
   if (conceptId === 'ukmla-4965' && /\\bhrt\\b|hormone replacement therapy/i.test(vignetteText)) {
-    const explicitlyNotUsingHrt = /(?:not|isn['’]?t|is not|does not|doesn['’]?t)\\s+(?:currently\\s+)?(?:use|using|take|taking|on)\\s+(?:any\\s+)?(?:hrt|hormone replacement therapy)|not\\s+on\\s+(?:hrt|hormone replacement therapy)/i.test(vignetteText);
+    const explicitlyNotUsingHrt = /(?:not|isn['’]?t|is not|does not|doesn['’]?t)\\s+(?:currently\\s+)?(?:use|using|take|taking|on)\\s+(?:any\\s+)?(?:hrt|hormone replacement therapy)|not\\s+on\\s+(?:hrt|hormone replacement therapy)|(?:has|have|had)\\s+(?:not|never)\\s+(?:used|taken|been\\s+on)\\s+(?:any\\s+)?(?:hrt|hormone replacement therapy)|(?:denies|denied)\\s+(?:current\\s+)?(?:use\\s+of\\s+|taking\\s+)?(?:hrt|hormone replacement therapy)/i.test(vignetteText);
     const explicitlyNotAttributable = /(?:bleeding|post[- ]menopausal bleeding)[^.]{0,100}(?:cannot|can['’]?t|is not|isn['’]?t)\\s+(?:be\\s+)?attributed\\s+to\\s+(?:hrt|hormone replacement therapy)|(?:not attributable|unrelated)\\s+to\\s+(?:hrt|hormone replacement therapy)/i.test(vignetteText);
     if (!explicitlyNotUsingHrt && !explicitlyNotAttributable) {
-      return { pass: false, score: 0, reasons: ['CONTEXT_SAFETY: HRT is present but the vignette does not explicitly establish that bleeding cannot be attributed to HRT. NICE NG12 requires that qualifier for the age-55+ PMB referral rule.'] };
+      return { pass: false, score: 0, reasons: ['CONTEXT_SAFETY: HRT is present but the vignette does not explicitly establish non-use or that bleeding cannot be attributed to HRT. NICE NG12 requires the HRT qualifier to be resolved for the age-55+ PMB referral rule.'] };
     }
   }
 
