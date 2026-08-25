@@ -303,13 +303,6 @@ export const PracticeFilterModalParchment: React.FC<Props> = ({ isOpen, onClose,
 
   const available = filteredPool.length;
   const selectedCount = Math.min(size, available);
-  const scopeLabelParts = [
-    essentialsOnly ? 'Essential' : null,
-    sAreas.size === 1 ? labelFor([...sAreas][0]) : sAreas.size > 1 ? `${sAreas.size} specialties` : null,
-    !hasAny(sConditions) && sConditions.size === 1 ? labelFor([...sConditions][0]) : null,
-    !hasAny(sPres) && sPres.size === 1 ? labelFor([...sPres][0]) : null,
-  ].filter(Boolean);
-  const scopeTitle = scopeLabelParts.length ? scopeLabelParts.join(' ') : 'Selected curriculum';
   const firstPassEstimate = formatFirstPassRange(scopeStats.unseen * 2);
   const sessionEstimate = formatCompactTime(selectedCount * 2);
   const greenEnd = scopeStats.strongPct;
@@ -332,7 +325,7 @@ export const PracticeFilterModalParchment: React.FC<Props> = ({ isOpen, onClose,
   return (
     <div className="fixed inset-0 z-[100] flex items-end justify-center md:items-center md:p-5" style={{ backgroundColor: 'rgba(31,20,12,0.24)', backdropFilter: 'blur(10px)', WebkitBackdropFilter: 'blur(10px)' }} onClick={onClose}>
       <style>{`@keyframes studyedit-sheet-in { from { opacity: 0; transform: translateY(28px) scale(.992); } to { opacity: 1; transform: translateY(0) scale(1); } }`}</style>
-      <div className="flex h-[100dvh] w-full flex-col overflow-hidden rounded-none border-t shadow-[0_-18px_60px_rgba(31,20,12,0.16)] md:h-auto md:max-h-[90vh] md:max-w-[470px] md:rounded-[30px] md:border" style={{ backgroundColor: T.cream, borderColor: 'rgba(217,204,182,.8)', fontFamily: "'Inter', sans-serif", animation: 'studyedit-sheet-in 260ms cubic-bezier(.2,.8,.2,1) both' }} onClick={e => e.stopPropagation()}>
+      <div className="flex h-[100dvh] w-full flex-col overflow-hidden rounded-none shadow-[0_-18px_60px_rgba(31,20,12,0.16)] md:h-auto md:max-h-[90vh] md:max-w-[470px] md:rounded-[30px] md:border" style={{ backgroundColor: T.cream, borderColor: 'rgba(217,204,182,.8)', fontFamily: "'Inter', sans-serif", animation: 'studyedit-sheet-in 260ms cubic-bezier(.2,.8,.2,1) both' }} onClick={e => e.stopPropagation()}>
         <div className="shrink-0 px-6 pb-3 pt-[calc(env(safe-area-inset-top)+10px)] md:pt-6">
           <div className="mx-auto mb-3 h-1 w-10 rounded-full bg-[#D9CCB6] md:hidden" />
           <div className="flex items-start justify-between gap-4">
@@ -340,7 +333,6 @@ export const PracticeFilterModalParchment: React.FC<Props> = ({ isOpen, onClose,
             <button onClick={onClose} className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border transition active:scale-[0.96]" style={{ borderColor: T.line, color: T.inkMuted, backgroundColor: 'rgba(255,253,248,.55)' }} aria-label="Close practice builder"><X className="h-[18px] w-[18px]" /></button>
           </div>
         </div>
-        {!!active.length && <div className="flex shrink-0 items-center gap-2 overflow-x-auto px-6 pb-3 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">{active.map(item => <button key={`${item.type}-${item.value}`} onClick={() => removeActive(item)} className="inline-flex shrink-0 items-center gap-1.5 rounded-full border px-3 py-1.5 text-[11px] font-medium" style={{ borderColor: T.line, backgroundColor: 'rgba(255,253,248,.65)', color: T.ink }}><span>{item.label}</span><span style={{ color: T.inkMuted }}>×</span></button>)}<button onClick={reset} className="shrink-0 rounded-full px-2 py-1.5 text-[11px] font-semibold" style={{ color: T.inkMuted }}>Reset</button></div>}
 
         <div className="flex-1 overflow-y-auto px-6 pb-5">
           <section className="py-5">
@@ -369,15 +361,11 @@ export const PracticeFilterModalParchment: React.FC<Props> = ({ isOpen, onClose,
         </div>
 
         <div className="shrink-0 border-t px-6 pb-[calc(env(safe-area-inset-bottom)+14px)] pt-2" style={{ borderColor: T.lineSoft, backgroundColor: 'rgba(244,236,223,.98)', boxShadow: '0 -14px 30px rgba(31,20,12,.07)' }}>
+          {!!active.length && <div className="-mx-1 mb-2 flex items-center gap-2 overflow-x-auto pb-0.5 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">{active.map(item => <button key={`${item.type}-${item.value}`} onClick={() => removeActive(item)} className="inline-flex shrink-0 items-center gap-1.5 rounded-full border px-2.5 py-1.5 text-[10.5px] font-medium" style={{ borderColor: T.line, backgroundColor: 'rgba(255,253,248,.72)', color: T.ink }}><span>{item.label}</span><span style={{ color: T.inkMuted }}>×</span></button>)}<button onClick={reset} className="shrink-0 rounded-full px-2 py-1.5 text-[10.5px] font-semibold" style={{ color: T.inkMuted }}>Reset</button></div>}
           <div className="mb-2 px-1">
             <div className="text-[8.5px] font-semibold uppercase tracking-[0.12em]" style={{ color: T.inkMuted }}>Your progress</div>
             <div className="mt-0.5 flex items-end justify-between gap-3">
-              <div className="min-w-0">
-                <div className="truncate text-[12.5px] font-semibold" style={{ color: T.ink }}>{scopeTitle}</div>
-                <div className="mt-0.5 text-[10px]" style={{ color: T.inkMuted }}>
-                  {untouched ? `Not started · ${scopeStats.total} concepts` : `${scopeStats.covered}/${scopeStats.total} encountered`}
-                </div>
-              </div>
+              <div className="min-w-0 text-[10px]" style={{ color: T.inkMuted }}>{untouched ? `Not started · ${scopeStats.total} concepts` : `${scopeStats.covered}/${scopeStats.total} encountered`}</div>
               {!untouched && <div className="shrink-0 text-right"><span className="text-[18px] leading-none" style={{ fontFamily: "'Fraunces', serif", color: T.ink }}>{scopeStats.coveragePct}%</span><span className="ml-1.5 text-[9px] uppercase tracking-[0.08em]" style={{ color: T.inkMuted }}>covered</span></div>}
             </div>
 
