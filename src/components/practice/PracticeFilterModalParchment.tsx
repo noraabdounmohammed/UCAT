@@ -131,11 +131,31 @@ const calcScopeProgress = (concepts: ConceptNode[]) => {
   };
 };
 
-const formatStudyTime = (minutes: number) => {
-  if (minutes < 60) return `${minutes} min`;
-  const hours = Math.floor(minutes / 60);
-  const mins = minutes % 60;
+const formatCompactTime = (minutes: number) => {
+  if (minutes < 60) return `${Math.max(5, Math.round(minutes / 5) * 5)} min`;
+  const rounded = Math.max(15, Math.round(minutes / 15) * 15);
+  const hours = Math.floor(rounded / 60);
+  const mins = rounded % 60;
   return mins ? `${hours}h ${mins}m` : `${hours}h`;
+};
+
+const formatFirstPassRange = (minutes: number) => {
+  if (minutes <= 0) return '0 min';
+  if (minutes < 60) {
+    const centre = Math.max(5, Math.round(minutes / 5) * 5);
+    const low = Math.max(5, Math.round((centre * 0.9) / 5) * 5);
+    const high = Math.max(low + 5, Math.round((centre * 1.1) / 5) * 5);
+    return `${low}–${high} min`;
+  }
+  if (minutes < 180) {
+    const low = Math.max(45, Math.floor((minutes * 0.9) / 15) * 15);
+    const high = Math.max(low + 15, Math.ceil((minutes * 1.1) / 15) * 15);
+    return `${formatCompactTime(low)}–${formatCompactTime(high)}`;
+  }
+  const hours = minutes / 60;
+  const low = Math.max(1, Math.floor((hours * 0.95) / 5) * 5);
+  const high = Math.max(low + 5, Math.ceil((hours * 1.05) / 5) * 5);
+  return `${low}–${high}h`;
 };
 
 /**
@@ -389,16 +409,19 @@ export const PracticeFilterModalParchment: React.FC<Props> = ({ isOpen, onClose,
     statusSummary,
     ...(essentialsOnly ? ['Essentials'] : []),
     specialtySummary,
-    `≈ ${Math.round(size * 2)} min`,
+    `≈ ${formatCompactTime(size * 2)}`,
   ];
 
-  const scopeTitle = [
+  const scopeLabelParts = [
     essentialsOnly ? 'Essential' : null,
-    sAreas.size === 1 ? labelFor([...sAreas][0]) : sAreas.size > 1 ? `${sAreas.size} specialties` : 'All specialties',
-  ].filter(Boolean).join(' ');
+    sAreas.size === 1 ? labelFor([...sAreas][0]) : sAreas.size > 1 ? `${sAreas.size} specialties` : null,
+    !hasAny(sConditions) && sConditions.size === 1 ? labelFor([...sConditions][0]) : null,
+    !hasAny(sPres) && sPres.size === 1 ? labelFor([...sPres][0]) : null,
+  ].filter(Boolean);
+  const scopeTitle = `Your ${scopeLabelParts.length ? scopeLabelParts.join(' ') : 'selected'} map`;
 
-  const firstPassMinutes = scopeStats.unseen * 2;
-  const sessionMinutes = selectedCount * 2;
+  const firstPassEstimate = formatFirstPassRange(scopeStats.unseen * 2);
+  const sessionEstimate = formatCompactTime(selectedCount * 2);
   const greenEnd = scopeStats.strongPct;
   const blushEnd = Math.min(100, scopeStats.strongPct + scopeStats.needsWorkPct);
 
@@ -500,7 +523,7 @@ export const PracticeFilterModalParchment: React.FC<Props> = ({ isOpen, onClose,
                 <span className="min-w-[108px] text-center text-[21px]" style={{ fontFamily: "'Fraunces', serif", color: T.ink }}>{size}<em className="ml-1.5 text-[12px]" style={{ color: T.inkMuted }}>concepts</em></span>
                 <button onClick={() => setSize(Math.min(50, size + 5))} disabled={size >= 50} className="flex h-9 w-9 items-center justify-center rounded-full text-lg transition hover:bg-white/40 disabled:opacity-25">+</button>
               </div>
-              <span className="shrink-0 text-[13px] italic" style={{ fontFamily: "'Fraunces', serif", color: T.inkMuted }}>≈ {Math.round(size * 2)} min</span>
+              <span className="shrink-0 text-[13px] italic" style={{ fontFamily: "'Fraunces', serif", color: T.inkMuted }}>≈ {formatCompactTime(size * 2)}</span>
             </div>
           </section>
 
@@ -600,9 +623,9 @@ export const PracticeFilterModalParchment: React.FC<Props> = ({ isOpen, onClose,
         <div className="shrink-0 border-t px-6 pb-[calc(env(safe-area-inset-bottom)+16px)] pt-3" style={{ borderColor: T.lineSoft, backgroundColor: 'rgba(250,245,236,.97)', boxShadow: '0 -12px 28px rgba(31,20,12,.035)' }}>
           <div className="mb-3 rounded-[18px] border px-4 py-3" style={{ borderColor: T.line, backgroundColor: 'rgba(244,236,223,.62)' }}>
             <div className="flex items-start justify-between gap-3">
-              <div>
+              <div className="min-w-0">
                 <div className="text-[12px] font-semibold" style={{ color: T.ink }}>{scopeTitle}</div>
-                <div className="mt-0.5 text-[10.5px]" style={{ color: T.inkMuted }}>{scopeStats.total} concepts in this clinical scope</div>
+                <div className="mt-0.5 text-[10.5px]" style={{ color: T.inkMuted }}>{scopeStats.covered}/{scopeStats.total} encountered</div>
               </div>
               <div className="text-right">
                 <div className="text-[18px] leading-none" style={{ fontFamily: "'Fraunces', serif", color: T.ink }}>{scopeStats.coveragePct}%</div>
@@ -620,9 +643,9 @@ export const PracticeFilterModalParchment: React.FC<Props> = ({ isOpen, onClose,
               <span><strong style={{ color: T.ink }}>{scopeStats.unseen}</strong> unseen</span>
             </div>
 
-            <div className="mt-2 flex items-center justify-between gap-3 border-t pt-2 text-[10.5px]" style={{ borderColor: T.lineSoft, color: T.inkMuted }}>
-              <span>{scopeStats.unseen > 0 ? `≈ ${formatStudyTime(firstPassMinutes)} to first-pass unseen` : 'First pass complete'}</span>
-              <span className="shrink-0">This session: {selectedCount}/{available} · ≈ {formatStudyTime(sessionMinutes)}</span>
+            <div className="mt-2 border-t pt-2 text-[10.5px]" style={{ borderColor: T.lineSoft, color: T.inkMuted }}>
+              <div>{scopeStats.unseen > 0 ? `${scopeStats.unseen} still unseen · ~${firstPassEstimate} first pass` : 'First pass complete'}</div>
+              <div className="mt-1">This session: {statusSummary} · {selectedCount} of {available} matching · ~{sessionEstimate}</div>
             </div>
           </div>
 
