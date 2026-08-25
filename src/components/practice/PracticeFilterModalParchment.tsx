@@ -12,6 +12,7 @@ export interface FilterState {
   presentations: string[];
   facets: string[];
   essentialsOnly?: boolean;
+  sessionStrategy?: 'balanced' | 'breadth_first';
 }
 
 interface Props {
@@ -104,10 +105,76 @@ const calcPillProgress = (concepts: ConceptNode[], filter: string): PillProgress
   };
 };
 
+/**
+ * Build a small, deliberately broad candidate set for a time-crunched first pass.
+ * The goal is coverage of distinct condition/presentation territory before depth.
+ * We still prefer unseen/weak, safety-critical and core concepts and gently penalise
+ * concepts whose prerequisites are not yet mastered.
+ */
+const pickBreadthFirst = (
+  pool: ConceptNode[],
+  size: number,
+  assignments: Record<string, string>,
+  conditionCategoryId?: string,
+  presentationCategoryId?: string,
+): ConceptNode[] => {
+  if (pool.length <= size) return [...pool];
+
+  const chosen: ConceptNode[] = [];
+  const remaining = [...pool];
+  const coveredTags = new Set<string>();
+  const masteredIds = new Set(
+    pool.filter(c => Number(c.mastery_data?.mastery_level || 0) === 2).map(c => c.concept_id)
+  );
+
+  const breadthTags = (concept: ConceptNode) => (concept.custom_filters || []).filter(tag => {
+    const categoryId = assignments[tag];
+    return categoryId === conditionCategoryId || categoryId === presentationCategoryId;
+  });
+
+  while (chosen.length < size && remaining.length) {
+    let bestIndex = 0;
+    let bestScore = -Infinity;
+
+    remaining.forEach((concept, index) => {
+      const md = concept.mastery_data || ({} as any);
+      const attempts = Number(md.attempts || 0);
+      const level = Number(md.mastery_level || 0);
+      const tags = breadthTags(concept);
+      const novelTags = tags.filter(tag => !coveredTags.has(tag)).length;
+      const unmetPrereqs = (concept.prerequisites || []).filter(id => !masteredIds.has(id)).length;
+      const importance = concept.importance || {};
+
+      let score = 0;
+      if (attempts === 0) score += 110;
+      else if (level === 1) score += 75;
+      else if (level === 2) score += 10;
+      score += novelTags * 55;
+      if (concept.safety_critical || importance.safety_critical) score += 24;
+      if (concept.core || importance.core) score += 18;
+      score += Number(concept.exam_weight ?? importance.exam_weight ?? 0) * 4;
+      score -= unmetPrereqs * 12;
+      score += Math.random() * 0.5;
+
+      if (score > bestScore) {
+        bestScore = score;
+        bestIndex = index;
+      }
+    });
+
+    const [best] = remaining.splice(bestIndex, 1);
+    chosen.push(best);
+    breadthTags(best).forEach(tag => coveredTags.add(tag));
+  }
+
+  return chosen;
+};
+
 export const PracticeFilterModalParchment: React.FC<Props> = ({ isOpen, onClose, onApplyFilters }) => {
   const { concepts = [], curriculumId, setPracticeSelection } = useConceptStore();
   const [categories, setCategories] = useState<FilterCategory[]>([]);
   const [size, setSize] = useState(10);
+  const [sessionStrategy, setSessionStrategy] = useState<'balanced' | 'breadth_first'>('balanced');
   const [sStatus, setSStatus] = useState<Set<string>>(new Set(['any']));
   const [essentialsOnly, setEssentialsOnly] = useState(false);
   const [sAreas, setSAreas] = useState<Set<string>>(new Set());
@@ -152,8 +219,6 @@ export const PracticeFilterModalParchment: React.FC<Props> = ({ isOpen, onClose,
   const visibleConditionIds = essentialsOnly ? conditionIds.filter(isEssentialTag) : conditionIds;
   const visiblePresentationIds = essentialsOnly ? presentationIds.filter(isEssentialTag) : presentationIds;
 
-  // Essentials narrows the candidate universe only. Everything downstream — status,
-  // specialty, condition, presentation, and the existing practice ranking — remains unchanged.
   const scopePool = useMemo(
     () => essentialsOnly ? concepts.filter(isEssentialConcept) : concepts,
     [concepts, essentialsOnly]
@@ -247,6 +312,7 @@ export const PracticeFilterModalParchment: React.FC<Props> = ({ isOpen, onClose,
   const toggleArea = (id: string) => toggle(sAreas, id, setSAreas, false);
   const reset = () => {
     setSize(10);
+    setSessionStrategy('balanced');
     setSStatus(new Set(['any']));
     setEssentialsOnly(false);
     setSAreas(new Set());
@@ -264,16 +330,18 @@ export const PracticeFilterModalParchment: React.FC<Props> = ({ isOpen, onClose,
     const result: { type: string; value: string; label: string }[] = [];
     if (!hasAny(sStatus)) [...sStatus].forEach(value => result.push({ type: 'status', value, label: value }));
     if (essentialsOnly) result.push({ type: 'essentials', value: 'essential', label: 'Essentials' });
+    if (sessionStrategy === 'breadth_first') result.push({ type: 'strategy', value: 'breadth_first', label: 'Breadth first' });
     [...sAreas].forEach(value => result.push({ type: 'area', value, label: labelFor(value) }));
     if (!hasAny(sConditions)) [...sConditions].forEach(value => result.push({ type: 'condition', value, label: labelFor(value) }));
     if (!hasAny(sPres)) [...sPres].forEach(value => result.push({ type: 'presentation', value, label: labelFor(value) }));
     if (!hasAny(sFacets)) [...sFacets].forEach(value => result.push({ type: 'about', value, label: labelFor(value) }));
     return result;
-  }, [sStatus, essentialsOnly, sAreas, sConditions, sPres, sFacets]);
+  }, [sStatus, essentialsOnly, sessionStrategy, sAreas, sConditions, sPres, sFacets]);
 
   const removeActive = (item: { type: string; value: string }) => {
     if (item.type === 'status') toggle(sStatus, item.value, setSStatus);
     else if (item.type === 'essentials') setEssentialsOnly(false);
+    else if (item.type === 'strategy') setSessionStrategy('balanced');
     else if (item.type === 'area') toggleArea(item.value);
     else if (item.type === 'condition') toggle(sConditions, item.value, setSConditions);
     else if (item.type === 'presentation') toggle(sPres, item.value, setSPres);
@@ -286,6 +354,7 @@ export const PracticeFilterModalParchment: React.FC<Props> = ({ isOpen, onClose,
   const specialtySummary = sAreas.size ? [...sAreas].map(labelFor).join(', ') : 'Any specialty';
   const summaryParts = [
     `${selectedCount} concepts`,
+    sessionStrategy === 'breadth_first' ? 'Breadth first' : 'Balanced',
     statusSummary,
     ...(essentialsOnly ? ['Essentials'] : []),
     specialtySummary,
@@ -309,19 +378,7 @@ export const PracticeFilterModalParchment: React.FC<Props> = ({ isOpen, onClose,
     </button>
   );
 
-  const ProgressChip = ({
-    selected,
-    onClick,
-    label,
-    count,
-    progress,
-  }: {
-    selected: boolean;
-    onClick: () => void;
-    label: string;
-    count: number;
-    progress: PillProgress;
-  }) => {
+  const ProgressChip = ({ selected, onClick, label, count, progress }: { selected: boolean; onClick: () => void; label: string; count: number; progress: PillProgress }) => {
     const greenEnd = progress.masteredPct;
     const blushEnd = Math.min(100, progress.masteredPct + progress.weakPct);
     const background = progress.total > 0
@@ -359,19 +416,10 @@ export const PracticeFilterModalParchment: React.FC<Props> = ({ isOpen, onClose,
           from { opacity: 0; transform: translateY(28px) scale(.992); }
           to { opacity: 1; transform: translateY(0) scale(1); }
         }
-        @keyframes studyedit-backdrop-in {
-          from { opacity: 0; }
-          to { opacity: 1; }
-        }
       `}</style>
       <div
         className="flex h-[92dvh] w-full flex-col overflow-hidden rounded-t-[30px] rounded-b-none border-t shadow-[0_-18px_60px_rgba(31,20,12,0.16)] md:h-auto md:max-h-[90vh] md:max-w-[470px] md:rounded-[30px] md:border"
-        style={{
-          backgroundColor: T.cream,
-          borderColor: 'rgba(217,204,182,.8)',
-          fontFamily: "'Inter', sans-serif",
-          animation: 'studyedit-sheet-in 260ms cubic-bezier(.2,.8,.2,1) both',
-        }}
+        style={{ backgroundColor: T.cream, borderColor: 'rgba(217,204,182,.8)', fontFamily: "'Inter', sans-serif", animation: 'studyedit-sheet-in 260ms cubic-bezier(.2,.8,.2,1) both' }}
         onClick={e => e.stopPropagation()}
       >
         <div className="shrink-0 px-6 pb-4 pt-4 md:pt-6">
@@ -384,11 +432,7 @@ export const PracticeFilterModalParchment: React.FC<Props> = ({ isOpen, onClose,
               <p className="mt-2 text-[13px] leading-5" style={{ color: T.inkMuted }}>Build a focused session in seconds.</p>
             </div>
             <div className="flex shrink-0 items-center gap-2">
-              {!!active.length && (
-                <button onClick={reset} className="rounded-full px-3 py-2 text-[11px] font-semibold transition hover:bg-black/[0.03]" style={{ color: T.inkMuted }}>
-                  Reset
-                </button>
-              )}
+              {!!active.length && <button onClick={reset} className="rounded-full px-3 py-2 text-[11px] font-semibold transition hover:bg-black/[0.03]" style={{ color: T.inkMuted }}>Reset</button>}
               <button onClick={onClose} className="flex h-10 w-10 items-center justify-center rounded-full border transition active:scale-[0.96]" style={{ borderColor: T.line, color: T.inkMuted, backgroundColor: 'rgba(255,253,248,.55)' }} aria-label="Close practice builder">
                 <X className="h-[18px] w-[18px]" />
               </button>
@@ -417,6 +461,18 @@ export const PracticeFilterModalParchment: React.FC<Props> = ({ isOpen, onClose,
               </div>
               <span className="shrink-0 text-[13px] italic" style={{ fontFamily: "'Fraunces', serif", color: T.inkMuted }}>≈ {Math.round(size * 2)} min</span>
             </div>
+            <div className="mt-4">
+              <div className="mb-2 text-[11px]" style={{ color: T.inkMuted }}>Session strategy</div>
+              <div className="flex flex-wrap gap-2">
+                <Chip selected={sessionStrategy === 'balanced'} onClick={() => setSessionStrategy('balanced')}><span>Balanced</span></Chip>
+                <Chip selected={sessionStrategy === 'breadth_first'} onClick={() => setSessionStrategy('breadth_first')}><span>Breadth first</span></Chip>
+              </div>
+              <div className="mt-2 text-[11px] leading-4" style={{ color: T.inkMuted }}>
+                {sessionStrategy === 'breadth_first'
+                  ? 'Maximises new clinical territory: different conditions and presentations before extra depth.'
+                  : 'Uses StudyEdit’s normal adaptive mix of review, new material and reinforcement.'}
+              </div>
+            </div>
           </section>
 
           <section className="border-t py-5" style={{ borderColor: T.lineSoft }}>
@@ -434,29 +490,12 @@ export const PracticeFilterModalParchment: React.FC<Props> = ({ isOpen, onClose,
 
           <section className="border-t py-5" style={{ borderColor: T.lineSoft }}>
             <div className="mb-3 text-[19px] italic" style={{ fontFamily: "'Fraunces', serif", color: T.inkMuted }}>and focus on</div>
-            <button
-              type="button"
-              aria-pressed={essentialsOnly}
-              onClick={() => setEssentialsOnly(value => !value)}
-              className="flex w-full items-center justify-between rounded-[16px] border px-4 py-4 text-left transition active:scale-[0.995]"
-              style={{
-                borderColor: essentialsOnly ? T.espresso : T.line,
-                backgroundColor: essentialsOnly ? T.espresso : 'rgba(255,253,248,.52)',
-                color: essentialsOnly ? T.cream : T.ink,
-              }}
-            >
+            <button type="button" aria-pressed={essentialsOnly} onClick={() => setEssentialsOnly(value => !value)} className="flex w-full items-center justify-between rounded-[16px] border px-4 py-4 text-left transition active:scale-[0.995]" style={{ borderColor: essentialsOnly ? T.espresso : T.line, backgroundColor: essentialsOnly ? T.espresso : 'rgba(255,253,248,.52)', color: essentialsOnly ? T.cream : T.ink }}>
               <div className="min-w-0 pr-3">
-                <div className="flex items-center gap-2 text-[15px] font-semibold">
-                  <span aria-hidden="true" style={{ color: essentialsOnly ? T.blush : T.blushDeep }}>✦</span>
-                  <span>Essentials only</span>
-                </div>
-                <div className="mt-1 text-[11px] leading-4" style={{ color: essentialsOnly ? '#DCCFC0' : T.inkMuted }}>
-                  Bread-and-butter conditions and presentations first. Your adaptive ranking still works inside this scope.
-                </div>
+                <div className="flex items-center gap-2 text-[15px] font-semibold"><span aria-hidden="true" style={{ color: essentialsOnly ? T.blush : T.blushDeep }}>✦</span><span>Essentials only</span></div>
+                <div className="mt-1 text-[11px] leading-4" style={{ color: essentialsOnly ? '#DCCFC0' : T.inkMuted }}>Bread-and-butter conditions and presentations first. Your adaptive ranking still works inside this scope.</div>
               </div>
-              <span className="shrink-0 text-[12px] italic" style={{ fontFamily: "'Fraunces', serif", color: essentialsOnly ? T.blush : T.inkMuted }}>
-                {scopePool.length}
-              </span>
+              <span className="shrink-0 text-[12px] italic" style={{ fontFamily: "'Fraunces', serif", color: essentialsOnly ? T.blush : T.inkMuted }}>{scopePool.length}</span>
             </button>
           </section>
 
@@ -469,22 +508,12 @@ export const PracticeFilterModalParchment: React.FC<Props> = ({ isOpen, onClose,
               </button>
               {areaOpen && (
                 <div className="mt-2 overflow-hidden rounded-[16px] border" style={{ backgroundColor: T.parchment, borderColor: T.line }}>
-                  <div className="border-b px-3.5 py-2 text-[10px] font-medium uppercase tracking-[0.12em]" style={{ borderColor: T.lineSoft, color: T.inkMuted }}>
-                    Coverage = concepts attempted at least once
-                  </div>
+                  <div className="border-b px-3.5 py-2 text-[10px] font-medium uppercase tracking-[0.12em]" style={{ borderColor: T.lineSoft, color: T.inkMuted }}>Coverage = concepts attempted at least once</div>
                   {areas.map(option => (
                     <button key={option.id} onClick={() => toggleArea(option.id)} className="flex w-full items-center gap-2.5 border-b px-3.5 py-3 text-left last:border-b-0" style={{ borderColor: T.lineSoft }}>
                       <span className="flex h-[18px] w-[18px] shrink-0 items-center justify-center rounded border text-[10px]" style={{ backgroundColor: sAreas.has(option.id) ? T.espresso : T.cream, borderColor: sAreas.has(option.id) ? T.espresso : T.line, color: sAreas.has(option.id) ? T.cream : 'transparent' }}>✓</span>
                       <span className="min-w-0 flex-1 text-[13px] font-medium" style={{ color: T.ink }}>{option.name}</span>
-                      <div className="w-[96px] shrink-0">
-                        <div className="h-[5px] w-full overflow-hidden rounded-full" style={{ backgroundColor: T.lineSoft }}>
-                          <div className="h-full rounded-full transition-[width]" style={{ width: `${option.coveragePercent}%`, backgroundColor: T.sageDeep }} />
-                        </div>
-                        <div className="mt-1 flex items-center justify-between gap-2 text-[10px]" style={{ color: T.inkMuted }}>
-                          <span>{option.coveragePercent}%</span>
-                          <span>{option.covered}/{option.count}</span>
-                        </div>
-                      </div>
+                      <div className="w-[96px] shrink-0"><div className="h-[5px] w-full overflow-hidden rounded-full" style={{ backgroundColor: T.lineSoft }}><div className="h-full rounded-full transition-[width]" style={{ width: `${option.coveragePercent}%`, backgroundColor: T.sageDeep }} /></div><div className="mt-1 flex items-center justify-between gap-2 text-[10px]" style={{ color: T.inkMuted }}><span>{option.coveragePercent}%</span><span>{option.covered}/{option.count}</span></div></div>
                     </button>
                   ))}
                 </div>
@@ -495,18 +524,12 @@ export const PracticeFilterModalParchment: React.FC<Props> = ({ isOpen, onClose,
           {!!conditions.length && (
             <section className="border-t py-5" style={{ borderColor: T.lineSoft }}>
               <div className="mb-2 text-[19px] italic" style={{ fontFamily: "'Fraunces', serif", color: T.inkMuted }}>with condition</div>
-              <div className="mb-2 flex items-center gap-3 text-[10.5px]" style={{ color: T.inkMuted }}>
-                <span className="inline-flex items-center gap-1"><span className="h-2 w-2 rounded-full" style={{ backgroundColor: 'rgba(143,163,121,.65)' }} />strong</span>
-                <span className="inline-flex items-center gap-1"><span className="h-2 w-2 rounded-full" style={{ backgroundColor: 'rgba(229,168,157,.65)' }} />needs work</span>
-                <span>cream = unseen</span>
-              </div>
+              <div className="mb-2 flex items-center gap-3 text-[10.5px]" style={{ color: T.inkMuted }}><span className="inline-flex items-center gap-1"><span className="h-2 w-2 rounded-full" style={{ backgroundColor: 'rgba(143,163,121,.65)' }} />strong</span><span className="inline-flex items-center gap-1"><span className="h-2 w-2 rounded-full" style={{ backgroundColor: 'rgba(229,168,157,.65)' }} />needs work</span><span>cream = unseen</span></div>
               {essentialsOnly && <div className="mb-2 text-[11px]" style={{ color: T.inkMuted }}>Showing bread-and-butter conditions only.</div>}
               {sAreas.size > 0 && <div className="mb-3 text-[11px]" style={{ color: T.inkMuted }}>Only conditions in the selected {sAreas.size === 1 ? 'specialty' : 'specialties'}.</div>}
               <input value={conditionSearch} onChange={e => setConditionSearch(e.target.value)} placeholder="Search conditions…" className="mb-3 w-full rounded-full border px-4 py-3 text-[13px] outline-none transition focus:border-[#A89582]" style={{ backgroundColor: 'rgba(244,236,223,.62)', borderColor: T.line, color: T.ink }} />
               <div className="flex flex-wrap gap-2">
-                {(conditionExpanded || conditionSearch ? conditions : conditions.filter((_, i) => i < 10 || [...sConditions].some(id => id === conditions[i]?.id))).filter(option => !conditionSearch || option.label.toLowerCase().includes(conditionSearch.toLowerCase())).map(option => (
-                  <ProgressChip key={option.id} selected={sConditions.has(option.id)} onClick={() => toggle(sConditions, option.id, setSConditions)} label={option.label} count={option.count} progress={option.progress} />
-                ))}
+                {(conditionExpanded || conditionSearch ? conditions : conditions.filter((_, i) => i < 10 || [...sConditions].some(id => id === conditions[i]?.id))).filter(option => !conditionSearch || option.label.toLowerCase().includes(conditionSearch.toLowerCase())).map(option => <ProgressChip key={option.id} selected={sConditions.has(option.id)} onClick={() => toggle(sConditions, option.id, setSConditions)} label={option.label} count={option.count} progress={option.progress} />)}
                 <Chip selected={hasAny(sConditions)} onClick={() => toggle(sConditions, 'any', setSConditions)}><span>Any</span><em className="text-[11.5px] font-normal" style={{ color: hasAny(sConditions) ? T.blush : T.inkMuted, fontFamily: "'Fraunces', serif" }}>{specialtyPool.length}</em></Chip>
                 {!conditionSearch && conditions.length > 10 && <button onClick={() => setConditionExpanded(!conditionExpanded)} className="px-3 py-2 text-[12.5px] italic" style={{ color: T.inkMuted, fontFamily: "'Fraunces', serif" }}>{conditionExpanded ? 'Show less' : `+${conditions.length - 10} more`}</button>}
               </div>
@@ -520,9 +543,7 @@ export const PracticeFilterModalParchment: React.FC<Props> = ({ isOpen, onClose,
               {(!hasAny(sConditions) || sAreas.size > 0) && <div className="mb-3 text-[11px]" style={{ color: T.inkMuted }}>Only presentations compatible with the choices above.</div>}
               <input value={presentationSearch} onChange={e => setPresentationSearch(e.target.value)} placeholder="Search presentations…" className="mb-3 w-full rounded-full border px-4 py-3 text-[13px] outline-none transition focus:border-[#A89582]" style={{ backgroundColor: 'rgba(244,236,223,.62)', borderColor: T.line, color: T.ink }} />
               <div className="flex flex-wrap gap-2">
-                {(presentationExpanded || presentationSearch ? presentations : presentations.filter((_, i) => i < 10 || [...sPres].some(id => id === presentations[i]?.id))).filter(option => !presentationSearch || option.label.toLowerCase().includes(presentationSearch.toLowerCase())).map(option => (
-                  <ProgressChip key={option.id} selected={sPres.has(option.id)} onClick={() => toggle(sPres, option.id, setSPres)} label={option.label} count={option.count} progress={option.progress} />
-                ))}
+                {(presentationExpanded || presentationSearch ? presentations : presentations.filter((_, i) => i < 10 || [...sPres].some(id => id === presentations[i]?.id))).filter(option => !presentationSearch || option.label.toLowerCase().includes(presentationSearch.toLowerCase())).map(option => <ProgressChip key={option.id} selected={sPres.has(option.id)} onClick={() => toggle(sPres, option.id, setSPres)} label={option.label} count={option.count} progress={option.progress} />)}
                 <Chip selected={hasAny(sPres)} onClick={() => toggle(sPres, 'any', setSPres)}><span>Any</span><em className="text-[11.5px] font-normal" style={{ color: hasAny(sPres) ? T.blush : T.inkMuted, fontFamily: "'Fraunces', serif" }}>{conditionPool.length}</em></Chip>
                 {!presentationSearch && presentations.length > 10 && <button onClick={() => setPresentationExpanded(!presentationExpanded)} className="px-3 py-2 text-[12.5px] italic" style={{ color: T.inkMuted, fontFamily: "'Fraunces', serif" }}>{presentationExpanded ? 'Show less' : `+${presentations.length - 10} more`}</button>}
               </div>
@@ -534,9 +555,7 @@ export const PracticeFilterModalParchment: React.FC<Props> = ({ isOpen, onClose,
               <div className="mb-2 text-[19px] italic" style={{ fontFamily: "'Fraunces', serif", color: T.inkMuted }}>about</div>
               <div className="mb-3 text-[11px]" style={{ color: T.inkMuted }}>Optional — narrow the knowledge angle.</div>
               <div className="flex flex-wrap gap-2">
-                {(facetExpanded ? facets : facets.filter((_, i) => i < 10 || [...sFacets].some(id => id === facets[i]?.id))).map(option => (
-                  <Chip key={option.id} selected={sFacets.has(option.id)} onClick={() => toggle(sFacets, option.id, setSFacets)}><span>{option.label}</span><em className="text-[11.5px] font-normal" style={{ color: sFacets.has(option.id) ? T.blush : T.inkMuted, fontFamily: "'Fraunces', serif" }}>{option.count}</em></Chip>
-                ))}
+                {(facetExpanded ? facets : facets.filter((_, i) => i < 10 || [...sFacets].some(id => id === facets[i]?.id))).map(option => <Chip key={option.id} selected={sFacets.has(option.id)} onClick={() => toggle(sFacets, option.id, setSFacets)}><span>{option.label}</span><em className="text-[11.5px] font-normal" style={{ color: sFacets.has(option.id) ? T.blush : T.inkMuted, fontFamily: "'Fraunces', serif" }}>{option.count}</em></Chip>)}
                 <Chip selected={hasAny(sFacets)} onClick={() => toggle(sFacets, 'any', setSFacets)}><span>Any</span><em className="text-[11.5px] font-normal" style={{ color: hasAny(sFacets) ? T.blush : T.inkMuted, fontFamily: "'Fraunces', serif" }}>{presentationPool.length}</em></Chip>
                 {facets.length > 10 && <button onClick={() => setFacetExpanded(!facetExpanded)} className="px-3 py-2 text-[12.5px] italic" style={{ color: T.inkMuted, fontFamily: "'Fraunces', serif" }}>{facetExpanded ? 'Show less' : `+${facets.length - 10} more`}</button>}
               </div>
@@ -546,21 +565,16 @@ export const PracticeFilterModalParchment: React.FC<Props> = ({ isOpen, onClose,
 
         <div className="shrink-0 border-t px-6 pb-[calc(env(safe-area-inset-bottom)+16px)] pt-3" style={{ borderColor: T.lineSoft, backgroundColor: 'rgba(250,245,236,.97)', boxShadow: '0 -12px 28px rgba(31,20,12,.035)' }}>
           <div className="mb-3 flex gap-1.5 overflow-x-auto whitespace-nowrap text-[11px] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden" style={{ color: T.inkMuted }}>
-            {summaryParts.map((part, index) => (
-              <React.Fragment key={`${part}-${index}`}>
-                {index > 0 && <span aria-hidden="true">·</span>}
-                <span>{part}</span>
-              </React.Fragment>
-            ))}
+            {summaryParts.map((part, index) => <React.Fragment key={`${part}-${index}`}>{index > 0 && <span aria-hidden="true">·</span>}<span>{part}</span></React.Fragment>)}
           </div>
           {available === 0 && <div className="mb-2 text-center text-[12px]" style={{ color: T.inkMuted }}>Nothing matches this combination yet. Remove one filter.</div>}
           <button
             onClick={() => {
-              // Pass the entire filtered candidate pool into practice. The session's
-              // existing prioritiser chooses the requested number from within it.
-              const selectedIds = filteredPool.map(c => c.concept_id);
-              setPracticeSelection(selectedIds);
-              onApplyFilters?.({ size, statuses: [...sStatus], areas: [...sAreas], conditions: [...sConditions], presentations: [...sPres], facets: [...sFacets], essentialsOnly });
+              const selectedConcepts = sessionStrategy === 'breadth_first'
+                ? pickBreadthFirst(filteredPool, size, assignments, conditionCategory?.id, presentationCategory?.id)
+                : filteredPool;
+              setPracticeSelection(selectedConcepts.map(c => c.concept_id));
+              onApplyFilters?.({ size, statuses: [...sStatus], areas: [...sAreas], conditions: [...sConditions], presentations: [...sPres], facets: [...sFacets], essentialsOnly, sessionStrategy });
               onClose();
             }}
             disabled={available === 0}
