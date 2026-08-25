@@ -26,6 +26,9 @@ export interface CachedQuestion {
   difficulty: string;
   generated_at: string;
   status: string;
+  quality_gate_version?: string | null;
+  quality_checked_at?: string | null;
+  quality_score?: number | null;
   // Image fields for featured questions
   vignette_image_url?: string | null;
   explanation_image_url?: string | null;
@@ -51,6 +54,9 @@ export interface QuestionInsert {
   citation_id?: string;
   question_format?: string;
   difficulty?: string;
+  quality_gate_version?: string;
+  quality_checked_at?: string;
+  quality_score?: number;
 }
 
 export interface FilterOptions {
