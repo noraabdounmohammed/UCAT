@@ -126,21 +126,13 @@ const formatCompactTime = (minutes: number) => {
 
 const formatFirstPassRange = (minutes: number) => {
   if (minutes <= 0) return '0 min';
-  if (minutes < 60) {
-    const centre = Math.max(5, Math.round(minutes / 5) * 5);
-    const low = Math.max(5, Math.round((centre * 0.9) / 5) * 5);
-    const high = Math.max(low + 5, Math.round((centre * 1.1) / 5) * 5);
-    return `${low}–${high} min`;
-  }
-  if (minutes < 180) {
-    const low = Math.max(45, Math.floor((minutes * 0.9) / 15) * 15);
-    const high = Math.max(low + 15, Math.ceil((minutes * 1.1) / 15) * 15);
-    return `${formatCompactTime(low)}–${formatCompactTime(high)}`;
-  }
+  if (minutes < 45) return `~${Math.max(10, Math.round(minutes / 10) * 10)} min`;
   const hours = minutes / 60;
-  const low = Math.max(1, Math.floor((hours * 0.95) / 5) * 5);
-  const high = Math.max(low + 5, Math.ceil((hours * 1.05) / 5) * 5);
-  return `${low}–${high}h`;
+  if (hours < 2) return '~1–2h';
+  if (hours < 3) return '~2–3h';
+  if (hours < 5) return `~${Math.max(2, Math.floor(hours))}–${Math.ceil(hours)}h`;
+  const centre = Math.max(5, Math.round(hours / 5) * 5);
+  return `~${Math.max(5, centre - 5)}–${centre + 5}h`;
 };
 
 const pickColdBreadthFirst = (
@@ -311,18 +303,18 @@ export const PracticeFilterModalParchment: React.FC<Props> = ({ isOpen, onClose,
 
   const available = filteredPool.length;
   const selectedCount = Math.min(size, available);
-  const statusSummary = hasAny(sStatus) ? 'Any status' : [...sStatus].map(labelFor).join(', ');
   const scopeLabelParts = [
     essentialsOnly ? 'Essential' : null,
     sAreas.size === 1 ? labelFor([...sAreas][0]) : sAreas.size > 1 ? `${sAreas.size} specialties` : null,
     !hasAny(sConditions) && sConditions.size === 1 ? labelFor([...sConditions][0]) : null,
     !hasAny(sPres) && sPres.size === 1 ? labelFor([...sPres][0]) : null,
   ].filter(Boolean);
-  const scopeTitle = `Your ${scopeLabelParts.length ? scopeLabelParts.join(' ') : 'selected'} map`;
+  const scopeTitle = scopeLabelParts.length ? scopeLabelParts.join(' ') : 'Selected curriculum';
   const firstPassEstimate = formatFirstPassRange(scopeStats.unseen * 2);
   const sessionEstimate = formatCompactTime(selectedCount * 2);
   const greenEnd = scopeStats.strongPct;
   const blushEnd = Math.min(100, scopeStats.strongPct + scopeStats.needsWorkPct);
+  const untouched = scopeStats.covered === 0 && scopeStats.total > 0;
 
   if (!isOpen) return null;
 
@@ -376,15 +368,34 @@ export const PracticeFilterModalParchment: React.FC<Props> = ({ isOpen, onClose,
           {!!facets.length && <section className="border-t py-5" style={{ borderColor: T.lineSoft }}><div className="mb-2 text-[19px] italic" style={{ fontFamily: "'Fraunces', serif", color: T.inkMuted }}>about</div><div className="mb-3 text-[11px]" style={{ color: T.inkMuted }}>Optional — narrow the knowledge angle.</div><div className="flex flex-wrap gap-2">{(facetExpanded ? facets : facets.filter((_, i) => i < 10 || [...sFacets].some(id => id === facets[i]?.id))).map(option => <Chip key={option.id} selected={sFacets.has(option.id)} onClick={() => toggle(sFacets, option.id, setSFacets)}><span>{option.label}</span><em className="text-[11.5px] font-normal" style={{ color: sFacets.has(option.id) ? T.blush : T.inkMuted, fontFamily: "'Fraunces', serif" }}>{option.count}</em></Chip>)}<Chip selected={hasAny(sFacets)} onClick={() => toggle(sFacets, 'any', setSFacets)}><span>Any</span><em className="text-[11.5px] font-normal" style={{ color: hasAny(sFacets) ? T.blush : T.inkMuted, fontFamily: "'Fraunces', serif" }}>{presentationPool.length}</em></Chip>{facets.length > 10 && <button onClick={() => setFacetExpanded(!facetExpanded)} className="px-3 py-2 text-[12.5px] italic" style={{ color: T.inkMuted, fontFamily: "'Fraunces', serif" }}>{facetExpanded ? 'Show less' : `+${facets.length - 10} more`}</button>}</div></section>}
         </div>
 
-        <div className="shrink-0 border-t px-6 pb-[calc(env(safe-area-inset-bottom)+16px)] pt-2.5" style={{ borderColor: T.lineSoft, backgroundColor: 'rgba(250,245,236,.97)', boxShadow: '0 -12px 28px rgba(31,20,12,.035)' }}>
-          <div className="mb-2.5 px-1">
-            <div className="flex items-end justify-between gap-3">
-              <div className="min-w-0"><div className="truncate text-[11.5px] font-semibold" style={{ color: T.ink }}>{scopeTitle}</div><div className="mt-0.5 text-[10px]" style={{ color: T.inkMuted }}>{scopeStats.covered}/{scopeStats.total} encountered</div></div>
-              <div className="shrink-0 text-right"><span className="text-[18px] leading-none" style={{ fontFamily: "'Fraunces', serif", color: T.ink }}>{scopeStats.coveragePct}%</span><span className="ml-1.5 text-[9px] uppercase tracking-[0.08em]" style={{ color: T.inkMuted }}>covered</span></div>
+        <div className="shrink-0 border-t px-6 pb-[calc(env(safe-area-inset-bottom)+14px)] pt-2" style={{ borderColor: T.lineSoft, backgroundColor: 'rgba(250,245,236,.97)', boxShadow: '0 -10px 24px rgba(31,20,12,.03)' }}>
+          <div className="mb-2 px-1">
+            <div className="text-[8.5px] font-semibold uppercase tracking-[0.12em]" style={{ color: T.inkMuted }}>Your progress</div>
+            <div className="mt-0.5 flex items-end justify-between gap-3">
+              <div className="min-w-0">
+                <div className="truncate text-[12.5px] font-semibold" style={{ color: T.ink }}>{scopeTitle}</div>
+                <div className="mt-0.5 text-[10px]" style={{ color: T.inkMuted }}>
+                  {untouched ? `Not started · ${scopeStats.total} concepts` : `${scopeStats.covered}/${scopeStats.total} encountered`}
+                </div>
+              </div>
+              {!untouched && <div className="shrink-0 text-right"><span className="text-[18px] leading-none" style={{ fontFamily: "'Fraunces', serif", color: T.ink }}>{scopeStats.coveragePct}%</span><span className="ml-1.5 text-[9px] uppercase tracking-[0.08em]" style={{ color: T.inkMuted }}>covered</span></div>}
             </div>
+
             <div className="mt-2 h-[6px] w-full overflow-hidden rounded-full" style={{ backgroundColor: 'rgba(255,253,248,.95)' }}><div className="h-full w-full" style={{ background: `linear-gradient(90deg, rgba(143,163,121,.72) 0%, rgba(143,163,121,.72) ${greenEnd}%, rgba(229,168,157,.72) ${greenEnd}%, rgba(229,168,157,.72) ${blushEnd}%, rgba(255,253,248,.95) ${blushEnd}%, rgba(255,253,248,.95) 100%)` }} /></div>
-            <div className="mt-1.5 flex flex-wrap gap-x-2.5 gap-y-0.5 text-[9.8px]" style={{ color: T.inkMuted }}><span><strong style={{ color: T.sageDeep }}>{scopeStats.strong}</strong> strong</span><span><strong style={{ color: T.blushDeep }}>{scopeStats.needsWork}</strong> need work</span><span><strong style={{ color: T.ink }}>{scopeStats.unseen}</strong> unseen</span></div>
-            <div className="mt-1.5 flex items-center justify-between gap-3 text-[9.8px]" style={{ color: T.inkMuted }}><span className="min-w-0 truncate">{scopeStats.unseen > 0 ? `~${firstPassEstimate} to first pass` : 'First pass complete'}</span><span className="shrink-0">{statusSummary} · {selectedCount}/{available} · ~{sessionEstimate}</span></div>
+
+            {untouched ? (
+              <div className="mt-1.5 text-[10px]" style={{ color: T.inkMuted }}><strong style={{ color: T.ink }}>{firstPassEstimate}</strong> for a first pass</div>
+            ) : (
+              <>
+                <div className="mt-1.5 flex flex-wrap gap-x-2.5 gap-y-0.5 text-[9.8px]" style={{ color: T.inkMuted }}><span><strong style={{ color: T.sageDeep }}>{scopeStats.strong}</strong> strong</span><span><strong style={{ color: T.blushDeep }}>{scopeStats.needsWork}</strong> need work</span><span><strong style={{ color: T.ink }}>{scopeStats.unseen}</strong> unseen</span></div>
+                <div className="mt-1 text-[9.8px]" style={{ color: T.inkMuted }}>{scopeStats.unseen > 0 ? `${firstPassEstimate} of unseen content left` : 'First pass complete'}</div>
+              </>
+            )}
+
+            <div className="mt-1.5 flex items-center justify-between gap-3 border-t pt-1.5 text-[10px]" style={{ borderColor: T.lineSoft, color: T.inkMuted }}>
+              <span>This session</span>
+              <span className="shrink-0 font-medium" style={{ color: T.ink }}>{selectedCount} concepts · ~{sessionEstimate}</span>
+            </div>
           </div>
           {available === 0 && <div className="mb-2 text-center text-[12px]" style={{ color: T.inkMuted }}>Nothing matches this combination yet. Remove one filter.</div>}
           <button onClick={() => { const selectedConcepts = sStatus.has('cold') ? pickColdBreadthFirst(filteredPool, size, assignments, conditionCategory?.id, presentationCategory?.id) : filteredPool; setPracticeSelection(selectedConcepts.map(c => c.concept_id)); onApplyFilters?.({ size, statuses: [...sStatus], areas: [...sAreas], conditions: [...sConditions], presentations: [...sPres], facets: [...sFacets], essentialsOnly }); onClose(); }} disabled={available === 0} className="flex w-full items-center justify-center gap-3 rounded-full py-[16px] text-[15px] font-semibold transition active:scale-[0.99] disabled:cursor-not-allowed" style={{ backgroundColor: available ? T.espresso : T.inkMuted, color: T.cream, boxShadow: available ? '0 8px 22px rgba(31,20,12,.14)' : 'none' }}><span>Begin session</span><span aria-hidden="true" style={{ color: T.blush }}>→</span></button>
