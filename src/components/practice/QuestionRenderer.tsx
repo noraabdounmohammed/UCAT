@@ -2,6 +2,7 @@ import React from 'react';
 import { QuestionData } from './questionTypes';
 import { ModernFlashcard } from './ModernFlashcard';
 import { LearningAwareSBA } from './LearningAwareSBA';
+import { ReportQuestionButton } from './ReportQuestionButton';
 import { SessionAnswer } from './SessionProgressDropdown';
 
 interface QuestionRendererProps {
@@ -51,6 +52,32 @@ export const QuestionRenderer: React.FC<QuestionRendererProps> = ({
     });
   }
 
+  const renderSba = () => (
+    <>
+      <LearningAwareSBA
+        question={question}
+        onAnswer={onAnswer}
+        onNext={onNext}
+        onPrevious={onPrevious}
+        onExit={onExit}
+        currentIndex={currentIndex}
+        totalQuestions={totalCards}
+        title={title || 'UKMLA SBA'}
+        sessionAnswers={sessionAnswers}
+        onJumpTo={onJumpTo}
+        availableFilters={availableFilters}
+        activeFilter={activeFilter}
+        onFilterSelect={onFilterSelect}
+        currentFormat={format}
+        onChangeFormat={onChangeFormat}
+        onRestartWithFilters={onRestartWithFilters}
+      />
+      <div className="mt-3 flex justify-end px-1">
+        <ReportQuestionButton question={question} />
+      </div>
+    </>
+  );
+
   switch (format) {
     case 'flashcard':
       return (
@@ -74,26 +101,7 @@ export const QuestionRenderer: React.FC<QuestionRendererProps> = ({
 
     case 'sba':
     case 'ukmla_sba':
-      return (
-        <LearningAwareSBA
-          question={question}
-          onAnswer={onAnswer}
-          onNext={onNext}
-          onPrevious={onPrevious}
-          onExit={onExit}
-          currentIndex={currentIndex}
-          totalQuestions={totalCards}
-          title={title || 'UKMLA SBA'}
-          sessionAnswers={sessionAnswers}
-          onJumpTo={onJumpTo}
-          availableFilters={availableFilters}
-          activeFilter={activeFilter}
-          onFilterSelect={onFilterSelect}
-          currentFormat={format}
-          onChangeFormat={onChangeFormat}
-          onRestartWithFilters={onRestartWithFilters}
-        />
-      );
+      return renderSba();
 
     case 'mindmap':
       return (
@@ -106,25 +114,6 @@ export const QuestionRenderer: React.FC<QuestionRendererProps> = ({
       );
 
     default:
-      return (
-        <LearningAwareSBA
-          question={question}
-          onAnswer={onAnswer}
-          onNext={onNext}
-          onPrevious={onPrevious}
-          onExit={onExit}
-          currentIndex={currentIndex}
-          totalQuestions={totalCards}
-          title={title || 'UKMLA SBA'}
-          sessionAnswers={sessionAnswers}
-          onJumpTo={onJumpTo}
-          availableFilters={availableFilters}
-          activeFilter={activeFilter}
-          onFilterSelect={onFilterSelect}
-          currentFormat={format}
-          onChangeFormat={onChangeFormat}
-          onRestartWithFilters={onRestartWithFilters}
-        />
-      );
+      return renderSba();
   }
 };
