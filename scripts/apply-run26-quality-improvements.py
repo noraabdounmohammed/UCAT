@@ -10,7 +10,7 @@ insert = """${instructions}
 
 FINAL SELF-AUDIT BEFORE YOU EMIT JSON — mandatory:
 - Re-read every required-context and forbidden-inference rule in the supplied instructions. Every decision-critical qualifier must be explicit in the vignette; never leave it to the explanation to invent or infer.
-- Remove any nonessential exception-state modifier (for example HRT, COPD/hypercapnic-risk, pregnancy modifier, renal impairment, shock-like findings, recent procedure) unless the packet explicitly needs it and fully resolves how it affects the keyed decision.
+- Remove any nonessential exception-state modifier (for example COPD/hypercapnic-risk, pregnancy modifier, renal impairment, shock-like findings, recent procedure) unless the packet explicitly needs it and fully resolves how it affects the keyed decision.
 - Never state a precomputed named clinical-score total anywhere in vignette, question, options, key_fact, or explanation. For CHA2DS2-VASc, HAS-BLED, NEWS2 and CURB-65, use raw components and explain the resulting management/risk category without writing the numeric total.
 - If a timing rule depends on a reference point, state that reference point explicitly (for example the first day of exposure), so the timing can be independently reproduced.
 - If the packet requires an explicit state such as shocked/not shocked, say it explicitly in the vignette and make the observations consistent with that state.
@@ -29,10 +29,10 @@ evidence = Path('src/services/evidencePackets.ts')
 e = evidence.read_text()
 
 old = "['If HRT is present, explicitly establish whether the bleeding is unexplained/not attributable to HRT before applying the cancer-referral rule; otherwise omit HRT from the vignette.', 'When suspected-cancer referral is the tested target, do not offer urgent direct-access ultrasound as a competing answer; when ultrasound criteria are the tested target, do not offer the referral pathway as an overlapping alternative.', 'Do not tell all HRT users to stop HRT for 6 weeks before referral.', 'Do not ignore the under-55 consider-referral criterion.']"
-new = "['For this cancer-referral target, OMIT HRT from the vignette. NICE 2026 explicitly separates unscheduled bleeding on HRT from unexplained post-menopausal bleeding that cannot be attributed to HRT; do not infer non-attribution merely from the HRT regimen or duration.', 'When suspected-cancer referral is the tested target, do not offer urgent direct-access ultrasound as a competing answer; when ultrasound criteria are the tested target, do not offer the referral pathway as an overlapping alternative.', 'Do not tell all HRT users to stop HRT for 6 weeks before referral.', 'Do not ignore the under-55 consider-referral criterion.']"
+new = "['For the suspected-cancer referral target, either omit HRT entirely OR explicitly establish one of the NICE-safe states: the patient is not using HRT, or the post-menopausal bleeding cannot be attributed to HRT. Never infer non-attribution merely from regimen or duration.', 'When suspected-cancer referral is the tested target, do not offer urgent direct-access ultrasound as a competing answer; when ultrasound criteria are the tested target, do not offer the referral pathway as an overlapping alternative.', 'Do not tell all HRT users to stop HRT for 6 weeks before referral.', 'Do not ignore the under-55 consider-referral criterion.']"
 if old in e:
     e = e.replace(old, new)
-elif 'OMIT HRT from the vignette' not in e:
+elif new[2:-2].split("', '")[0] not in e and 'OMIT HRT from the vignette' not in e:
     raise SystemExit('Endometrial/HRT packet anchor missing; refusing silent patch')
 
 evidence.write_text(e)
@@ -49,11 +49,16 @@ extra = """  const deterministic = validateUKMLAQuestion(question);
   const vignetteText = normalise(question?.clinical_vignette ?? question?.vignette);
   const fullText = [vignetteText, normalise(question?.question), ...(question?.options || []).map((o: any) => normalise(o?.text)), normalise(question?.key_fact), normalise(question?.explanation)].join(' ');
 
-  // NICE 2026 separates unscheduled bleeding on HRT from unexplained PMB not
-  // attributable to HRT. Run-26 manual audit caught an automated PASS that
-  // invented non-attribution from continuous combined HRT. Fail closed here.
+  // NICE NG12 (updated 2026) refers unexplained PMB age 55+ when bleeding cannot
+  // be attributed to HRT. Fail closed if HRT use is introduced without explicitly
+  // resolving that qualifier, but allow the safe states "not using HRT" or
+  // "bleeding cannot be attributed to HRT" rather than rejecting the word itself.
   if (conceptId === 'ukmla-4965' && /\\bhrt\\b|hormone replacement therapy/i.test(vignetteText)) {
-    return { pass: false, score: 0, reasons: ['CONTEXT_SAFETY: HRT present in endometrial cancer referral item; this target must omit HRT rather than infer that bleeding is not attributable to it.'] };
+    const explicitlyNotUsingHrt = /(?:not|isn['’]?t|is not|does not|doesn['’]?t)\\s+(?:currently\\s+)?(?:use|using|take|taking|on)\\s+(?:any\\s+)?(?:hrt|hormone replacement therapy)|not\\s+on\\s+(?:hrt|hormone replacement therapy)/i.test(vignetteText);
+    const explicitlyNotAttributable = /(?:bleeding|post[- ]menopausal bleeding)[^.]{0,100}(?:cannot|can['’]?t|is not|isn['’]?t)\\s+(?:be\\s+)?attributed\\s+to\\s+(?:hrt|hormone replacement therapy)|(?:not attributable|unrelated)\\s+to\\s+(?:hrt|hormone replacement therapy)/i.test(vignetteText);
+    if (!explicitlyNotUsingHrt && !explicitlyNotAttributable) {
+      return { pass: false, score: 0, reasons: ['CONTEXT_SAFETY: HRT is present but the vignette does not explicitly establish that bleeding cannot be attributed to HRT. NICE NG12 requires that qualifier for the age-55+ PMB referral rule.'] };
+    }
   }
 
   // Paediatric DKA fluid timing is only single-best-answer when shock status is
@@ -66,8 +71,8 @@ extra = """  const deterministic = validateUKMLAQuestion(question);
   if (conceptId === 'ukmla-4379' && /\\b(?:aciclovir|valaciclovir|day 7|day 14|post[- ]exposure prophylaxis|pep)\\b/i.test(fullText) && !/\\b(?:first day of exposure|first exposure|exposure began|exposure started)\\b/i.test(vignetteText)) {
     return { pass: false, score: 0, reasons: ['TIMING_SAFETY: Varicella PEP timing requires the first day of exposure to be explicit in the vignette.'] };
   }"""
-if anchor in q and 'Run-26 manual audit caught an automated PASS' not in q:
+if anchor in q and 'NICE NG12 (updated 2026) refers unexplained PMB' not in q:
     q = q.replace(anchor, extra, 1)
-elif 'Run-26 manual audit caught an automated PASS' not in q:
+elif 'NICE NG12 (updated 2026) refers unexplained PMB' not in q:
     raise SystemExit('questionQuality insertion anchor missing; refusing silent patch')
 quality.write_text(q)
