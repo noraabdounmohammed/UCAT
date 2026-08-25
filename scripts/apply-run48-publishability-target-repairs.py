@@ -38,8 +38,8 @@ patch_block('ukmla-176', [
         "'In AF where the supplied raw stroke-risk factors clearly establish that anticoagulation is indicated, offer anticoagulation with a DOAC when suitable. Bleeding-risk assessment informs discussion and modifiable-risk management; it is not a simple low-risk-only cutoff.'",
     ),
     (
-        "['sex', 'CHA2DS2-VASc score', 'bleeding risk assessed', 'modifiable bleeding risks addressed or no unaddressed major bleeding issue stated', 'explicit statement that a DOAC is suitable', 'no relevant contraindication']",
-        "['sex', 'raw CHA2DS2-VASc risk factors sufficient to establish the treatment category WITHOUT stating or calculating a score total', 'bleeding risk assessed', 'modifiable bleeding risks addressed or no unaddressed major bleeding issue stated', 'explicit statement that a DOAC is suitable', 'no relevant contraindication']",
+        "['sex', 'raw CHA2DS2-VASc clinical components sufficient to establish anticoagulation indication WITHOUT naming or stating a CHA2DS2-VASc total', 'bleeding risk assessed using concrete clinical factors WITHOUT naming or stating a HAS-BLED total', 'modifiable bleeding risks addressed or no unaddressed major bleeding issue stated', 'explicit statement that a DOAC is suitable', 'no relevant contraindication']",
+        "['sex', 'raw CHA2DS2-VASc risk factors sufficient to establish the treatment category WITHOUT stating or calculating a score total', 'bleeding risk assessed using concrete clinical factors WITHOUT naming or stating a HAS-BLED total', 'modifiable bleeding risks addressed or no unaddressed major bleeding issue stated', 'explicit statement that a DOAC is suitable', 'no relevant contraindication']",
     ),
     (
         "['whether anticoagulation is indicated', 'broad anticoagulant class only: DOAC versus VKA']",
@@ -56,7 +56,7 @@ patch_block('ukmla-4362', [
         "['recognise that CURB-65 supports risk assessment but does not by itself mandate admission or ICU; PREFER this target', 'identify a risk category from all raw components only if the explanation can discuss each finding without counting criteria, assigning points, or stating a score total']",
     ),
     (
-        "['adult community-acquired pneumonia', 'CURB-65 components or stated score']",
+        "['adult community-acquired pneumonia', 'all raw CURB-65 components needed to derive the risk category; never state a precomputed CURB-65 total']",
         "['adult community-acquired pneumonia', 'all five raw CURB-65 components when category interpretation is tested; never a stated or generated score total']",
     ),
 ])
@@ -110,7 +110,7 @@ patch_block('ukmla-5666', [
 # susceptibility directly and anchor the first exposure/current day explicitly.
 patch_block('ukmla-4379', [
     (
-        "['pregnancy', 'significant exposure', 'susceptibility/non-immunity', 'timing since exposure', 'ability to take oral antivirals']",
+        "['pregnancy', 'significant exposure', 'susceptibility/non-immunity', 'the FIRST DAY of exposure stated explicitly plus the current/reference day so prophylaxis timing is independently reproducible', 'ability to take oral antivirals']",
         "['pregnancy', 'significant exposure', 'susceptibility/non-immunity stated directly (for example VZV IgG negative/non-immune; do not require interpreting an antibody-number threshold)', 'the FIRST DAY OF EXPOSURE and current/reference day stated explicitly when timing matters', 'ability to take oral antivirals']",
     ),
     (
