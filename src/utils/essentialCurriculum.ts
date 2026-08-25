@@ -122,11 +122,15 @@ const ESSENTIAL_TAGS = new Set([
 
 const normalise = (value: string) => value.trim().toLowerCase();
 
+export function isEssentialTag(tag: string): boolean {
+  return ESSENTIAL_TAGS.has(normalise(tag));
+}
+
 export function isEssentialConcept(concept: ConceptNode): boolean {
   // Future-proof for curated per-concept metadata when it is populated.
   if (concept.core || concept.importance?.core) return true;
 
-  return (concept.custom_filters || []).some(tag => ESSENTIAL_TAGS.has(normalise(tag)));
+  return (concept.custom_filters || []).some(isEssentialTag);
 }
 
 export const essentialTagCount = ESSENTIAL_TAGS.size;
