@@ -104,6 +104,40 @@ const calcPillProgress = (concepts: ConceptNode[], filter: string): PillProgress
   };
 };
 
+const calcScopeProgress = (concepts: ConceptNode[]) => {
+  const total = concepts.length;
+  let strong = 0;
+  let needsWork = 0;
+
+  concepts.forEach(concept => {
+    const md = concept.mastery_data || ({} as any);
+    const attempts = Number(md.attempts || 0);
+    const level = Number(md.mastery_level || 0);
+    if (level === 2) strong += 1;
+    else if (attempts > 0 || level === 1) needsWork += 1;
+  });
+
+  const unseen = Math.max(0, total - strong - needsWork);
+  const covered = strong + needsWork;
+  return {
+    total,
+    strong,
+    needsWork,
+    unseen,
+    covered,
+    coveragePct: total ? Math.round((covered / total) * 100) : 0,
+    strongPct: total ? (strong / total) * 100 : 0,
+    needsWorkPct: total ? (needsWork / total) * 100 : 0,
+  };
+};
+
+const formatStudyTime = (minutes: number) => {
+  if (minutes < 60) return `${minutes} min`;
+  const hours = Math.floor(minutes / 60);
+  const mins = minutes % 60;
+  return mins ? `${hours}h ${mins}m` : `${hours}h`;
+};
+
 /**
  * Cold is the first-pass / breadth route. Among unseen concepts, prefer new
  * condition/presentation territory before extra depth, while retaining the
@@ -215,11 +249,22 @@ export const PracticeFilterModalParchment: React.FC<Props> = ({ isOpen, onClose,
   );
   const progressSpecialtyPool = useMemo(() => scopePool.filter(c => matchesAnyTag(c, sAreas)), [scopePool, sAreas]);
   const progressConditionPool = useMemo(() => progressSpecialtyPool.filter(c => matchesAnyTag(c, sConditions)), [progressSpecialtyPool, sConditions]);
+
+  // Scope snapshot intentionally ignores the mastery/status filter. It answers
+  // "How much of this clinical territory do I know?" even when the session itself
+  // is narrowed to Cold, Weak, Mastered, etc.
+  const scopeSpecialtyPool = useMemo(() => scopePool.filter(c => matchesAnyTag(c, sAreas)), [scopePool, sAreas]);
+  const scopeConditionPool = useMemo(() => scopeSpecialtyPool.filter(c => matchesAnyTag(c, sConditions)), [scopeSpecialtyPool, sConditions]);
+  const scopePresentationPool = useMemo(() => scopeConditionPool.filter(c => matchesAnyTag(c, sPres)), [scopeConditionPool, sPres]);
+  const scopeSnapshotPool = useMemo(() => scopePresentationPool.filter(c => matchesAnyTag(c, sFacets)), [scopePresentationPool, sFacets]);
+
   const statusPool = useMemo(() => scopePool.filter(c => matchesStatus(c, sStatus)), [scopePool, sStatus]);
   const specialtyPool = useMemo(() => statusPool.filter(c => matchesAnyTag(c, sAreas)), [statusPool, sAreas]);
   const conditionPool = useMemo(() => specialtyPool.filter(c => matchesAnyTag(c, sConditions)), [specialtyPool, sConditions]);
   const presentationPool = useMemo(() => conditionPool.filter(c => matchesAnyTag(c, sPres)), [conditionPool, sPres]);
   const filteredPool = useMemo(() => presentationPool.filter(c => matchesAnyTag(c, sFacets)), [presentationPool, sFacets]);
+
+  const scopeStats = useMemo(() => calcScopeProgress(scopeSnapshotPool), [scopeSnapshotPool]);
 
   const areas = useMemo(() => specialtyIds.map(id => {
     const coverage = calcCoverage(scopePool, id);
@@ -346,6 +391,16 @@ export const PracticeFilterModalParchment: React.FC<Props> = ({ isOpen, onClose,
     specialtySummary,
     `≈ ${Math.round(size * 2)} min`,
   ];
+
+  const scopeTitle = [
+    essentialsOnly ? 'Essential' : null,
+    sAreas.size === 1 ? labelFor([...sAreas][0]) : sAreas.size > 1 ? `${sAreas.size} specialties` : 'All specialties',
+  ].filter(Boolean).join(' ');
+
+  const firstPassMinutes = scopeStats.unseen * 2;
+  const sessionMinutes = selectedCount * 2;
+  const greenEnd = scopeStats.strongPct;
+  const blushEnd = Math.min(100, scopeStats.strongPct + scopeStats.needsWorkPct);
 
   if (!isOpen) return null;
 
@@ -543,6 +598,34 @@ export const PracticeFilterModalParchment: React.FC<Props> = ({ isOpen, onClose,
         </div>
 
         <div className="shrink-0 border-t px-6 pb-[calc(env(safe-area-inset-bottom)+16px)] pt-3" style={{ borderColor: T.lineSoft, backgroundColor: 'rgba(250,245,236,.97)', boxShadow: '0 -12px 28px rgba(31,20,12,.035)' }}>
+          <div className="mb-3 rounded-[18px] border px-4 py-3" style={{ borderColor: T.line, backgroundColor: 'rgba(244,236,223,.62)' }}>
+            <div className="flex items-start justify-between gap-3">
+              <div>
+                <div className="text-[12px] font-semibold" style={{ color: T.ink }}>{scopeTitle}</div>
+                <div className="mt-0.5 text-[10.5px]" style={{ color: T.inkMuted }}>{scopeStats.total} concepts in this clinical scope</div>
+              </div>
+              <div className="text-right">
+                <div className="text-[18px] leading-none" style={{ fontFamily: "'Fraunces', serif", color: T.ink }}>{scopeStats.coveragePct}%</div>
+                <div className="mt-1 text-[9.5px] uppercase tracking-[0.09em]" style={{ color: T.inkMuted }}>covered</div>
+              </div>
+            </div>
+
+            <div className="mt-3 h-[7px] w-full overflow-hidden rounded-full" style={{ backgroundColor: 'rgba(255,253,248,.9)' }}>
+              <div className="h-full w-full" style={{ background: `linear-gradient(90deg, rgba(143,163,121,.72) 0%, rgba(143,163,121,.72) ${greenEnd}%, rgba(229,168,157,.72) ${greenEnd}%, rgba(229,168,157,.72) ${blushEnd}%, rgba(255,253,248,.95) ${blushEnd}%, rgba(255,253,248,.95) 100%)` }} />
+            </div>
+
+            <div className="mt-2 flex flex-wrap gap-x-3 gap-y-1 text-[10.5px]" style={{ color: T.inkMuted }}>
+              <span><strong style={{ color: T.sageDeep }}>{scopeStats.strong}</strong> strong</span>
+              <span><strong style={{ color: T.blushDeep }}>{scopeStats.needsWork}</strong> need work</span>
+              <span><strong style={{ color: T.ink }}>{scopeStats.unseen}</strong> unseen</span>
+            </div>
+
+            <div className="mt-2 flex items-center justify-between gap-3 border-t pt-2 text-[10.5px]" style={{ borderColor: T.lineSoft, color: T.inkMuted }}>
+              <span>{scopeStats.unseen > 0 ? `≈ ${formatStudyTime(firstPassMinutes)} to first-pass unseen` : 'First pass complete'}</span>
+              <span className="shrink-0">This session: {selectedCount}/{available} · ≈ {formatStudyTime(sessionMinutes)}</span>
+            </div>
+          </div>
+
           <div className="mb-3 flex gap-1.5 overflow-x-auto whitespace-nowrap text-[11px] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden" style={{ color: T.inkMuted }}>
             {summaryParts.map((part, index) => <React.Fragment key={`${part}-${index}`}>{index > 0 && <span aria-hidden="true">·</span>}<span>{part}</span></React.Fragment>)}
           </div>
