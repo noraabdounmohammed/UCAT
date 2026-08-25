@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { ChevronDown, X } from 'lucide-react';
 import { useConceptStore } from '@/contexts/ConceptStoreContext';
 import type { ConceptNode, FilterCategory } from '@/types/conceptTypes';
+import { isEssentialConcept } from '@/utils/essentialCurriculum';
 
 export interface FilterState {
   size: number;
@@ -10,6 +11,7 @@ export interface FilterState {
   conditions: string[];
   presentations: string[];
   facets: string[];
+  essentialsOnly?: boolean;
 }
 
 interface Props {
@@ -73,6 +75,7 @@ export const PracticeFilterModalParchment: React.FC<Props> = ({ isOpen, onClose,
   const [categories, setCategories] = useState<FilterCategory[]>([]);
   const [size, setSize] = useState(10);
   const [sStatus, setSStatus] = useState<Set<string>>(new Set(['any']));
+  const [essentialsOnly, setEssentialsOnly] = useState(false);
   const [sAreas, setSAreas] = useState<Set<string>>(new Set());
   const [sConditions, setSConditions] = useState<Set<string>>(new Set(['any']));
   const [sPres, setSPres] = useState<Set<string>>(new Set(['any']));
@@ -113,14 +116,20 @@ export const PracticeFilterModalParchment: React.FC<Props> = ({ isOpen, onClose,
   const presentationIds = presentationCategory ? tagsByCategory[presentationCategory.id] || [] : [];
   const facetIds = facetCategory ? tagsByCategory[facetCategory.id] || [] : [];
 
-  const statusPool = useMemo(() => concepts.filter(c => matchesStatus(c, sStatus)), [concepts, sStatus]);
+  // Essentials narrows the candidate universe only. Everything downstream — status,
+  // specialty, condition, presentation, and the existing practice ranking — remains unchanged.
+  const scopePool = useMemo(
+    () => essentialsOnly ? concepts.filter(isEssentialConcept) : concepts,
+    [concepts, essentialsOnly]
+  );
+  const statusPool = useMemo(() => scopePool.filter(c => matchesStatus(c, sStatus)), [scopePool, sStatus]);
   const specialtyPool = useMemo(() => statusPool.filter(c => matchesAnyTag(c, sAreas)), [statusPool, sAreas]);
   const conditionPool = useMemo(() => specialtyPool.filter(c => matchesAnyTag(c, sConditions)), [specialtyPool, sConditions]);
   const presentationPool = useMemo(() => conditionPool.filter(c => matchesAnyTag(c, sPres)), [conditionPool, sPres]);
   const filteredPool = useMemo(() => presentationPool.filter(c => matchesAnyTag(c, sFacets)), [presentationPool, sFacets]);
 
   const areas = useMemo(() => specialtyIds.map(id => {
-    const coverage = calcCoverage(concepts, id);
+    const coverage = calcCoverage(scopePool, id);
     return {
       id,
       name: labelFor(id),
@@ -131,7 +140,7 @@ export const PracticeFilterModalParchment: React.FC<Props> = ({ isOpen, onClose,
     };
   })
     .filter(option => option.count > 0 || sAreas.has(option.id))
-    .sort((a, b) => b.count - a.count || a.name.localeCompare(b.name)), [specialtyIds, concepts, statusPool, sAreas]);
+    .sort((a, b) => b.count - a.count || a.name.localeCompare(b.name)), [specialtyIds, scopePool, statusPool, sAreas]);
 
   const conditions = useMemo(() => conditionIds.map(id => ({
     id,
@@ -173,12 +182,12 @@ export const PracticeFilterModalParchment: React.FC<Props> = ({ isOpen, onClose,
   }, [facets, sFacets]);
 
   const statusChips = useMemo(() => [
-    { id: 'weak', label: 'weak', count: countStatus(concepts, 'weak'), color: T.blushDeep },
-    { id: 'drifting', label: 'drifting', count: countStatus(concepts, 'drifting'), color: '#c8b89c' },
-    { id: 'cold', label: 'cold', count: countStatus(concepts, 'cold'), color: '#4a3a2c' },
-    { id: 'mastered', label: 'mastered', count: countStatus(concepts, 'mastered'), color: T.sageDeep },
-    { id: 'any', label: 'any', count: concepts.length, color: T.ink },
-  ], [concepts]);
+    { id: 'weak', label: 'weak', count: countStatus(scopePool, 'weak'), color: T.blushDeep },
+    { id: 'drifting', label: 'drifting', count: countStatus(scopePool, 'drifting'), color: '#c8b89c' },
+    { id: 'cold', label: 'cold', count: countStatus(scopePool, 'cold'), color: '#4a3a2c' },
+    { id: 'mastered', label: 'mastered', count: countStatus(scopePool, 'mastered'), color: T.sageDeep },
+    { id: 'any', label: 'any', count: scopePool.length, color: T.ink },
+  ], [scopePool]);
 
   const toggle = (current: Set<string>, value: string, setter: (next: Set<string>) => void, useAny = true) => {
     if (value === 'any') { setter(new Set(['any'])); return; }
@@ -193,6 +202,7 @@ export const PracticeFilterModalParchment: React.FC<Props> = ({ isOpen, onClose,
   const reset = () => {
     setSize(10);
     setSStatus(new Set(['any']));
+    setEssentialsOnly(false);
     setSAreas(new Set());
     setSConditions(new Set(['any']));
     setSPres(new Set(['any']));
@@ -207,15 +217,17 @@ export const PracticeFilterModalParchment: React.FC<Props> = ({ isOpen, onClose,
   const active = useMemo(() => {
     const result: { type: string; value: string; label: string }[] = [];
     if (!hasAny(sStatus)) [...sStatus].forEach(value => result.push({ type: 'status', value, label: value }));
+    if (essentialsOnly) result.push({ type: 'essentials', value: 'essential', label: 'Essentials' });
     [...sAreas].forEach(value => result.push({ type: 'area', value, label: labelFor(value) }));
     if (!hasAny(sConditions)) [...sConditions].forEach(value => result.push({ type: 'condition', value, label: labelFor(value) }));
     if (!hasAny(sPres)) [...sPres].forEach(value => result.push({ type: 'presentation', value, label: labelFor(value) }));
     if (!hasAny(sFacets)) [...sFacets].forEach(value => result.push({ type: 'about', value, label: labelFor(value) }));
     return result;
-  }, [sStatus, sAreas, sConditions, sPres, sFacets]);
+  }, [sStatus, essentialsOnly, sAreas, sConditions, sPres, sFacets]);
 
   const removeActive = (item: { type: string; value: string }) => {
     if (item.type === 'status') toggle(sStatus, item.value, setSStatus);
+    else if (item.type === 'essentials') setEssentialsOnly(false);
     else if (item.type === 'area') toggleArea(item.value);
     else if (item.type === 'condition') toggle(sConditions, item.value, setSConditions);
     else if (item.type === 'presentation') toggle(sPres, item.value, setSPres);
@@ -229,6 +241,7 @@ export const PracticeFilterModalParchment: React.FC<Props> = ({ isOpen, onClose,
   const summaryParts = [
     `${selectedCount} concepts`,
     statusSummary,
+    ...(essentialsOnly ? ['Essentials'] : []),
     specialtySummary,
     `≈ ${Math.round(size * 2)} min`,
   ];
@@ -334,6 +347,34 @@ export const PracticeFilterModalParchment: React.FC<Props> = ({ isOpen, onClose,
             </div>
           </section>
 
+          <section className="border-t py-5" style={{ borderColor: T.lineSoft }}>
+            <div className="mb-3 text-[19px] italic" style={{ fontFamily: "'Fraunces', serif", color: T.inkMuted }}>and focus on</div>
+            <button
+              type="button"
+              aria-pressed={essentialsOnly}
+              onClick={() => setEssentialsOnly(value => !value)}
+              className="flex w-full items-center justify-between rounded-[16px] border px-4 py-4 text-left transition active:scale-[0.995]"
+              style={{
+                borderColor: essentialsOnly ? T.espresso : T.line,
+                backgroundColor: essentialsOnly ? T.espresso : 'rgba(255,253,248,.52)',
+                color: essentialsOnly ? T.cream : T.ink,
+              }}
+            >
+              <div className="min-w-0 pr-3">
+                <div className="flex items-center gap-2 text-[15px] font-semibold">
+                  <span aria-hidden="true" style={{ color: essentialsOnly ? T.blush : T.blushDeep }}>✦</span>
+                  <span>Essentials only</span>
+                </div>
+                <div className="mt-1 text-[11px] leading-4" style={{ color: essentialsOnly ? '#DCCFC0' : T.inkMuted }}>
+                  Bread-and-butter conditions and presentations first. Your adaptive ranking still works inside this scope.
+                </div>
+              </div>
+              <span className="shrink-0 text-[12px] italic" style={{ fontFamily: "'Fraunces', serif", color: essentialsOnly ? T.blush : T.inkMuted }}>
+                {scopePool.length}
+              </span>
+            </button>
+          </section>
+
           {!!areas.length && (
             <section className="border-t py-5" style={{ borderColor: T.lineSoft }}>
               <div className="mb-3 text-[19px] italic" style={{ fontFamily: "'Fraunces', serif", color: T.inkMuted }}>in specialty</div>
@@ -369,6 +410,7 @@ export const PracticeFilterModalParchment: React.FC<Props> = ({ isOpen, onClose,
           {!!conditions.length && (
             <section className="border-t py-5" style={{ borderColor: T.lineSoft }}>
               <div className="mb-2 text-[19px] italic" style={{ fontFamily: "'Fraunces', serif", color: T.inkMuted }}>with condition</div>
+              {essentialsOnly && <div className="mb-2 text-[11px]" style={{ color: T.inkMuted }}>Showing bread-and-butter conditions only.</div>}
               {sAreas.size > 0 && <div className="mb-3 text-[11px]" style={{ color: T.inkMuted }}>Only conditions in the selected {sAreas.size === 1 ? 'specialty' : 'specialties'}.</div>}
               <input value={conditionSearch} onChange={e => setConditionSearch(e.target.value)} placeholder="Search conditions…" className="mb-3 w-full rounded-full border px-4 py-3 text-[13px] outline-none transition focus:border-[#A89582]" style={{ backgroundColor: 'rgba(244,236,223,.62)', borderColor: T.line, color: T.ink }} />
               <div className="flex flex-wrap gap-2">
@@ -384,6 +426,7 @@ export const PracticeFilterModalParchment: React.FC<Props> = ({ isOpen, onClose,
           {!!presentations.length && (
             <section className="border-t py-5" style={{ borderColor: T.lineSoft }}>
               <div className="mb-2 text-[19px] italic" style={{ fontFamily: "'Fraunces', serif", color: T.inkMuted }}>presenting as</div>
+              {essentialsOnly && <div className="mb-2 text-[11px]" style={{ color: T.inkMuted }}>Showing bread-and-butter presentations only.</div>}
               {(!hasAny(sConditions) || sAreas.size > 0) && <div className="mb-3 text-[11px]" style={{ color: T.inkMuted }}>Only presentations compatible with the choices above.</div>}
               <input value={presentationSearch} onChange={e => setPresentationSearch(e.target.value)} placeholder="Search presentations…" className="mb-3 w-full rounded-full border px-4 py-3 text-[13px] outline-none transition focus:border-[#A89582]" style={{ backgroundColor: 'rgba(244,236,223,.62)', borderColor: T.line, color: T.ink }} />
               <div className="flex flex-wrap gap-2">
@@ -425,7 +468,7 @@ export const PracticeFilterModalParchment: React.FC<Props> = ({ isOpen, onClose,
             onClick={() => {
               const selectedIds = filteredPool.slice(0, size).map(c => c.concept_id);
               setPracticeSelection(selectedIds);
-              onApplyFilters?.({ size, statuses: [...sStatus], areas: [...sAreas], conditions: [...sConditions], presentations: [...sPres], facets: [...sFacets] });
+              onApplyFilters?.({ size, statuses: [...sStatus], areas: [...sAreas], conditions: [...sConditions], presentations: [...sPres], facets: [...sFacets], essentialsOnly });
               onClose();
             }}
             disabled={available === 0}
