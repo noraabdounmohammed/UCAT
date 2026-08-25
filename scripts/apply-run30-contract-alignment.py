@@ -33,10 +33,6 @@ e = replace_once_semantic(
     'CURB-65 raw-component contract',
 )
 
-# Varicella has been hardened by several earlier eval-only passes, so its fourth
-# required-context string can legitimately have several wordings. Anchor on the
-# packet ID and replace the requiredContext array as a whole instead of matching
-# a transient phrase such as "timing since exposure".
 varicella_required = "['pregnancy', 'significant exposure', 'susceptibility/non-immunity', 'the FIRST DAY of exposure stated explicitly plus the current/reference day so prophylaxis timing is independently reproducible', 'ability to take oral antivirals']"
 if varicella_required not in e:
     varicella_pattern = r"('ukmla-4379':\s*packet\(\s*'ukmla-4379',\s*'[^']*',\s*)\[[^\]]*\]"
@@ -52,11 +48,18 @@ e = replace_once_semantic(
     'ACS anticoagulation context contract',
 )
 
-old_hrt = "For this cancer-referral target, OMIT HRT from the vignette. NICE 2026 explicitly separates unscheduled bleeding on HRT from unexplained post-menopausal bleeding that cannot be attributed to HRT; do not infer non-attribution merely from the HRT regimen or duration."
-new_hrt = "For this cancer-referral target, OMIT HRT COMPLETELY from the generated item: the literal terms HRT and hormone replacement therapy must not appear even to say the patient is not taking it. NICE 2026 separates unscheduled bleeding on HRT from unexplained post-menopausal bleeding that cannot be attributed to HRT; keep this vignette modifier-free."
-if old_hrt in e:
-    e = e.replace(old_hrt, new_hrt, 1)
-elif new_hrt not in e:
+# NICE NG12 (April 2026) does not require the word HRT to disappear. It requires
+# PMB to be unexplained / not attributable to HRT. Preserve a fail-closed contract:
+# either omit HRT, explicitly state no HRT use, or explicitly state non-attribution.
+old_hrt_variants = [
+    "For this cancer-referral target, OMIT HRT from the vignette. NICE 2026 explicitly separates unscheduled bleeding on HRT from unexplained post-menopausal bleeding that cannot be attributed to HRT; do not infer non-attribution merely from the HRT regimen or duration.",
+    "For this cancer-referral target, OMIT HRT COMPLETELY from the generated item: the literal terms HRT and hormone replacement therapy must not appear even to say the patient is not taking it. NICE 2026 separates unscheduled bleeding on HRT from unexplained post-menopausal bleeding that cannot be attributed to HRT; keep this vignette modifier-free.",
+]
+new_hrt = "For the suspected-cancer referral target, either omit HRT entirely OR explicitly establish one of the NICE-safe states: the patient is not using HRT, or the post-menopausal bleeding cannot be attributed to HRT. Never infer non-attribution merely from regimen or duration."
+for old_hrt in old_hrt_variants:
+    if old_hrt in e:
+        e = e.replace(old_hrt, new_hrt, 1)
+if new_hrt not in e:
     raise SystemExit('Run-26 HRT contract anchor missing')
 
 evidence.write_text(e)
@@ -66,7 +69,7 @@ g = generator.read_text()
 anchor = "- Before emitting JSON, perform a literal compliance scan of vignette + lead-in + all options + key_fact + explanation. If any hard rule is violated, rewrite the item before returning it."
 extra = """- Before emitting JSON, perform a literal compliance scan of vignette + lead-in + all options + key_fact + explanation. If any hard rule is violated, rewrite the item before returning it.
 - CONTRACT CONFLICT RULE: if any supplied packet text mentions a named score while another hard rule forbids precomputed named-score assertions, obey the stricter rule: provide RAW COMPONENTS only and derive the requested clinical category/action without writing a named-score number or range.
-- NEGATIVE-MODIFIER RULE: when the packet says to OMIT a modifier (for example HRT), do not mention that modifier at all, including statements that it is absent or not used.
+- MODIFIER-QUALIFIER RULE: if a modifier changes eligibility (for example HRT in post-menopausal bleeding), either omit it or explicitly resolve the exact decision-changing qualifier required by the evidence packet; never infer that qualifier from regimen, duration or absence of symptoms.
 - REFERENCE-POINT RULE: when timing is tested, include an explicit anchor date/day/time and the current/reference date/day/time; phrases such as 'recent exposure' or 'a few days ago' are insufficient.
 - OPTION-UNIQUENESS RULE: compare the clinical action in every option pair. If two options perform the same action and differ only by a secondary calculation, target, duration, or wording detail outside the verified claim, replace one before emitting JSON.
 - STATE-CONSISTENCY RULE: if the vignette explicitly says 'not in shock' (or another state), remove findings that a reasonable clinician could read as contradicting that state unless the packet requires them."""
