@@ -70,6 +70,40 @@ const calcCoverage = (concepts: ConceptNode[], filter: string) => {
   };
 };
 
+interface PillProgress {
+  total: number;
+  mastered: number;
+  weak: number;
+  unseen: number;
+  masteredPct: number;
+  weakPct: number;
+}
+
+const calcPillProgress = (concepts: ConceptNode[], filter: string): PillProgress => {
+  const matching = concepts.filter(c => c.custom_filters?.includes(filter));
+  const total = matching.length;
+  let mastered = 0;
+  let weak = 0;
+
+  matching.forEach(concept => {
+    const md = concept.mastery_data || ({} as any);
+    const attempts = Number(md.attempts || 0);
+    const level = Number(md.mastery_level || 0);
+    if (level === 2) mastered += 1;
+    else if (attempts > 0 || level === 1) weak += 1;
+  });
+
+  const unseen = Math.max(0, total - mastered - weak);
+  return {
+    total,
+    mastered,
+    weak,
+    unseen,
+    masteredPct: total ? (mastered / total) * 100 : 0,
+    weakPct: total ? (weak / total) * 100 : 0,
+  };
+};
+
 export const PracticeFilterModalParchment: React.FC<Props> = ({ isOpen, onClose, onApplyFilters }) => {
   const { concepts = [], curriculumId, setPracticeSelection } = useConceptStore();
   const [categories, setCategories] = useState<FilterCategory[]>([]);
@@ -124,6 +158,8 @@ export const PracticeFilterModalParchment: React.FC<Props> = ({ isOpen, onClose,
     () => essentialsOnly ? concepts.filter(isEssentialConcept) : concepts,
     [concepts, essentialsOnly]
   );
+  const progressSpecialtyPool = useMemo(() => scopePool.filter(c => matchesAnyTag(c, sAreas)), [scopePool, sAreas]);
+  const progressConditionPool = useMemo(() => progressSpecialtyPool.filter(c => matchesAnyTag(c, sConditions)), [progressSpecialtyPool, sConditions]);
   const statusPool = useMemo(() => scopePool.filter(c => matchesStatus(c, sStatus)), [scopePool, sStatus]);
   const specialtyPool = useMemo(() => statusPool.filter(c => matchesAnyTag(c, sAreas)), [statusPool, sAreas]);
   const conditionPool = useMemo(() => specialtyPool.filter(c => matchesAnyTag(c, sConditions)), [specialtyPool, sConditions]);
@@ -144,17 +180,25 @@ export const PracticeFilterModalParchment: React.FC<Props> = ({ isOpen, onClose,
     .filter(option => option.count > 0 || sAreas.has(option.id))
     .sort((a, b) => b.count - a.count || a.name.localeCompare(b.name)), [specialtyIds, scopePool, statusPool, sAreas]);
 
-  const conditions = useMemo(() => visibleConditionIds.map(id => ({
-    id,
-    label: labelFor(id),
-    count: specialtyPool.filter(c => c.custom_filters?.includes(id)).length,
-  })).filter(option => option.count > 0 || sConditions.has(option.id)), [visibleConditionIds, specialtyPool, sConditions]);
+  const conditions = useMemo(() => visibleConditionIds.map(id => {
+    const progress = calcPillProgress(progressSpecialtyPool, id);
+    return {
+      id,
+      label: labelFor(id),
+      count: specialtyPool.filter(c => c.custom_filters?.includes(id)).length,
+      progress,
+    };
+  }).filter(option => option.count > 0 || sConditions.has(option.id)), [visibleConditionIds, specialtyPool, progressSpecialtyPool, sConditions]);
 
-  const presentations = useMemo(() => visiblePresentationIds.map(id => ({
-    id,
-    label: labelFor(id),
-    count: conditionPool.filter(c => c.custom_filters?.includes(id)).length,
-  })).filter(option => option.count > 0 || sPres.has(option.id)), [visiblePresentationIds, conditionPool, sPres]);
+  const presentations = useMemo(() => visiblePresentationIds.map(id => {
+    const progress = calcPillProgress(progressConditionPool, id);
+    return {
+      id,
+      label: labelFor(id),
+      count: conditionPool.filter(c => c.custom_filters?.includes(id)).length,
+      progress,
+    };
+  }).filter(option => option.count > 0 || sPres.has(option.id)), [visiblePresentationIds, conditionPool, progressConditionPool, sPres]);
 
   const facets = useMemo(() => facetIds.map(id => ({
     id,
@@ -264,6 +308,45 @@ export const PracticeFilterModalParchment: React.FC<Props> = ({ isOpen, onClose,
       {children}
     </button>
   );
+
+  const ProgressChip = ({
+    selected,
+    onClick,
+    label,
+    count,
+    progress,
+  }: {
+    selected: boolean;
+    onClick: () => void;
+    label: string;
+    count: number;
+    progress: PillProgress;
+  }) => {
+    const greenEnd = progress.masteredPct;
+    const blushEnd = Math.min(100, progress.masteredPct + progress.weakPct);
+    const background = progress.total > 0
+      ? `linear-gradient(90deg, rgba(143,163,121,.34) 0%, rgba(143,163,121,.34) ${greenEnd}%, rgba(229,168,157,.34) ${greenEnd}%, rgba(229,168,157,.34) ${blushEnd}%, rgba(255,253,248,.78) ${blushEnd}%, rgba(255,253,248,.78) 100%)`
+      : 'rgba(255,253,248,.72)';
+
+    return (
+      <button
+        type="button"
+        onClick={onClick}
+        aria-label={`${label}: ${progress.mastered} strong, ${progress.weak} needs work, ${progress.unseen} unseen`}
+        title={`${progress.mastered} strong · ${progress.weak} needs work · ${progress.unseen} unseen`}
+        className="relative inline-flex items-center gap-1.5 overflow-hidden rounded-full border px-3.5 py-2.5 text-[13px] font-semibold transition duration-150 active:scale-[0.98]"
+        style={{
+          background,
+          color: T.ink,
+          borderColor: selected ? T.espresso : T.line,
+          boxShadow: selected ? '0 0 0 2px rgba(31,20,12,.08), inset 0 0 0 1px rgba(31,20,12,.08)' : '0 1px 0 rgba(31,20,12,.02)',
+        }}
+      >
+        <span className="relative z-[1]">{label}</span>
+        <em className="relative z-[1] text-[11.5px] font-normal" style={{ color: T.inkMuted, fontFamily: "'Fraunces', serif" }}>{count}</em>
+      </button>
+    );
+  };
 
   return (
     <div
@@ -412,12 +495,17 @@ export const PracticeFilterModalParchment: React.FC<Props> = ({ isOpen, onClose,
           {!!conditions.length && (
             <section className="border-t py-5" style={{ borderColor: T.lineSoft }}>
               <div className="mb-2 text-[19px] italic" style={{ fontFamily: "'Fraunces', serif", color: T.inkMuted }}>with condition</div>
+              <div className="mb-2 flex items-center gap-3 text-[10.5px]" style={{ color: T.inkMuted }}>
+                <span className="inline-flex items-center gap-1"><span className="h-2 w-2 rounded-full" style={{ backgroundColor: 'rgba(143,163,121,.65)' }} />strong</span>
+                <span className="inline-flex items-center gap-1"><span className="h-2 w-2 rounded-full" style={{ backgroundColor: 'rgba(229,168,157,.65)' }} />needs work</span>
+                <span>cream = unseen</span>
+              </div>
               {essentialsOnly && <div className="mb-2 text-[11px]" style={{ color: T.inkMuted }}>Showing bread-and-butter conditions only.</div>}
               {sAreas.size > 0 && <div className="mb-3 text-[11px]" style={{ color: T.inkMuted }}>Only conditions in the selected {sAreas.size === 1 ? 'specialty' : 'specialties'}.</div>}
               <input value={conditionSearch} onChange={e => setConditionSearch(e.target.value)} placeholder="Search conditions…" className="mb-3 w-full rounded-full border px-4 py-3 text-[13px] outline-none transition focus:border-[#A89582]" style={{ backgroundColor: 'rgba(244,236,223,.62)', borderColor: T.line, color: T.ink }} />
               <div className="flex flex-wrap gap-2">
                 {(conditionExpanded || conditionSearch ? conditions : conditions.filter((_, i) => i < 10 || [...sConditions].some(id => id === conditions[i]?.id))).filter(option => !conditionSearch || option.label.toLowerCase().includes(conditionSearch.toLowerCase())).map(option => (
-                  <Chip key={option.id} selected={sConditions.has(option.id)} onClick={() => toggle(sConditions, option.id, setSConditions)}><span>{option.label}</span><em className="text-[11.5px] font-normal" style={{ color: sConditions.has(option.id) ? T.blush : T.inkMuted, fontFamily: "'Fraunces', serif" }}>{option.count}</em></Chip>
+                  <ProgressChip key={option.id} selected={sConditions.has(option.id)} onClick={() => toggle(sConditions, option.id, setSConditions)} label={option.label} count={option.count} progress={option.progress} />
                 ))}
                 <Chip selected={hasAny(sConditions)} onClick={() => toggle(sConditions, 'any', setSConditions)}><span>Any</span><em className="text-[11.5px] font-normal" style={{ color: hasAny(sConditions) ? T.blush : T.inkMuted, fontFamily: "'Fraunces', serif" }}>{specialtyPool.length}</em></Chip>
                 {!conditionSearch && conditions.length > 10 && <button onClick={() => setConditionExpanded(!conditionExpanded)} className="px-3 py-2 text-[12.5px] italic" style={{ color: T.inkMuted, fontFamily: "'Fraunces', serif" }}>{conditionExpanded ? 'Show less' : `+${conditions.length - 10} more`}</button>}
@@ -433,7 +521,7 @@ export const PracticeFilterModalParchment: React.FC<Props> = ({ isOpen, onClose,
               <input value={presentationSearch} onChange={e => setPresentationSearch(e.target.value)} placeholder="Search presentations…" className="mb-3 w-full rounded-full border px-4 py-3 text-[13px] outline-none transition focus:border-[#A89582]" style={{ backgroundColor: 'rgba(244,236,223,.62)', borderColor: T.line, color: T.ink }} />
               <div className="flex flex-wrap gap-2">
                 {(presentationExpanded || presentationSearch ? presentations : presentations.filter((_, i) => i < 10 || [...sPres].some(id => id === presentations[i]?.id))).filter(option => !presentationSearch || option.label.toLowerCase().includes(presentationSearch.toLowerCase())).map(option => (
-                  <Chip key={option.id} selected={sPres.has(option.id)} onClick={() => toggle(sPres, option.id, setSPres)}><span>{option.label}</span><em className="text-[11.5px] font-normal" style={{ color: sPres.has(option.id) ? T.blush : T.inkMuted, fontFamily: "'Fraunces', serif" }}>{option.count}</em></Chip>
+                  <ProgressChip key={option.id} selected={sPres.has(option.id)} onClick={() => toggle(sPres, option.id, setSPres)} label={option.label} count={option.count} progress={option.progress} />
                 ))}
                 <Chip selected={hasAny(sPres)} onClick={() => toggle(sPres, 'any', setSPres)}><span>Any</span><em className="text-[11.5px] font-normal" style={{ color: hasAny(sPres) ? T.blush : T.inkMuted, fontFamily: "'Fraunces', serif" }}>{conditionPool.length}</em></Chip>
                 {!presentationSearch && presentations.length > 10 && <button onClick={() => setPresentationExpanded(!presentationExpanded)} className="px-3 py-2 text-[12.5px] italic" style={{ color: T.inkMuted, fontFamily: "'Fraunces', serif" }}>{presentationExpanded ? 'Show less' : `+${presentations.length - 10} more`}</button>}
