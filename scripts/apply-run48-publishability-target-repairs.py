@@ -30,6 +30,38 @@ def patch_block(concept_id: str, replacements: list[tuple[str, str]]) -> None:
     e = e[:start] + block + e[end:]
 
 
+def replace_required_context_list(concept_id: str, first_marker: str, replacement: str) -> None:
+    """Replace one required-context array structurally inside a single packet.
+
+    Earlier hardening passes may add/remove context tokens, so exact full-array
+    string matching is brittle. This stays fail-closed by requiring the packet,
+    the marker, and a well-formed enclosing list, and only rewrites that list.
+    """
+    global e
+    start = e.find(f"'{concept_id}': packet(")
+    if start < 0:
+        raise SystemExit(f'{concept_id} packet missing')
+    end = e.find('\n  ),', start)
+    if end < 0:
+        raise SystemExit(f'{concept_id} packet end missing')
+    block = e[start:end]
+    if replacement in block:
+        return
+    marker = block.find(first_marker)
+    if marker < 0:
+        raise SystemExit(f'{concept_id} structural context marker missing: {first_marker}')
+    left = block.rfind('[', 0, marker)
+    right = block.find(']', marker)
+    if left < 0 or right < 0 or right <= left:
+        raise SystemExit(f'{concept_id} malformed required-context list')
+    existing = block[left:right + 1]
+    # Guard against accidentally targeting a different array in the packet.
+    if "'adult 16 or over'" not in existing or "'not pregnant/recently pregnant'" not in existing:
+        raise SystemExit(f'{concept_id} unexpected context-list target: {existing[:120]}')
+    block = block[:left] + replacement + block[right + 1:]
+    e = e[:start] + block + e[end:]
+
+
 # AF stroke prevention: preserve the NICE indication/class decision, but require
 # raw risk factors and forbid the writer from narrating a generated score total.
 patch_block('ukmla-176', [
@@ -64,11 +96,12 @@ patch_block('ukmla-4362', [
 # Adult sepsis fluids: only generate the fluid-strategy target when the stem
 # explicitly establishes hypoperfusion/haemodynamic need. Avoid NEWS2 arithmetic
 # as a generation target until it can be produced reliably under the strict gate.
+replace_required_context_list(
+    'ukmla-4348',
+    "'adult 16 or over'",
+    "['adult 16 or over', 'not pregnant/recently pregnant', 'explicit haemodynamic need for fluid when fluid management is tested (for example hypotension or clear hypoperfusion)', 'haemodynamics', 'oxygenation/hypercapnia risk', 'response/reassessment after each fluid bolus where relevant']",
+)
 patch_block('ukmla-4348', [
-    (
-        "['adult 16 or over', 'not pregnant/recently pregnant', 'NEWS2/risk category', 'haemodynamics', 'oxygenation/hypercapnia risk', 'response to fluid']",
-        "['adult 16 or over', 'not pregnant/recently pregnant', 'explicit haemodynamic need for fluid when fluid management is tested (for example hypotension or clear hypoperfusion)', 'haemodynamics', 'oxygenation/hypercapnia risk', 'response/reassessment after each fluid bolus where relevant']",
-    ),
     (
         "['antibiotic timing by risk WITHOUT computing or stating a NEWS2 total', 'initial fluid bolus strategy (prefer this target when a fair item can be built without score arithmetic)']",
         "['initial fluid bolus strategy ONLY with explicit haemodynamic need; PREFER this target and use reassessed 250 mL boluses', 'antibiotic timing only when the risk category is explicitly established without computing or stating a NEWS2 total']",
