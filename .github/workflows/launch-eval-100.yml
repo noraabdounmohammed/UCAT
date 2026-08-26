@@ -60,6 +60,8 @@ jobs:
         run: python scripts/apply-run106-recurrent-quality-repairs.py
       - name: Apply run-112 antithrombotic principle sanitiser
         run: python scripts/apply-run112-antithrombotic-principle-sanitiser.py
+      - name: Apply run-116 targeted semantic-consistency repairs
+        run: python scripts/apply-run116-targeted-repairs.py
 
       - name: Targeted regression attempt 1
         run: npx tsx scripts/run-targeted-eval.ts
