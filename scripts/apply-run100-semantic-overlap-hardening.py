@@ -4,14 +4,14 @@ quality_path = Path('src/services/questionQuality.ts')
 source = quality_path.read_text()
 
 # Generation-side: prohibit broad-category answers from competing with their own
-# subtype/synonym. This is a general SBA integrity rule, not a topic-specific
-# relaxation or scoring tweak.
-options_anchor = "- If more than one answer choice is clinically true, rewrite the lead-in or replace an option.\n- Never make a distractor by falsely denying a real property of a drug, score, disease, investigation or treatment."
-options_replacement = "- If more than one answer choice is clinically true, rewrite the lead-in or replace an option.\n- Never make a broad intervention/category compete against its own subtype, synonym, implementation or equivalent formulation (for example, generic NIV versus CPAP/NIPPV). If one option is contained within another, replace one of them.\n- Never make a distractor by falsely denying a real property of a drug, score, disease, investigation or treatment."
-if options_replacement not in source:
+# subtype/synonym. Insert after a single stable rule so this remains compatible
+# with earlier hardening scripts that may add neighbouring option instructions.
+options_anchor = "- If more than one answer choice is clinically true, rewrite the lead-in or replace an option."
+semantic_rule = "- Never make a broad intervention/category compete against its own subtype, synonym, implementation or equivalent formulation (for example, generic NIV versus CPAP/NIPPV). If one option is contained within another, replace one of them."
+if semantic_rule not in source:
     if options_anchor not in source:
         raise SystemExit('Run-100 generation options anchor missing')
-    source = source.replace(options_anchor, options_replacement, 1)
+    source = source.replace(options_anchor, options_anchor + "\n" + semantic_rule, 1)
 
 # Deterministic fail-closed guard for a known high-stakes set-inclusion error
 # found by manual adversarial audit: CPAP/NIPPV are forms of NIV and therefore
