@@ -76,10 +76,13 @@ patch_block('ukmla-4379', [
 ])
 
 # Make the PCI-versus-fibrinolysis comparison reproducible from the stem itself.
+# Anchor to the stable packet constraint rather than the claim, because prior
+# compatibility passes may legitimately reword the claim while retaining the
+# same safety boundary.
 patch_block('ukmla-1168', [
     (
-        "'Primary PCI is preferred if it can be delivered within 120 minutes of when fibrinolysis could have been given; otherwise fibrinolysis is preferred when eligible.'",
-        "'Primary PCI is preferred if it can be delivered within 120 minutes of when fibrinolysis could have been given; otherwise fibrinolysis is preferred when eligible. When testing this threshold, the vignette must state the total expected time from the moment fibrinolysis could be administered to PCI delivery (for example “PCI can be delivered 150 minutes after fibrinolysis could be given now”), not just transport time, catheter-lab delay, or “150 minutes from now”.'",
+        "['Do not choose fibrinolysis without stating PCI delay and contraindication status.', 'Do not wait for biomarkers.']",
+        "['Do not choose fibrinolysis without stating PCI delay and contraindication status.', 'When testing the 120-minute comparison, state the TOTAL expected time from when fibrinolysis could be administered to PCI delivery; transport time, catheter-lab delay, or “minutes from now” alone is insufficient.', 'Do not wait for biomarkers.']",
     ),
 ])
 
