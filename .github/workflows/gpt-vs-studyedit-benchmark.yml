@@ -1,0 +1,48 @@
+name: GPT vs StudyEdit Benchmark
+
+on:
+  push:
+    branches: [eval-baseline-benchmark]
+  workflow_dispatch:
+
+jobs:
+  benchmark:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+      - run: npm ci
+      - name: Apply same eval guards used by launch workflow
+        run: |
+          python scripts/apply-launch-eval-guards.py
+          python scripts/apply-run18-generator-improvements.py
+          python scripts/apply-run24-compatible-evidence-improvements.py
+          python scripts/apply-run26-quality-improvements.py
+          python scripts/apply-run28-constraint-adherence.py
+          python scripts/apply-run30-contract-alignment.py
+          python scripts/apply-run37-pass-precision.py
+          python scripts/apply-run41-recurrent-generation-repairs.py
+          python scripts/apply-run54-run48-compat.py
+          python scripts/apply-run57-run48-vzv-compat.py
+          python scripts/apply-run48-publishability-target-repairs.py
+          python scripts/apply-run65-run62-compat.py
+          python scripts/apply-run62-targeted-repairs.py
+          python scripts/apply-run68-targeted-hardening.py
+          python scripts/apply-run78-last-mile.py
+          python scripts/apply-run81-last-mile.py
+          python scripts/apply-run87-eval-reliability.py
+      - name: Run head-to-head benchmark
+        run: npx tsx scripts/run-gpt-vs-studyedit-benchmark.ts
+        env:
+          STUDYEDIT_BASE_URL: https://studyedit.com
+      - name: Upload benchmark report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: gpt-vs-studyedit-benchmark
+          path: artifacts/gpt-vs-studyedit-benchmark.json
+          if-no-files-found: warn
