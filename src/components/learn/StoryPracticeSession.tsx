@@ -1,4 +1,4 @@
-import { useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import type { FilterState } from '@/components/practice/PracticeFilterModalParchment';
 import type { ConceptNode } from '@/types/conceptTypes';
 
@@ -153,16 +153,22 @@ export function StoryPracticeSession({ filters, concepts, onComplete, onRestartW
   const [revealed, setRevealed] = useState(false);
   const [soundOn, setSoundOn] = useState(true);
   const audioRef = useRef<AudioContext | null>(null);
+  const finishFeedbackPlayed = useRef(false);
   const label = useMemo(() => scopeLabel(filters), [filters]);
-  const finished = index >= beats.length;
+  const finished = beats.length > 0 && index >= beats.length;
+
+  useEffect(() => {
+    if (!finished || finishFeedbackPlayed.current) return;
+    finishFeedbackPlayed.current = true;
+    haptic([25, 40, 55]);
+    tone('finish', soundOn, audioRef);
+  }, [finished, soundOn]);
 
   if (!beats.length) {
     return <main className="min-h-screen bg-[#FAF5EC] px-5 py-10 text-[#2A1E16]"><div className="mx-auto max-w-xl"><h1 className="text-3xl" style={{ fontFamily: "'Fraunces', serif" }}>Nothing matched this story.</h1><p className="mt-3 text-sm text-[#8A7560]">Change one filter and try again.</p><button onClick={onRestartWithFilters} className="mt-6 rounded-full bg-[#1F140C] px-5 py-3 text-sm font-semibold text-[#FAF5EC]">Change filters</button></div></main>;
   }
 
   if (finished) {
-    haptic([25, 40, 55]);
-    tone('finish', soundOn, audioRef);
     return <main className="min-h-screen bg-[#FAF5EC] px-5 pb-12 pt-[calc(env(safe-area-inset-top)+28px)] text-[#2A1E16]"><div className="mx-auto max-w-xl"><div className="text-[10px] font-semibold uppercase tracking-[0.18em] text-[#8FA379]">Episode complete</div><h1 className="mt-3 text-[39px] font-light leading-[1.03] tracking-[-0.035em]" style={{ fontFamily: "'Fraunces', serif" }}>You made it through James’s case — and covered the whole selected scope.</h1><div className="mt-6 rounded-[24px] border border-[#D9CCB6] bg-[#F4ECDF] p-5"><div className="flex items-end justify-between"><div><div className="text-[10px] font-bold uppercase tracking-[0.15em] text-[#8A7560]">Coverage check</div><div className="mt-1 text-2xl" style={{ fontFamily: "'Fraunces', serif" }}>{beats.length}/{concepts.length} concepts</div></div><div className="text-sm font-semibold text-[#8FA379]">100% mapped</div></div><p className="mt-3 text-xs leading-5 text-[#8A7560]">Story exposure does not mark these concepts mastered. Independent application still does that.</p></div><div className="mt-5 max-h-52 overflow-y-auto rounded-[20px] border border-[#E8DCC4] bg-[#FFFDF8] p-4"><div className="text-[10px] font-bold uppercase tracking-[0.14em] text-[#8A7560]">Concepts encountered</div>{beats.map((beat, i) => <div key={beat.concept.concept_id} className="mt-2 flex gap-3 text-xs"><span className="text-[#8FA379]">✓</span><span>{i + 1}. {beat.concept.title}</span></div>)}</div><div className="mt-6 flex gap-3"><button onClick={onRestartWithFilters} className="flex-1 rounded-full border border-[#D9CCB6] bg-[#FFFDF8] px-4 py-4 text-sm font-semibold">Change story</button><button onClick={onComplete} className="flex-1 rounded-full bg-[#1F140C] px-4 py-4 text-sm font-semibold text-[#FAF5EC]">Back home</button></div></div></main>;
   }
 
