@@ -40,6 +40,8 @@ jobs:
         run: python scripts/apply-run57-run48-vzv-compat.py
       - name: Apply run-48 publishability target repairs
         run: python scripts/apply-run48-publishability-target-repairs.py
+      - name: Make run-62 patch compatible with hardened STEMI packet
+        run: python scripts/apply-run65-run62-compat.py
       - name: Apply run-61 targeted recurrent-defect repairs
         run: python scripts/apply-run62-targeted-repairs.py
 
