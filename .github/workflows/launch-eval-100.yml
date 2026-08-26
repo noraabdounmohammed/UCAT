@@ -64,6 +64,8 @@ jobs:
         run: python scripts/apply-run116-targeted-repairs.py
       - name: Apply run-119 post-audit semantic-consistency repairs
         run: python scripts/apply-run119-postaudit-repairs.py
+      - name: Apply run-126 final-audit hardening
+        run: python scripts/apply-run126-final-audit-hardening.py
 
       - name: Targeted regression attempt 1
         run: npx tsx scripts/run-targeted-eval.ts
