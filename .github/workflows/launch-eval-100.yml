@@ -10,7 +10,7 @@ on:
 jobs:
   launch-eval-100:
     runs-on: ubuntu-latest
-    timeout-minutes: 90
+    timeout-minutes: 120
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -50,6 +50,8 @@ jobs:
         run: python scripts/apply-run78-last-mile.py
       - name: Apply run-81 paeds, anticoagulation, and option-cue hardening
         run: python scripts/apply-run81-last-mile.py
+      - name: Apply run-87 eval-provider reliability guards
+        run: python scripts/apply-run87-eval-reliability.py
 
       - name: Targeted regression attempt 1
         run: npx tsx scripts/run-targeted-eval.ts
@@ -76,6 +78,9 @@ jobs:
             artifacts/targeted-eval-combined.json
           if-no-files-found: warn
 
+      - name: Cool down provider before full eval
+        if: steps.targeted_gate.outcome == 'success'
+        run: sleep 90
       - name: Run 100-question two-attempt launch evaluation
         if: steps.targeted_gate.outcome == 'success'
         run: node scripts/run-launch-eval-100.mjs
