@@ -36,6 +36,16 @@ const getStorage = <T,>(cid: string, key: string, fallback: T): T => {
 };
 
 const labelFor = (id: string) => id.replace(/-/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
+const studentFacetLabel = (id: string) => {
+  const text = id.replace(/[-_]/g, ' ').toLowerCase();
+  if (/diagnos/.test(text)) return 'Diagnosis';
+  if (/investig|test|imaging/.test(text)) return 'Investigations';
+  if (/management|treatment|therapy/.test(text)) return 'Management';
+  if (/pharmac|drug|medicat|prescrib/.test(text)) return 'Drugs';
+  if (/risk factor|risk/.test(text)) return 'Risk factors';
+  if (/complication/.test(text)) return 'Complications';
+  return labelFor(id);
+};
 const hasAny = (values: Set<string>) => values.has('any');
 const matchesAnyTag = (concept: ConceptNode, values: Set<string>) =>
   values.size === 0 || hasAny(values) || [...values].some(value => concept.custom_filters?.includes(value));
@@ -242,7 +252,7 @@ export const PracticeFilterModalParchment: React.FC<Props> = ({ isOpen, onClose,
     id, label: labelFor(id), count: conditionPool.filter(c => c.custom_filters?.includes(id)).length, progress: calcPillProgress(progressConditionPool, id),
   })).filter(option => option.count > 0 || sPres.has(option.id)), [visiblePresentationIds, conditionPool, progressConditionPool, sPres]);
 
-  const facets = useMemo(() => facetIds.map(id => ({ id, label: labelFor(id), count: presentationPool.filter(c => c.custom_filters?.includes(id)).length })).filter(option => option.count > 0 || sFacets.has(option.id)), [facetIds, presentationPool, sFacets]);
+  const facets = useMemo(() => facetIds.map(id => ({ id, label: studentFacetLabel(id), count: presentationPool.filter(c => c.custom_filters?.includes(id)).length })).filter(option => option.count > 0 || sFacets.has(option.id)), [facetIds, presentationPool, sFacets]);
 
   useEffect(() => {
     if (hasAny(sConditions)) return;
@@ -264,11 +274,9 @@ export const PracticeFilterModalParchment: React.FC<Props> = ({ isOpen, onClose,
   }, [facets, sFacets]);
 
   const statusChips = useMemo(() => [
+    { id: 'any', label: 'anything', count: scopePool.length, color: T.ink },
+    { id: 'cold', label: 'unseen', count: countStatus(scopePool, 'cold'), color: '#4a3a2c' },
     { id: 'weak', label: 'weak', count: countStatus(scopePool, 'weak'), color: T.blushDeep },
-    { id: 'drifting', label: 'drifting', count: countStatus(scopePool, 'drifting'), color: '#c8b89c' },
-    { id: 'cold', label: 'cold', count: countStatus(scopePool, 'cold'), color: '#4a3a2c' },
-    { id: 'mastered', label: 'mastered', count: countStatus(scopePool, 'mastered'), color: T.sageDeep },
-    { id: 'any', label: 'any', count: scopePool.length, color: T.ink },
   ], [scopePool]);
 
   const toggle = (current: Set<string>, value: string, setter: (next: Set<string>) => void, useAny = true) => {
@@ -283,12 +291,12 @@ export const PracticeFilterModalParchment: React.FC<Props> = ({ isOpen, onClose,
 
   const active = useMemo(() => {
     const result: { type: string; value: string; label: string }[] = [];
-    if (!hasAny(sStatus)) [...sStatus].forEach(value => result.push({ type: 'status', value, label: value }));
+    if (!hasAny(sStatus)) [...sStatus].forEach(value => result.push({ type: 'status', value, label: value === 'cold' ? 'Unseen' : value === 'weak' ? 'Weak' : labelFor(value) }));
     if (essentialsOnly) result.push({ type: 'essentials', value: 'essential', label: 'Essentials' });
     [...sAreas].forEach(value => result.push({ type: 'area', value, label: labelFor(value) }));
     if (!hasAny(sConditions)) [...sConditions].forEach(value => result.push({ type: 'condition', value, label: labelFor(value) }));
     if (!hasAny(sPres)) [...sPres].forEach(value => result.push({ type: 'presentation', value, label: labelFor(value) }));
-    if (!hasAny(sFacets)) [...sFacets].forEach(value => result.push({ type: 'about', value, label: labelFor(value) }));
+    if (!hasAny(sFacets)) [...sFacets].forEach(value => result.push({ type: 'focus', value, label: studentFacetLabel(value) }));
     return result;
   }, [sStatus, essentialsOnly, sAreas, sConditions, sPres, sFacets]);
 
@@ -340,13 +348,13 @@ export const PracticeFilterModalParchment: React.FC<Props> = ({ isOpen, onClose,
           </section>
 
           <section className="border-t py-5" style={{ borderColor: T.lineSoft }}>
-            <div className="mb-3 text-[19px] italic" style={{ fontFamily: "'Fraunces', serif", color: T.inkMuted }}>that are</div>
+            <div className="mb-3 text-[19px] italic" style={{ fontFamily: "'Fraunces', serif", color: T.inkMuted }}>I want to work on</div>
             <div className="flex flex-wrap gap-2">{statusChips.map(option => <Chip key={option.id} selected={sStatus.has(option.id)} onClick={() => toggle(sStatus, option.id, setSStatus)}><span className="h-[7px] w-[7px] rounded-full" style={{ backgroundColor: option.color }} /><span className="capitalize">{option.label}</span><em className="text-[11.5px] font-normal" style={{ color: sStatus.has(option.id) ? T.blush : T.inkMuted, fontFamily: "'Fraunces', serif" }}>{option.count}</em></Chip>)}</div>
-            {sStatus.has('cold') && <div className="mt-2 text-[11px] leading-4" style={{ color: T.inkMuted }}>Cold prioritises breadth automatically: new conditions and presentations before extra depth.</div>}
+            {sStatus.has('cold') && <div className="mt-2 text-[11px] leading-4" style={{ color: T.inkMuted }}>Unseen starts with concepts you have not encountered and spreads you across new conditions and presentations before extra depth.</div>}
           </section>
 
           <section className="border-t py-5" style={{ borderColor: T.lineSoft }}>
-            <div className="mb-3 text-[19px] italic" style={{ fontFamily: "'Fraunces', serif", color: T.inkMuted }}>and focus on</div>
+            <div className="mb-3 text-[19px] italic" style={{ fontFamily: "'Fraunces', serif", color: T.inkMuted }}>prioritise</div>
             <button type="button" aria-pressed={essentialsOnly} onClick={() => setEssentialsOnly(value => !value)} className="flex w-full items-center justify-between rounded-[16px] border px-4 py-4 text-left transition active:scale-[0.995]" style={{ borderColor: essentialsOnly ? T.espresso : T.line, backgroundColor: essentialsOnly ? T.espresso : 'rgba(255,253,248,.52)', color: essentialsOnly ? T.cream : T.ink }}><div className="min-w-0 pr-3"><div className="flex items-center gap-2 text-[15px] font-semibold"><span aria-hidden="true" style={{ color: essentialsOnly ? T.blush : T.blushDeep }}>✦</span><span>Essentials only</span></div><div className="mt-1 text-[11px] leading-4" style={{ color: essentialsOnly ? '#DCCFC0' : T.inkMuted }}>Bread-and-butter conditions and presentations first. Your adaptive ranking still works inside this scope.</div></div><span className="shrink-0 text-[12px] italic" style={{ fontFamily: "'Fraunces', serif", color: essentialsOnly ? T.blush : T.inkMuted }}>{scopePool.length}</span></button>
           </section>
 
@@ -356,7 +364,7 @@ export const PracticeFilterModalParchment: React.FC<Props> = ({ isOpen, onClose,
 
           {!!presentations.length && <section className="border-t py-5" style={{ borderColor: T.lineSoft }}><div className="mb-2 text-[19px] italic" style={{ fontFamily: "'Fraunces', serif", color: T.inkMuted }}>presenting as</div>{essentialsOnly && <div className="mb-2 text-[11px]" style={{ color: T.inkMuted }}>Showing bread-and-butter presentations only.</div>}{(!hasAny(sConditions) || sAreas.size > 0) && <div className="mb-3 text-[11px]" style={{ color: T.inkMuted }}>Only presentations compatible with the choices above.</div>}<input value={presentationSearch} onChange={e => setPresentationSearch(e.target.value)} placeholder="Search presentations…" className="mb-3 w-full rounded-full border px-4 py-3 text-[13px] outline-none transition focus:border-[#A89582]" style={{ backgroundColor: 'rgba(244,236,223,.62)', borderColor: T.line, color: T.ink }} /><div className="flex flex-wrap gap-2">{(presentationExpanded || presentationSearch ? presentations : presentations.filter((_, i) => i < 10 || [...sPres].some(id => id === presentations[i]?.id))).filter(option => !presentationSearch || option.label.toLowerCase().includes(presentationSearch.toLowerCase())).map(option => <ProgressChip key={option.id} selected={sPres.has(option.id)} onClick={() => toggle(sPres, option.id, setSPres)} label={option.label} count={option.count} progress={option.progress} />)}<Chip selected={hasAny(sPres)} onClick={() => toggle(sPres, 'any', setSPres)}><span>Any</span><em className="text-[11.5px] font-normal" style={{ color: hasAny(sPres) ? T.blush : T.inkMuted, fontFamily: "'Fraunces', serif" }}>{conditionPool.length}</em></Chip>{!presentationSearch && presentations.length > 10 && <button onClick={() => setPresentationExpanded(!presentationExpanded)} className="px-3 py-2 text-[12.5px] italic" style={{ color: T.inkMuted, fontFamily: "'Fraunces', serif" }}>{presentationExpanded ? 'Show less' : `+${presentations.length - 10} more`}</button>}</div></section>}
 
-          {!!facets.length && <section className="border-t py-5" style={{ borderColor: T.lineSoft }}><div className="mb-2 text-[19px] italic" style={{ fontFamily: "'Fraunces', serif", color: T.inkMuted }}>about</div><div className="mb-3 text-[11px]" style={{ color: T.inkMuted }}>Optional — narrow the knowledge angle.</div><div className="flex flex-wrap gap-2">{(facetExpanded ? facets : facets.filter((_, i) => i < 10 || [...sFacets].some(id => id === facets[i]?.id))).map(option => <Chip key={option.id} selected={sFacets.has(option.id)} onClick={() => toggle(sFacets, option.id, setSFacets)}><span>{option.label}</span><em className="text-[11.5px] font-normal" style={{ color: sFacets.has(option.id) ? T.blush : T.inkMuted, fontFamily: "'Fraunces', serif" }}>{option.count}</em></Chip>)}<Chip selected={hasAny(sFacets)} onClick={() => toggle(sFacets, 'any', setSFacets)}><span>Any</span><em className="text-[11.5px] font-normal" style={{ color: hasAny(sFacets) ? T.blush : T.inkMuted, fontFamily: "'Fraunces', serif" }}>{presentationPool.length}</em></Chip>{facets.length > 10 && <button onClick={() => setFacetExpanded(!facetExpanded)} className="px-3 py-2 text-[12.5px] italic" style={{ color: T.inkMuted, fontFamily: "'Fraunces', serif" }}>{facetExpanded ? 'Show less' : `+${facets.length - 10} more`}</button>}</div></section>}
+          {!!facets.length && <section className="border-t py-5" style={{ borderColor: T.lineSoft }}><div className="mb-2 text-[19px] italic" style={{ fontFamily: "'Fraunces', serif", color: T.inkMuted }}>Focus</div><div className="mb-3 text-[11px]" style={{ color: T.inkMuted }}>Optional — choose the kind of knowledge you want to practise.</div><div className="flex flex-wrap gap-2">{(facetExpanded ? facets : facets.filter((_, i) => i < 10 || [...sFacets].some(id => id === facets[i]?.id))).map(option => <Chip key={option.id} selected={sFacets.has(option.id)} onClick={() => toggle(sFacets, option.id, setSFacets)}><span>{option.label}</span><em className="text-[11.5px] font-normal" style={{ color: sFacets.has(option.id) ? T.blush : T.inkMuted, fontFamily: "'Fraunces', serif" }}>{option.count}</em></Chip>)}<Chip selected={hasAny(sFacets)} onClick={() => toggle(sFacets, 'any', setSFacets)}><span>Any</span><em className="text-[11.5px] font-normal" style={{ color: hasAny(sFacets) ? T.blush : T.inkMuted, fontFamily: "'Fraunces', serif" }}>{presentationPool.length}</em></Chip>{facets.length > 10 && <button onClick={() => setFacetExpanded(!facetExpanded)} className="px-3 py-2 text-[12.5px] italic" style={{ color: T.inkMuted, fontFamily: "'Fraunces', serif" }}>{facetExpanded ? 'Show less' : `+${facets.length - 10} more`}</button>}</div></section>}
         </div>
 
         <div className="shrink-0 border-t px-6 pb-[calc(env(safe-area-inset-bottom)+14px)] pt-2" style={{ borderColor: T.lineSoft, backgroundColor: 'rgba(244,236,223,.98)', boxShadow: '0 -14px 30px rgba(31,20,12,.07)' }}>
