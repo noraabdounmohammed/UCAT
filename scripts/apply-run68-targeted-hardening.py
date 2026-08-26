@@ -1,6 +1,6 @@
 from pathlib import Path
 
-# Targeted hardening after Run 67/71. The gate now isolates recurrent generation
+# Targeted hardening after Run 67/71/73. The gate isolates recurrent generation
 # defects before a costly 100-question run. These changes strengthen only the
 # concept contracts that repeatedly violated already-strict launch rules.
 # No reviewer, source-support, ambiguity, arithmetic, safety, fallback-template,
@@ -69,9 +69,8 @@ append_array_item(
 
 # CURB-65: the model repeatedly reintroduced score arithmetic even after being
 # told not to. For generated launch questions, narrow this concept to the safe,
-# clinically useful interpretation principle. This keeps the concept relevant
-# while eliminating model-generated counting/point arithmetic until a
-# deterministic score calculator exists.
+# clinically useful interpretation principle until deterministic calculation is
+# available.
 replace_claim(
     'ukmla-4362',
     "'CURB-65 0-1 is low risk, 2 intermediate, and 3-5 high risk; the score supports but does not itself determine place of care.'",
@@ -85,7 +84,7 @@ append_array_item(
 append_array_item(
     'ukmla-4362',
     2,
-    'Do not put numeric CURB-65 totals or score ranges in answer options or explanations, even as distractors',
+    'Do not put numeric CURB-65 totals, low/intermediate/high risk labels, or score ranges in answer options or explanations, even as distractors',
 )
 
 # VZV PEP: force a literal first-exposure anchor and exactly one oral-antiviral
@@ -114,7 +113,7 @@ append_array_item(
 append_array_item(
     'ukmla-4379',
     2,
-    'When the first-exposure day is stated, preferably omit a separate rash-onset day; if rash timing is included it must be temporally compatible with the stated significant exposure and must not create a conflicting chronology',
+    'When the first-exposure day is stated, omit a separate rash-onset day so the chronology cannot conflict with the decision-critical exposure anchor',
 )
 append_array_item(
     'ukmla-4379',
@@ -123,3 +122,39 @@ append_array_item(
 )
 
 path.write_text(text)
+
+# Packet-level constraints are necessary but the writer still occasionally
+# ignored them. Add a final, concept-specific hard-requirements block directly
+# to the UKMLA generation prompt. This is generation hardening, not gate
+# weakening; reviewer/deterministic validation remains unchanged.
+generator = Path('src/services/aiQuestionGenerator.ts')
+g = generator.read_text()
+fn_start = g.find('export async function generateUKMLAQuestionWithAI')
+if fn_start < 0:
+    raise SystemExit('UKMLA generator function missing')
+prompt_pos = g.find('  const prompt = `', fn_start)
+if prompt_pos < 0:
+    raise SystemExit('UKMLA prompt anchor missing')
+
+hardening_decl = """  const launchConceptHardening = concept.concept_id === 'ukmla-4362'
+    ? `CONCEPT-SPECIFIC HARD REQUIREMENTS — CURB-65:\n- Test ONLY this principle: CURB-65 supports pneumonia risk assessment and clinical judgement but does not by itself mandate admission, discharge, or ICU care.\n- DO NOT ask for a CURB-65 total, risk category, criterion count, points, threshold arithmetic, or low/intermediate/high risk label.\n- DO NOT put numeric CURB-65 scores or low/intermediate/high risk labels in ANY answer option or in the explanation.\n- The correct option should state the role/limitation of CURB-65; distractors should be genuinely different misuses such as using it to confirm pneumonia, choose a specific antibiotic, or automatically dictate ICU/discharge.\n- Before returning JSON, self-check that neither options nor explanation contains score arithmetic or a risk-category label.`
+    : concept.concept_id === 'ukmla-4379'
+      ? `CONCEPT-SPECIFIC HARD REQUIREMENTS — VARICELLA PEP IN PREGNANCY:\n- The vignette MUST literally contain the sentence “The first exposure was 8 days ago.”\n- Do NOT state a separate rash-onset day, diagnosis day, or other timing that could conflict with that exposure anchor.\n- There must be EXACTLY ONE answer option containing the words aciclovir or valaciclovir. The keyed option should group them as “Oral aciclovir or valaciclovir, starting today”.\n- NO distractor may contain aciclovir or valaciclovir, and NO distractor may be another timing/dose/duration version of oral antiviral PEP.\n- Use genuinely different distractors such as VZIG despite oral tolerance, varicella vaccination in pregnancy, no prophylaxis, or observation only.\n- Before returning JSON, count antiviral-containing options: the count MUST equal exactly one.`
+      : '';
+
+"""
+
+if 'CONCEPT-SPECIFIC HARD REQUIREMENTS — CURB-65' not in g:
+    g = g[:prompt_pos] + hardening_decl + g[prompt_pos:]
+    # Re-find the prompt after insertion and inject the hardening block near the
+    # top so it is salient before generic style instructions.
+    fn_start = g.find('export async function generateUKMLAQuestionWithAI')
+    prompt_pos = g.find('  const prompt = `', fn_start)
+    concept_marker = 'Custom Filters: ${concept.custom_filters?.join(\', \') || \'N/A\'}\nPrerequisites: ${concept.prerequisites?.join(\', \') || \'None\'}\n'
+    marker_pos = g.find(concept_marker, prompt_pos)
+    if marker_pos < 0:
+        raise SystemExit('UKMLA prompt concept marker missing')
+    insert_at = marker_pos + len(concept_marker)
+    g = g[:insert_at] + '\n${launchConceptHardening}\n' + g[insert_at:]
+
+generator.write_text(g)
