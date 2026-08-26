@@ -1,0 +1,104 @@
+/* Practice Your Way — calm, single-surface mobile polish.
+   Kept as a small presentation override so the behaviour/filter logic stays untouched. */
+
+/* Let the sheet itself scroll. This removes the trapped/sticky header + footer feeling. */
+div[class*="fixed inset-0 z-[100]"] > div[class*="h-[100dvh]"] {
+  display: block !important;
+  overflow-x: hidden !important;
+  overflow-y: auto !important;
+  overscroll-behavior: contain;
+  scrollbar-width: none;
+}
+div[class*="fixed inset-0 z-[100]"] > div[class*="h-[100dvh]"]::-webkit-scrollbar { display: none; }
+
+/* Header becomes part of the page rather than a pinned module. */
+div[class*="fixed inset-0 z-[100]"] > div[class*="h-[100dvh]"] > div[class*="shrink-0 px-6 pb-3"] {
+  padding: calc(env(safe-area-inset-top) + 18px) 24px 8px !important;
+  background: #FAF5EC !important;
+}
+div[class*="fixed inset-0 z-[100]"] > div[class*="h-[100dvh]"] > div[class*="shrink-0 px-6 pb-3"] h1 {
+  font-size: 30px !important;
+  line-height: 1 !important;
+  letter-spacing: -0.04em !important;
+}
+div[class*="fixed inset-0 z-[100]"] > div[class*="h-[100dvh]"] > div[class*="shrink-0 px-6 pb-3"] p {
+  margin-top: 8px !important;
+  font-size: 12px !important;
+  line-height: 1.45 !important;
+}
+div[class*="fixed inset-0 z-[100]"] > div[class*="h-[100dvh]"] > div[class*="shrink-0 px-6 pb-3"] button[aria-label="Close practice builder"] {
+  width: 38px !important;
+  height: 38px !important;
+  background: transparent !important;
+}
+
+/* The form is no longer its own scrolling viewport. */
+div[class*="fixed inset-0 z-[100]"] div[class*="flex-1 overflow-y-auto"] {
+  overflow: visible !important;
+  padding: 0 24px 8px !important;
+}
+
+/* Slightly calmer vertical rhythm between groups. */
+div[class*="fixed inset-0 z-[100]"] div[class*="flex-1 overflow-y-auto"] > section {
+  padding-top: 22px !important;
+  padding-bottom: 22px !important;
+}
+
+/* Anything / Unseen / Weak: always one row, all states. */
+div[class*="fixed inset-0 z-[100]"] div[class*="flex-1 overflow-y-auto"] > section:nth-of-type(2) > div[class*="flex flex-wrap gap-2"] {
+  display: grid !important;
+  grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+  gap: 8px !important;
+  width: 100% !important;
+}
+div[class*="fixed inset-0 z-[100]"] div[class*="flex-1 overflow-y-auto"] > section:nth-of-type(2) > div[class*="flex flex-wrap gap-2"] > button {
+  width: 100% !important;
+  min-width: 0 !important;
+  justify-content: center !important;
+  gap: 5px !important;
+  padding: 10px 6px !important;
+  font-size: 12px !important;
+  white-space: nowrap !important;
+}
+div[class*="fixed inset-0 z-[100]"] div[class*="flex-1 overflow-y-auto"] > section:nth-of-type(2) > div[class*="flex flex-wrap gap-2"] > button em {
+  font-size: 10.5px !important;
+}
+
+/* Footer is now an ordinary end-of-form summary instead of a sticky slab. */
+div[class*="fixed inset-0 z-[100]"] > div[class*="h-[100dvh]"] > div[class*="shrink-0 border-t px-6"] {
+  position: static !important;
+  border-top: 0 !important;
+  background: #FAF5EC !important;
+  box-shadow: none !important;
+  padding: 10px 24px calc(env(safe-area-inset-bottom) + 22px) !important;
+}
+
+/* Active filters remain useful, but visually quiet. */
+div[class*="fixed inset-0 z-[100]"] > div[class*="h-[100dvh]"] > div[class*="shrink-0 border-t px-6"] > div[class*="overflow-x-auto"] {
+  margin-bottom: 12px !important;
+}
+
+/* Turn progress into one inset summary card rather than a full-width bottom bar. */
+div[class*="fixed inset-0 z-[100]"] > div[class*="h-[100dvh]"] > div[class*="shrink-0 border-t px-6"] > div[class*="mb-2 px-1"] {
+  margin: 0 0 12px !important;
+  padding: 14px 15px !important;
+  border: 1px solid #E8DCC4 !important;
+  border-radius: 18px !important;
+  background: rgba(244,236,223,.58) !important;
+}
+
+/* CTA stays strong but no longer feels like part of a fixed toolbar. */
+div[class*="fixed inset-0 z-[100]"] > div[class*="h-[100dvh]"] > div[class*="shrink-0 border-t px-6"] > button:last-child {
+  min-height: 54px !important;
+  box-shadow: 0 7px 20px rgba(31,20,12,.10) !important;
+}
+
+@media (min-width: 768px) {
+  div[class*="fixed inset-0 z-[100]"] > div[class*="h-[100dvh]"] {
+    display: flex !important;
+    overflow: hidden !important;
+  }
+  div[class*="fixed inset-0 z-[100]"] div[class*="flex-1 overflow-y-auto"] {
+    overflow-y: auto !important;
+  }
+}
