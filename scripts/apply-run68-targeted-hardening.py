@@ -1,17 +1,10 @@
 from pathlib import Path
 
-# Run 67 targeted regression: 4/6 concepts passed under two-attempt acceptance.
-# The two recurrent double-failures were:
-#  - STEMI reperfusion: the writer still substituted transport/lab time for the
-#    decision-critical TOTAL time from possible fibrinolysis to PCI delivery,
-#    and once produced a conspicuously longer distractor.
-#  - VZV PEP in pregnancy: the writer still used rash onset as a proxy for the
-#    FIRST day of exposure and offered aciclovir/valaciclovir as competing,
-#    clinically equivalent answer options.
-#
-# This patch only strengthens generation constraints for those two concepts.
-# It does not relax reviewer, safety, source-support, ambiguity, arithmetic,
-# fallback-template, or single-best-answer gates.
+# Targeted hardening after Run 67/71. The gate now isolates recurrent generation
+# defects before a costly 100-question run. These changes strengthen only the
+# concept contracts that repeatedly violated already-strict launch rules.
+# No reviewer, source-support, ambiguity, arithmetic, safety, fallback-template,
+# or single-best-answer gate is relaxed.
 
 path = Path('src/services/evidencePackets.ts')
 text = path.read_text()
@@ -45,6 +38,17 @@ def append_array_item(concept_id: str, array_index: int, item: str) -> None:
     text = text[:start] + new_block + text[end:]
 
 
+def replace_claim(concept_id: str, old: str, new: str) -> None:
+    global text
+    start, end, block = packet_block(concept_id)
+    if new in block:
+        return
+    if old not in block:
+        raise SystemExit(f'{concept_id} claim anchor missing')
+    block = block.replace(old, new, 1)
+    text = text[:start] + block + text[end:]
+
+
 # STEMI: make the total threshold-comparison interval an explicit required
 # datum, not merely a reviewer preference. Also prevent option-length cueing.
 append_array_item(
@@ -63,13 +67,39 @@ append_array_item(
     'Keep all reperfusion answer options similar in length and grammatical form; do not put a full rationale or threshold explanation into only one option',
 )
 
-# VZV PEP: force a literal first-exposure anchor and a single antiviral class
+# CURB-65: the model repeatedly reintroduced score arithmetic even after being
+# told not to. For generated launch questions, narrow this concept to the safe,
+# clinically useful interpretation principle. This keeps the concept relevant
+# while eliminating model-generated counting/point arithmetic until a
+# deterministic score calculator exists.
+replace_claim(
+    'ukmla-4362',
+    "'CURB-65 0-1 is low risk, 2 intermediate, and 3-5 high risk; the score supports but does not itself determine place of care.'",
+    "'CURB-65 is a pneumonia risk-stratification aid that supports clinical judgement but does not by itself mandate admission, discharge, or ICU care.'",
+)
+append_array_item(
+    'ukmla-4362',
+    2,
+    'Generated questions must NOT ask the learner to calculate CURB-65, identify a score-derived risk category, count criteria, assign points, or state a score total; test only what the score is used for and the fact that it does not independently dictate place of care',
+)
+append_array_item(
+    'ukmla-4362',
+    2,
+    'Do not put numeric CURB-65 totals or score ranges in answer options or explanations, even as distractors',
+)
+
+# VZV PEP: force a literal first-exposure anchor and exactly one oral-antiviral
 # answer. Aciclovir and valaciclovir are both acceptable first-choice oral PEP,
-# so they must never compete as separate SBA options.
+# so they must never compete as separate or near-duplicate SBA options.
 append_array_item(
     'ukmla-4379',
     0,
     'when timing is tested, the vignette must literally say “the first exposure was X days ago”; rash onset, diagnosis date, or an unspecified period of household contact is not an acceptable proxy',
+)
+append_array_item(
+    'ukmla-4379',
+    2,
+    'There must be EXACTLY ONE answer option containing aciclovir or valaciclovir in any form; every other option must be a genuinely different prophylaxis strategy',
 )
 append_array_item(
     'ukmla-4379',
@@ -79,7 +109,12 @@ append_array_item(
 append_array_item(
     'ukmla-4379',
     2,
-    'Do not create two oral-aciclovir options that differ only by duplicated timing wording, dose phrasing, or whether “starting today” is stated',
+    'Do not use “start immediately after exposure”, a different start-day phrase, dose wording, or duration wording as an oral-antiviral distractor; that creates a near-duplicate of the keyed strategy',
+)
+append_array_item(
+    'ukmla-4379',
+    2,
+    'When the first-exposure day is stated, preferably omit a separate rash-onset day; if rash timing is included it must be temporally compatible with the stated significant exposure and must not create a conflicting chronology',
 )
 append_array_item(
     'ukmla-4379',
