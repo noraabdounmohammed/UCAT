@@ -1,224 +1,211 @@
-import { useMemo, useState } from 'react';
+import { useMemo, useRef, useState } from 'react';
 import type { FilterState } from '@/components/practice/PracticeFilterModalParchment';
+import type { ConceptNode } from '@/types/conceptTypes';
 
 interface StoryPracticeSessionProps {
   filters: FilterState;
+  concepts: ConceptNode[];
   onComplete: () => void;
   onRestartWithFilters: () => void;
 }
 
-type Beat = {
-  id: string;
-  time?: string;
-  title: string;
-  story: string;
-  question: string;
-  options: string[];
-  correct: number;
-  feedback: string;
-  teaching: string;
+type Act = 'arrival' | 'investigation' | 'diagnosis' | 'management' | 'complication' | 'followup';
+
+type StoryBeat = {
+  concept: ConceptNode;
+  act: Act;
+  time: string;
+  speaker: string;
+  line: string;
+  prompt: string;
   memoryHook: string;
 };
 
-const ACS_BEATS: Beat[] = [
-  {
-    id: 'arrival',
-    time: '07:42',
-    title: 'The call you nearly dismiss',
-    story: 'James, 58, is meant to be at his daughter’s graduation in two hours. He insists the crushing pressure in his chest is probably indigestion. His wife says he has gone grey and sweaty. The pain is moving into his left arm.',
-    question: 'What feature of this story should change the way you think first?',
-    options: [
-      'The pain started while walking',
-      'The pressure-like pain, radiation and autonomic symptoms form a concerning ischaemic pattern',
-      'His age alone makes myocardial infarction the most likely diagnosis',
-    ],
-    correct: 1,
-    feedback: 'The pattern matters more than any single detail. Central pressure-like pain with radiation plus sweating or nausea should make myocardial ischaemia a leading concern.',
-    teaching: 'In a real patient, you are rarely handed the diagnosis. The first skill is recognising a dangerous symptom pattern quickly enough to act on it.',
-    memoryHook: 'James wants to leave for the graduation. The reason you stop him is that this pattern could be time-critical.',
-  },
-  {
-    id: 'ecg',
-    time: '07:49',
-    title: 'The ECG changes the story',
-    story: 'A nurse slides the ECG across the desk. It shows clear ST-segment elevation in contiguous leads. James asks again whether he can just come back after the ceremony.',
-    question: 'What has changed clinically?',
-    options: [
-      'You should wait for troponin before deciding whether this is urgent',
-      'This is now a STEMI-pattern presentation and reperfusion is time-critical',
-      'The ECG confirms stable angina',
-    ],
-    correct: 1,
-    feedback: 'In the right clinical context, a STEMI pattern turns this into an urgent reperfusion problem. Waiting for later biomarkers should not delay that pathway.',
-    teaching: 'The learning move here is consequence: the ECG is not just a label. It changes what must happen next and how quickly.',
-    memoryHook: 'The graduation clock is still running. That emotional pressure mirrors the clinical pressure: time matters.',
-  },
-  {
-    id: 'initial-treatment',
-    time: '07:53',
-    title: 'Your registrar is stuck in resus',
-    story: 'The cath-lab referral is being organised. Your registrar is dealing with another emergency and asks you to make sure the immediate treatment sequence is not forgotten.',
-    question: 'Which principle is safest to build into your mental sequence?',
-    options: [
-      'Reperfusion planning replaces all immediate medical treatment',
-      'Recognise, stabilise, give indicated immediate treatment, and pursue reperfusion without unnecessary delay',
-      'Delay antiplatelet therapy until after angiography in every patient',
-    ],
-    correct: 1,
-    feedback: 'Exactly. Acute management is layered. Reperfusion planning and appropriate immediate treatment happen as part of one coordinated pathway.',
-    teaching: 'Sequences are easier to retain when each step answers a clinical need. Do not memorise isolated treatment nouns; remember what problem each action is solving.',
-    memoryHook: 'The registrar is absent, so you need a reliable sequence rather than a vague list of facts.',
-  },
-  {
-    id: 'deterioration',
-    time: '08:11',
-    title: 'The monitor alarms',
-    story: 'While James is speaking to his daughter on the phone, the monitor alarms. He becomes pale and clammy. His blood pressure falls sharply and his chest pain persists.',
-    question: 'What should your brain do before anything else?',
-    options: [
-      'Assume anxiety is causing the change',
-      'Recognise a possible haemodynamic complication and urgently reassess the patient',
-      'Treat this as an expected part of uncomplicated recovery',
-    ],
-    correct: 1,
-    feedback: 'A changing patient means a changing problem. Deterioration after ACS should trigger urgent reassessment for complications rather than passive observation.',
-    teaching: 'Complications are more memorable when they appear as consequences in the patient journey instead of as a detached list at the bottom of a textbook page.',
-    memoryHook: 'The phone call is interrupted by the alarm. That interruption is the cue: when the patient changes, your priorities change.',
-  },
-  {
-    id: 'follow-up',
-    time: 'Three days later',
-    title: 'James asks the question patients actually ask',
-    story: 'James is recovering. His daughter brings in a graduation photo. He looks at his medication list and asks, “What stops this happening again?”',
-    question: 'What is the educational shift now?',
-    options: [
-      'Acute reperfusion is still the only relevant problem',
-      'The story moves from acute rescue to secondary prevention and long-term risk reduction',
-      'Once symptoms settle, cardiovascular risk factors no longer matter',
-    ],
-    correct: 1,
-    feedback: 'Right. A condition is not only its emergency presentation. Follow-up naturally creates the reason to learn secondary prevention, medication adherence and risk-factor modification.',
-    teaching: 'A recurring patient lets later lessons retrieve earlier knowledge without feeling like a random flashcard review.',
-    memoryHook: 'The graduation photo closes the emotional loop while opening the long-term management loop.',
-  },
-];
+const ACT_ORDER: Act[] = ['arrival', 'investigation', 'diagnosis', 'management', 'complication', 'followup'];
+const ACT_LABEL: Record<Act, string> = {
+  arrival: 'The patient arrives',
+  investigation: 'Evidence arrives',
+  diagnosis: 'The picture sharpens',
+  management: 'The clock starts',
+  complication: 'The situation changes',
+  followup: 'After the emergency',
+};
 
-function labelFromFilters(filters: FilterState) {
-  const condition = filters.conditions.find(value => value !== 'any');
-  if (condition) return condition.replace(/-/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
-  const area = filters.areas[0];
-  if (area) return area.replace(/-/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
-  return 'your selected medicine';
+function actFor(concept: ConceptNode): Act {
+  const text = `${concept.title} ${concept.content}`.toLowerCase();
+  if (/secondary prevention|follow.?up|rehab|discharge|long.?term|risk factor|lifestyle/.test(text)) return 'followup';
+  if (/complication|shock|arrhythm|rupture|failure|deterior|adverse/.test(text)) return 'complication';
+  if (/treat|management|therapy|aspirin|antiplatelet|anticoag|pci|fibrinol|reperf|drug|medicat|dose/.test(text)) return 'management';
+  if (/diagnos|stemi|nstemi|unstable angina|classification|criteria/.test(text)) return 'diagnosis';
+  if (/ecg|troponin|investig|test|imaging|angiograph|blood/.test(text)) return 'investigation';
+  return 'arrival';
 }
 
-export function StoryPracticeSession({ filters, onComplete, onRestartWithFilters }: StoryPracticeSessionProps) {
+const timeFor = (act: Act, offset: number) => {
+  const base: Record<Act, string> = { arrival: '07:42', investigation: '07:49', diagnosis: '07:53', management: '08:02', complication: '08:18', followup: 'Three days later' };
+  if (act === 'followup' || offset === 0) return base[act];
+  return `${base[act]} +${offset * 2}m`;
+};
+
+function narrativeFor(act: Act, i: number) {
+  const variants: Record<Act, Array<[string, string]>> = {
+    arrival: [
+      ['James', '“I know this sounds dramatic, doctor. I just need to get to my daughter’s graduation.”'],
+      ['Maya, his wife', '“He went grey in the car. He never looks like that.”'],
+      ['Nurse Ellie', '“Can you come back to bed six? There’s another detail I don’t want us to miss.”'],
+    ],
+    investigation: [
+      ['Nurse Ellie', 'The printer wakes up beside you. “Result’s here.”'],
+      ['Registrar', '“Before you look at the result, tell me what you expect it to change.”'],
+      ['James', '“Is this the test that tells you if I can leave?”'],
+    ],
+    diagnosis: [
+      ['Registrar', '“You have the history and the first results. Name the problem you are actually treating.”'],
+      ['Nurse Ellie', '“So — has this crossed the line from possible to time-critical?”'],
+      ['James', '“You keep using that word. What does it mean for me?”'],
+    ],
+    management: [
+      ['Registrar', 'Your registrar is pulled into resus. “You own the next step. Don’t just list treatments — tell me why now.”'],
+      ['Nurse Ellie', '“What do you want me to give, arrange or monitor next?”'],
+      ['James', 'He looks at the clock again. “How much time do we really have?”'],
+    ],
+    complication: [
+      ['Monitor', 'BEEP — BEEP — BEEP. The room changes before anyone says a word.'],
+      ['Nurse Ellie', '“He looks different. What are you worried has happened?”'],
+      ['Maya, his wife', '“Why has everyone suddenly started moving faster?”'],
+    ],
+    followup: [
+      ['James', 'His daughter puts a graduation photo on the bedside table. “What stops this happening again?”'],
+      ['Pharmacist', '“He’s going home with a lot of new information. What absolutely has to make sense before he leaves?”'],
+      ['James', '“I feel fine now. Which parts still matter when I’m back home?”'],
+    ],
+  };
+  return variants[act][i % variants[act].length];
+}
+
+function buildBeats(concepts: ConceptNode[]): StoryBeat[] {
+  const ordered = [...concepts].sort((a, b) => {
+    const actDelta = ACT_ORDER.indexOf(actFor(a)) - ACT_ORDER.indexOf(actFor(b));
+    if (actDelta) return actDelta;
+    const aSafety = Number(Boolean(a.safety_critical || a.importance?.safety_critical));
+    const bSafety = Number(Boolean(b.safety_critical || b.importance?.safety_critical));
+    if (aSafety !== bSafety) return bSafety - aSafety;
+    return (a.prerequisites?.length || 0) - (b.prerequisites?.length || 0);
+  });
+
+  const actCounts: Partial<Record<Act, number>> = {};
+  return ordered.map(concept => {
+    const act = actFor(concept);
+    const offset = actCounts[act] || 0;
+    actCounts[act] = offset + 1;
+    const [speaker, line] = narrativeFor(act, offset);
+    const level = Number(concept.mastery_data?.mastery_level || 0);
+    const prompt = level === 0
+      ? 'You have not learned this reliably yet. Before the chart opens, what do you think might matter here?'
+      : level === 1
+        ? 'You have struggled with this before. Retrieve the rule before you look.'
+        : 'You have answered this correctly before. Can you still produce the rule without seeing it?';
+    const memoryHook: Record<Act, string> = {
+      arrival: 'Attach the rule to the moment James nearly walks out of hospital.',
+      investigation: 'The result only matters because it changes the next decision.',
+      diagnosis: 'Diagnosis is a commitment about what problem now needs solving.',
+      management: 'The clock and the consequence give the management rule a reason to exist.',
+      complication: 'The alarm is your cue: a changing patient means a changing problem.',
+      followup: 'The graduation photo closes the crisis and opens the prevention story.',
+    };
+    return { concept, act, time: timeFor(act, offset), speaker, line, prompt, memoryHook: memoryHook[act] };
+  });
+}
+
+function scopeLabel(filters: FilterState) {
+  const condition = filters.conditions.find(value => value !== 'any');
+  const area = filters.areas[0];
+  const value = condition || area || 'selected medicine';
+  return value.replace(/-/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
+}
+
+function haptic(pattern: number | number[]) {
+  try { if ('vibrate' in navigator) navigator.vibrate(pattern); } catch { /* unsupported */ }
+}
+
+function tone(kind: 'reveal' | 'continue' | 'finish', enabled: boolean, audioRef: React.MutableRefObject<AudioContext | null>) {
+  if (!enabled) return;
+  try {
+    const AudioCtor = window.AudioContext || (window as any).webkitAudioContext;
+    if (!AudioCtor) return;
+    const ctx = audioRef.current || new AudioCtor();
+    audioRef.current = ctx;
+    const oscillator = ctx.createOscillator();
+    const gain = ctx.createGain();
+    oscillator.type = 'sine';
+    oscillator.frequency.value = kind === 'finish' ? 660 : kind === 'reveal' ? 520 : 390;
+    gain.gain.setValueAtTime(0.0001, ctx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.055, ctx.currentTime + 0.01);
+    gain.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + (kind === 'finish' ? 0.28 : 0.14));
+    oscillator.connect(gain); gain.connect(ctx.destination); oscillator.start(); oscillator.stop(ctx.currentTime + 0.3);
+  } catch { /* browser blocks audio */ }
+}
+
+export function StoryPracticeSession({ filters, concepts, onComplete, onRestartWithFilters }: StoryPracticeSessionProps) {
+  const beats = useMemo(() => buildBeats(concepts), [concepts]);
   const [index, setIndex] = useState(0);
-  const [choice, setChoice] = useState<number | null>(null);
-  const [showTeaching, setShowTeaching] = useState(false);
-  const scopeLabel = useMemo(() => labelFromFilters(filters), [filters]);
-  const beats = ACS_BEATS;
-  const beat = beats[index];
+  const [response, setResponse] = useState('');
+  const [revealed, setRevealed] = useState(false);
+  const [soundOn, setSoundOn] = useState(true);
+  const audioRef = useRef<AudioContext | null>(null);
+  const label = useMemo(() => scopeLabel(filters), [filters]);
   const finished = index >= beats.length;
 
-  if (finished) {
-    return (
-      <main className="min-h-screen bg-[#FAF5EC] px-5 py-8 text-[#2A1E16]">
-        <div className="mx-auto max-w-xl">
-          <div className="text-[10px] font-semibold uppercase tracking-[0.18em] text-[#8A7560]">Story complete</div>
-          <h1 className="mt-3 text-[38px] font-light leading-[1.04] tracking-[-0.035em]" style={{ fontFamily: "'Fraunces', serif" }}>
-            You followed James from symptom to consequence.
-          </h1>
-          <p className="mt-4 text-sm leading-6 text-[#8A7560]">
-            This session taught and retrieved ideas, but it has not marked them as mastered. Independent questions remain the evidence for mastery.
-          </p>
-          <div className="mt-7 rounded-[24px] border border-[#D9CCB6] bg-[#F4ECDF] p-5">
-            <div className="text-[10px] font-semibold uppercase tracking-[0.14em] text-[#8A7560]">What this prototype demonstrates</div>
-            <div className="mt-3 space-y-2 text-sm leading-6">
-              <p>• Clinical facts appear because the patient creates a reason to need them.</p>
-              <p>• Emotional details reinforce the clinical decision rather than decorate it.</p>
-              <p>• Every beat asks you to predict or decide before teaching.</p>
-              <p>• The same patient can return later for spaced retrieval.</p>
-            </div>
-          </div>
-          <div className="mt-6 flex gap-3">
-            <button onClick={onRestartWithFilters} className="flex-1 rounded-full border border-[#D9CCB6] bg-[#FFFDF8] px-4 py-4 text-sm font-semibold">Change story</button>
-            <button onClick={onComplete} className="flex-1 rounded-full bg-[#1F140C] px-4 py-4 text-sm font-semibold text-[#FAF5EC]">Back home</button>
-          </div>
-        </div>
-      </main>
-    );
+  if (!beats.length) {
+    return <main className="min-h-screen bg-[#FAF5EC] px-5 py-10 text-[#2A1E16]"><div className="mx-auto max-w-xl"><h1 className="text-3xl" style={{ fontFamily: "'Fraunces', serif" }}>Nothing matched this story.</h1><p className="mt-3 text-sm text-[#8A7560]">Change one filter and try again.</p><button onClick={onRestartWithFilters} className="mt-6 rounded-full bg-[#1F140C] px-5 py-3 text-sm font-semibold text-[#FAF5EC]">Change filters</button></div></main>;
   }
 
-  const answered = choice !== null;
-  const correct = choice === beat.correct;
+  if (finished) {
+    haptic([25, 40, 55]);
+    tone('finish', soundOn, audioRef);
+    return <main className="min-h-screen bg-[#FAF5EC] px-5 pb-12 pt-[calc(env(safe-area-inset-top)+28px)] text-[#2A1E16]"><div className="mx-auto max-w-xl"><div className="text-[10px] font-semibold uppercase tracking-[0.18em] text-[#8FA379]">Episode complete</div><h1 className="mt-3 text-[39px] font-light leading-[1.03] tracking-[-0.035em]" style={{ fontFamily: "'Fraunces', serif" }}>You made it through James’s case — and covered the whole selected scope.</h1><div className="mt-6 rounded-[24px] border border-[#D9CCB6] bg-[#F4ECDF] p-5"><div className="flex items-end justify-between"><div><div className="text-[10px] font-bold uppercase tracking-[0.15em] text-[#8A7560]">Coverage check</div><div className="mt-1 text-2xl" style={{ fontFamily: "'Fraunces', serif" }}>{beats.length}/{concepts.length} concepts</div></div><div className="text-sm font-semibold text-[#8FA379]">100% mapped</div></div><p className="mt-3 text-xs leading-5 text-[#8A7560]">Story exposure does not mark these concepts mastered. Independent application still does that.</p></div><div className="mt-5 max-h-52 overflow-y-auto rounded-[20px] border border-[#E8DCC4] bg-[#FFFDF8] p-4"><div className="text-[10px] font-bold uppercase tracking-[0.14em] text-[#8A7560]">Concepts encountered</div>{beats.map((beat, i) => <div key={beat.concept.concept_id} className="mt-2 flex gap-3 text-xs"><span className="text-[#8FA379]">✓</span><span>{i + 1}. {beat.concept.title}</span></div>)}</div><div className="mt-6 flex gap-3"><button onClick={onRestartWithFilters} className="flex-1 rounded-full border border-[#D9CCB6] bg-[#FFFDF8] px-4 py-4 text-sm font-semibold">Change story</button><button onClick={onComplete} className="flex-1 rounded-full bg-[#1F140C] px-4 py-4 text-sm font-semibold text-[#FAF5EC]">Back home</button></div></div></main>;
+  }
+
+  const beat = beats[index];
   const progress = Math.round(((index + 1) / beats.length) * 100);
+  const actIndex = ACT_ORDER.indexOf(beat.act);
+  const previousAct = index > 0 ? beats[index - 1].act : null;
+  const newAct = previousAct !== beat.act;
 
-  return (
-    <main className="min-h-screen bg-[#FAF5EC] text-[#2A1E16]">
-      <div className="mx-auto max-w-xl px-5 pb-10 pt-[calc(env(safe-area-inset-top)+18px)]">
-        <div className="flex items-center justify-between gap-4">
-          <button onClick={onComplete} className="text-sm text-[#8A7560]">← Leave story</button>
-          <div className="text-[10px] font-semibold uppercase tracking-[0.14em] text-[#8A7560]">{scopeLabel}</div>
-        </div>
+  const reveal = () => {
+    setRevealed(true);
+    haptic(18);
+    tone('reveal', soundOn, audioRef);
+  };
+  const next = () => {
+    haptic(10);
+    tone('continue', soundOn, audioRef);
+    setIndex(value => value + 1);
+    setResponse('');
+    setRevealed(false);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
 
-        <div className="mt-5 h-1.5 overflow-hidden rounded-full bg-[#E8DCC4]">
-          <div className="h-full rounded-full bg-[#8FA379] transition-all" style={{ width: `${progress}%` }} />
-        </div>
-        <div className="mt-2 flex justify-between text-[10px] text-[#8A7560]"><span>Episode 1 · Acute Coronary Syndrome</span><span>{index + 1}/{beats.length}</span></div>
-
-        <section className="mt-7 rounded-[26px] border border-[#D9CCB6] bg-[#F4ECDF] p-5 shadow-[0_10px_28px_rgba(31,20,12,.05)]">
-          {beat.time && <div className="text-[10px] font-semibold uppercase tracking-[0.16em] text-[#E5A89D]">{beat.time}</div>}
-          <h1 className="mt-2 text-[30px] font-light leading-[1.05] tracking-[-0.03em]" style={{ fontFamily: "'Fraunces', serif" }}>{beat.title}</h1>
-          <p className="mt-4 text-[17px] leading-7" style={{ fontFamily: "'Fraunces', serif" }}>{beat.story}</p>
-        </section>
-
-        <section className="mt-6">
-          <div className="text-[18px] italic text-[#8A7560]" style={{ fontFamily: "'Fraunces', serif" }}>{beat.question}</div>
-          <div className="mt-3 space-y-2.5">
-            {beat.options.map((option, optionIndex) => {
-              const selected = choice === optionIndex;
-              const isCorrectOption = answered && optionIndex === beat.correct;
-              const isWrongSelection = answered && selected && !correct;
-              return (
-                <button
-                  key={option}
-                  disabled={answered}
-                  onClick={() => setChoice(optionIndex)}
-                  className="w-full rounded-[18px] border px-4 py-4 text-left text-[13px] font-medium leading-5 transition active:scale-[0.995] disabled:cursor-default"
-                  style={{
-                    borderColor: isCorrectOption ? '#8FA379' : isWrongSelection ? '#E5A89D' : '#D9CCB6',
-                    backgroundColor: isCorrectOption ? 'rgba(143,163,121,.14)' : isWrongSelection ? 'rgba(229,168,157,.14)' : '#FFFDF8',
-                  }}
-                >{option}</button>
-              );
-            })}
-          </div>
-        </section>
-
-        {answered && (
-          <section className="mt-5 rounded-[22px] border border-[#D9CCB6] bg-[#FFFDF8] p-5">
-            <div className="text-[10px] font-semibold uppercase tracking-[0.14em]" style={{ color: correct ? '#8FA379' : '#E5A89D' }}>{correct ? 'You saw it' : 'This is the learning moment'}</div>
-            <p className="mt-2 text-sm leading-6">{beat.feedback}</p>
-            {!showTeaching ? (
-              <button onClick={() => setShowTeaching(true)} className="mt-4 rounded-full border border-[#D9CCB6] px-4 py-2.5 text-xs font-semibold">Why this matters →</button>
-            ) : (
-              <div className="mt-4 border-l-2 border-[#E5A89D] pl-4">
-                <p className="text-sm leading-6">{beat.teaching}</p>
-                <p className="mt-3 text-[15px] italic leading-6 text-[#8A7560]" style={{ fontFamily: "'Fraunces', serif" }}>{beat.memoryHook}</p>
-              </div>
-            )}
-          </section>
-        )}
-
-        {answered && showTeaching && (
-          <button
-            onClick={() => { setIndex(current => current + 1); setChoice(null); setShowTeaching(false); window.scrollTo({ top: 0, behavior: 'smooth' }); }}
-            className="mt-6 w-full rounded-full bg-[#1F140C] px-5 py-4 text-sm font-semibold text-[#FAF5EC] shadow-[0_8px_22px_rgba(31,20,12,.14)]"
-          >
-            {index === beats.length - 1 ? 'Finish episode →' : 'Continue the story →'}
-          </button>
-        )}
+  return <main className="min-h-screen bg-[#17110D] text-[#FAF5EC]">
+    <div className="mx-auto min-h-screen max-w-xl pb-10 pt-[calc(env(safe-area-inset-top)+14px)]">
+      <div className="px-5">
+        <div className="flex items-center justify-between"><button onClick={onComplete} className="text-xs text-[#CDBEAC]">← Leave</button><button onClick={() => setSoundOn(v => !v)} className="rounded-full border border-white/15 px-3 py-1.5 text-[10px] text-[#DCCFC0]">{soundOn ? '♪ Sound on' : 'Sound off'}</button></div>
+        <div className="mt-5 flex gap-1">{ACT_ORDER.map((act, i) => <div key={act} className="h-1 flex-1 rounded-full" style={{ backgroundColor: i < actIndex ? '#8FA379' : i === actIndex ? '#F2C9C1' : 'rgba(255,255,255,.12)' }} />)}</div>
+        <div className="mt-2 flex justify-between text-[9px] uppercase tracking-[0.12em] text-[#9F9082]"><span>{label}</span><span>{index + 1}/{beats.length} · {progress}%</span></div>
       </div>
-    </main>
-  );
+
+      {newAct && <div className="mt-7 border-y border-white/10 bg-white/[0.035] px-5 py-5"><div className="text-[10px] font-semibold uppercase tracking-[0.18em] text-[#E5A89D]">Act {actIndex + 1}</div><div className="mt-1 text-[27px]" style={{ fontFamily: "'Fraunces', serif" }}>{ACT_LABEL[beat.act]}</div></div>}
+
+      <section className="px-5 pt-7">
+        <div className="text-[10px] font-semibold uppercase tracking-[0.18em] text-[#E5A89D]">{beat.time}</div>
+        <div className="mt-4 flex items-start gap-3"><div className="mt-1 flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[#F4ECDF] text-sm font-bold text-[#2A1E16]">{beat.speaker.slice(0,1)}</div><div className="max-w-[82%]"><div className="text-[10px] font-semibold uppercase tracking-[0.12em] text-[#9F9082]">{beat.speaker}</div><div className="mt-1 rounded-[22px] rounded-tl-[6px] bg-[#F4ECDF] px-4 py-3.5 text-[16px] leading-6 text-[#2A1E16]" style={{ fontFamily: "'Fraunces', serif" }}>{beat.line}</div></div></div>
+
+        <div className="mt-7 rounded-[22px] border border-white/12 bg-white/[0.045] p-5"><div className="text-[10px] font-bold uppercase tracking-[0.15em] text-[#E5A89D]">Your move</div><p className="mt-2 text-[18px] leading-6" style={{ fontFamily: "'Fraunces', serif" }}>{beat.prompt}</p><textarea value={response} onChange={e => setResponse(e.target.value)} disabled={revealed} placeholder="Think it through — a few words is enough…" className="mt-4 min-h-24 w-full resize-none rounded-[16px] border border-white/12 bg-black/20 px-4 py-3 text-sm leading-5 text-[#FAF5EC] outline-none placeholder:text-[#786C62] disabled:opacity-60" />{!revealed && <div className="mt-3 flex gap-2"><button onClick={reveal} className="flex-1 rounded-full bg-[#F4ECDF] px-4 py-3 text-xs font-semibold text-[#2A1E16]">{response.trim() ? 'Lock it in →' : 'Teach me →'}</button></div>}</div>
+
+        {revealed && <div className="mt-5 overflow-hidden rounded-[22px] bg-[#FAF5EC] text-[#2A1E16]"><div className="border-b border-[#E8DCC4] px-5 py-3"><div className="text-[9px] font-bold uppercase tracking-[0.16em] text-[#8A7560]">Chart opens · curriculum concept</div></div><div className="p-5"><h2 className="text-[24px] font-light leading-[1.12]" style={{ fontFamily: "'Fraunces', serif" }}>{beat.concept.title}</h2><div className="mt-3 whitespace-pre-wrap text-sm leading-6">{beat.concept.content}</div>{beat.concept.safety_critical || beat.concept.importance?.safety_critical ? <div className="mt-4 rounded-[14px] bg-[#FBEDE7] px-3 py-2 text-[11px] font-semibold text-[#6B4037]">Safety-critical concept — this will be worth retrieving independently again.</div> : null}<div className="mt-5 border-l-2 border-[#E5A89D] pl-4 text-[15px] italic leading-6 text-[#8A7560]" style={{ fontFamily: "'Fraunces', serif" }}>{beat.memoryHook}</div></div></div>}
+
+        {revealed && <button onClick={next} className="mt-5 w-full rounded-full bg-[#F2C9C1] px-5 py-4 text-sm font-bold text-[#281D15] shadow-[0_10px_24px_rgba(0,0,0,.22)]">{index === beats.length - 1 ? 'End the episode →' : 'Continue →'}</button>}
+      </section>
+    </div>
+  </main>;
 }
