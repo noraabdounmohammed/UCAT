@@ -4,6 +4,7 @@ import { ModernFlashcard } from './ModernFlashcard';
 import { LearningAwareSBA } from './LearningAwareSBA';
 import { ReportQuestionButton } from './ReportQuestionButton';
 import { SessionAnswer } from './SessionProgressDropdown';
+import { triggerAnswerHaptic } from '@/utils/haptics';
 
 interface QuestionRendererProps {
   question: QuestionData;
@@ -52,11 +53,16 @@ export const QuestionRenderer: React.FC<QuestionRendererProps> = ({
     });
   }
 
+  const handleAnswer = (isCorrect: boolean) => {
+    triggerAnswerHaptic(isCorrect);
+    onAnswer(isCorrect);
+  };
+
   const renderSba = () => (
     <>
       <LearningAwareSBA
         question={question}
-        onAnswer={onAnswer}
+        onAnswer={handleAnswer}
         onNext={onNext}
         onPrevious={onPrevious}
         onExit={onExit}
@@ -83,7 +89,7 @@ export const QuestionRenderer: React.FC<QuestionRendererProps> = ({
       return (
         <ModernFlashcard
           question={question}
-          onAnswer={onAnswer}
+          onAnswer={handleAnswer}
           onNext={onNext}
           onPrevious={onPrevious}
           onExit={onExit}
