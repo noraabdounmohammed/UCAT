@@ -2,6 +2,8 @@ import type { ConceptNode } from '@/types/conceptTypes';
 import { assessClinicalTruthRisk, getVerifiedSourcesForConcept } from './clinicalTruth';
 import { getEvidencePacket } from './evidencePackets';
 
+export const UKMLA_QUALITY_GATE_VERSION = 'ukmla_quality_v1_2026-08-25';
+
 export const UKMLA_QUALITY_INSTRUCTIONS = `You are writing a UK Medical Licensing Assessment (MLA) Applied Knowledge Test single-best-answer item.
 
 The item must test APPLIED clinical knowledge, not recognition of a buzzword or recall of an isolated sentence.
