@@ -9,12 +9,12 @@ import type { PracticeModeFilterState, PracticeStudyMode } from '@/components/pr
 const PracticeModeFilterFlow = lazy(() => import('@/components/practice/PracticeModeFilterFlow').then(m => ({ default: m.PracticeModeFilterFlow })));
 const ApplePracticeSession = lazy(() => import('@/components/practice/ApplePracticeSession').then(m => ({ default: m.ApplePracticeSession })));
 
-function QuietPreparingState() {
+function QuietPreparingState({ message = 'Preparing your session…' }: { message?: string }) {
   return (
     <main className="flex min-h-screen items-center justify-center bg-[#FAF5EC] px-6 text-[#2A1E16]">
       <div className="text-center">
         <div className="mx-auto h-5 w-5 animate-spin rounded-full border-2 border-[#D9CCB6] border-t-[#1F140C]" />
-        <p className="mt-4 text-sm text-[#8A7560]">Preparing your session…</p>
+        <p className="mt-4 text-sm text-[#8A7560]">{message}</p>
       </div>
     </main>
   );
@@ -31,6 +31,8 @@ function CustomPracticeContent() {
     updateMastery,
     practiceError,
     filterOptions,
+    filterCategories,
+    concepts,
   } = useConceptStore() as any;
 
   const [showFilters, setShowFilters] = useState(true);
@@ -80,13 +82,15 @@ function CustomPracticeContent() {
     );
   }
 
-  // Do not render a half-populated filter sheet. Wait until the concept store has
-  // finished hydrating, then reveal the complete study-mode / specialty /
-  // condition / presentation hierarchy in one flow.
+  // Do not render a half-populated filter sheet. The filter component reads its
+  // tag assignments at mount time, so mounting before the store has published
+  // the category metadata can leave specialty / condition / presentation empty
+  // until a manual refresh. Wait for both concepts and categories, then mount once.
   if (showFilters && !isPracticing) {
-    if (isLoading) return <QuietPreparingState />;
+    const filtersReady = !isLoading && (concepts?.length ?? 0) > 0 && (filterCategories?.length ?? 0) > 0;
+    if (!filtersReady) return <QuietPreparingState message="Loading your practice filters…" />;
     return (
-      <Suspense fallback={<QuietPreparingState />}>
+      <Suspense fallback={<QuietPreparingState message="Loading your practice filters…" />}>
         <PracticeModeFilterFlow
           isOpen={true}
           onClose={handleFilterClose}
