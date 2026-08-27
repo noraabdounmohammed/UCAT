@@ -1,6 +1,6 @@
 import React from 'react';
 import { QuestionData } from './questionTypes';
-import { ModernFlashcard } from './ModernFlashcard';
+import { StudyEditFlashcard } from './StudyEditFlashcard';
 import { LearningAwareSBA } from './LearningAwareSBA';
 import { ReportQuestionButton } from './ReportQuestionButton';
 import { SessionAnswer } from './SessionProgressDropdown';
@@ -87,7 +87,7 @@ export const QuestionRenderer: React.FC<QuestionRendererProps> = ({
   switch (format) {
     case 'flashcard':
       return (
-        <ModernFlashcard
+        <StudyEditFlashcard
           question={question}
           onAnswer={handleAnswer}
           onNext={onNext}
@@ -95,13 +95,6 @@ export const QuestionRenderer: React.FC<QuestionRendererProps> = ({
           onExit={onExit}
           currentIndex={currentIndex}
           totalCards={totalCards}
-          title={title}
-          availableFilters={availableFilters}
-          activeFilter={activeFilter}
-          onFilterSelect={onFilterSelect}
-          currentFormat={format}
-          onChangeFormat={onChangeFormat}
-          onRestartWithFilters={onRestartWithFilters}
         />
       );
 
