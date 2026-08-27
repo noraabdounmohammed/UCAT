@@ -2,8 +2,6 @@ import type { ConceptNode } from '@/types/conceptTypes';
 import { assessClinicalTruthRisk, getVerifiedSourcesForConcept } from './clinicalTruth';
 import { getEvidencePacket } from './evidencePackets';
 
-export const UKMLA_QUALITY_GATE_VERSION = 'ukmla_quality_v1_2026-08-25';
-
 export const UKMLA_QUALITY_INSTRUCTIONS = `You are writing a UK Medical Licensing Assessment (MLA) Applied Knowledge Test single-best-answer item.
 
 The item must test APPLIED clinical knowledge, not recognition of a buzzword or recall of an isolated sentence.
@@ -16,6 +14,7 @@ ITEM BLUEPRINT — decide this before writing:
 - Difficulty should come from clinical discrimination, NOT obscure trivia, hidden assumptions, deliberately deceptive wording, or an implausibly rare exception.
 - If the source concept is merely a factual property (for example route of administration, half-life, mechanism, one adverse effect, or one score component), DO NOT disguise that fact as a patient-management decision.
 - Never turn a thin factual concept into a treatment-selection question unless the supplied source explicitly supports the treatment decision and competing options.
+- If no EVIDENCE PACKET section is supplied for a high-risk or guideline-sensitive concept, stay within a narrow factual/application target directly supported by the source rather than inventing a management hierarchy, referral threshold, drug preference, dose, duration, contraindication, or timing rule.
 
 VIGNETTE:
 - Start with age + gender where clinically appropriate.
@@ -26,6 +25,7 @@ VIGNETTE:
 - Avoid famous buzzwords when natural clinical description can test the same reasoning.
 - Reference ranges are required for laboratory values when interpretation depends on abnormality; do not add pointless ranges to ordinary observations.
 - For medication-management questions include every discriminator needed to choose safely, including indication, renal function, haemodynamic status, bleeding history, pregnancy, prior adverse reactions, procedure/reperfusion plan and interacting antithrombotics when relevant.
+- Do not casually add an exception-state or alternative-pathway modifier (for example HRT use, pregnancy, severe renal impairment, shock, recent procedure or interacting treatment) unless the supplied source/evidence explicitly supports how that modifier changes or does not change the keyed decision. If such a modifier is not needed, omit it.
 
 LEAD-IN:
 - One short direct sentence outside the vignette, ending with ?.
@@ -78,7 +78,7 @@ OUTPUT JSON:
   }
 }
 
-Use only facts supported by the supplied concept content and any attached evidence packet. If the source is too thin for a fair applied item, prefer a simple factual/application question rather than inventing clinical management detail.`;
+Decision-critical facts that determine the keyed answer, including thresholds, treatment hierarchy, contraindications, timing, dose/route and referral criteria, must be supported by the supplied concept content and any attached evidence packet. Benign standard clinical context may be added to make the vignette realistic when it does not create, change or exclude an answer. Distractors may draw on standard medical knowledge when they remain clinically plausible near misses and are not independently defensible in the stated patient. The explanation may use standard medical knowledge to explain why a distractor is less appropriate, but it must not invent a new decision-critical rule or contradiction outside the verified boundary. If the source is too thin for a fair applied item, prefer a simple factual/application question rather than inventing clinical management detail.`;
 
 export interface QuestionQualityResult {
   pass: boolean;
@@ -99,6 +99,24 @@ function cleanVignetteForValidation(question: any): string {
     return raw.slice(0, raw.length - leadIn.length).trim();
   }
   return raw;
+}
+
+function isGenericFallbackQuestion(vignette: string, texts: string[]): boolean {
+  const normalizedVignette = vignette.toLowerCase().replace(/\s+/g, ' ').trim();
+  const normalizedTexts = texts.map(text => text.toLowerCase().replace(/\s+/g, ' ').trim());
+  const stockOptions = [
+    'immediate intervention as per guidelines',
+    'further investigation required',
+    'conservative management',
+    'specialist referral',
+    'observation and reassessment',
+  ];
+
+  const exactFallbackVignette = normalizedVignette === 'a patient presents with symptoms and relevant clinical findings.'
+    || normalizedVignette === 'a patient presents with symptoms and relevant clinical findings';
+  const exactFallbackOptions = stockOptions.every(option => normalizedTexts.includes(option));
+
+  return exactFallbackVignette || exactFallbackOptions;
 }
 
 export function validateUKMLAQuestion(question: any): QuestionQualityResult {
@@ -124,6 +142,7 @@ export function validateUKMLAQuestion(question: any): QuestionQualityResult {
   const uniqueTexts = new Set(texts.map((text: string) => text.toLowerCase()));
   if (texts.length && uniqueTexts.size !== texts.length) reasons.push('Duplicate answer options detected.');
   if (texts.some((text: string) => /\b(?:all|none) of the above\b/i.test(text))) reasons.push('All/none-of-the-above options are not allowed.');
+  if (isGenericFallbackQuestion(vignette, texts)) reasons.push('TEMPLATE_FALLBACK: Generic fallback/template question is not publishable and must never satisfy the release gate.');
 
   const lengths = texts.filter(Boolean).map((text: string) => text.length);
   if (lengths.length === 5) {
@@ -195,9 +214,13 @@ ${evidenceContext}
 
 Important:
 - The source registry identifies current authoritative sources but does not itself prove a claim.
-- When an evidence packet is present, treat the packet as the verified launch boundary for what the item may test. Its required context, allowed targets and forbidden inferences are part of the support for the item.
+- When an evidence packet is present, treat the packet as the verified launch boundary for DECISION-CRITICAL claims: the keyed answer, thresholds, hierarchy, contraindications, timing, dose/route and referral rules.
+- Apply the packet's claim only when the vignette actually satisfies the packet's qualifying conditions. Never silently infer that an exception, competing pathway, contraindication or modifier is absent merely because the keyed answer would otherwise fit.
+- Treat exception-state variables such as HRT use, pregnancy, severe renal impairment, shock, recent procedures and interacting treatments as potentially decision-changing. If one is present and the packet/source does not explicitly resolve its effect on this decision, reject rather than extrapolate the general rule.
+- Do NOT require every benign vignette detail or every explanatory sentence about a distractor to be quoted in the concept or packet. Standard clinical context is allowed when it merely makes the scenario realistic and cannot create, change or exclude the answer.
+- Standard medical knowledge may be used to judge whether distractors are plausible and to explain why an alternative is less appropriate, provided that knowledge does not introduce a new decision-critical rule and no alternative becomes independently defensible.
 - Do NOT reject an item merely because the older source concept is concise if the evidence packet explicitly supplies the missing decision boundary.
-- Still reject any question that contradicts the packet, omits context needed to distinguish the options, invents unsupported medicine, or leaves more than one defensible answer.
+- Still reject any question that contradicts the packet, omits context needed to distinguish the options, invents unsupported DECISION-CHANGING medicine, or leaves more than one defensible answer.
 
 SOURCE CONCEPT
 Title: ${concept.title}
@@ -223,9 +246,10 @@ Score:
 Before scoring, test every answer option independently:
 1. Is the statement/action itself clinically true?
 2. Could it reasonably answer this lead-in in this patient?
-3. Is any claimed distinction dependent on context absent from the stem or evidence packet?
-4. Does the explanation dismiss a true alternative without support from the concept or evidence packet?
-5. For high/critical-risk claims, does the concept plus evidence packet provide enough verified boundary to justify the answer safely?
+3. Is any claimed DECISION-CRITICAL distinction dependent on context absent from the stem or evidence packet?
+4. Does the explanation invent a decision-changing rule to dismiss a true alternative, rather than merely using standard clinical knowledge to explain a near miss?
+5. For high/critical-risk claims, does the concept plus evidence packet provide enough verified boundary to justify the KEYED DECISION safely?
+6. Do all qualifiers for the packet/source rule actually apply to this vignette, including any exception-state or alternative-pathway modifiers that are explicitly present?
 
 MANDATORY REJECTION if:
 - more than one option is reasonably defensible
@@ -236,9 +260,10 @@ MANDATORY REJECTION if:
 - the answer is given away by buzzwords or option construction
 - a descriptive fact has been disguised as a treatment decision outside the packet's allowed targets
 - medicine selection omits context needed to determine the preferred agent
-- the explanation says an alternative is wrong without support from the concept or evidence packet
-- an option claimed false is actually a true property in the scenario
-- a high/critical-risk item exceeds the verified boundary supplied by the concept plus evidence packet
+- the explanation invents a decision-critical distinction, threshold, contraindication or hierarchy outside the concept/evidence packet in order to make an alternative wrong
+- an option claimed false is actually a true property in the scenario and remains a defensible answer to the lead-in
+- a high/critical-risk item exceeds the verified decision boundary supplied by the concept plus evidence packet
+- the vignette contains an exception-state or competing pathway that could change the answer and the source/evidence packet does not explicitly establish how it applies
 
 Return ONLY:
 {
