@@ -1,0 +1,32 @@
+name: Flashcard Eval 100
+
+on:
+  push:
+    branches: [feature/flashcard-qa-100]
+  workflow_dispatch:
+
+jobs:
+  flashcard-eval-100:
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+      - run: npm ci
+      - name: Type-check (informational; repository has legacy errors)
+        continue-on-error: true
+        run: npx tsc --noEmit
+      - name: Run 100-card diagnostic benchmark
+        run: npx tsx scripts/run-flashcard-eval-100.ts
+        env:
+          STUDYEDIT_BASE_URL: https://studyedit.com
+      - name: Upload flashcard QA report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: flashcard-eval-100-report
+          path: artifacts/flashcard-eval-100-report.json
+          if-no-files-found: warn
