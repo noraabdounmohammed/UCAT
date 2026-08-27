@@ -1,0 +1,59 @@
+import { describe, expect, it } from 'vitest';
+import { stripFlashcardFrontFormatting, validateFlashcardCandidate } from './flashcardQuality';
+
+describe('flashcard quality gate', () => {
+  it('strips markdown from the front', () => {
+    expect(stripFlashcardFrontFormatting('**Persistent bacteraemia** — what should you suspect?'))
+      .toBe('Persistent bacteraemia — what should you suspect?');
+  });
+
+  it('rejects multi-part retrieval prompts', () => {
+    const result = validateFlashcardCandidate({
+      question_stem: 'What should be done immediately, and why must CT not be performed first?',
+      explanation: 'Treat suspected cerebral oedema immediately. Do not wait for CT.',
+    });
+
+    expect(result.pass).toBe(false);
+    expect(result.reasons.join(' ')).toMatch(/more than one retrieval/i);
+  });
+
+  it('rejects unsupported qualifier strengthening', () => {
+    const result = validateFlashcardCandidate({
+      question_stem: 'When should anticoagulation be offered in atrial fibrillation?',
+      explanation: 'Offer a DOAC when suitable, regardless of bleeding risk.',
+    }, 'Offer a direct-acting oral anticoagulant, taking bleeding risk into account.');
+
+    expect(result.pass).toBe(false);
+    expect(result.reasons.join(' ')).toMatch(/unsupported absolute/i);
+  });
+
+  it('allows an absolute when it is explicitly present in the source', () => {
+    const result = validateFlashcardCandidate({
+      question_stem: 'When should primary PCI be preferred over fibrinolysis?',
+      explanation: 'Primary PCI is preferred when it can be delivered within 120 minutes.',
+    }, 'Primary PCI is preferred if it can be delivered within 120 minutes of when fibrinolysis could have been given.');
+
+    expect(result.pass).toBe(true);
+  });
+
+  it('rejects overlong fronts before they become reusable inventory', () => {
+    const result = validateFlashcardCandidate({
+      question_stem: 'In a patient with new-onset atrial fibrillation who has arrived without therapeutic anticoagulation and has several additional clinical details that are not needed to answer the card, what should be offered at initial presentation while stroke and bleeding risks are assessed?',
+      explanation: 'Offer heparin at initial presentation if there is no contraindication.',
+    });
+
+    expect(result.pass).toBe(false);
+    expect(result.reasons.join(' ')).toMatch(/front is too long/i);
+  });
+
+  it('rejects bloated backs', () => {
+    const longBack = Array.from({ length: 95 }, (_, index) => `word${index}`).join(' ');
+    const result = validateFlashcardCandidate({
+      question_stem: 'What oxygen saturation threshold is used in this infant?',
+      explanation: longBack,
+    });
+
+    expect(result.pass).toBe(false);
+    expect(result.reasons.join(' ')).toMatch(/too much teaching/i);
+  });
+});
