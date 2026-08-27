@@ -4,9 +4,9 @@ import { useAuth } from '@/contexts/AuthContext';
 import { AuthForm } from '@/components/auth/AuthForm';
 import { ConceptStoreProvider, useConceptStore } from '@/contexts/ConceptStoreContext';
 import { getUserCurriculumId, migrateLegacyCurriculumState } from '@/utils/curriculumScope';
-import type { FilterState } from '@/components/practice/PracticeFilterModalParchment';
+import type { PracticeModeFilterState, PracticeStudyMode } from '@/components/practice/PracticeModeFilterFlow';
 
-const PracticeFilterModalParchment = lazy(() => import('@/components/practice/PracticeFilterModalParchment').then(m => ({ default: m.PracticeFilterModalParchment })));
+const PracticeModeFilterFlow = lazy(() => import('@/components/practice/PracticeModeFilterFlow').then(m => ({ default: m.PracticeModeFilterFlow })));
 const ApplePracticeSession = lazy(() => import('@/components/practice/ApplePracticeSession').then(m => ({ default: m.ApplePracticeSession })));
 
 function QuietPreparingState() {
@@ -14,7 +14,7 @@ function QuietPreparingState() {
     <main className="flex min-h-screen items-center justify-center bg-[#FAF5EC] px-6 text-[#2A1E16]">
       <div className="text-center">
         <div className="mx-auto h-5 w-5 animate-spin rounded-full border-2 border-[#D9CCB6] border-t-[#1F140C]" />
-        <p className="mt-4 text-sm text-[#8A7560]">Preparing your questions…</p>
+        <p className="mt-4 text-sm text-[#8A7560]">Preparing your session…</p>
       </div>
     </main>
   );
@@ -34,6 +34,7 @@ function CustomPracticeContent() {
   } = useConceptStore() as any;
 
   const [showFilters, setShowFilters] = useState(true);
+  const [activeStudyMode, setActiveStudyMode] = useState<PracticeStudyMode>('questions');
   const beginningSessionRef = useRef(false);
 
   const goHome = () => {
@@ -49,12 +50,15 @@ function CustomPracticeContent() {
     goHome();
   };
 
-  const startCustomSession = (filters: FilterState) => {
+  const formatForMode = (mode: PracticeStudyMode) => mode === 'flashcards' ? 'flashcard' : 'ukmla_sba';
+
+  const startCustomSession = (filters: PracticeModeFilterState) => {
     beginningSessionRef.current = true;
+    setActiveStudyMode(filters.studyMode);
     setShowFilters(false);
     startPractice({
       study_mode: 'custom',
-      target_formats: ['ukmla_sba'],
+      target_formats: [formatForMode(filters.studyMode)],
       question_count: filters.size,
     });
   };
@@ -77,13 +81,13 @@ function CustomPracticeContent() {
   }
 
   // Do not render a half-populated filter sheet. Wait until the concept store has
-  // finished hydrating, then reveal the complete specialty / condition /
-  // presentation hierarchy in one paint.
+  // finished hydrating, then reveal the complete study-mode / specialty /
+  // condition / presentation hierarchy in one flow.
   if (showFilters && !isPracticing) {
     if (isLoading) return <QuietPreparingState />;
     return (
       <Suspense fallback={<QuietPreparingState />}>
-        <PracticeFilterModalParchment
+        <PracticeModeFilterFlow
           isOpen={true}
           onClose={handleFilterClose}
           onApplyFilters={startCustomSession}
@@ -93,6 +97,7 @@ function CustomPracticeContent() {
   }
 
   if (isPracticing && practiceQuestions?.length > 0) {
+    const activeFormat = formatForMode(activeStudyMode);
     return (
       <Suspense fallback={<QuietPreparingState />}>
         <ApplePracticeSession
@@ -100,10 +105,11 @@ function CustomPracticeContent() {
           onComplete={goHome}
           onAnswerSubmit={handleAnswerSubmit}
           availableFilters={(filterOptions?.custom_filters as string[] | undefined) ?? []}
-          section="UKMLA AKT"
-          currentFormat="ukmla_sba"
+          section={activeStudyMode === 'flashcards' ? 'UKMLA Flashcards' : 'UKMLA AKT'}
+          defaultFormat={activeFormat}
+          currentFormat={activeFormat}
           onAnotherFive={() => {
-            startPractice({ study_mode: 'custom', target_formats: ['ukmla_sba'], question_count: 5 });
+            startPractice({ study_mode: 'custom', target_formats: [activeFormat], question_count: 5 });
           }}
           onRestartWithFilters={() => {
             endPractice();
