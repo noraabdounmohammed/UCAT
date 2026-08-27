@@ -1,0 +1,115 @@
+name: Launch Eval 100
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [launch-eval-100]
+  pull_request:
+    branches: [master]
+
+jobs:
+  launch-eval-100:
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+      - run: npm ci
+      - name: Apply audited eval-only compiler, reviewer, and evidence-boundary guards
+        run: python scripts/apply-launch-eval-guards.py
+      - name: Apply run-18 upstream generator improvements
+        run: python scripts/apply-run18-generator-improvements.py
+      - name: Apply recurrent evidence/compiler improvements compatibly
+        run: python scripts/apply-run24-compatible-evidence-improvements.py
+      - name: Apply run-26 generation self-audit and fail-closed modifier guards
+        run: python scripts/apply-run26-quality-improvements.py
+      - name: Apply run-28 evidence-contract adherence improvements
+        run: python scripts/apply-run28-constraint-adherence.py
+      - name: Align run-30 evidence contracts with hardened launch gates
+        run: python scripts/apply-run30-contract-alignment.py
+      - name: Harden run-37 derived-score pass precision
+        run: python scripts/apply-run37-pass-precision.py
+      - name: Apply run-41 recurrent generation repairs
+        run: python scripts/apply-run41-recurrent-generation-repairs.py
+      - name: Normalize run-48 bronchiolitis compatibility
+        run: python scripts/apply-run54-run48-compat.py
+      - name: Normalize run-48 VZV compatibility
+        run: python scripts/apply-run57-run48-vzv-compat.py
+      - name: Apply run-48 publishability target repairs
+        run: python scripts/apply-run48-publishability-target-repairs.py
+      - name: Make run-62 patch compatible with hardened STEMI packet
+        run: python scripts/apply-run65-run62-compat.py
+      - name: Apply run-61 targeted recurrent-defect repairs
+        run: python scripts/apply-run62-targeted-repairs.py
+      - name: Harden remaining targeted STEMI and varicella defects
+        run: python scripts/apply-run68-targeted-hardening.py
+      - name: Apply run-78 last-mile targeted hardening
+        run: python scripts/apply-run78-last-mile.py
+      - name: Apply run-81 paeds, anticoagulation, and option-cue hardening
+        run: python scripts/apply-run81-last-mile.py
+      - name: Apply run-87 eval-provider reliability guards
+        run: python scripts/apply-run87-eval-reliability.py
+      - name: Apply run-94 non-destructive DKA and vignette hardening
+        run: python scripts/apply-run94-nondestructive-hardening.py
+      - name: Apply run-100 semantic-overlap hardening
+        run: python scripts/apply-run100-semantic-overlap-hardening.py
+      - name: Apply run-106 recurrent quality repairs
+        run: python scripts/apply-run106-recurrent-quality-repairs.py
+      - name: Apply run-112 antithrombotic principle sanitiser
+        run: python scripts/apply-run112-antithrombotic-principle-sanitiser.py
+      - name: Apply run-116 targeted semantic-consistency repairs
+        run: python scripts/apply-run116-targeted-repairs.py
+      - name: Apply run-119 post-audit semantic-consistency repairs
+        run: python scripts/apply-run119-postaudit-repairs.py
+      - name: Apply run-126 final-audit hardening
+        run: python scripts/apply-run126-final-audit-hardening.py
+
+      - name: Targeted regression attempt 1
+        run: npx tsx scripts/run-targeted-eval.ts
+        env:
+          STUDYEDIT_BASE_URL: https://studyedit.com
+          TARGETED_EVAL_OUT: artifacts/targeted-eval-attempt-1.json
+      - name: Targeted regression attempt 2
+        run: npx tsx scripts/run-targeted-eval.ts
+        env:
+          STUDYEDIT_BASE_URL: https://studyedit.com
+          TARGETED_EVAL_OUT: artifacts/targeted-eval-attempt-2.json
+      - name: Combine targeted attempts
+        id: targeted_gate
+        continue-on-error: true
+        run: node scripts/combine-targeted-eval.mjs
+      - name: Upload targeted regression reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: launch-eval-targeted-report
+          path: |
+            artifacts/targeted-eval-attempt-1.json
+            artifacts/targeted-eval-attempt-2.json
+            artifacts/targeted-eval-combined.json
+          if-no-files-found: warn
+
+      - name: Cool down provider before full eval
+        if: steps.targeted_gate.outcome == 'success'
+        run: sleep 90
+      - name: Run 100-question two-attempt launch evaluation
+        if: steps.targeted_gate.outcome == 'success'
+        run: node scripts/run-launch-eval-100.mjs
+        env:
+          STUDYEDIT_BASE_URL: https://studyedit.com
+      - name: Upload 100-question launch eval reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: launch-eval-100-report
+          path: |
+            artifacts/launch-eval-100-report.json
+            artifacts/launch-eval-100-replicate-*.json
+            artifacts/launch-eval-100-replicate-*-attempt-*.json
+          if-no-files-found: warn
+      - name: Enforce targeted gate before full eval
+        if: steps.targeted_gate.outcome == 'failure'
+        run: exit 1

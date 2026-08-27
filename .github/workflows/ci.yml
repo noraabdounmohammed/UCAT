@@ -78,3 +78,105 @@ jobs:
       - name: Enforce launch gate
         if: steps.launch_eval.outcome == 'failure'
         run: exit 1
+
+  launch-eval-100:
+    runs-on: ubuntu-latest
+    needs: test
+    if: github.event_name == 'pull_request' && github.head_ref == 'launch-eval-100'
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+      - run: npm ci
+      - name: Calibrate reviewer evidence boundary for this temporary eval
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          p = Path('src/services/questionQuality.ts')
+          s = p.read_text()
+          old = "You are a hostile reviewer for a national medical licensing exam. Reject ambiguous, cueable, unfair, unsupported, trivial, stale or clinically unsafe questions. Check every option independently for truth and defensibility. Do not reward eloquent wording. Respond with valid JSON only."
+          new = "You are a precise adversarial reviewer for a national medical licensing exam. Reject ambiguous, cueable, unfair, clinically incorrect, stale or unsafe questions. The concept/evidence packet is a closed verification boundary for the KEYED DECISION and any decision-changing threshold, hierarchy, contraindication, dose, timing or referral rule. It is NOT a closed-world ontology for distractors: do not reject a distractor merely because the supplied source does not mention or explicitly refute it. Use standard medical knowledge to judge whether distractors are true and independently defensible in this patient. If an alternative is clinically defensible, reject. If it is clearly inferior by standard medical knowledge without introducing a new decision-critical rule, that is acceptable. INDEPENDENTLY RECALCULATE every derived clinical score, risk score, dose calculation, threshold comparison, age band, timing interval, unit conversion and arithmetic claim from the raw vignette data before accepting the item. Never trust a score merely because the stem or explanation states it. Any mismatch between raw inputs and a stated or implied calculated value is a mandatory rejection, even when the keyed management would otherwise be correct. Check every option independently. Respond with valid JSON only."
+          if old not in s:
+              raise SystemExit('Reviewer calibration target not found; refusing silent patch')
+          s = s.replace(old, new)
+          s = s.replace('- clinical/source accuracy: 25', '- keyed clinical/source accuracy: 25')
+          s = s.replace('Before scoring, test every answer option independently:', 'Before scoring, first independently recompute every numerical/derived decision variable from the vignette (including clinical risk scores, doses, age categories, timing windows, thresholds and unit conversions). Reject any inconsistency between the raw data and a stated score/value. Then test every answer option independently:')
+
+          # Manual audit found that the LLM reviewer could still accept an incorrect
+          # precomputed CHA2DS2-VASc value. Do not rely on prompt-only arithmetic.
+          # Outside a concept explicitly about that named score, generated items must
+          # give the raw clinical inputs rather than asserting a precomputed score.
+          s = s.replace(
+              '- Do not casually add an exception-state or alternative-pathway modifier (for example HRT use, pregnancy, severe renal impairment, shock, recent procedure or interacting treatment) unless the supplied source/evidence explicitly supports how that modifier changes or does not change the keyed decision. If such a modifier is not needed, omit it.',
+              '- Do not casually add an exception-state or alternative-pathway modifier (for example HRT use, pregnancy, severe renal impairment, shock, recent procedure or interacting treatment) unless the supplied source/evidence explicitly supports how that modifier changes or does not change the keyed decision. If such a modifier is not needed, omit it.\n- Do not state a precomputed named clinical score (for example CHA2DS2-VASc, HAS-BLED, NEWS2 or CURB-65) unless the source concept itself explicitly tests that score. Outside score-focused concepts, provide the raw clinical inputs only and let the decision follow from them.'
+          )
+
+          target = "  const deterministic = validateUKMLAQuestion(question);\n  if (!deterministic.pass) return deterministic;"
+          replacement = """  const deterministic = validateUKMLAQuestion(question);
+  if (!deterministic.pass) return deterministic;
+
+  // A language-model reviewer is not a reliable calculator. Manual launch audit
+  // caught false-positive AF items with incorrect precomputed risk scores even
+  // after explicit reviewer instructions to recalculate them. For named scores,
+  // fail closed unless the concept itself is explicitly teaching that score.
+  const scoreText = [
+    normalise(question?.clinical_vignette ?? question?.vignette),
+    normalise(question?.question),
+    normalise(question?.explanation),
+  ].join(' ');
+  const scoreAssertions = [
+    { name: 'CHA2DS2-VASc', title: /cha.?2ds.?2.?vasc/i, assertion: /cha.?2ds.?2.?vasc(?:\\s+score)?\\s*(?:is|of|=|:)?\\s*\\d+/i },
+    { name: 'HAS-BLED', title: /has.?bled/i, assertion: /has.?bled(?:\\s+score)?\\s*(?:is|of|=|:)?\\s*\\d+/i },
+    { name: 'NEWS2', title: /news2/i, assertion: /news2(?:\\s+score)?\\s*(?:is|of|=|:)?\\s*\\d+/i },
+    { name: 'CURB-65', title: /curb.?65/i, assertion: /curb.?65(?:\\s+score)?\\s*(?:is|of|=|:)?\\s*\\d+/i },
+  ];
+  for (const scoreRule of scoreAssertions) {
+    if (scoreRule.assertion.test(scoreText) && !scoreRule.title.test(normalise(concept?.title))) {
+      return {
+        pass: false,
+        score: 0,
+        reasons: [`DERIVED_SCORE_ASSERTION: ${scoreRule.name} is precomputed outside a score-focused concept; use raw inputs instead so an incorrect calculation cannot silently pass.`],
+      };
+    }
+  }"""
+          if target not in s:
+              raise SystemExit('Deterministic score-guard insertion target not found; refusing silent patch')
+          s = s.replace(target, replacement)
+          p.write_text(s)
+          PY
+      - name: Run distinct 100-concept attempt 1
+        run: |
+          npx tsx scripts/run-launch-eval-100-expanded.ts || true
+          mv artifacts/launch-eval-report.json artifacts/launch-eval-attempt-1.json
+        env:
+          STUDYEDIT_BASE_URL: https://studyedit.com
+          VITE_SUPABASE_URL: https://uivitzexbtsmnspcitgh.supabase.co
+          VITE_SUPABASE_ANON_KEY: sb_publishable_FWNGF1ytdxGbG1RoOiAzJA_tH6NF8Wg
+      - name: Run distinct 100-concept attempt 2
+        run: |
+          npx tsx scripts/run-launch-eval-100-expanded.ts || true
+          mv artifacts/launch-eval-report.json artifacts/launch-eval-attempt-2.json
+        env:
+          STUDYEDIT_BASE_URL: https://studyedit.com
+          VITE_SUPABASE_URL: https://uivitzexbtsmnspcitgh.supabase.co
+          VITE_SUPABASE_ANON_KEY: sb_publishable_FWNGF1ytdxGbG1RoOiAzJA_tH6NF8Wg
+      - name: Combine attempts using production acceptance rule
+        id: launch_eval_100
+        run: node scripts/combine-launch-eval-attempts.mjs
+        continue-on-error: true
+      - name: Upload distinct 100-concept launch eval reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: launch-eval-100-distinct-report
+          path: |
+            artifacts/launch-eval-report.json
+            artifacts/launch-eval-attempt-1.json
+            artifacts/launch-eval-attempt-2.json
+          if-no-files-found: warn
+      - name: Enforce distinct 100-concept launch gate
+        if: steps.launch_eval_100.outcome == 'failure'
+        run: exit 1
