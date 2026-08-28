@@ -6,7 +6,11 @@
  */
 
 import { supabase } from '@/lib/supabase';
-import { normaliseFlashcardForCache, validateFlashcardCandidate } from '@/services/flashcardQuality';
+import {
+  FLASHCARD_QUALITY_GATE_VERSION,
+  normaliseFlashcardForCache,
+  validateFlashcardCandidate,
+} from '@/services/flashcardQuality';
 
 export interface CachedQuestion {
   id: string;
@@ -69,6 +73,13 @@ export interface FilterOptions {
 const prepareCachedQuestions = (questions: CachedQuestion[]): CachedQuestion[] => questions.flatMap(question => {
   if (question.question_format !== 'flashcard') return [question];
 
+  // The historical bank predates the current flashcard QA system and is dominated
+  // by generic "What are the key points?" cards. Do not let an old card silently
+  // re-enter the product just because it happens to pass a few deterministic rules.
+  if (question.quality_gate_version !== FLASHCARD_QUALITY_GATE_VERSION) {
+    return [];
+  }
+
   const quality = validateFlashcardCandidate(question, question.concept_content ?? '');
   if (!quality.pass) {
     console.warn('Rejected cached flashcard at serve time', {
@@ -84,9 +95,9 @@ const prepareCachedQuestions = (questions: CachedQuestion[]): CachedQuestion[] =
 
 export const questionCacheService = {
   async hasQuestionsForConcept(conceptId: string): Promise<boolean> {
-    const { count, error } = await supabase
+    const { data, error } = await supabase
       .from('cached_questions')
-      .select('*', { count: 'exact', head: true })
+      .select('question_format, quality_gate_version')
       .eq('concept_id', conceptId)
       .eq('status', 'active');
 
@@ -95,7 +106,10 @@ export const questionCacheService = {
       return false;
     }
 
-    return (count ?? 0) > 0;
+    return (data || []).some((question: any) => (
+      question.question_format !== 'flashcard'
+      || question.quality_gate_version === FLASHCARD_QUALITY_GATE_VERSION
+    ));
   },
 
   async getQuestionsForConcepts(conceptIds: string[]): Promise<CachedQuestion[]> {
@@ -163,7 +177,7 @@ export const questionCacheService = {
         generated_at: new Date().toISOString(),
         status: 'active',
         ...(insertQuestion.question_format === 'flashcard' ? {
-          quality_gate_version: 'flashcard_deterministic_v1_2026-08-27',
+          quality_gate_version: FLASHCARD_QUALITY_GATE_VERSION,
           quality_checked_at: new Date().toISOString(),
           quality_score: 100,
         } : {}),
@@ -192,34 +206,27 @@ export const questionCacheService = {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return [];
 
-    const questionsWithMeta = questions.flatMap(question => {
+    const publishable = questions.flatMap(question => {
       const prepared = normaliseFlashcardForCache(question as any);
-      if (!prepared.quality.pass) {
-        console.warn('Refusing to batch-cache low-quality flashcard', {
-          concept_id: question.concept_id,
-          reasons: prepared.quality.reasons,
-        });
-        return [];
-      }
-
-      const clean = prepared.question as QuestionInsert;
+      if (!prepared.quality.pass) return [];
+      const item = prepared.question as QuestionInsert;
       return [{
-        ...clean,
+        ...item,
         generated_at: new Date().toISOString(),
         status: 'active',
-        ...(clean.question_format === 'flashcard' ? {
-          quality_gate_version: 'flashcard_deterministic_v1_2026-08-27',
+        ...(item.question_format === 'flashcard' ? {
+          quality_gate_version: FLASHCARD_QUALITY_GATE_VERSION,
           quality_checked_at: new Date().toISOString(),
           quality_score: 100,
         } : {}),
       }];
     });
 
-    if (questionsWithMeta.length === 0) return [];
+    if (publishable.length === 0) return [];
 
     const { data, error } = await supabase
       .from('cached_questions')
-      .upsert(questionsWithMeta as any, {
+      .upsert(publishable as any, {
         onConflict: 'concept_id,question_stem',
         ignoreDuplicates: true,
       })
@@ -231,7 +238,7 @@ export const questionCacheService = {
       return [];
     }
 
-    return prepareCachedQuestions((data || []) as CachedQuestion[]);
+    return (data || []) as CachedQuestion[];
   },
 
   async getSpecialties(): Promise<string[]> {
@@ -293,15 +300,12 @@ export const questionCacheService = {
       .eq('is_featured', true)
       .eq('status', 'active')
       .order('priority', { ascending: false });
-
     if (limit) query = query.limit(limit);
     const { data, error } = await query;
-
     if (error) {
       console.error('Error fetching featured questions:', error);
       return [];
     }
-
     return prepareCachedQuestions((data || []) as CachedQuestion[]);
   },
 
@@ -313,12 +317,10 @@ export const questionCacheService = {
       .eq('condition_name', conditionName)
       .eq('status', 'active')
       .order('priority', { ascending: false });
-
     if (error) {
       console.error('Error fetching featured questions by condition:', error);
       return [];
     }
-
     return prepareCachedQuestions((data || []) as CachedQuestion[]);
   },
 
@@ -330,12 +332,10 @@ export const questionCacheService = {
       .eq('specialty', specialty)
       .eq('status', 'active')
       .order('priority', { ascending: false });
-
     if (error) {
       console.error('Error fetching featured questions by specialty:', error);
       return [];
     }
-
     return prepareCachedQuestions((data || []) as CachedQuestion[]);
   },
 
@@ -349,10 +349,8 @@ export const questionCacheService = {
       .order('priority', { ascending: false })
       .limit(1)
       .single();
-
     if (error || !data) return null;
-    const prepared = prepareCachedQuestions([data as CachedQuestion]);
-    return prepared[0] ?? null;
+    return prepareCachedQuestions([data as CachedQuestion])[0] || null;
   },
 };
 
