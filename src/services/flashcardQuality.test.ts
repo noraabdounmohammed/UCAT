@@ -46,6 +46,35 @@ describe('flashcard quality gate', () => {
     expect(result.pass).toBe(true);
   });
 
+  it('rejects unsupported superlatives in the question', () => {
+    const result = validateFlashcardCandidate({
+      question_stem: 'What is the most common cause of secondary adrenal insufficiency?',
+      explanation: 'Pituitary disorders.',
+    }, 'Secondary adrenal insufficiency may be caused by pituitary disorders such as tumours, irradiation or infiltration.');
+
+    expect(result.pass).toBe(false);
+    expect(result.reasons.join(' ')).toMatch(/unsupported ranking\/priority/i);
+  });
+
+  it('allows first-line wording when the source explicitly supports it', () => {
+    const result = validateFlashcardCandidate({
+      question_stem: 'What is the first-line treatment for acromegaly?',
+      explanation: 'Trans-sphenoidal surgery.',
+    }, 'Trans-sphenoidal surgery is the first-line treatment for acromegaly in the majority of patients.');
+
+    expect(result.pass).toBe(true);
+  });
+
+  it('rejects an invented mechanism on the back', () => {
+    const result = validateFlashcardCandidate({
+      question_stem: 'Which disorders can cause secondary adrenal insufficiency?',
+      explanation: 'Pituitary disorders. These impair ACTH secretion, leading to adrenal atrophy.',
+    }, 'Pituitary disorders such as tumours, irradiation and infiltration.');
+
+    expect(result.pass).toBe(false);
+    expect(result.reasons.join(' ')).toMatch(/invents a causal\/mechanistic/i);
+  });
+
   it('rejects unsolicited clinical teaching on the back', () => {
     const result = validateFlashcardCandidate({
       question_stem: 'Which syndrome combines ITP and autoimmune haemolytic anaemia?',
