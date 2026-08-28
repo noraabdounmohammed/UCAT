@@ -5,9 +5,11 @@ export interface FlashcardQualityResult {
   back: string;
 }
 
-const MAX_FRONT_WORDS = 30;
-const MAX_FRONT_CHARS = 190;
-const MAX_BACK_WORDS = 90;
+export const FLASHCARD_QUALITY_GATE_VERSION = 'flashcard_deterministic_v2_2026-08-28';
+
+const MAX_FRONT_WORDS = 24;
+const MAX_FRONT_CHARS = 160;
+const MAX_BACK_WORDS = 45;
 
 const normaliseSpace = (value: unknown) => String(value ?? '').replace(/\s+/g, ' ').trim();
 
@@ -38,6 +40,17 @@ function hasMultipleRetrievalObjectives(front: string): boolean {
   return secondQuestionTask || pairedImperatives || multipleQuestionMarks;
 }
 
+function isGenericLegacyPrompt(front: string): boolean {
+  return /(?:^|:)\s*what are the key points\??$/i.test(front)
+    || /\bwhat (?:are|is) the (?:main |key )?points\??$/i.test(front)
+    || /\bwhat should you know about\b/i.test(front);
+}
+
+function sourceSupportsCausalQuestion(front: string, source: string): boolean {
+  if (!/^\s*(?:why|how)\b/i.test(front)) return true;
+  return /\b(?:because|due to|caus(?:e|es|ed|ing)|result(?:s|ed|ing)? in|lead(?:s|ing)? to|mechanism|via|through|by inhibiting|by blocking|by increasing|by decreasing)\b|→/i.test(source);
+}
+
 function unsupportedAbsolute(back: string, source: string): string | null {
   const risky = [
     /\bregardless of\b/i,
@@ -66,11 +79,18 @@ export function validateFlashcardCandidate(
 
   if (!front) reasons.push('Flashcard front is missing.');
   if (!back) reasons.push('Flashcard back is missing.');
+  if (isGenericLegacyPrompt(front)) reasons.push('Generic key-points/template flashcard is not publishable.');
   if (front.length > MAX_FRONT_CHARS || wordCount(front) > MAX_FRONT_WORDS) {
     reasons.push(`Flashcard front is too long (max ${MAX_FRONT_WORDS} words / ${MAX_FRONT_CHARS} characters).`);
   }
   if (hasMultipleRetrievalObjectives(front)) {
     reasons.push('Flashcard front asks more than one retrieval question.');
+  }
+  if (!sourceSupportsCausalQuestion(front, source)) {
+    reasons.push('Flashcard asks for a causal/mechanistic explanation that the source does not supply.');
+  }
+  if (/\b(?:clinical relevance|clinical tip|exam tip|remember:)\b/i.test(back)) {
+    reasons.push('Flashcard back adds unsolicited teaching instead of answering only the front.');
   }
   if (wordCount(back) > MAX_BACK_WORDS) {
     reasons.push(`Flashcard back contains too much teaching (max ${MAX_BACK_WORDS} words).`);
