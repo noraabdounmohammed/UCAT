@@ -46,9 +46,11 @@ function isGenericLegacyPrompt(front: string): boolean {
     || /\bwhat should you know about\b/i.test(front);
 }
 
+const causalLanguage = /\b(?:because|due to|caus(?:e|es|ed|ing)|result(?:s|ed|ing)? in|lead(?:s|ing)? to|mechanism|via|through|by inhibiting|by blocking|by increasing|by decreasing|impair(?:s|ed|ing)?|therefore)\b|→/i;
+
 function sourceSupportsCausalQuestion(front: string, source: string): boolean {
   if (!/^\s*(?:why|how)\b/i.test(front)) return true;
-  return /\b(?:because|due to|caus(?:e|es|ed|ing)|result(?:s|ed|ing)? in|lead(?:s|ing)? to|mechanism|via|through|by inhibiting|by blocking|by increasing|by decreasing)\b|→/i.test(source);
+  return causalLanguage.test(source);
 }
 
 function unsupportedAbsolute(back: string, source: string): string | null {
@@ -65,6 +67,27 @@ function unsupportedAbsolute(back: string, source: string): string | null {
     if (!pattern.test(source)) return match;
   }
   return null;
+}
+
+function unsupportedSuperlative(front: string, source: string): string | null {
+  const risky = [
+    /\bmost common\b/i,
+    /\bfirst[- ]line\b/i,
+    /\bgold standard\b/i,
+    /\bbest\b/i,
+    /\bonly\b/i,
+  ];
+
+  for (const pattern of risky) {
+    const match = front.match(pattern)?.[0];
+    if (!match) continue;
+    if (!pattern.test(source)) return match;
+  }
+  return null;
+}
+
+function backInventsMechanism(back: string, source: string): boolean {
+  return causalLanguage.test(back) && !causalLanguage.test(source);
 }
 
 export function validateFlashcardCandidate(
@@ -89,8 +112,15 @@ export function validateFlashcardCandidate(
   if (!sourceSupportsCausalQuestion(front, source)) {
     reasons.push('Flashcard asks for a causal/mechanistic explanation that the source does not supply.');
   }
+  const superlative = unsupportedSuperlative(front, source);
+  if (superlative) {
+    reasons.push(`Flashcard strengthens the source with an unsupported ranking/priority claim: “${superlative}”.`);
+  }
   if (/\b(?:clinical relevance|clinical tip|exam tip|remember:)\b/i.test(back)) {
     reasons.push('Flashcard back adds unsolicited teaching instead of answering only the front.');
+  }
+  if (backInventsMechanism(back, source)) {
+    reasons.push('Flashcard back invents a causal/mechanistic explanation not supplied by the source.');
   }
   if (wordCount(back) > MAX_BACK_WORDS) {
     reasons.push(`Flashcard back contains too much teaching (max ${MAX_BACK_WORDS} words).`);
