@@ -1,4 +1,5 @@
 import OpenAI from 'openai';
+import { hydrateLearnerMemoryFromCloud, persistLearnerMemoryEvent, readCloudLearnerEvents } from '@/services/learnerMemory';
 
 export interface QuestionContext {
   question: string;
@@ -63,6 +64,7 @@ const CACHE_EXPIRY_MS = 60 * 60 * 1000;
 const LEARNER_EVENTS_KEY = 'studyedit_learner_events_v1';
 const MAX_PERSISTED_EVENTS = 500;
 const responseCache: Record<string, CacheEntry> = {};
+const cloudSyncedEventIds = new Set<string>();
 
 function stableHash(value: string): string {
   let hash = 2166136261;
@@ -104,6 +106,57 @@ function writeLearnerEvents(events: LearnerEvent[]) {
   }
 }
 
+function mirrorEventToCloud(event: LearnerEvent) {
+  if (cloudSyncedEventIds.has(event.id)) return;
+  cloudSyncedEventIds.add(event.id);
+
+  const common = {
+    created_at: event.at,
+    concept_title: event.concept || null,
+    payload: {} as Record<string, unknown>,
+  };
+
+  if (event.kind === 'confidence') {
+    void persistLearnerMemoryEvent({
+      ...common,
+      event_type: 'confidence',
+      payload: {
+        confidence: event.confidence,
+        correct: event.correct,
+        evidence_class: event.evidenceClass,
+        local_event_id: event.id,
+      },
+    });
+    return;
+  }
+
+  if (event.kind === 'question_result') {
+    void persistLearnerMemoryEvent({
+      ...common,
+      event_type: 'question_result',
+      payload: {
+        topic: event.topic,
+        skill: event.skill,
+        status: event.status,
+        local_event_id: event.id,
+      },
+    });
+    return;
+  }
+
+  void persistLearnerMemoryEvent({
+    ...common,
+    event_type: 'answer_context',
+    question_id: event.questionFingerprint || null,
+    payload: {
+      selected_answer: event.selectedAnswer,
+      correct_answer: event.correctAnswer,
+      question_fingerprint: event.questionFingerprint,
+      local_event_id: event.id,
+    },
+  });
+}
+
 function persistSessionLearningSignals() {
   if (typeof window === 'undefined') return;
   try {
@@ -117,7 +170,7 @@ function persistSessionLearningSignals() {
       if (!signal?.at) continue;
 
       if (key.includes('_answer_confidence_')) {
-        additions.push({
+        const event: LearnerEvent = {
           id: `confidence_${stableHash(`${key}_${signal.at}`)}`,
           kind: 'confidence',
           at: signal.at,
@@ -125,7 +178,9 @@ function persistSessionLearningSignals() {
           confidence: signal.value,
           correct: signal.correct,
           evidenceClass: signal.evidence_class,
-        });
+        };
+        additions.push(event);
+        mirrorEventToCloud(event);
       }
     }
 
@@ -146,14 +201,16 @@ function persistQuestionProgress() {
       if (!key?.startsWith('question_progress_')) continue;
       const result = safelyParse(localStorage.getItem(key));
       if (!result?.timestamp) continue;
-      additions.push({
+      const event: LearnerEvent = {
         id: `question_${stableHash(`${key}_${result.timestamp}`)}`,
         kind: 'question_result',
         at: result.timestamp,
         topic: result.topic,
         skill: result.skill,
         status: result.status,
-      });
+      };
+      additions.push(event);
+      mirrorEventToCloud(event);
     }
 
     if (additions.length) writeLearnerEvents([...additions, ...existing]);
@@ -168,16 +225,16 @@ function persistAnswerContext(context: QuestionContext) {
     const questionFingerprint = stableHash(`${context.question}|${context.options.join('|')}`);
     const selected = context.selectedAnswer || null;
     const correct = context.correctAnswer || '';
-    const now = new Date().toISOString();
     const event: LearnerEvent = {
       id: `answer_${stableHash(`${questionFingerprint}_${selected}_${correct}`)}`,
       kind: 'answer_context',
-      at: now,
+      at: new Date().toISOString(),
       selectedAnswer: selected,
       correctAnswer: correct,
       questionFingerprint,
     };
     writeLearnerEvents([event, ...readLearnerEvents()]);
+    mirrorEventToCloud(event);
   } catch {
     // Answer memory must never interrupt feedback.
   }
@@ -187,6 +244,47 @@ function syncPersistentLearnerMemory(context?: QuestionContext) {
   persistSessionLearningSignals();
   persistQuestionProgress();
   if (context) persistAnswerContext(context);
+}
+
+function cloudEventsToLocal(): LearnerEvent[] {
+  return readCloudLearnerEvents().map((event: any): LearnerEvent | null => {
+    const payload = event?.payload || {};
+    const at = event?.created_at || new Date().toISOString();
+    const id = String(event?.id || payload.local_event_id || stableHash(JSON.stringify(event)));
+
+    if (event?.event_type === 'confidence') {
+      return {
+        id: `cloud_${id}`,
+        kind: 'confidence',
+        at,
+        concept: event.concept_title || undefined,
+        confidence: payload.confidence,
+        correct: payload.correct,
+        evidenceClass: payload.evidence_class,
+      };
+    }
+    if (event?.event_type === 'question_result') {
+      return {
+        id: `cloud_${id}`,
+        kind: 'question_result',
+        at,
+        topic: payload.topic,
+        skill: payload.skill,
+        status: payload.status,
+      };
+    }
+    if (event?.event_type === 'answer_context') {
+      return {
+        id: `cloud_${id}`,
+        kind: 'answer_context',
+        at,
+        selectedAnswer: payload.selected_answer,
+        correctAnswer: payload.correct_answer,
+        questionFingerprint: payload.question_fingerprint || event.question_id,
+      };
+    }
+    return null;
+  }).filter(Boolean) as LearnerEvent[];
 }
 
 function buildLearnerSnapshot(): LearnerSnapshot {
@@ -222,8 +320,13 @@ function buildLearnerSnapshot(): LearnerSnapshot {
       });
     }
 
-    const events = readLearnerEvents();
-    events.forEach(event => {
+    const combinedEvents = [...cloudEventsToLocal(), ...readLearnerEvents()];
+    const seen = new Set<string>();
+    combinedEvents.forEach(event => {
+      const signature = `${event.kind}|${event.at}|${event.concept || ''}|${event.selectedAnswer || ''}|${event.topic || ''}`;
+      if (seen.has(signature)) return;
+      seen.add(signature);
+
       if (event.kind === 'confidence') {
         recentConfidenceSignals.push({
           concept: event.concept,
@@ -360,6 +463,8 @@ export async function generateAIResponseStream(
   onStart?: () => void,
   abortSignal?: AbortSignal,
 ): Promise<string> {
+  await hydrateLearnerMemoryFromCloud();
+
   if (!openai) {
     const fallback = generateFallbackResponse(userQuery, context);
     onStart?.();
@@ -413,6 +518,8 @@ export async function generateAIResponseStream(
 }
 
 export async function generateAIResponse(userQuery: string, context: QuestionContext): Promise<string> {
+  await hydrateLearnerMemoryFromCloud();
+
   if (!openai) return generateFallbackResponse(userQuery, context);
 
   const cacheKey = buildCacheKey(userQuery, context);
