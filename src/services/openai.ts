@@ -13,6 +13,22 @@ interface CacheEntry {
   timestamp: number;
 }
 
+interface LearnerEvent {
+  id: string;
+  kind: 'confidence' | 'question_result' | 'answer_context';
+  at: string;
+  concept?: string;
+  confidence?: string;
+  correct?: boolean;
+  evidenceClass?: string;
+  topic?: string;
+  skill?: string;
+  status?: string;
+  selectedAnswer?: string | null;
+  correctAnswer?: string;
+  questionFingerprint?: string;
+}
+
 interface LearnerSnapshot {
   conceptEvidence: Array<{
     title: string;
@@ -35,9 +51,17 @@ interface LearnerSnapshot {
     status?: string;
     timestamp?: string;
   }>;
+  recentAnswerContexts: Array<{
+    selectedAnswer?: string | null;
+    correctAnswer?: string;
+    questionFingerprint?: string;
+    at?: string;
+  }>;
 }
 
 const CACHE_EXPIRY_MS = 60 * 60 * 1000;
+const LEARNER_EVENTS_KEY = 'studyedit_learner_events_v1';
+const MAX_PERSISTED_EVENTS = 500;
 const responseCache: Record<string, CacheEntry> = {};
 
 function stableHash(value: string): string {
@@ -54,63 +78,178 @@ function safelyParse(value: string | null): any {
   try { return JSON.parse(value); } catch { return null; }
 }
 
+function readLearnerEvents(): LearnerEvent[] {
+  if (typeof window === 'undefined') return [];
+  try {
+    const parsed = safelyParse(localStorage.getItem(LEARNER_EVENTS_KEY));
+    return Array.isArray(parsed) ? parsed : [];
+  } catch {
+    return [];
+  }
+}
+
+function writeLearnerEvents(events: LearnerEvent[]) {
+  if (typeof window === 'undefined') return;
+  try {
+    const deduped = new Map<string, LearnerEvent>();
+    events.forEach(event => {
+      if (event?.id) deduped.set(event.id, event);
+    });
+    const compact = Array.from(deduped.values())
+      .sort((a, b) => new Date(b.at || 0).getTime() - new Date(a.at || 0).getTime())
+      .slice(0, MAX_PERSISTED_EVENTS);
+    localStorage.setItem(LEARNER_EVENTS_KEY, JSON.stringify(compact));
+  } catch {
+    // Memory persistence must never interrupt practice.
+  }
+}
+
+function persistSessionLearningSignals() {
+  if (typeof window === 'undefined') return;
+  try {
+    const existing = readLearnerEvents();
+    const additions: LearnerEvent[] = [];
+
+    for (let i = 0; i < sessionStorage.length; i += 1) {
+      const key = sessionStorage.key(i);
+      if (!key || !key.startsWith('learning_frontier_')) continue;
+      const signal = safelyParse(sessionStorage.getItem(key));
+      if (!signal?.at) continue;
+
+      if (key.includes('_answer_confidence_')) {
+        additions.push({
+          id: `confidence_${stableHash(`${key}_${signal.at}`)}`,
+          kind: 'confidence',
+          at: signal.at,
+          concept: signal.concept,
+          confidence: signal.value,
+          correct: signal.correct,
+          evidenceClass: signal.evidence_class,
+        });
+      }
+    }
+
+    if (additions.length) writeLearnerEvents([...additions, ...existing]);
+  } catch {
+    // Personalisation memory is opportunistic and must never block learning.
+  }
+}
+
+function persistQuestionProgress() {
+  if (typeof window === 'undefined') return;
+  try {
+    const existing = readLearnerEvents();
+    const additions: LearnerEvent[] = [];
+
+    for (let i = 0; i < localStorage.length; i += 1) {
+      const key = localStorage.key(i);
+      if (!key?.startsWith('question_progress_')) continue;
+      const result = safelyParse(localStorage.getItem(key));
+      if (!result?.timestamp) continue;
+      additions.push({
+        id: `question_${stableHash(`${key}_${result.timestamp}`)}`,
+        kind: 'question_result',
+        at: result.timestamp,
+        topic: result.topic,
+        skill: result.skill,
+        status: result.status,
+      });
+    }
+
+    if (additions.length) writeLearnerEvents([...additions, ...existing]);
+  } catch {
+    // Personalisation memory is opportunistic and must never block learning.
+  }
+}
+
+function persistAnswerContext(context: QuestionContext) {
+  if (typeof window === 'undefined' || !context.selectedAnswer) return;
+  try {
+    const questionFingerprint = stableHash(`${context.question}|${context.options.join('|')}`);
+    const selected = context.selectedAnswer || null;
+    const correct = context.correctAnswer || '';
+    const now = new Date().toISOString();
+    const event: LearnerEvent = {
+      id: `answer_${stableHash(`${questionFingerprint}_${selected}_${correct}`)}`,
+      kind: 'answer_context',
+      at: now,
+      selectedAnswer: selected,
+      correctAnswer: correct,
+      questionFingerprint,
+    };
+    writeLearnerEvents([event, ...readLearnerEvents()]);
+  } catch {
+    // Answer memory must never interrupt feedback.
+  }
+}
+
+function syncPersistentLearnerMemory(context?: QuestionContext) {
+  persistSessionLearningSignals();
+  persistQuestionProgress();
+  if (context) persistAnswerContext(context);
+}
+
 function buildLearnerSnapshot(): LearnerSnapshot {
   if (typeof window === 'undefined') {
-    return { conceptEvidence: [], recentConfidenceSignals: [], recentQuestionResults: [] };
+    return { conceptEvidence: [], recentConfidenceSignals: [], recentQuestionResults: [], recentAnswerContexts: [] };
   }
+
+  syncPersistentLearnerMemory();
 
   const conceptEvidence: LearnerSnapshot['conceptEvidence'] = [];
   const recentConfidenceSignals: LearnerSnapshot['recentConfidenceSignals'] = [];
   const recentQuestionResults: LearnerSnapshot['recentQuestionResults'] = [];
+  const recentAnswerContexts: LearnerSnapshot['recentAnswerContexts'] = [];
 
   try {
     for (let i = 0; i < localStorage.length; i += 1) {
       const key = localStorage.key(i);
-      if (!key) continue;
-
-      if (key.endsWith('_user_concepts')) {
-        const concepts = safelyParse(localStorage.getItem(key));
-        if (!Array.isArray(concepts)) continue;
-        concepts.forEach((concept: any) => {
-          const md = concept?.mastery_data || {};
-          const attempts = Number(md.attempts || 0);
-          if (!attempts) return;
-          conceptEvidence.push({
-            title: String(concept.title || concept.concept_title || concept.concept_id || 'Concept'),
-            attempts,
-            correct: Number(md.correct || 0),
-            incorrect: Number(md.incorrect || 0),
-            masteryLevel: Number(md.mastery_level || 0),
-            lastPracticed: md.last_practiced || md.fsrs_last_review || null,
-          });
+      if (!key || !key.endsWith('_user_concepts')) continue;
+      const concepts = safelyParse(localStorage.getItem(key));
+      if (!Array.isArray(concepts)) continue;
+      concepts.forEach((concept: any) => {
+        const md = concept?.mastery_data || {};
+        const attempts = Number(md.attempts || 0);
+        if (!attempts) return;
+        conceptEvidence.push({
+          title: String(concept.title || concept.concept_title || concept.concept_id || 'Concept'),
+          attempts,
+          correct: Number(md.correct || 0),
+          incorrect: Number(md.incorrect || 0),
+          masteryLevel: Number(md.mastery_level || 0),
+          lastPracticed: md.last_practiced || md.fsrs_last_review || null,
         });
-      }
-
-      if (key.startsWith('question_progress_')) {
-        const result = safelyParse(localStorage.getItem(key));
-        if (!result) continue;
-        recentQuestionResults.push({
-          topic: result.topic,
-          skill: result.skill,
-          status: result.status,
-          timestamp: result.timestamp,
-        });
-      }
-    }
-
-    for (let i = 0; i < sessionStorage.length; i += 1) {
-      const key = sessionStorage.key(i);
-      if (!key || !key.startsWith('learning_frontier_') || !key.includes('_answer_confidence_')) continue;
-      const signal = safelyParse(sessionStorage.getItem(key));
-      if (!signal) continue;
-      recentConfidenceSignals.push({
-        concept: signal.concept,
-        confidence: signal.value,
-        correct: signal.correct,
-        evidenceClass: signal.evidence_class,
-        at: signal.at,
       });
     }
+
+    const events = readLearnerEvents();
+    events.forEach(event => {
+      if (event.kind === 'confidence') {
+        recentConfidenceSignals.push({
+          concept: event.concept,
+          confidence: event.confidence,
+          correct: event.correct,
+          evidenceClass: event.evidenceClass,
+          at: event.at,
+        });
+      }
+      if (event.kind === 'question_result') {
+        recentQuestionResults.push({
+          topic: event.topic,
+          skill: event.skill,
+          status: event.status,
+          timestamp: event.at,
+        });
+      }
+      if (event.kind === 'answer_context') {
+        recentAnswerContexts.push({
+          selectedAnswer: event.selectedAnswer,
+          correctAnswer: event.correctAnswer,
+          questionFingerprint: event.questionFingerprint,
+          at: event.at,
+        });
+      }
+    });
   } catch {
     // Personalisation must never block the learning flow.
   }
@@ -122,11 +261,13 @@ function buildLearnerSnapshot(): LearnerSnapshot {
   });
   recentConfidenceSignals.sort((a, b) => new Date(b.at || 0).getTime() - new Date(a.at || 0).getTime());
   recentQuestionResults.sort((a, b) => new Date(b.timestamp || 0).getTime() - new Date(a.timestamp || 0).getTime());
+  recentAnswerContexts.sort((a, b) => new Date(b.at || 0).getTime() - new Date(a.at || 0).getTime());
 
   return {
     conceptEvidence: conceptEvidence.slice(0, 40),
-    recentConfidenceSignals: recentConfidenceSignals.slice(0, 20),
-    recentQuestionResults: recentQuestionResults.slice(0, 30),
+    recentConfidenceSignals: recentConfidenceSignals.slice(0, 30),
+    recentQuestionResults: recentQuestionResults.slice(0, 40),
+    recentAnswerContexts: recentAnswerContexts.slice(0, 30),
   };
 }
 
@@ -140,7 +281,7 @@ function compactLearnerContext(snapshot: LearnerSnapshot): string {
     return `- ${item.title}: ${item.correct}/${item.attempts} correct (${accuracy}%), mastery level ${item.masteryLevel}${item.lastPracticed ? `, last ${item.lastPracticed}` : ''}`;
   });
 
-  const confidenceLines = snapshot.recentConfidenceSignals.slice(0, 10).map(item =>
+  const confidenceLines = snapshot.recentConfidenceSignals.slice(0, 12).map(item =>
     `- ${item.concept || 'Concept'}: ${item.correct ? 'correct' : 'incorrect'}, confidence=${item.confidence || 'unknown'}, evidence=${item.evidenceClass || 'unknown'}`
   );
 
@@ -148,12 +289,19 @@ function compactLearnerContext(snapshot: LearnerSnapshot): string {
     `- ${item.topic || 'Unknown topic'}${item.skill ? ` / ${item.skill}` : ''}: ${item.status || 'unknown'}`
   );
 
-  if (!conceptLines.length && !confidenceLines.length && !recentLines.length) return 'No reliable prior learner history is available yet.';
+  const answerLines = snapshot.recentAnswerContexts.slice(0, 8).map(item =>
+    `- prior answer: selected=${item.selectedAnswer || 'unknown'}; correct=${item.correctAnswer || 'unknown'}; item=${item.questionFingerprint || 'unknown'}`
+  );
+
+  if (!conceptLines.length && !confidenceLines.length && !recentLines.length && !answerLines.length) {
+    return 'No reliable prior learner history is available yet.';
+  }
 
   return [
     conceptLines.length ? `CONCEPT RETRIEVAL HISTORY:\n${conceptLines.join('\n')}` : '',
-    confidenceLines.length ? `RECENT CONFIDENCE EVIDENCE:\n${confidenceLines.join('\n')}` : '',
+    confidenceLines.length ? `CONFIDENCE / METACOGNITIVE HISTORY:\n${confidenceLines.join('\n')}` : '',
     recentLines.length ? `RECENT QUESTION RESULTS:\n${recentLines.join('\n')}` : '',
+    answerLines.length ? `RECENT ANSWER-CHOICE HISTORY:\n${answerLines.join('\n')}` : '',
   ].filter(Boolean).join('\n\n');
 }
 
@@ -172,14 +320,15 @@ function buildCacheKey(userQuery: string, context: QuestionContext): string {
 }
 
 function buildUserPrompt(userQuery: string, context: QuestionContext): string {
+  syncPersistentLearnerMemory(context);
   const learnerContext = compactLearnerContext(buildLearnerSnapshot());
-  return `CURRENT QUESTION CONTEXT\n\nQUESTION / VIGNETTE:\n${context.question}\n\nOPTIONS:\n${context.options.join('\n') || 'Not supplied'}\n\nSTUDENT SELECTED:\n${context.selectedAnswer || 'Not supplied'}\n\nCORRECT ANSWER:\n${context.correctAnswer}\n\nGROUNDING EXPLANATION:\n${context.explanation || 'Not supplied'}\n\nLEARNER HISTORY\n${learnerContext}\n\nUSER REQUEST:\n${userQuery}\n\nTEACHING POLICY\n- The current question and grounding explanation are the clinical source of truth. Learner history is for personalisation, not for inventing medical facts.\n- Use prior history only when it genuinely changes what is useful to teach now.\n- If the learner repeatedly misses a related concept or discriminator, make that pattern explicit and focus on it.\n- If the learner has repeatedly retrieved the basics successfully, do not reteach them unless needed for the current error.\n- A correct low-confidence response is weaker evidence than confident retrieval. A confident incorrect response can indicate a misconception.\n- The selected wrong option is diagnostic information: explain why it was tempting and the clue or principle that should have shifted the decision when the supplied context supports that.\n- Never claim a recurring pattern unless the learner history above actually supports it.\n- Do not expose internal scores, mastery levels, storage fields or system terminology to the learner.\n- Keep the answer concise and action-oriented.`;
+  return `CURRENT QUESTION CONTEXT\n\nQUESTION / VIGNETTE:\n${context.question}\n\nOPTIONS:\n${context.options.join('\n') || 'Not supplied'}\n\nSTUDENT SELECTED:\n${context.selectedAnswer || 'Not supplied'}\n\nCORRECT ANSWER:\n${context.correctAnswer}\n\nGROUNDING EXPLANATION:\n${context.explanation || 'Not supplied'}\n\nLONGITUDINAL LEARNER MEMORY\n${learnerContext}\n\nUSER REQUEST:\n${userQuery}\n\nTEACHING POLICY\n- The current question and grounding explanation are the clinical source of truth. Learner memory is for personalisation, not for inventing medical facts.\n- Treat history as longitudinal evidence, not as a licence to overclaim. Only mention a repeated pattern when multiple supplied observations support it.\n- If the learner repeatedly misses a related concept or discriminator, make that pattern explicit and focus on it.\n- If the learner has repeatedly retrieved prerequisite material successfully, skip basic reteaching and teach the missing layer.\n- A correct low-confidence response is weaker evidence than confident retrieval. A confident incorrect response can indicate a misconception.\n- The selected wrong option is diagnostic information. Explain why it was tempting and the clue or principle that should have shifted the decision when the supplied context supports that.\n- Prefer the shortest explanation that changes this learner's future decision-making.\n- Never expose internal scores, mastery levels, storage fields, event IDs, fingerprints or system terminology to the learner.\n- Keep the answer concise and action-oriented.`;
 }
 
 const systemPrompt = `You are StudyEdit, an expert medical education assistant for UKMLA AKT students.
 - Be concise, clear and clinically careful.
 - Use the supplied current-question context as the clinical source of truth.
-- Personalise teaching using the supplied learner history when relevant.
+- Personalise teaching using the supplied longitudinal learner memory when relevant.
 - The student's selected answer is explicitly provided when known; never claim it was not provided if it appears in the context.
 - Do not contradict the supplied correct answer or grounding explanation.
 - Do not invent prior learner history, references, links, guidelines or unsupported medical facts.
