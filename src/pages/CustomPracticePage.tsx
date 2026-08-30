@@ -7,6 +7,8 @@ import { getUserCurriculumId, migrateLegacyCurriculumState } from '@/utils/curri
 import { PracticeModeFilterFlow, type PracticeModeFilterState, type PracticeStudyMode } from '@/components/practice/PracticeModeFilterFlow';
 import { ApplePracticeSession } from '@/components/practice/ApplePracticeSession';
 
+const PRACTICE_BLOCK_SIZE = 5;
+
 function PreparingSessionCard({ title = 'Getting your questions ready' }: { title?: string }) {
   return (
     <main className="min-h-screen bg-[#FAF5EC] px-5 py-10 text-[#2A1E16]">
@@ -59,14 +61,14 @@ function CustomPracticeContent() {
     goHome();
   };
 
-  const startCustomSession = (filters: PracticeModeFilterState) => {
+  const startCustomSession = (_filters: PracticeModeFilterState) => {
     beginningSessionRef.current = true;
     setActiveStudyMode('questions');
     setShowFilters(false);
     startPractice({
       study_mode: 'custom',
       target_formats: ['ukmla_sba'],
-      question_count: filters.size,
+      question_count: PRACTICE_BLOCK_SIZE,
     });
   };
 
@@ -101,7 +103,7 @@ function CustomPracticeContent() {
         section="UKMLA AKT"
         defaultFormat="ukmla_sba"
         currentFormat="ukmla_sba"
-        onAnotherFive={() => startPractice({ study_mode: 'custom', target_formats: ['ukmla_sba'], question_count: 5 })}
+        onAnotherFive={() => startPractice({ study_mode: 'custom', target_formats: ['ukmla_sba'], question_count: PRACTICE_BLOCK_SIZE })}
         onRestartWithFilters={() => {
           endPractice();
           beginningSessionRef.current = false;
