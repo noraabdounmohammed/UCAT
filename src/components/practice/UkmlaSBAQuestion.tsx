@@ -28,6 +28,8 @@ interface UkmlaSBAQuestionProps {
   nextButtonText?: string;
 }
 
+type ConfidenceLevel = 'know' | 'unsure' | 'guess';
+
 const C = {
   parchment: '#F4ECDF',
   cream: '#FAF5EC',
@@ -224,6 +226,58 @@ function readPriorConceptEvidence(question: QuestionData, conceptTitle: string):
   }
 }
 
+function readLatestConfidence(conceptTitle: string, notBefore = 0): ConfidenceLevel | null {
+  try {
+    let latest: { value: ConfidenceLevel; at: number } | null = null;
+    for (let i = 0; i < sessionStorage.length; i += 1) {
+      const key = sessionStorage.key(i);
+      if (!key || !key.startsWith('learning_frontier_') || !key.includes('_answer_confidence_')) continue;
+      const raw = sessionStorage.getItem(key);
+      if (!raw) continue;
+      const parsed = JSON.parse(raw);
+      if (!parsed?.value || !['know', 'unsure', 'guess'].includes(parsed.value)) continue;
+      if (String(parsed.concept || '').trim().toLowerCase() !== conceptTitle.trim().toLowerCase()) continue;
+      const at = new Date(parsed.at || 0).getTime();
+      if (at < notBefore) continue;
+      if (!latest || at > latest.at) latest = { value: parsed.value as ConfidenceLevel, at };
+    }
+    return latest?.value || null;
+  } catch {
+    return null;
+  }
+}
+
+async function waitForConfidence(conceptTitle: string, startedAt: number): Promise<ConfidenceLevel | null> {
+  const deadline = Date.now() + 12000;
+  while (Date.now() < deadline) {
+    const confidence = readLatestConfidence(conceptTitle, startedAt - 1000);
+    if (confidence) return confidence;
+    await new Promise(resolve => window.setTimeout(resolve, 120));
+  }
+  return readLatestConfidence(conceptTitle, startedAt - 1000);
+}
+
+function teachingInstruction(correct: boolean, confidence: ConfidenceLevel | null): string {
+  const common = 'The interface already states the selected and correct options, so do not restate option letters. Use the verified explanation and key point as ground truth. Keep it around 90-140 words, bold only a few useful phrases, and end with one short carry-forward rule.';
+
+  if (correct && confidence === 'know') return `${common} The learner was correct and said they knew it. Confirm the decisive clue briefly and avoid reteaching basics they have just demonstrated.`;
+  if (correct && confidence === 'unsure') return `${common} The learner was correct but unsure. Reinforce the decisive discriminator and explain why it makes this answer reliable, without implying full mastery.`;
+  if (correct && confidence === 'guess') return `${common} The learner was correct but explicitly said they guessed. Do not praise mastery or imply they reasoned to the answer. Teach the minimum recognition rule or clue that would let them answer deliberately next time.`;
+  if (!correct && confidence === 'know') return `${common} The learner was wrong but said they knew it. Treat this as a possible misconception. Show where the reasoning or rule must change, but do not invent a rationale they did not state.`;
+  if (!correct && confidence === 'unsure') return `${common} The learner was wrong and unsure. Resolve the key discriminator between their choice and the correct answer. You may explain why the selected option can look plausible only when the verified context supports that.`;
+  if (!correct && confidence === 'guess') return `${common} The learner was wrong and explicitly said they guessed. Never say their answer was tempting and never invent why they chose it. Teach the minimum rule, pattern, or clue they need to answer this kind of question deliberately next time.`;
+  return `${common} Explain the decisive clue and the rule for next time. Do not infer why the learner selected their option and do not describe it as tempting unless explicit learner evidence supports that.`;
+}
+
+function followUpForConfidence(correct: boolean, confidence: ConfidenceLevel | null) {
+  if (!correct && confidence === 'guess') return { label: 'Build the rule', prompt: 'I guessed. Teach me the minimum rule or clue I need to answer this deliberately next time. Do not infer why I chose my option.' };
+  if (!correct && confidence === 'know') return { label: 'Where did my reasoning break?', prompt: 'I thought I knew this. Show me exactly what rule or reasoning needs to change, without inventing reasoning I did not state.' };
+  if (!correct && confidence === 'unsure') return { label: 'What clue decides this?', prompt: 'I was unsure. What exact discriminator should have decided this question?' };
+  if (correct && confidence === 'guess') return { label: 'Lock in the clue', prompt: 'I guessed correctly. Give me the single clue or rule that would let me answer deliberately next time.' };
+  if (correct && confidence === 'unsure') return { label: 'Why was this right?', prompt: 'I was right but unsure. Reinforce the decisive clue so I can recognise it confidently next time.' };
+  return { label: 'What should I spot next time?', prompt: 'What clue should I notice next time I see this concept in a different vignette? Keep it brief.' };
+}
+
 export const UkmlaSBAQuestion: React.FC<UkmlaSBAQuestionProps> = ({
   question,
   onAnswer,
@@ -245,6 +299,8 @@ export const UkmlaSBAQuestion: React.FC<UkmlaSBAQuestionProps> = ({
   const [aiQuestion, setAiQuestion] = useState('');
   const [aiStreaming, setAiStreaming] = useState(false);
   const [personalisedStarted, setPersonalisedStarted] = useState(preSubmitted);
+  const [answerStartedAt, setAnswerStartedAt] = useState(0);
+  const [renderTick, setRenderTick] = useState(0);
   const abortControllerRef = useRef<AbortController | null>(null);
 
   const getStorageKey = () => `sba_answer_${question.id || question.question?.substring(0, 50)}`;
@@ -282,6 +338,8 @@ export const UkmlaSBAQuestion: React.FC<UkmlaSBAQuestionProps> = ({
     setAiQuestion('');
     setAiStreaming(false);
     setPersonalisedStarted(preSubmitted);
+    setAnswerStartedAt(0);
+    setRenderTick(0);
     abortControllerRef.current?.abort();
   }, [question.id, question.question, question.question_stem, preSubmitted, preSelectedAnswer]);
 
@@ -301,13 +359,16 @@ export const UkmlaSBAQuestion: React.FC<UkmlaSBAQuestionProps> = ({
 
   const explanation = sanitiseExplanation(question.explanation || question.worked_solution || '');
   const keyFact = sanitiseExplanation((question as any).key_fact || '');
-  const conceptTitle = (question as any).concept_title || question.title || (question as any).topic || 'Clinical concept';
+  const conceptTitle = String((question as any).concept_title || question.title || (question as any).topic || 'Clinical concept');
   const distractors = ((question as any).distractorExplanations || {}) as Record<string, string>;
   const displayedSelectedId = committedAnswer || selectedOption;
   const displayedSelectedText = options.find((option: any) => option.id === displayedSelectedId)?.text || '';
   const correctOptionText = options.find((option: any) => option.id === correctAnswerId)?.text || '';
   const isCorrect = hasSubmitted && committedAnswer === correctAnswerId;
   const takeaway = keyFact || firstUsefulSentence(explanation);
+  void renderTick;
+  const currentConfidence = readLatestConfidence(conceptTitle, answerStartedAt ? answerStartedAt - 1000 : 0);
+  const adaptiveFollowUp = followUpForConfidence(isCorrect, currentConfidence);
 
   const handleOptionSelect = (optionId: string) => {
     if (hasSubmitted) return;
@@ -328,6 +389,8 @@ export const UkmlaSBAQuestion: React.FC<UkmlaSBAQuestionProps> = ({
     priorEvidence?: PriorEvidence | null,
     isDefaultExplanation = false,
     answerSnapshot?: AnswerSnapshot,
+    displayLabel?: string,
+    confidenceOverride?: ConfidenceLevel | null,
   ) => {
     const cleanPrompt = prompt.trim();
     if (!cleanPrompt || aiStreaming) return;
@@ -335,7 +398,7 @@ export const UkmlaSBAQuestion: React.FC<UkmlaSBAQuestionProps> = ({
     const snapshot = answerSnapshot || (committedAnswer ? buildAnswerSnapshot(committedAnswer) : null);
     if (!snapshot) return;
 
-    setAiPrompt(isDefaultExplanation ? '' : cleanPrompt);
+    setAiPrompt(isDefaultExplanation ? '' : (displayLabel || cleanPrompt));
     setAiQuestion('');
     if (isDefaultExplanation) {
       setPrimaryExplanation('');
@@ -357,11 +420,15 @@ export const UkmlaSBAQuestion: React.FC<UkmlaSBAQuestionProps> = ({
       .replace(/\s+/g, '-')
       .slice(0, 80);
 
+    const confidence = confidenceOverride ?? (isDefaultExplanation ? await waitForConfidence(conceptTitle, answerStartedAt || Date.now()) : readLatestConfidence(conceptTitle, answerStartedAt ? answerStartedAt - 1000 : 0));
+    if (confidence) setRenderTick(value => value + 1);
+
     const tutorContextPacket = [
       `STUDENT SELECTED: ${selectedLine}`,
       `CORRECT ANSWER: ${correctLine}`,
       `QUESTION ASKED: ${askLine || 'Use the clinical vignette to answer the SBA.'}`,
       `CONCEPT: ${conceptTitle}`,
+      `CURRENT CONFIDENCE: ${confidence || 'not supplied'}`,
       `PRIOR LEARNER EVIDENCE: ${evidenceLine}`,
       `KEY POINT / GROUND TRUTH: ${keyFact || takeaway || 'Not supplied'}`,
       `VERIFIED QUESTION EXPLANATION: ${explanation || 'Not supplied'}`,
@@ -379,11 +446,9 @@ export const UkmlaSBAQuestion: React.FC<UkmlaSBAQuestionProps> = ({
     };
 
     const wasCorrect = snapshot.selectedId === snapshot.correctId;
-    const defaultInstruction = wasCorrect
-      ? `Give this student their personalised post-answer teaching explanation. The interface already states exactly what they selected and the correct answer, so DO NOT restate either option or letter. Explain why their choice was correct, identify the decisive clue(s) in this vignette in very simple language, and end with one short carry-forward rule for the next vignette. Use the verified explanation and key point as ground truth. Keep it around 90-140 words and bold the few phrases worth skimming. If prior learner evidence shows at least 2 previous attempts, you may briefly mention the factual attempt/correct/incorrect pattern, but do not claim a recurring misconception unless the supplied evidence explicitly proves one.`
-      : `Give this student their personalised post-answer teaching explanation. The interface already states exactly what they selected and the correct answer, so DO NOT restate either option or letter. Focus first on WHY THE STUDENT'S EXACT CHOICE WAS TEMPTING, then explain why it is wrong in THIS vignette, what decisive clue should have changed their mind, and end with one short carry-forward rule for the next vignette. Use the verified distractor feedback, explanation and key point as ground truth. Keep it around 90-140 words and bold the few phrases worth skimming. If prior learner evidence shows at least 2 previous attempts, you may briefly mention the factual attempt/correct/incorrect pattern, but do not claim a recurring misconception unless the supplied evidence explicitly proves one.`;
+    const defaultInstruction = teachingInstruction(wasCorrect, confidence);
     const intentPrompt = isDefaultExplanation ? 'Personalised default explanation' : cleanPrompt;
-    const modelPrompt = `${intentPrompt}\nQuestionRef ${questionRef} Selected ${snapshot.selectedId}. ${isDefaultExplanation ? defaultInstruction : cleanPrompt}\n\nUse ONLY the supplied current-question context. The student's selected answer is explicitly provided. Never substitute another option. Do not contradict the verified explanation. Do not invent prior attempts or patterns. For a follow-up, answer the follow-up request directly and do not simply repeat the original explanation.`;
+    const modelPrompt = `${intentPrompt}\nQuestionRef ${questionRef} Selected ${snapshot.selectedId}. ${isDefaultExplanation ? defaultInstruction : cleanPrompt}\n\nUse ONLY the supplied current-question context. The student's selected answer and confidence are explicitly provided when known. Never substitute another option. Do not contradict the verified explanation. Never invent why the learner chose an answer. If confidence=guess, do not describe the selected answer as tempting or imply a reasoning process. Do not invent prior attempts or patterns. For a follow-up, answer the follow-up request directly and do not simply repeat the original explanation.`;
 
     const controller = new AbortController();
     abortControllerRef.current = controller;
@@ -420,12 +485,14 @@ export const UkmlaSBAQuestion: React.FC<UkmlaSBAQuestionProps> = ({
     const answerSnapshot = buildAnswerSnapshot(selectedOption);
     const priorEvidence = readPriorConceptEvidence(question, conceptTitle);
     const correct = answerSnapshot.selectedId === answerSnapshot.correctId;
+    const startedAt = Date.now();
 
+    setAnswerStartedAt(startedAt);
     setCommittedAnswer(answerSnapshot.selectedId);
     setHasSubmitted(true);
     sessionStorage.setItem(getStorageKey(), JSON.stringify({ selectedOption: answerSnapshot.selectedId, hasSubmitted: true }));
     onAnswer(correct);
-    void askStudyEdit('personalised explanation', priorEvidence, true, answerSnapshot);
+    void askStudyEdit('personalised explanation', priorEvidence, true, answerSnapshot, undefined, null);
   };
 
   return (
@@ -519,18 +586,18 @@ export const UkmlaSBAQuestion: React.FC<UkmlaSBAQuestionProps> = ({
               <div className="mt-7">
                 <div className="text-[10px] font-bold uppercase tracking-[0.2em]" style={{ color: '#A9675D' }}>Your explanation</div>
                 {aiStreaming && !aiPrompt && !primaryExplanation && (
-                  <div className="mt-3 border-l-[3px] pl-4 text-[16px] font-semibold leading-7" style={{ borderColor: C.blush, color: C.muted }}>
-                    StudyEdit is tailoring this to your answer…
+                  <div className="mt-3 border-l-[3px] pl-4 text-[17px] font-semibold leading-[1.72]" style={{ borderColor: C.blush, color: C.muted }}>
+                    StudyEdit is tailoring this to what you actually demonstrated…
                   </div>
                 )}
                 {primaryExplanation && (
                   <div className="mt-3 border-l-[3px] pl-4" style={{ borderColor: C.blush }}>
-                    <SkimmableMarkdown text={primaryExplanation} className="text-[17px] font-semibold leading-[1.72] text-[#3B2A1E]" />
+                    <SkimmableMarkdown text={primaryExplanation} className="text-[18px] font-semibold leading-[1.72] text-[#3B2A1E]" />
                   </div>
                 )}
                 {!personalisedStarted && preSubmitted && (
                   <div className="mt-3 border-l-[3px] pl-4" style={{ borderColor: C.blush }}>
-                    <SkimmableMarkdown text={explanation || takeaway} className="text-[17px] font-semibold leading-[1.72] text-[#3B2A1E]" />
+                    <SkimmableMarkdown text={explanation || takeaway} className="text-[18px] font-semibold leading-[1.72] text-[#3B2A1E]" />
                   </div>
                 )}
               </div>
@@ -544,7 +611,7 @@ export const UkmlaSBAQuestion: React.FC<UkmlaSBAQuestionProps> = ({
                   {showAllDistractors && (
                     <div className="mt-2 divide-y" style={{ borderColor: C.line }}>
                       {Object.entries(distractors).filter(([letter]) => letter !== correctAnswerId).map(([letter, text]) => (
-                        <div key={letter} className="grid grid-cols-[26px_1fr] gap-3 py-3 text-[15px] font-medium leading-6" style={{ color: '#59483B', borderColor: C.line }}>
+                        <div key={letter} className="grid grid-cols-[26px_1fr] gap-3 py-3 text-[16px] font-medium leading-7" style={{ color: '#59483B', borderColor: C.line }}>
                           <strong style={{ color: C.espresso }}>{letter}.</strong><SkimmableMarkdown text={text} />
                         </div>
                       ))}
@@ -555,27 +622,26 @@ export const UkmlaSBAQuestion: React.FC<UkmlaSBAQuestionProps> = ({
 
               <div className="mt-7 border-t pt-5" style={{ borderColor: C.line }}>
                 <div className="text-[15px] font-bold" style={{ color: C.espresso }}>Ask StudyEdit</div>
-                <div className="mt-1 text-[12px]" style={{ color: C.muted }}>Go deeper only if you need to.</div>
+                <div className="mt-1 text-[13px]" style={{ color: C.muted }}>Go deeper only if you need to.</div>
 
                 <div className="mt-3 flex flex-wrap gap-2">
-                  <button type="button" onClick={() => askStudyEdit(`Teach me ${conceptTitle} from the beginning. Assume I know almost nothing. Give me a very short primer covering what it is, the typical clinical picture, how I recognise it, the broad management principle, and the single most important thing not to miss. Use the verified material in this question as ground truth; if the question does not support an exact detail, do not invent it.`)} disabled={aiStreaming} className="rounded-full border px-3 py-2 text-[13px] font-semibold disabled:opacity-50" style={{ borderColor: C.line, backgroundColor: C.paper, color: C.ink }}>Teach me {conceptTitle}</button>
-                  <button type="button" onClick={() => askStudyEdit('Explain this even more simply in under 80 words.')} disabled={aiStreaming} className="rounded-full border px-3 py-2 text-[13px] font-semibold disabled:opacity-50" style={{ borderColor: C.line, backgroundColor: C.paper, color: C.ink }}>Explain another way</button>
-                  {!isCorrect && <button type="button" onClick={() => askStudyEdit('Why was my answer tempting, and what exact clue rules it out here?')} disabled={aiStreaming} className="rounded-full border px-3 py-2 text-[13px] font-semibold disabled:opacity-50" style={{ borderColor: C.line, backgroundColor: C.paper, color: C.ink }}>Why was mine tempting?</button>}
-                  <button type="button" onClick={() => askStudyEdit('What clue should I notice next time I see this concept in a different vignette? Keep it brief.')} disabled={aiStreaming} className="rounded-full border px-3 py-2 text-[13px] font-semibold disabled:opacity-50" style={{ borderColor: C.line, backgroundColor: C.paper, color: C.ink }}>What should I spot next time?</button>
-                  <button type="button" onClick={() => askStudyEdit('Give me one short different clinical example that tests the same concept.')} disabled={aiStreaming} className="rounded-full border px-3 py-2 text-[13px] font-semibold disabled:opacity-50" style={{ borderColor: C.line, backgroundColor: C.paper, color: C.ink }}>Another example</button>
+                  <button type="button" onClick={() => askStudyEdit(`Teach me ${conceptTitle} from the beginning. Assume I know almost nothing. Give me a very short primer covering what it is, the typical clinical picture, how I recognise it, the broad management principle, and the single most important thing not to miss. Use the verified material in this question as ground truth; if the question does not support an exact detail, do not invent it.`, undefined, false, undefined, `Teach me ${conceptTitle}`)} disabled={aiStreaming} className="rounded-full border px-3 py-2 text-[14px] font-semibold disabled:opacity-50" style={{ borderColor: C.line, backgroundColor: C.paper, color: C.ink }}>Teach me {conceptTitle}</button>
+                  <button type="button" onClick={() => askStudyEdit('Explain this even more simply in under 80 words.', undefined, false, undefined, 'Explain another way')} disabled={aiStreaming} className="rounded-full border px-3 py-2 text-[14px] font-semibold disabled:opacity-50" style={{ borderColor: C.line, backgroundColor: C.paper, color: C.ink }}>Explain another way</button>
+                  <button type="button" onClick={() => askStudyEdit(adaptiveFollowUp.prompt, undefined, false, undefined, adaptiveFollowUp.label, currentConfidence)} disabled={aiStreaming} className="rounded-full border px-3 py-2 text-[14px] font-semibold disabled:opacity-50" style={{ borderColor: C.line, backgroundColor: C.paper, color: C.ink }}>{adaptiveFollowUp.label}</button>
+                  <button type="button" onClick={() => askStudyEdit('Give me one short different clinical example that tests the same concept.', undefined, false, undefined, 'Another example')} disabled={aiStreaming} className="rounded-full border px-3 py-2 text-[14px] font-semibold disabled:opacity-50" style={{ borderColor: C.line, backgroundColor: C.paper, color: C.ink }}>Another example</button>
                 </div>
 
                 {aiPrompt && (
                   <div className="mt-5 border-l-[3px] pl-4" style={{ borderColor: C.blush }}>
-                    <div className="text-[12px] font-semibold" style={{ color: '#A9675D' }}>StudyEdit · {aiPrompt}</div>
-                    {aiStreaming && !followUpResponse && <div className="mt-2 text-[15px] font-medium" style={{ color: C.muted }}>Reworking this for you…</div>}
-                    {followUpResponse && <SkimmableMarkdown text={followUpResponse} className="mt-2 text-[16px] font-medium leading-[1.7] text-[#3B2A1E]" />}
+                    <div className="text-[13px] font-semibold" style={{ color: '#A9675D' }}>StudyEdit · {aiPrompt}</div>
+                    {aiStreaming && !followUpResponse && <div className="mt-2 text-[17px] font-medium leading-[1.65]" style={{ color: C.muted }}>Working this through with your learning history…</div>}
+                    {followUpResponse && <SkimmableMarkdown text={followUpResponse} className="mt-2 text-[18px] font-medium leading-[1.72] text-[#3B2A1E]" />}
                   </div>
                 )}
 
-                <form className="mt-4 flex items-center gap-2 border-b pb-2" style={{ borderColor: C.line }} onSubmit={(event) => { event.preventDefault(); void askStudyEdit(aiQuestion); }}>
-                  <input value={aiQuestion} onChange={(event) => setAiQuestion(event.target.value)} placeholder="Ask about this question…" className="min-w-0 flex-1 bg-transparent py-2 text-[14px] font-medium outline-none placeholder:text-[#A89582]" style={{ color: C.espresso }} />
-                  <button type="submit" disabled={!aiQuestion.trim() || aiStreaming} className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full disabled:opacity-35" style={{ backgroundColor: C.espresso, color: C.cream }} aria-label="Ask StudyEdit"><Send className="h-4 w-4" /></button>
+                <form className="mt-4 flex items-center gap-2 border-b pb-2" style={{ borderColor: C.line }} onSubmit={(event) => { event.preventDefault(); const query = aiQuestion.trim(); if (!query) return; void askStudyEdit(query, undefined, false, undefined, query, currentConfidence); }}>
+                  <input value={aiQuestion} onChange={(event) => setAiQuestion(event.target.value)} placeholder="Ask about this question…" className="min-w-0 flex-1 bg-transparent py-3 text-[18px] font-medium leading-[1.7] outline-none placeholder:text-[#A89582]" style={{ color: C.espresso }} />
+                  <button type="submit" disabled={!aiQuestion.trim() || aiStreaming} className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full disabled:opacity-35" style={{ backgroundColor: C.espresso, color: C.cream }} aria-label="Ask StudyEdit"><Send className="h-4 w-4" /></button>
                 </form>
               </div>
 

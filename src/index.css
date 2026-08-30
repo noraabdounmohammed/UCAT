@@ -327,3 +327,24 @@ html, body {
 .no-momentum {
   -webkit-overflow-scrolling: auto;
 }
+
+/* StudyEdit AI is part of the learning surface, not a tiny embedded chat. */
+section[aria-label="Answer feedback"] form input {
+  font-size: 18px !important;
+  line-height: 1.7 !important;
+}
+
+section[aria-label="Answer feedback"] .text-\[16px\].font-medium.leading-\[1\.7\] {
+  font-size: 18px !important;
+  line-height: 1.72 !important;
+}
+
+section[aria-label="Answer feedback"] .text-\[15px\].font-medium {
+  font-size: 17px !important;
+  line-height: 1.65 !important;
+}
+
+/* Never expose model instructions in the learner UI. */
+section[aria-label="Answer feedback"] .text-\[12px\].font-semibold[style*="A9675D"] {
+  display: none !important;
+}
