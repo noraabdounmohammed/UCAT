@@ -22,11 +22,17 @@ export function PracticeModeFilterFlow({ isOpen, onClose, onApplyFilters }: Prac
 
   if (studyMode === 'questions') {
     return (
-      <PracticeFilterModalParchment
-        isOpen={true}
-        onClose={onClose}
-        onApplyFilters={(filters) => onApplyFilters({ ...filters, studyMode: 'questions' })}
-      />
+      <div className="studyedit-fixed-five">
+        <style>{`
+          .studyedit-fixed-five section:first-of-type { display: none; }
+          .studyedit-fixed-five .studyedit-session-size-row { display: none; }
+        `}</style>
+        <PracticeFilterModalParchment
+          isOpen={true}
+          onClose={onClose}
+          onApplyFilters={(filters) => onApplyFilters({ ...filters, size: 5, studyMode: 'questions' })}
+        />
+      </div>
     );
   }
 
@@ -67,7 +73,7 @@ export function PracticeModeFilterFlow({ isOpen, onClose, onApplyFilters }: Prac
                 <div className="text-[10px] font-semibold uppercase tracking-[0.18em]" style={{ color: T.inkMuted }}>Apply it</div>
                 <div className="mt-1 flex items-center justify-between"><span className="text-[23px] font-light" style={{ fontFamily: "'Fraunces', serif" }}>Questions</span><span style={{ color: T.blushDeep }}>→</span></div>
                 <p className="mt-1.5 text-[13px] leading-5" style={{ color: T.inkMuted }}>Exam-style clinical questions mapped to the concepts underneath.</p>
-                <div className="mt-3 text-[11px] font-medium" style={{ color: T.espresso }}>Ready to use</div>
+                <div className="mt-3 text-[11px] font-medium" style={{ color: T.espresso }}>5 at a time · keep going whenever you want</div>
               </div>
             </div>
           </button>
