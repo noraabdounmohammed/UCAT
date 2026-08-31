@@ -29,94 +29,24 @@ interface UkmlaSBAQuestionProps {
 }
 
 type ConfidenceLevel = 'know' | 'unsure' | 'guess';
+type TutorTurn = { role: 'student' | 'tutor'; text: string };
 
 const C = {
-  parchment: '#F4ECDF',
-  cream: '#FAF5EC',
-  paper: '#FFFDF8',
-  espresso: '#1F140C',
-  ink: '#2A1E16',
-  muted: '#8A7560',
-  line: '#E8DCC4',
-  blush: '#E5A89D',
-  blushSoft: '#F9E4DF',
-  sage: '#8FA379',
-  sageSoft: '#E2EAD6',
+  parchment: '#F4ECDF', cream: '#FAF5EC', paper: '#FFFDF8', espresso: '#1F140C', ink: '#2A1E16',
+  muted: '#8A7560', line: '#E8DCC4', blush: '#E5A89D', blushSoft: '#F9E4DF', sage: '#8FA379', sageSoft: '#E2EAD6',
 };
 
 function sanitiseExplanation(text: string): string {
-  return text
-    .replace(/[Tt]he content explicitly states? that ['\"]/g, '')
-    .replace(/['\"]\s*\.\s*(?=Option|The correct)/g, '. ')
-    .replace(/[Tt]he content (explicitly )?(states?|says?|mentions?|indicates?|notes?)[^.]*\.\s*/g, '')
-    .replace(/[Bb]ased on (the )?(concept |provided )?content[^,.]*[,.]?\s*/g, '')
-    .replace(/[Aa]ccording to (the )?(concept |provided )?content[^,.]*[,.]?\s*/g, '')
-    .replace(/[Aa]s (stated|mentioned|described|provided|outlined|given) in (the )?(concept |provided )?content[^,.]*[,.]?\s*/g, '')
-    .replace(/[Ff]rom (the )?(concept )?content[^,.]*[,.]?\s*/g, '')
-    .replace(/[Aa]s per (the )?(concept )?content[^,.]*[,.]?\s*/g, '')
-    .replace(/[Bb]ased on (the )?(provided|given) (information|material|concept)[^,.]*[,.]?\s*/g, '')
-    .replace(/\s{2,}/g, ' ')
-    .trim();
+  return String(text || '').replace(/\s{2,}/g, ' ').trim();
 }
-
-function firstUsefulSentence(text: string): string {
-  const clean = text.replace(/\s+/g, ' ').trim();
-  if (!clean) return '';
-  const match = clean.match(/^(.+?[.!?])(?:\s|$)/);
-  return match?.[1] || clean;
-}
-
-const normaliseWhitespace = (value: string) => value.replace(/\s+/g, ' ').trim();
 
 function splitSentences(text: string): string[] {
-  return normaliseWhitespace(text)
-    .split(/(?<=[.!?])\s+(?=[A-Z])/)
-    .map(sentence => sentence.trim())
-    .filter(Boolean);
-}
-
-type ClinicalSection = 'history' | 'examination' | 'investigations' | 'treatment';
-
-function clinicalSectionForSentence(sentence: string, current: ClinicalSection): ClinicalSection {
-  const value = sentence.trim();
-  if (/^(?:On examination|Physical examination|Clinical examination|Neurological examination|Cardiovascular examination|Respiratory examination|Abdominal examination|On auscultation|Observations|Vital signs|His observations|Her observations)\b/i.test(value)) return 'examination';
-  if (/^(?:Investigations|Initial investigations|Blood tests|Laboratory tests|Blood results|An ECG|ECG|Electrocardiogram|Chest X-ray|Chest radiograph|CXR|X-ray|CT|MRI|Ultrasound|Urinalysis|Troponin|Blood gas|ABG|Echocardiogram|Echo|D-dimer|Spirometry|Lumbar puncture|LP)\b/i.test(value)) return 'investigations';
-  if (/^(?:He is treated|She is treated|Treatment is started|Treatment|Following treatment|Following|Subsequently|Later|Hours later|Days later|During admission|While in hospital|The patient is given|Management|He is started|She is started)\b/i.test(value)) return 'treatment';
-  return current;
-}
-
-function formatClinicalVignette(text: string): string {
-  const clean = normaliseWhitespace(text);
-  if (!clean) return '';
-
-  const sentences = splitSentences(clean);
-  if (sentences.length < 2) return clean;
-
-  const paragraphs: Array<{ section: ClinicalSection; sentences: string[] }> = [];
-  let currentSection: ClinicalSection = 'history';
-
-  for (const sentence of sentences) {
-    const section = clinicalSectionForSentence(sentence, currentSection);
-    currentSection = section;
-    const last = paragraphs[paragraphs.length - 1];
-    if (!last || last.section !== section) paragraphs.push({ section, sentences: [sentence] });
-    else last.sentences.push(sentence);
-  }
-
-  return paragraphs.map(paragraph => paragraph.sentences.join(' ')).join('\n\n');
+  return String(text || '').replace(/\s+/g, ' ').trim().split(/(?<=[.!?])\s+(?=[A-Z])/).filter(Boolean);
 }
 
 function isLikelyLeadIn(text: string): boolean {
-  const clean = normaliseWhitespace(text);
+  const clean = String(text || '').replace(/\s+/g, ' ').trim();
   return Boolean(clean && clean.length <= 180 && clean.endsWith('?'));
-}
-
-function finalQuestionSentence(text: string): string {
-  const sentences = splitSentences(text);
-  for (let i = sentences.length - 1; i >= 0; i -= 1) {
-    if (isLikelyLeadIn(sentences[i])) return sentences[i];
-  }
-  return '';
 }
 
 function extractLeadIn(question: QuestionData, vignette: string): string {
@@ -129,26 +59,19 @@ function extractLeadIn(question: QuestionData, vignette: string): string {
     vignette,
   ].map(value => String(value || '').trim()).filter(Boolean);
 
-  for (const candidate of candidates.slice(0, 4)) {
-    if (isLikelyLeadIn(candidate)) return normaliseWhitespace(candidate);
-  }
-
+  for (const candidate of candidates.slice(0, 4)) if (isLikelyLeadIn(candidate)) return candidate.replace(/\s+/g, ' ').trim();
   for (const candidate of candidates) {
-    const found = finalQuestionSentence(candidate);
-    if (found) return normaliseWhitespace(found);
+    const sentences = splitSentences(candidate);
+    for (let i = sentences.length - 1; i >= 0; i -= 1) if (isLikelyLeadIn(sentences[i])) return sentences[i];
   }
-
   return '';
 }
 
 function stripLeadInFromVignette(vignette: string, leadIn: string): string {
-  const cleanVignette = normaliseWhitespace(vignette);
-  const cleanLeadIn = normaliseWhitespace(leadIn);
+  const cleanVignette = String(vignette || '').replace(/\s+/g, ' ').trim();
+  const cleanLeadIn = String(leadIn || '').replace(/\s+/g, ' ').trim();
   if (!cleanVignette || !cleanLeadIn) return cleanVignette;
-
-  const leadKey = cleanLeadIn.toLowerCase();
-  const remaining = splitSentences(cleanVignette).filter(sentence => normaliseWhitespace(sentence).toLowerCase() !== leadKey);
-  return remaining.join(' ').trim();
+  return splitSentences(cleanVignette).filter(sentence => sentence.toLowerCase() !== cleanLeadIn.toLowerCase()).join(' ').trim();
 }
 
 const emphasisStyle: React.CSSProperties = {
@@ -161,69 +84,14 @@ const emphasisStyle: React.CSSProperties = {
 };
 
 function SkimmableMarkdown({ text, className = '' }: { text: string; className?: string }) {
-  return (
-    <div className={className}>
-      <ReactMarkdown
-        components={{
-          p: ({ children }) => <p className="mb-3 last:mb-0">{children}</p>,
-          strong: ({ children }) => <strong style={emphasisStyle}>{children}</strong>,
-          em: ({ children }) => <em className="font-semibold not-italic" style={emphasisStyle}>{children}</em>,
-          li: ({ children }) => <li className="mb-1">{children}</li>,
-          ul: ({ children }) => <ul className="my-2 list-disc space-y-1 pl-5">{children}</ul>,
-          ol: ({ children }) => <ol className="my-2 list-decimal space-y-1 pl-5">{children}</ol>,
-        }}
-      >{text}</ReactMarkdown>
-    </div>
-  );
-}
-
-interface PriorEvidence {
-  attempts: number;
-  correct: number;
-  incorrect: number;
-  lastPracticed?: string | null;
-}
-
-interface AnswerSnapshot {
-  selectedId: string;
-  selectedText: string;
-  correctId: string;
-  correctText: string;
-  selectedDistractor: string;
-}
-
-function readPriorConceptEvidence(question: QuestionData, conceptTitle: string): PriorEvidence | null {
-  try {
-    const conceptId = String(question.concept_id || (question as any).conceptId || '');
-    let best: PriorEvidence | null = null;
-
-    for (let i = 0; i < localStorage.length; i += 1) {
-      const key = localStorage.key(i);
-      if (!key || !key.endsWith('_user_concepts')) continue;
-      const raw = localStorage.getItem(key);
-      if (!raw) continue;
-
-      const concepts = JSON.parse(raw);
-      if (!Array.isArray(concepts)) continue;
-      const match = concepts.find((concept: any) => {
-        if (conceptId && String(concept.concept_id || concept.id || '') === conceptId) return true;
-        return String(concept.title || '').trim().toLowerCase() === conceptTitle.trim().toLowerCase();
-      });
-      if (!match?.mastery_data) continue;
-
-      const md = match.mastery_data;
-      const evidence = {
-        attempts: Number(md.attempts || 0),
-        correct: Number(md.correct || 0),
-        incorrect: Number(md.incorrect || 0),
-        lastPracticed: md.last_practiced || md.fsrs_last_review || null,
-      };
-      if (!best || evidence.attempts > best.attempts) best = evidence;
-    }
-    return best;
-  } catch {
-    return null;
-  }
+  return <div className={className}><ReactMarkdown components={{
+    p: ({ children }) => <p className="mb-3 last:mb-0">{children}</p>,
+    strong: ({ children }) => <strong style={emphasisStyle}>{children}</strong>,
+    em: ({ children }) => <em className="font-semibold not-italic" style={emphasisStyle}>{children}</em>,
+    li: ({ children }) => <li className="mb-1">{children}</li>,
+    ul: ({ children }) => <ul className="my-2 list-disc space-y-1 pl-5">{children}</ul>,
+    ol: ({ children }) => <ol className="my-2 list-decimal space-y-1 pl-5">{children}</ol>,
+  }}>{text}</ReactMarkdown></div>;
 }
 
 function readLatestConfidence(conceptTitle: string, notBefore = 0): ConfidenceLevel | null {
@@ -235,16 +103,14 @@ function readLatestConfidence(conceptTitle: string, notBefore = 0): ConfidenceLe
       const raw = sessionStorage.getItem(key);
       if (!raw) continue;
       const parsed = JSON.parse(raw);
-      if (!parsed?.value || !['know', 'unsure', 'guess'].includes(parsed.value)) continue;
+      if (!['know', 'unsure', 'guess'].includes(parsed?.value)) continue;
       if (String(parsed.concept || '').trim().toLowerCase() !== conceptTitle.trim().toLowerCase()) continue;
       const at = new Date(parsed.at || 0).getTime();
       if (at < notBefore) continue;
       if (!latest || at > latest.at) latest = { value: parsed.value as ConfidenceLevel, at };
     }
     return latest?.value || null;
-  } catch {
-    return null;
-  }
+  } catch { return null; }
 }
 
 async function waitForConfidence(conceptTitle: string, startedAt: number): Promise<ConfidenceLevel | null> {
@@ -257,118 +123,63 @@ async function waitForConfidence(conceptTitle: string, startedAt: number): Promi
   return readLatestConfidence(conceptTitle, startedAt - 1000);
 }
 
-function teachingInstruction(correct: boolean, confidence: ConfidenceLevel | null): string {
-  const common = 'The interface already states the selected and correct options, so do not restate option letters. Use the verified explanation and key point as ground truth. Keep it around 90-140 words, bold only a few useful phrases, and end with one short carry-forward rule.';
-
-  if (correct && confidence === 'know') return `${common} The learner was correct and said they knew it. Confirm the decisive clue briefly and avoid reteaching basics they have just demonstrated.`;
-  if (correct && confidence === 'unsure') return `${common} The learner was correct but unsure. Reinforce the decisive discriminator and explain why it makes this answer reliable, without implying full mastery.`;
-  if (correct && confidence === 'guess') return `${common} The learner was correct but explicitly said they guessed. Do not praise mastery or imply they reasoned to the answer. Teach the minimum recognition rule or clue that would let them answer deliberately next time.`;
-  if (!correct && confidence === 'know') return `${common} The learner was wrong but said they knew it. Treat this as a possible misconception. Show where the reasoning or rule must change, but do not invent a rationale they did not state.`;
-  if (!correct && confidence === 'unsure') return `${common} The learner was wrong and unsure. Resolve the key discriminator between their choice and the correct answer. You may explain why the selected option can look plausible only when the verified context supports that.`;
-  if (!correct && confidence === 'guess') return `${common} The learner was wrong and explicitly said they guessed. Never say their answer was tempting and never invent why they chose it. Teach the minimum rule, pattern, or clue they need to answer this kind of question deliberately next time.`;
-  return `${common} Explain the decisive clue and the rule for next time. Do not infer why the learner selected their option and do not describe it as tempting unless explicit learner evidence supports that.`;
+function proactiveOpeningInstruction(correct: boolean, confidence: ConfidenceLevel | null): string {
+  const common = 'You are StudyEdit Tutor. The learner has just answered this SBA. Use the verified explanation and key point as ground truth. Do not invent why they chose an option. Make ONE pedagogical move only, usually 1-3 short sentences. Do not dump a full explanation unless instructed. End with at most one question.';
+  if (correct && confidence === 'know') return `${common} They were correct and said they knew it. Give a very brief confirmation of the decisive clue and do not interrogate them. Do not end with a question.`;
+  if (correct && confidence === 'unsure') return `${common} They were correct but unsure. Briefly name the decisive discriminator, then ask one tiny check question that confirms they can use it deliberately.`;
+  if (correct && confidence === 'guess') return `${common} They were correct but guessed. Do not imply mastery. Ask what made them choose this answer before teaching it, so you can distinguish lucky recognition from partial reasoning.`;
+  if (!correct && confidence === 'know') return `${common} They were wrong but said they knew it, which may indicate a misconception. Do NOT explain the answer yet. Ask them to talk you through how they got to their selected answer.`;
+  if (!correct && confidence === 'unsure') return `${common} They were wrong and unsure. Do NOT explain the answer yet. Ask what made them lean toward their selected answer. Keep it warm and specific to the option they chose.`;
+  if (!correct && confidence === 'guess') return `${common} They were wrong and guessed. There may be no reasoning to interrogate, so do not ask why they picked it. Teach the smallest prerequisite or rule needed to start, then ask one short prerequisite check.`;
+  return `${common} Confidence is unavailable. Ask one short neutral question to understand what the learner was thinking before you explain.`;
 }
 
-function followUpForConfidence(correct: boolean, confidence: ConfidenceLevel | null) {
-  if (!correct && confidence === 'guess') return { label: 'Build the rule', prompt: 'I guessed. Teach me the minimum rule or clue I need to answer this deliberately next time. Do not infer why I chose my option.' };
-  if (!correct && confidence === 'know') return { label: 'Where did my reasoning break?', prompt: 'I thought I knew this. Show me exactly what rule or reasoning needs to change, without inventing reasoning I did not state.' };
-  if (!correct && confidence === 'unsure') return { label: 'What clue decides this?', prompt: 'I was unsure. What exact discriminator should have decided this question?' };
-  if (correct && confidence === 'guess') return { label: 'Lock in the clue', prompt: 'I guessed correctly. Give me the single clue or rule that would let me answer deliberately next time.' };
-  if (correct && confidence === 'unsure') return { label: 'Why was this right?', prompt: 'I was right but unsure. Reinforce the decisive clue so I can recognise it confidently next time.' };
-  return { label: 'What should I spot next time?', prompt: 'What clue should I notice next time I see this concept in a different vignette? Keep it brief.' };
+function directExplanationInstruction(): string {
+  return 'Give the direct explanation now. Use the verified explanation as ground truth. Explain the decisive mechanism/discriminator in about 80-120 words and finish with one short carry-forward rule. Do not invent the learner\'s reasoning.';
 }
 
 export const UkmlaSBAQuestion: React.FC<UkmlaSBAQuestionProps> = ({
-  question,
-  onAnswer,
-  onNext,
-  onExit,
-  currentIndex = 0,
-  totalQuestions = 0,
-  preSelectedAnswer,
-  preSubmitted = false,
-  nextButtonText,
+  question, onAnswer, onNext, onExit, currentIndex = 0, totalQuestions = 0, preSelectedAnswer, preSubmitted = false, nextButtonText,
 }) => {
   const [selectedOption, setSelectedOption] = useState<string | null>(preSelectedAnswer || null);
   const [committedAnswer, setCommittedAnswer] = useState<string | null>(preSubmitted ? preSelectedAnswer || null : null);
   const [hasSubmitted, setHasSubmitted] = useState(preSubmitted);
   const [showAllDistractors, setShowAllDistractors] = useState(false);
-  const [primaryExplanation, setPrimaryExplanation] = useState('');
-  const [followUpResponse, setFollowUpResponse] = useState('');
-  const [aiPrompt, setAiPrompt] = useState('');
+  const [tutorTurns, setTutorTurns] = useState<TutorTurn[]>([]);
   const [aiQuestion, setAiQuestion] = useState('');
   const [aiStreaming, setAiStreaming] = useState(false);
-  const [personalisedStarted, setPersonalisedStarted] = useState(preSubmitted);
   const [answerStartedAt, setAnswerStartedAt] = useState(0);
-  const [renderTick, setRenderTick] = useState(0);
   const abortControllerRef = useRef<AbortController | null>(null);
 
   const getStorageKey = () => `sba_answer_${question.id || question.question?.substring(0, 50)}`;
 
   useEffect(() => {
     if (preSubmitted) {
-      setSelectedOption(preSelectedAnswer || null);
-      setCommittedAnswer(preSelectedAnswer || null);
-      setHasSubmitted(true);
+      setSelectedOption(preSelectedAnswer || null); setCommittedAnswer(preSelectedAnswer || null); setHasSubmitted(true);
     } else {
-      const savedState = sessionStorage.getItem(getStorageKey());
-      if (savedState) {
-        try {
-          const parsed = JSON.parse(savedState);
-          const restoredSelected = parsed.selectedOption || null;
-          setSelectedOption(restoredSelected);
-          setCommittedAnswer(parsed.hasSubmitted ? restoredSelected : null);
-          setHasSubmitted(Boolean(parsed.hasSubmitted));
-        } catch {
-          setSelectedOption(null);
-          setCommittedAnswer(null);
-          setHasSubmitted(false);
-        }
-      } else {
-        setSelectedOption(null);
-        setCommittedAnswer(null);
-        setHasSubmitted(false);
-      }
+      const saved = sessionStorage.getItem(getStorageKey());
+      if (saved) {
+        try { const parsed = JSON.parse(saved); setSelectedOption(parsed.selectedOption || null); setCommittedAnswer(parsed.hasSubmitted ? parsed.selectedOption || null : null); setHasSubmitted(Boolean(parsed.hasSubmitted)); }
+        catch { setSelectedOption(null); setCommittedAnswer(null); setHasSubmitted(false); }
+      } else { setSelectedOption(null); setCommittedAnswer(null); setHasSubmitted(false); }
     }
-
-    setShowAllDistractors(false);
-    setPrimaryExplanation('');
-    setFollowUpResponse('');
-    setAiPrompt('');
-    setAiQuestion('');
-    setAiStreaming(false);
-    setPersonalisedStarted(preSubmitted);
-    setAnswerStartedAt(0);
-    setRenderTick(0);
-    abortControllerRef.current?.abort();
+    setShowAllDistractors(false); setTutorTurns([]); setAiQuestion(''); setAiStreaming(false); setAnswerStartedAt(0); abortControllerRef.current?.abort();
   }, [question.id, question.question, question.question_stem, preSubmitted, preSelectedAnswer]);
 
-  const options = useMemo(() => (question.options || []).map((option: any, index: number) => {
-    if (typeof option === 'string') return { id: String.fromCharCode(65 + index), text: option };
-    return option;
-  }), [question.options]);
-
+  const options = useMemo(() => (question.options || []).map((option: any, index: number) => typeof option === 'string' ? { id: String.fromCharCode(65 + index), text: option } : option), [question.options]);
   const rawCorrectAnswer = question.correctAnswer ?? question.correct_answer ?? 'A';
   const correctAnswerId = typeof rawCorrectAnswer === 'number' ? String.fromCharCode(65 + rawCorrectAnswer) : String(rawCorrectAnswer);
-
   const rawQuestionContent = String((question as any).clinical_vignette || question.question_stem || question.question || '');
   const askLine = extractLeadIn(question, rawQuestionContent);
   const displayQuestionContent = stripLeadInFromVignette(rawQuestionContent, askLine);
-  const questionContent = formatClinicalVignette(displayQuestionContent);
-  const vignetteParagraphs = questionContent.split(/\n\s*\n/).map(value => value.trim()).filter(Boolean);
-
+  const vignetteParagraphs = displayQuestionContent.split(/\n\s*\n/).map(v => v.trim()).filter(Boolean);
   const explanation = sanitiseExplanation(question.explanation || question.worked_solution || '');
   const keyFact = sanitiseExplanation((question as any).key_fact || '');
   const conceptTitle = String((question as any).concept_title || question.title || (question as any).topic || 'Clinical concept');
   const distractors = ((question as any).distractorExplanations || {}) as Record<string, string>;
-  const displayedSelectedId = committedAnswer || selectedOption;
-  const displayedSelectedText = options.find((option: any) => option.id === displayedSelectedId)?.text || '';
+  const displayedSelectedText = options.find((option: any) => option.id === (committedAnswer || selectedOption))?.text || '';
   const correctOptionText = options.find((option: any) => option.id === correctAnswerId)?.text || '';
   const isCorrect = hasSubmitted && committedAnswer === correctAnswerId;
-  const takeaway = keyFact || firstUsefulSentence(explanation);
-  void renderTick;
-  const currentConfidence = readLatestConfidence(conceptTitle, answerStartedAt ? answerStartedAt - 1000 : 0);
-  const adaptiveFollowUp = followUpForConfidence(isCorrect, currentConfidence);
 
   const handleOptionSelect = (optionId: string) => {
     if (hasSubmitted) return;
@@ -376,285 +187,131 @@ export const UkmlaSBAQuestion: React.FC<UkmlaSBAQuestionProps> = ({
     sessionStorage.setItem(getStorageKey(), JSON.stringify({ selectedOption: optionId, hasSubmitted: false }));
   };
 
-  const buildAnswerSnapshot = (selectedId: string): AnswerSnapshot => ({
-    selectedId,
-    selectedText: options.find((option: any) => option.id === selectedId)?.text || 'Selected option',
-    correctId: correctAnswerId,
-    correctText: correctOptionText || 'Correct option',
-    selectedDistractor: selectedId !== correctAnswerId ? (distractors[selectedId] || '') : '',
-  });
+  const runTutor = async (studentText?: string, forceDirect = false, selectedOverride?: string, startedOverride?: number) => {
+    if (aiStreaming) return;
+    const selectedId = selectedOverride || committedAnswer;
+    if (!selectedId) return;
+    const selectedText = options.find((option: any) => option.id === selectedId)?.text || 'Selected option';
+    const confidence = await waitForConfidence(conceptTitle, startedOverride || answerStartedAt || Date.now());
+    const wasCorrect = selectedId === correctAnswerId;
+    const priorTurns = tutorTurns.slice(-6);
 
-  const askStudyEdit = async (
-    prompt: string,
-    priorEvidence?: PriorEvidence | null,
-    isDefaultExplanation = false,
-    answerSnapshot?: AnswerSnapshot,
-    displayLabel?: string,
-    confidenceOverride?: ConfidenceLevel | null,
-  ) => {
-    const cleanPrompt = prompt.trim();
-    if (!cleanPrompt || aiStreaming) return;
-
-    const snapshot = answerSnapshot || (committedAnswer ? buildAnswerSnapshot(committedAnswer) : null);
-    if (!snapshot) return;
-
-    setAiPrompt(isDefaultExplanation ? '' : (displayLabel || cleanPrompt));
-    setAiQuestion('');
-    if (isDefaultExplanation) {
-      setPrimaryExplanation('');
-      setPersonalisedStarted(true);
-    } else {
-      setFollowUpResponse('');
-    }
-    setAiStreaming(true);
+    if (studentText?.trim()) setTutorTurns(prev => [...prev, { role: 'student', text: studentText.trim() }]);
+    setAiQuestion(''); setAiStreaming(true);
 
     const optionLines = options.map((option: any) => `${option.id}. ${option.text}`).join('\n');
-    const selectedLine = `${snapshot.selectedId}. ${snapshot.selectedText}`;
-    const correctLine = `${snapshot.correctId}. ${snapshot.correctText}`;
-    const selectedFeedback = snapshot.selectedDistractor || 'No specific distractor explanation supplied.';
-    const evidence = priorEvidence ?? readPriorConceptEvidence(question, conceptTitle);
-    const evidenceLine = evidence && evidence.attempts > 0
-      ? `Before this answer: ${evidence.attempts} prior attempt${evidence.attempts === 1 ? '' : 's'} on this concept; ${evidence.correct} correct; ${evidence.incorrect} incorrect.`
-      : 'No meaningful prior concept evidence is available yet.';
-    const questionRef = String(question.id || question.concept_id || `${currentIndex + 1}-${rawQuestionContent.slice(0, 32)}`)
-      .replace(/\s+/g, '-')
-      .slice(0, 80);
-
-    const confidence = confidenceOverride ?? (isDefaultExplanation ? await waitForConfidence(conceptTitle, answerStartedAt || Date.now()) : readLatestConfidence(conceptTitle, answerStartedAt ? answerStartedAt - 1000 : 0));
-    if (confidence) setRenderTick(value => value + 1);
-
-    const tutorContextPacket = [
-      `STUDENT SELECTED: ${selectedLine}`,
-      `CORRECT ANSWER: ${correctLine}`,
-      `QUESTION ASKED: ${askLine || 'Use the clinical vignette to answer the SBA.'}`,
-      `CONCEPT: ${conceptTitle}`,
-      `CURRENT CONFIDENCE: ${confidence || 'not supplied'}`,
-      `PRIOR LEARNER EVIDENCE: ${evidenceLine}`,
-      `KEY POINT / GROUND TRUTH: ${keyFact || takeaway || 'Not supplied'}`,
-      `VERIFIED QUESTION EXPLANATION: ${explanation || 'Not supplied'}`,
-      `VERIFIED DISTRACTOR FEEDBACK FOR STUDENT'S CHOICE: ${selectedFeedback}`,
-      `OPTIONS:\n${optionLines}`,
-      `FULL CLINICAL VIGNETTE:\n${displayQuestionContent}`,
-    ].join('\n\n');
-
     const context: QuestionContext = {
-      question: tutorContextPacket,
+      question: [
+        `CONCEPT: ${conceptTitle}`,
+        `QUESTION: ${askLine || rawQuestionContent}`,
+        `CLINICAL VIGNETTE: ${displayQuestionContent}`,
+        `STUDENT SELECTED: ${selectedId}. ${selectedText}`,
+        `CORRECT ANSWER: ${correctAnswerId}. ${correctOptionText}`,
+        `CONFIDENCE: ${confidence || 'not supplied'}`,
+        `VERIFIED EXPLANATION: ${explanation || 'Not supplied'}`,
+        `KEY FACT: ${keyFact || 'Not supplied'}`,
+        `VERIFIED DISTRACTOR FEEDBACK: ${selectedId !== correctAnswerId ? (distractors[selectedId] || 'Not supplied') : 'Not applicable'}`,
+        `OPTIONS:\n${optionLines}`,
+      ].join('\n\n'),
       options: options.map((option: any) => `${option.id}. ${option.text}`),
-      correctAnswer: correctLine,
-      selectedAnswer: selectedLine,
-      explanation: explanation || keyFact || takeaway,
+      correctAnswer: `${correctAnswerId}. ${correctOptionText}`,
+      selectedAnswer: `${selectedId}. ${selectedText}`,
+      explanation: explanation || keyFact,
     };
 
-    const wasCorrect = snapshot.selectedId === snapshot.correctId;
-    const defaultInstruction = teachingInstruction(wasCorrect, confidence);
-    const intentPrompt = isDefaultExplanation ? 'Personalised default explanation' : cleanPrompt;
-    const modelPrompt = `${intentPrompt}\nQuestionRef ${questionRef} Selected ${snapshot.selectedId}. ${isDefaultExplanation ? defaultInstruction : cleanPrompt}\n\nUse ONLY the supplied current-question context. The student's selected answer and confidence are explicitly provided when known. Never substitute another option. Do not contradict the verified explanation. Never invent why the learner chose an answer. If confidence=guess, do not describe the selected answer as tempting or imply a reasoning process. Do not invent prior attempts or patterns. For a follow-up, answer the follow-up request directly and do not simply repeat the original explanation.`;
+    const transcript = [...priorTurns, ...(studentText?.trim() ? [{ role: 'student' as const, text: studentText.trim() }] : [])]
+      .map(turn => `${turn.role === 'student' ? 'LEARNER' : 'TUTOR'}: ${turn.text}`).join('\n');
+    const instruction = forceDirect ? directExplanationInstruction() : studentText?.trim()
+      ? `Continue the tutoring conversation. Respond directly to the learner's latest message. Diagnose only what their words support. If they reveal a gap, address that exact gap. Prefer a short Socratic step or concise explanation over a lecture. You may ask one follow-up question when useful. Never claim they thought something they did not say.`
+      : proactiveOpeningInstruction(wasCorrect, confidence);
+    const prompt = `${instruction}\n\nCONVERSATION SO FAR:\n${transcript || '(none yet)'}\n\nUse only the supplied current-question context for medical claims. Do not contradict the verified explanation. Keep the interaction concise and tutor-like.`;
 
-    const controller = new AbortController();
-    abortControllerRef.current = controller;
-    let streamed = '';
-
+    const controller = new AbortController(); abortControllerRef.current = controller; let streamed = '';
+    setTutorTurns(prev => [...prev, { role: 'tutor', text: '' }]);
     try {
-      await generateAIResponseStream(
-        modelPrompt,
-        context,
-        (token: string) => {
-          streamed += token;
-          if (isDefaultExplanation) setPrimaryExplanation(streamed);
-          else setFollowUpResponse(streamed);
-        },
-        () => undefined,
-        controller.signal,
-      );
+      await generateAIResponseStream(prompt, context, token => {
+        streamed += token;
+        setTutorTurns(prev => {
+          const next = [...prev];
+          const last = next[next.length - 1];
+          if (last?.role === 'tutor') next[next.length - 1] = { role: 'tutor', text: streamed };
+          return next;
+        });
+      }, () => undefined, controller.signal);
     } catch (error) {
       if (!controller.signal.aborted) {
-        console.error('StudyEdit personalised feedback failed:', error);
-        const fallback = explanation || takeaway || 'Review the correct answer and the decisive clues in the vignette before moving on.';
-        if (isDefaultExplanation) setPrimaryExplanation(fallback);
-        else setFollowUpResponse('I could not rework that just now. Try another prompt in a moment.');
+        console.error('StudyEdit tutor failed:', error);
+        const fallback = forceDirect ? (explanation || keyFact || 'Review the decisive clue and correct answer before moving on.') : 'Talk me through what you were thinking, and we can work out the exact gap together.';
+        setTutorTurns(prev => { const next = [...prev]; if (next[next.length - 1]?.role === 'tutor') next[next.length - 1] = { role: 'tutor', text: fallback }; return next; });
       }
-    } finally {
-      if (!controller.signal.aborted) setAiStreaming(false);
-      abortControllerRef.current = null;
-    }
+    } finally { if (!controller.signal.aborted) setAiStreaming(false); abortControllerRef.current = null; }
   };
 
   const handleCheckAnswer = () => {
     if (!selectedOption || hasSubmitted) return;
-
-    const answerSnapshot = buildAnswerSnapshot(selectedOption);
-    const priorEvidence = readPriorConceptEvidence(question, conceptTitle);
-    const correct = answerSnapshot.selectedId === answerSnapshot.correctId;
+    const correct = selectedOption === correctAnswerId;
     const startedAt = Date.now();
-
-    setAnswerStartedAt(startedAt);
-    setCommittedAnswer(answerSnapshot.selectedId);
-    setHasSubmitted(true);
-    sessionStorage.setItem(getStorageKey(), JSON.stringify({ selectedOption: answerSnapshot.selectedId, hasSubmitted: true }));
+    setAnswerStartedAt(startedAt); setCommittedAnswer(selectedOption); setHasSubmitted(true);
+    sessionStorage.setItem(getStorageKey(), JSON.stringify({ selectedOption, hasSubmitted: true }));
     onAnswer(correct);
-    void askStudyEdit('personalised explanation', priorEvidence, true, answerSnapshot, undefined, null);
+    void runTutor(undefined, false, selectedOption, startedAt);
   };
 
   return (
     <div className="fixed inset-0 flex flex-col overflow-hidden" style={{ backgroundColor: C.parchment, color: C.ink }}>
       <header className="flex shrink-0 items-center justify-between px-5 pb-2 pt-5 sm:px-8 sm:pt-7">
-        <div className="text-[13px] font-semibold" style={{ color: C.muted }}>
-          Question {currentIndex + 1}{totalQuestions ? ` of ${totalQuestions}` : ''}
-        </div>
-        {onExit && (
-          <button onClick={onExit} className="flex h-10 w-10 items-center justify-center rounded-full transition hover:bg-black/[0.04]" style={{ color: C.muted }} aria-label="Exit practice">
-            <X className="h-[20px] w-[20px]" />
-          </button>
-        )}
+        <div className="text-[13px] font-semibold" style={{ color: C.muted }}>Question {currentIndex + 1}{totalQuestions ? ` of ${totalQuestions}` : ''}</div>
+        {onExit && <button onClick={onExit} className="flex h-10 w-10 items-center justify-center rounded-full" style={{ color: C.muted }} aria-label="Exit practice"><X className="h-5 w-5" /></button>}
       </header>
+      <div className="flex-1 overflow-y-auto"><main className="mx-auto w-full max-w-[620px] px-5 pb-10 pt-5 sm:px-8 sm:pt-7">
+        <section aria-label="Question">
+          <div className="text-[21px] font-semibold leading-[1.68] tracking-[-0.01em] sm:text-[22px]" style={{ color: C.espresso }}>
+            {vignetteParagraphs.map((paragraph, index) => <p key={index} className="mb-7 last:mb-0"><ReactMarkdown>{paragraph}</ReactMarkdown></p>)}
+          </div>
+          {askLine && <div className="mt-8 border-t pt-7 text-[19px] font-bold leading-[1.5] sm:text-[20px]" style={{ borderColor: C.line, color: C.espresso }}>{askLine}</div>}
+          <div className="mt-6 flex flex-col gap-3">
+            {options.map((option: any) => {
+              const selected = selectedOption === option.id; const correct = option.id === correctAnswerId;
+              const wrongSelected = hasSubmitted && committedAnswer === option.id && !correct; const correctAfterSubmit = hasSubmitted && correct;
+              return <button key={option.id} type="button" onClick={() => handleOptionSelect(option.id)} disabled={hasSubmitted}
+                className="flex w-full items-center gap-4 rounded-[16px] border px-4 py-4 text-left transition sm:px-5 sm:py-[18px]"
+                style={{ backgroundColor: correctAfterSubmit ? C.sageSoft : wrongSelected ? C.blushSoft : selected && !hasSubmitted ? C.cream : C.paper, borderColor: correctAfterSubmit ? C.sage : wrongSelected ? C.blush : selected && !hasSubmitted ? C.espresso : C.line, opacity: hasSubmitted && !correct && committedAnswer !== option.id ? .52 : 1 }}>
+                <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-[14px] font-bold" style={{ backgroundColor: selected && !hasSubmitted ? C.espresso : 'rgba(31,20,12,.06)', color: selected && !hasSubmitted ? C.cream : C.espresso }}>{option.id}</span>
+                <span className="flex-1 text-[17px] font-semibold leading-[1.45] sm:text-[18px]" style={{ color: C.espresso }}>{option.text}</span>
+                {correctAfterSubmit && <span className="font-bold" style={{ color: '#62734F' }}>✓</span>}{wrongSelected && <span className="font-bold" style={{ color: '#9B5146' }}>×</span>}
+              </button>;
+            })}
+          </div>
+          {!hasSubmitted && <button type="button" onClick={handleCheckAnswer} disabled={!selectedOption} className="mt-6 flex w-full items-center justify-center rounded-full px-6 py-[18px] text-[16px] font-bold disabled:cursor-not-allowed" style={{ backgroundColor: selectedOption ? C.espresso : '#D9CCB6', color: selectedOption ? C.cream : C.muted }}>Check answer</button>}
+        </section>
 
-      <div className="flex-1 overflow-y-auto">
-        <main className="mx-auto w-full max-w-[620px] px-5 pb-10 pt-5 sm:px-8 sm:pt-7">
-          <section aria-label="Question">
-            <div className="text-[21px] font-semibold leading-[1.68] tracking-[-0.01em] sm:text-[22px]" style={{ color: C.espresso, fontFamily: 'Inter, sans-serif' }}>
-              {vignetteParagraphs.map((paragraph, index) => (
-                <p key={`${question.id || 'question'}-vignette-${index}`} className="mb-7 last:mb-0">
-                  <ReactMarkdown components={{ p: ({ children }) => <>{children}</>, strong: ({ children }) => <strong className="font-bold">{children}</strong> }}>
-                    {paragraph}
-                  </ReactMarkdown>
-                </p>
-              ))}
+        {hasSubmitted && <section className="mt-8 border-t pt-7" style={{ borderColor: C.line }} aria-label="Answer feedback">
+          <div className="flex items-center gap-2.5 text-[15px] font-bold" style={{ color: isCorrect ? '#62734F' : '#94483D' }}><span className="flex h-7 w-7 items-center justify-center rounded-full text-white" style={{ backgroundColor: isCorrect ? C.sage : C.blush }}>{isCorrect ? '✓' : '×'}</span>{isCorrect ? 'Correct' : 'Not quite'}</div>
+          {!isCorrect && <div className="mt-4 text-[16px] font-semibold leading-6" style={{ color: C.espresso }}>Correct answer: <strong style={emphasisStyle}>{correctAnswerId} — {correctOptionText}</strong></div>}
+          {committedAnswer && <div className="mt-3 text-[15px] font-medium leading-6" style={{ color: C.muted }}>You chose: <strong style={{ color: C.espresso }}>{committedAnswer} — {displayedSelectedText}</strong></div>}
+
+          <div className="mt-7 rounded-[22px] border p-5" style={{ borderColor: '#E5B9B1', backgroundColor: C.cream }}>
+            <div className="text-[10px] font-bold uppercase tracking-[0.2em]" style={{ color: '#A9675D' }}>StudyEdit Tutor</div>
+            <div className="mt-1 text-[13px]" style={{ color: C.muted }}>StudyEdit makes the first move using this answer, your confidence and the question context.</div>
+            {aiStreaming && tutorTurns.length === 0 && <div className="mt-4 text-[16px] font-medium" style={{ color: C.muted }}>Working out the best next move…</div>}
+            <div className="mt-4 space-y-3">
+              {tutorTurns.map((turn, index) => turn.text ? <div key={index} className={turn.role === 'student' ? 'ml-8 rounded-[16px] px-4 py-3 text-[15px] font-medium leading-6' : 'rounded-[16px] px-4 py-3 text-[16px] font-medium leading-7'} style={{ backgroundColor: turn.role === 'student' ? C.espresso : C.blushSoft, color: turn.role === 'student' ? C.cream : '#4B372A' }}>{turn.role === 'tutor' ? <SkimmableMarkdown text={turn.text} /> : turn.text}</div> : null)}
             </div>
+            <form className="mt-4 flex items-center gap-2 border-b pb-2" style={{ borderColor: C.line }} onSubmit={event => { event.preventDefault(); const query = aiQuestion.trim(); if (query) void runTutor(query); }}>
+              <input value={aiQuestion} onChange={event => setAiQuestion(event.target.value)} placeholder="Reply naturally — or ask anything…" className="min-w-0 flex-1 bg-transparent py-3 text-[17px] font-medium outline-none placeholder:text-[#A89582]" style={{ color: C.espresso }} />
+              <button type="submit" disabled={!aiQuestion.trim() || aiStreaming} className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full disabled:opacity-35" style={{ backgroundColor: C.espresso, color: C.cream }} aria-label="Reply to StudyEdit"><Send className="h-4 w-4" /></button>
+            </form>
+            <button type="button" onClick={() => void runTutor(undefined, true)} disabled={aiStreaming} className="mt-3 text-[13px] font-semibold underline disabled:opacity-40" style={{ color: C.muted }}>Just explain it</button>
+          </div>
 
-            {askLine && (
-              <div className="mt-8 border-t pt-7 text-[19px] font-bold leading-[1.5] sm:text-[20px]" style={{ borderColor: C.line, color: C.espresso }}>
-                {askLine}
-              </div>
-            )}
+          {Object.keys(distractors).length > 0 && <div className="mt-6 border-t pt-4" style={{ borderColor: C.line }}>
+            <button type="button" onClick={() => setShowAllDistractors(v => !v)} className="flex w-full items-center justify-between py-2 text-left text-[14px] font-semibold" style={{ color: C.muted }}><span>{showAllDistractors ? 'Hide other options' : 'Why the other options are wrong'}</span><ChevronDown className={`h-4 w-4 transition-transform ${showAllDistractors ? 'rotate-180' : ''}`} /></button>
+            {showAllDistractors && <div className="mt-2 divide-y" style={{ borderColor: C.line }}>{Object.entries(distractors).filter(([letter]) => letter !== correctAnswerId).map(([letter, text]) => <div key={letter} className="grid grid-cols-[26px_1fr] gap-3 py-3 text-[16px] font-medium leading-7" style={{ color: '#59483B', borderColor: C.line }}><strong style={{ color: C.espresso }}>{letter}.</strong><SkimmableMarkdown text={text} /></div>)}</div>}
+          </div>}
 
-            <div className="mt-6 flex flex-col gap-3">
-              {options.map((option: { id: string; text: string }) => {
-                const selected = selectedOption === option.id;
-                const correct = option.id === correctAnswerId;
-                const wrongSelected = hasSubmitted && committedAnswer === option.id && !correct;
-                const correctAfterSubmit = hasSubmitted && correct;
-                const mutedAfterSubmit = hasSubmitted && committedAnswer !== option.id && !correct;
-                return (
-                  <button
-                    key={option.id}
-                    type="button"
-                    onClick={() => handleOptionSelect(option.id)}
-                    disabled={hasSubmitted}
-                    className="flex w-full items-center gap-4 rounded-[16px] border px-4 py-4 text-left transition sm:px-5 sm:py-[18px]"
-                    style={{
-                      backgroundColor: correctAfterSubmit ? C.sageSoft : wrongSelected ? C.blushSoft : selected && !hasSubmitted ? C.cream : C.paper,
-                      borderColor: correctAfterSubmit ? C.sage : wrongSelected ? C.blush : selected && !hasSubmitted ? C.espresso : C.line,
-                      boxShadow: selected && !hasSubmitted ? '0 0 0 2px rgba(31,20,12,.06)' : 'none',
-                      opacity: mutedAfterSubmit ? 0.52 : 1,
-                    }}
-                  >
-                    <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-[14px] font-bold" style={{ backgroundColor: correctAfterSubmit ? 'rgba(143,163,121,.22)' : wrongSelected ? 'rgba(229,168,157,.25)' : selected && !hasSubmitted ? C.espresso : 'rgba(31,20,12,.06)', color: selected && !hasSubmitted ? C.cream : C.espresso }}>{option.id}</span>
-                    <span className="flex-1 text-[17px] font-semibold leading-[1.45] sm:text-[18px]" style={{ color: C.espresso }}>{option.text}</span>
-                    {correctAfterSubmit && <span className="font-bold" style={{ color: '#62734F' }}>✓</span>}
-                    {wrongSelected && <span className="font-bold" style={{ color: '#9B5146' }}>×</span>}
-                  </button>
-                );
-              })}
-            </div>
-
-            {!hasSubmitted && (
-              <button type="button" onClick={handleCheckAnswer} disabled={!selectedOption} className="mt-6 flex w-full items-center justify-center rounded-full px-6 py-[18px] text-[16px] font-bold transition active:scale-[0.99] disabled:cursor-not-allowed" style={{ backgroundColor: selectedOption ? C.espresso : '#D9CCB6', color: selectedOption ? C.cream : C.muted }}>
-                Check answer
-              </button>
-            )}
-          </section>
-
-          {hasSubmitted && (
-            <section className="mt-8 border-t pt-7" style={{ borderColor: C.line }} aria-label="Answer feedback">
-              <div className="flex items-center gap-2.5 text-[15px] font-bold" style={{ color: isCorrect ? '#62734F' : '#94483D' }}>
-                <span className="flex h-7 w-7 items-center justify-center rounded-full text-white" style={{ backgroundColor: isCorrect ? C.sage : C.blush }}>{isCorrect ? '✓' : '×'}</span>
-                {isCorrect ? 'Correct' : 'Not quite'}
-              </div>
-
-              {!isCorrect && (
-                <div className="mt-4 text-[16px] font-semibold leading-6" style={{ color: C.espresso }}>
-                  Correct answer: <strong style={emphasisStyle}>{correctAnswerId} — {correctOptionText}</strong>
-                </div>
-              )}
-
-              {committedAnswer && (
-                <div className="mt-3 text-[15px] font-medium leading-6" style={{ color: C.muted }}>
-                  You chose: <strong style={{ color: C.espresso }}>{committedAnswer} — {displayedSelectedText}</strong>
-                </div>
-              )}
-
-              <div className="mt-7">
-                <div className="text-[10px] font-bold uppercase tracking-[0.2em]" style={{ color: '#A9675D' }}>Your explanation</div>
-                {aiStreaming && !aiPrompt && !primaryExplanation && (
-                  <div className="mt-3 border-l-[3px] pl-4 text-[17px] font-semibold leading-[1.72]" style={{ borderColor: C.blush, color: C.muted }}>
-                    StudyEdit is tailoring this to what you actually demonstrated…
-                  </div>
-                )}
-                {primaryExplanation && (
-                  <div className="mt-3 border-l-[3px] pl-4" style={{ borderColor: C.blush }}>
-                    <SkimmableMarkdown text={primaryExplanation} className="text-[18px] font-semibold leading-[1.72] text-[#3B2A1E]" />
-                  </div>
-                )}
-                {!personalisedStarted && preSubmitted && (
-                  <div className="mt-3 border-l-[3px] pl-4" style={{ borderColor: C.blush }}>
-                    <SkimmableMarkdown text={explanation || takeaway} className="text-[18px] font-semibold leading-[1.72] text-[#3B2A1E]" />
-                  </div>
-                )}
-              </div>
-
-              {Object.keys(distractors).length > 0 && (
-                <div className="mt-6 border-t pt-4" style={{ borderColor: C.line }}>
-                  <button type="button" onClick={() => setShowAllDistractors(value => !value)} className="flex w-full items-center justify-between py-2 text-left text-[14px] font-semibold" style={{ color: C.muted }}>
-                    <span>{showAllDistractors ? 'Hide other options' : 'Why the other options are wrong'}</span>
-                    <ChevronDown className={`h-4 w-4 transition-transform ${showAllDistractors ? 'rotate-180' : ''}`} />
-                  </button>
-                  {showAllDistractors && (
-                    <div className="mt-2 divide-y" style={{ borderColor: C.line }}>
-                      {Object.entries(distractors).filter(([letter]) => letter !== correctAnswerId).map(([letter, text]) => (
-                        <div key={letter} className="grid grid-cols-[26px_1fr] gap-3 py-3 text-[16px] font-medium leading-7" style={{ color: '#59483B', borderColor: C.line }}>
-                          <strong style={{ color: C.espresso }}>{letter}.</strong><SkimmableMarkdown text={text} />
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              )}
-
-              <div className="mt-7 border-t pt-5" style={{ borderColor: C.line }}>
-                <div className="text-[15px] font-bold" style={{ color: C.espresso }}>Ask StudyEdit</div>
-                <div className="mt-1 text-[13px]" style={{ color: C.muted }}>Go deeper only if you need to.</div>
-
-                <div className="mt-3 flex flex-wrap gap-2">
-                  <button type="button" onClick={() => askStudyEdit(`Teach me ${conceptTitle} from the beginning. Assume I know almost nothing. Give me a very short primer covering what it is, the typical clinical picture, how I recognise it, the broad management principle, and the single most important thing not to miss. Use the verified material in this question as ground truth; if the question does not support an exact detail, do not invent it.`, undefined, false, undefined, `Teach me ${conceptTitle}`)} disabled={aiStreaming} className="rounded-full border px-3 py-2 text-[14px] font-semibold disabled:opacity-50" style={{ borderColor: C.line, backgroundColor: C.paper, color: C.ink }}>Teach me {conceptTitle}</button>
-                  <button type="button" onClick={() => askStudyEdit('Explain this even more simply in under 80 words.', undefined, false, undefined, 'Explain another way')} disabled={aiStreaming} className="rounded-full border px-3 py-2 text-[14px] font-semibold disabled:opacity-50" style={{ borderColor: C.line, backgroundColor: C.paper, color: C.ink }}>Explain another way</button>
-                  <button type="button" onClick={() => askStudyEdit(adaptiveFollowUp.prompt, undefined, false, undefined, adaptiveFollowUp.label, currentConfidence)} disabled={aiStreaming} className="rounded-full border px-3 py-2 text-[14px] font-semibold disabled:opacity-50" style={{ borderColor: C.line, backgroundColor: C.paper, color: C.ink }}>{adaptiveFollowUp.label}</button>
-                  <button type="button" onClick={() => askStudyEdit('Give me one short different clinical example that tests the same concept.', undefined, false, undefined, 'Another example')} disabled={aiStreaming} className="rounded-full border px-3 py-2 text-[14px] font-semibold disabled:opacity-50" style={{ borderColor: C.line, backgroundColor: C.paper, color: C.ink }}>Another example</button>
-                </div>
-
-                {aiPrompt && (
-                  <div className="mt-5 border-l-[3px] pl-4" style={{ borderColor: C.blush }}>
-                    <div className="text-[13px] font-semibold" style={{ color: '#A9675D' }}>StudyEdit · {aiPrompt}</div>
-                    {aiStreaming && !followUpResponse && <div className="mt-2 text-[17px] font-medium leading-[1.65]" style={{ color: C.muted }}>Working this through with your learning history…</div>}
-                    {followUpResponse && <SkimmableMarkdown text={followUpResponse} className="mt-2 text-[18px] font-medium leading-[1.72] text-[#3B2A1E]" />}
-                  </div>
-                )}
-
-                <form className="mt-4 flex items-center gap-2 border-b pb-2" style={{ borderColor: C.line }} onSubmit={(event) => { event.preventDefault(); const query = aiQuestion.trim(); if (!query) return; void askStudyEdit(query, undefined, false, undefined, query, currentConfidence); }}>
-                  <input value={aiQuestion} onChange={(event) => setAiQuestion(event.target.value)} placeholder="Ask about this question…" className="min-w-0 flex-1 bg-transparent py-3 text-[18px] font-medium leading-[1.7] outline-none placeholder:text-[#A89582]" style={{ color: C.espresso }} />
-                  <button type="submit" disabled={!aiQuestion.trim() || aiStreaming} className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full disabled:opacity-35" style={{ backgroundColor: C.espresso, color: C.cream }} aria-label="Ask StudyEdit"><Send className="h-4 w-4" /></button>
-                </form>
-              </div>
-
-              <div className="mt-8">
-                <button type="button" onClick={onNext} className="flex w-full items-center justify-center rounded-full px-6 py-[18px] text-[16px] font-bold" style={{ backgroundColor: C.espresso, color: C.cream }}>
-                  {nextButtonText || 'Next question'} →
-                </button>
-                <div className="mt-3 text-center text-[12px]" style={{ color: C.muted }}>{conceptTitle}</div>
-              </div>
-            </section>
-          )}
-        </main>
-      </div>
+          <div className="mt-8"><button type="button" onClick={onNext} className="flex w-full items-center justify-center rounded-full px-6 py-[18px] text-[16px] font-bold" style={{ backgroundColor: C.espresso, color: C.cream }}>{nextButtonText || 'Next question'} →</button><div className="mt-3 text-center text-[12px]" style={{ color: C.muted }}>{conceptTitle}</div></div>
+        </section>}
+      </main></div>
     </div>
   );
 };
