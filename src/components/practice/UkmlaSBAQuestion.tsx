@@ -134,7 +134,7 @@ function TutorMessage({ text, first }: { text: string; first: boolean }) {
       {check && (
         <div className="mt-5 rounded-[18px] border px-4 py-4 sm:px-5" style={{ borderColor: '#D6D9BE', backgroundColor: '#EEF0E2' }}>
           <div className="mb-2 text-[10px] font-bold uppercase tracking-[0.18em]" style={{ color: '#76835F' }}>Quick check</div>
-          <SkimmableMarkdown text={check} className="text-[16px] font-semibold leading-7 text-[#3B2A1E]" />
+          <SkimmableMarkdown text={check} className="text-[20px] font-semibold leading-[1.65] tracking-[-0.01em] text-[#3B2A1E] sm:text-[21px]" />
         </div>
       )}
     </div>
