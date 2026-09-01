@@ -47,11 +47,9 @@ export function ApplePracticeSession({
   const [sessionKey, setSessionKey] = useState(0);
   const [reviewingQuestionIndex, setReviewingQuestionIndex] = useState<number | null>(null);
   const [showSessionIntro, setShowSessionIntro] = useState(true);
-  const [transitionCopy, setTransitionCopy] = useState<string | null>(null);
 
   const questionsRef = useRef<QuestionData[]>(questions);
   const containerRef = useRef<HTMLDivElement>(null);
-  const transitionTimerRef = useRef<number | null>(null);
 
   useEffect(() => {
     setActiveQuestions(questions);
@@ -59,17 +57,12 @@ export function ApplePracticeSession({
   }, [questions]);
 
   useEffect(() => {
-    if (activeQuestions && activeQuestions.length > 0) {
-      questionsRef.current = activeQuestions;
-    }
+    if (activeQuestions && activeQuestions.length > 0) questionsRef.current = activeQuestions;
   }, [activeQuestions]);
 
   useEffect(() => {
     if ('scrollRestoration' in history) history.scrollRestoration = 'manual';
     window.scrollTo(0, 0);
-    return () => {
-      if (transitionTimerRef.current) window.clearTimeout(transitionTimerRef.current);
-    };
   }, []);
 
   const introTopics = useMemo(() => {
@@ -92,11 +85,10 @@ export function ApplePracticeSession({
   }, [activeQuestions.length, introTopics]);
 
   const handlePreviousQuestion = useCallback(() => {
-    if (currentIndex > 0 && !transitionCopy) setCurrentIndex(currentIndex - 1);
-  }, [currentIndex, transitionCopy]);
+    if (currentIndex > 0) setCurrentIndex(currentIndex - 1);
+  }, [currentIndex]);
 
   const advanceNow = useCallback(() => {
-    setTransitionCopy(null);
     if (currentIndex < questionsRef.current.length - 1) {
       setCurrentIndex(currentIndex + 1);
       window.scrollTo(0, 0);
@@ -106,50 +98,32 @@ export function ApplePracticeSession({
   }, [currentIndex]);
 
   const handleNextQuestion = useCallback(() => {
-    if (transitionCopy) return;
-    if (currentIndex >= questionsRef.current.length - 1) {
-      setShowReview(true);
-      return;
-    }
-
-    const current = questionsRef.current[currentIndex];
-    const next = questionsRef.current[currentIndex + 1];
-    const currentTopic = tutorTopic(current);
-    const nextTopic = tutorTopic(next);
-    const answer = sessionAnswers.find(item => item.questionIndex === currentIndex);
-
-    let copy = 'Good. Let’s change the context and see what happens next.';
-    if (currentTopic && nextTopic && currentTopic === nextTopic) {
-      copy = answer?.isCorrect
-        ? `Good. Let's stay with ${nextTopic} for one more — I want to see if that still holds in a different vignette.`
-        : `Keep that last distinction in mind. We're staying with ${nextTopic} for one more, from a different angle.`;
-    } else if (nextTopic) {
-      copy = answer?.isCorrect
-        ? `Good. I'm switching us to ${nextTopic} now. New context — same job: find the decisive clue.`
-        : `That's enough on that for now. I'm moving us to ${nextTopic}; we'll bring the earlier gap back when it is useful.`;
-    }
-
-    setTransitionCopy(copy);
-    transitionTimerRef.current = window.setTimeout(advanceNow, 1450);
-  }, [advanceNow, currentIndex, sessionAnswers, transitionCopy]);
+    advanceNow();
+  }, [advanceNow]);
 
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
       if (showSessionIntro) return;
       if (event.target instanceof HTMLInputElement || event.target instanceof HTMLTextAreaElement) return;
-      const currentQuestion = questions[currentIndex];
-      if (currentQuestion?.format === 'flashcard' && (event.key === 'ArrowLeft' || event.key === 'ArrowRight')) return;
+      const currentQuestion = questionsRef.current[currentIndex];
+      const format = currentQuestion?.format || defaultFormat;
+      const tutorLedSba = format === 'sba' || format === 'ukmla_sba';
+      if (format === 'flashcard' && (event.key === 'ArrowLeft' || event.key === 'ArrowRight')) return;
 
       switch (event.key) {
         case 'ArrowLeft':
         case 'h':
-          event.preventDefault();
-          handlePreviousQuestion();
+          if (!tutorLedSba) {
+            event.preventDefault();
+            handlePreviousQuestion();
+          }
           break;
         case 'ArrowRight':
         case 'l':
-          event.preventDefault();
-          handleNextQuestion();
+          if (!tutorLedSba) {
+            event.preventDefault();
+            handleNextQuestion();
+          }
           break;
         case 'Escape':
           event.preventDefault();
@@ -160,7 +134,7 @@ export function ApplePracticeSession({
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [currentIndex, questions, handlePreviousQuestion, handleNextQuestion, showSessionIntro]);
+  }, [currentIndex, defaultFormat, handlePreviousQuestion, handleNextQuestion, showSessionIntro]);
 
   const currentQuestion = useMemo(() => questionsRef.current[currentIndex], [currentIndex]);
   const questionId = useMemo(() => currentQuestion?.id || `question-${currentIndex}`, [currentQuestion, currentIndex]);
@@ -327,22 +301,6 @@ export function ApplePracticeSession({
           </div>
         </div>
       </div>
-    );
-  }
-
-  if (transitionCopy) {
-    return (
-      <main className="fixed inset-0 overflow-hidden bg-[#F4ECDF] text-[#2A1E16]">
-        <div className="mx-auto flex min-h-full w-full max-w-[620px] flex-col justify-center px-5 py-10 sm:px-8">
-          <div className="mb-4 text-[10px] font-bold uppercase tracking-[0.22em] text-[#A9675D]">StudyEdit</div>
-          <p className="max-w-[540px] text-[29px] font-medium leading-[1.45] tracking-[-0.025em] text-[#1F140C] sm:text-[33px]" style={{ fontFamily: "'Fraunces', serif" }}>
-            {transitionCopy}
-          </p>
-          <button type="button" onClick={() => { if (transitionTimerRef.current) window.clearTimeout(transitionTimerRef.current); advanceNow(); }} className="mt-8 w-fit text-[13px] font-semibold text-[#8A7560] underline decoration-[#BBA995] underline-offset-4">
-            Continue now
-          </button>
-        </div>
-      </main>
     );
   }
 
