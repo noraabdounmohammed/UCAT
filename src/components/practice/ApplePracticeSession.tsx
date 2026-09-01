@@ -42,8 +42,6 @@ export function ApplePracticeSession({
   onRestartWithFilters
 }: PracticeSessionProps) {
   const { user } = useAuth();
-  const learnerFirstName = useMemo(() => getLearnerFirstName(user), [user]);
-  const sessionGreeting = useMemo(() => getDaypartGreeting(), [showSessionIntro]);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [showExitConfirmation, setShowExitConfirmation] = useState(false);
   const [sessionAnswers, setSessionAnswers] = useState<SessionAnswer[]>([]);
@@ -52,6 +50,8 @@ export function ApplePracticeSession({
   const [sessionKey, setSessionKey] = useState(0);
   const [reviewingQuestionIndex, setReviewingQuestionIndex] = useState<number | null>(null);
   const [showSessionIntro, setShowSessionIntro] = useState(true);
+  const learnerFirstName = useMemo(() => getLearnerFirstName(user), [user]);
+  const sessionGreeting = useMemo(() => getDaypartGreeting(), []);
 
   const questionsRef = useRef<QuestionData[]>(questions);
   const containerRef = useRef<HTMLDivElement>(null);
