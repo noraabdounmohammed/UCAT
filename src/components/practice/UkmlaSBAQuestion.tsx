@@ -45,15 +45,27 @@ const C = {
   sageSoft: '#EEF0E2',
 };
 
+const learningFont = "Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif";
+const brandFont = "'Fraunces', Georgia, 'Times New Roman', serif";
+
 function sanitiseExplanation(text: string): string {
   return String(text || '').replace(/\s{2,}/g, ' ').trim();
+}
+
+function normaliseVignetteText(text: string): string {
+  return String(text || '')
+    .replace(/\r\n?/g, '\n')
+    .replace(/[ \t]+/g, ' ')
+    .replace(/ *\n */g, '\n')
+    .replace(/\n{3,}/g, '\n\n')
+    .trim();
 }
 
 function splitSentences(text: string): string[] {
   return String(text || '')
     .replace(/\s+/g, ' ')
     .trim()
-    .split(/(?<=[.!?])\s+(?=[A-Z])/) 
+    .split(/(?<=[.!?])\s+(?=[A-Z])/)
     .filter(Boolean);
 }
 
@@ -89,13 +101,38 @@ function extractLeadIn(question: QuestionData, vignette: string): string {
 }
 
 function stripLeadInFromVignette(vignette: string, leadIn: string): string {
-  const v = String(vignette || '').replace(/\s+/g, ' ').trim();
+  const v = normaliseVignetteText(vignette);
   const l = String(leadIn || '').replace(/\s+/g, ' ').trim();
   if (!v || !l) return v;
-  return splitSentences(v)
-    .filter(sentence => sentence.toLowerCase() !== l.toLowerCase())
-    .join(' ')
-    .trim();
+
+  return v
+    .split(/\n{2,}/)
+    .map(paragraph => splitSentences(paragraph)
+      .filter(sentence => sentence.replace(/\s+/g, ' ').trim().toLowerCase() !== l.toLowerCase())
+      .join(' ')
+      .trim())
+    .filter(Boolean)
+    .join('\n\n');
+}
+
+function buildVignetteParagraphs(text: string): string[] {
+  const normalised = normaliseVignetteText(text);
+  if (!normalised) return [];
+
+  const explicit = normalised
+    .split(/\n{2,}/)
+    .map(part => part.replace(/\n+/g, ' ').replace(/\s+/g, ' ').trim())
+    .filter(Boolean);
+
+  if (explicit.length > 1) return explicit;
+
+  const sectionCue = /(?<=[.!?])\s+(?=(?:On examination|On physical examination|Examination reveals|Neurological examination|Cardiovascular examination|Respiratory examination|Abdominal examination|On auscultation|Blood tests? (?:show|reveal)|Laboratory (?:tests|results) (?:show|reveal)|Investigations? (?:show|reveal)|Initial investigations|An? ECG (?:shows|reveals)|ECG (?:shows|reveals)|A chest X-ray|Chest X-ray|CXR (?:shows|reveals)|CT (?:head|brain|chest|abdomen|pelvis)? ?(?:shows|reveals)|MRI (?:shows|reveals)|Urinalysis (?:shows|reveals)|Arterial blood gas|ABG (?:shows|reveals)|Vital signs|Observations|His observations|Her observations)\b)/gi;
+
+  return normalised
+    .replace(sectionCue, '\n\n')
+    .split(/\n{2,}/)
+    .map(part => part.replace(/\n+/g, ' ').replace(/\s+/g, ' ').trim())
+    .filter(Boolean);
 }
 
 const emphasisStyle: React.CSSProperties = {
@@ -140,13 +177,8 @@ function TutorMessage({ text, first }: { text: string; first: boolean }) {
         />
       )}
       {check && (
-        <div
-          className="mt-5 rounded-[19px] border px-4 py-4 sm:px-5"
-          style={{ borderColor: '#D6D9BE', backgroundColor: C.sageSoft }}
-        >
-          <div className="mb-2 text-[10px] font-bold uppercase tracking-[0.18em]" style={{ color: '#76835F' }}>
-            Quick check
-          </div>
+        <div className="mt-5 rounded-[19px] border px-4 py-4 sm:px-5" style={{ borderColor: '#D6D9BE', backgroundColor: C.sageSoft }}>
+          <div className="mb-2 text-[10px] font-bold uppercase tracking-[0.18em]" style={{ color: '#76835F' }}>Quick check</div>
           <SkimmableMarkdown
             text={check}
             className="text-[20px] font-semibold leading-[1.65] tracking-[-0.01em] text-[#3B2A1E] sm:text-[21px]"
@@ -277,7 +309,7 @@ export const UkmlaSBAQuestion: React.FC<UkmlaSBAQuestionProps> = ({
   const rawQuestionContent = String((question as any).clinical_vignette || question.question_stem || question.question || '');
   const askLine = extractLeadIn(question, rawQuestionContent);
   const displayQuestionContent = stripLeadInFromVignette(rawQuestionContent, askLine);
-  const vignetteParagraphs = displayQuestionContent.split(/\n\s*\n/).map(value => value.trim()).filter(Boolean);
+  const vignetteParagraphs = buildVignetteParagraphs(displayQuestionContent);
   const explanation = sanitiseExplanation(question.explanation || question.worked_solution || '');
   const keyFact = sanitiseExplanation((question as any).key_fact || '');
   const conceptTitle = String((question as any).concept_title || question.title || (question as any).topic || 'Clinical concept');
@@ -293,12 +325,7 @@ export const UkmlaSBAQuestion: React.FC<UkmlaSBAQuestionProps> = ({
     sessionStorage.setItem(getStorageKey(), JSON.stringify({ selectedOption: id, hasSubmitted: false }));
   };
 
-  const runTutor = async (
-    studentText?: string,
-    forceDirect = false,
-    selectedOverride?: string,
-    startedOverride?: number,
-  ) => {
+  const runTutor = async (studentText?: string, forceDirect = false, selectedOverride?: string, startedOverride?: number) => {
     if (aiStreaming) return;
     const selectedId = selectedOverride || committedAnswer;
     if (!selectedId) return;
@@ -308,10 +335,7 @@ export const UkmlaSBAQuestion: React.FC<UkmlaSBAQuestionProps> = ({
     const wasCorrect = selectedId === correctAnswerId;
     const priorTurns = tutorTurns.slice(-6);
 
-    if (studentText?.trim()) {
-      setTutorTurns(previous => [...previous, { role: 'student', text: studentText.trim() }]);
-    }
-
+    if (studentText?.trim()) setTutorTurns(previous => [...previous, { role: 'student', text: studentText.trim() }]);
     setAiQuestion('');
     setAiStreaming(true);
 
@@ -338,9 +362,7 @@ export const UkmlaSBAQuestion: React.FC<UkmlaSBAQuestionProps> = ({
     const transcript = [
       ...priorTurns,
       ...(studentText?.trim() ? [{ role: 'student' as const, text: studentText.trim() }] : []),
-    ]
-      .map(turn => `${turn.role === 'student' ? 'LEARNER' : 'TUTOR'}: ${turn.text}`)
-      .join('\n');
+    ].map(turn => `${turn.role === 'student' ? 'LEARNER' : 'TUTOR'}: ${turn.text}`).join('\n');
 
     const instruction = forceDirect
       ? directExplanationInstruction()
@@ -410,13 +432,10 @@ export const UkmlaSBAQuestion: React.FC<UkmlaSBAQuestionProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 flex flex-col overflow-hidden" style={{ backgroundColor: C.parchment, color: C.ink }}>
-      <header
-        className="shrink-0 border-b backdrop-blur-md"
-        style={{ borderColor: 'rgba(232,220,196,.7)', backgroundColor: 'rgba(244,236,223,.92)' }}
-      >
+    <div className="fixed inset-0 flex flex-col overflow-hidden" style={{ backgroundColor: C.parchment, color: C.ink, fontFamily: learningFont }}>
+      <header className="shrink-0 border-b backdrop-blur-md" style={{ borderColor: 'rgba(232,220,196,.7)', backgroundColor: 'rgba(244,236,223,.92)' }}>
         <div className="mx-auto flex w-full max-w-[700px] items-center justify-between px-5 py-4 sm:px-8">
-          <div className="font-serif text-[24px] tracking-[-0.04em]" style={{ color: C.espresso }}>
+          <div className="text-[24px] tracking-[-0.04em]" style={{ color: C.espresso, fontFamily: brandFont }}>
             studyedit<span style={{ color: C.blush }}>.</span>
           </div>
           <div className="flex items-center gap-3">
@@ -429,12 +448,7 @@ export const UkmlaSBAQuestion: React.FC<UkmlaSBAQuestionProps> = ({
               </div>
             )}
             {onExit && (
-              <button
-                onClick={onExit}
-                className="flex h-9 w-9 items-center justify-center rounded-full"
-                style={{ color: C.muted }}
-                aria-label="Exit practice"
-              >
+              <button onClick={onExit} className="flex h-9 w-9 items-center justify-center rounded-full" style={{ color: C.muted }} aria-label="Exit practice">
                 <X className="h-5 w-5" />
               </button>
             )}
@@ -446,21 +460,16 @@ export const UkmlaSBAQuestion: React.FC<UkmlaSBAQuestionProps> = ({
         <main className="mx-auto w-full max-w-[700px] px-5 pb-16 pt-8 sm:px-8 sm:pt-10">
           {!hasSubmitted || questionExpanded ? (
             <section aria-label="Question" className="animate-[fadeIn_.25s_ease]">
-              <div className="mb-4 text-[10px] font-bold uppercase tracking-[0.18em]" style={{ color: C.muted }}>
-                {conceptTitle}
-              </div>
+              <div className="mb-5 text-[10px] font-bold uppercase tracking-[0.18em]" style={{ color: C.muted }}>{conceptTitle}</div>
 
-              <div className="font-serif text-[24px] leading-[1.58] tracking-[-0.02em] sm:text-[28px]" style={{ color: C.espresso }}>
+              <div className="text-[20px] font-medium leading-[1.65] tracking-[-0.01em] sm:text-[21px]" style={{ color: C.espresso }}>
                 {vignetteParagraphs.map((paragraph, index) => (
-                  <p key={index} className="mb-7 last:mb-0"><ReactMarkdown>{paragraph}</ReactMarkdown></p>
+                  <div key={index} className="mb-6 last:mb-0"><ReactMarkdown>{paragraph}</ReactMarkdown></div>
                 ))}
               </div>
 
               {askLine && (
-                <div
-                  className="mt-8 border-t pt-6 text-[19px] font-bold leading-[1.5] sm:text-[20px]"
-                  style={{ borderColor: C.line, color: C.espresso }}
-                >
+                <div className="mt-8 border-t pt-6 text-[20px] font-bold leading-[1.55] tracking-[-0.01em] sm:text-[21px]" style={{ borderColor: C.line, color: C.espresso }}>
                   {askLine}
                 </div>
               )}
@@ -484,18 +493,10 @@ export const UkmlaSBAQuestion: React.FC<UkmlaSBAQuestionProps> = ({
                         opacity: hasSubmitted && !correct && committedAnswer !== option.id ? 0.52 : 1,
                       }}
                     >
-                      <span
-                        className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-[14px] font-bold"
-                        style={{
-                          backgroundColor: selected && !hasSubmitted ? C.espresso : 'rgba(31,20,12,.06)',
-                          color: selected && !hasSubmitted ? C.cream : C.espresso,
-                        }}
-                      >
+                      <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-[14px] font-bold" style={{ backgroundColor: selected && !hasSubmitted ? C.espresso : 'rgba(31,20,12,.06)', color: selected && !hasSubmitted ? C.cream : C.espresso }}>
                         {option.id}
                       </span>
-                      <span className="flex-1 text-[17px] font-semibold leading-[1.45] sm:text-[18px]" style={{ color: C.espresso }}>
-                        {option.text}
-                      </span>
+                      <span className="flex-1 text-[17px] font-semibold leading-[1.45] sm:text-[18px]" style={{ color: C.espresso }}>{option.text}</span>
                       {correctAfterSubmit && <span className="font-bold" style={{ color: '#62734F' }}>✓</span>}
                       {wrongSelected && <span className="font-bold" style={{ color: '#9B5146' }}>×</span>}
                     </button>
@@ -504,168 +505,89 @@ export const UkmlaSBAQuestion: React.FC<UkmlaSBAQuestionProps> = ({
               </div>
 
               {!hasSubmitted && (
-                <button
-                  type="button"
-                  onClick={handleCheckAnswer}
-                  disabled={!selectedOption}
-                  className="mt-6 flex w-full items-center justify-center rounded-full px-6 py-[18px] text-[16px] font-bold disabled:cursor-not-allowed"
-                  style={{ backgroundColor: selectedOption ? C.espresso : '#D9CCB6', color: selectedOption ? C.cream : C.muted }}
-                >
+                <button type="button" onClick={handleCheckAnswer} disabled={!selectedOption} className="mt-6 flex w-full items-center justify-center rounded-full px-6 py-[18px] text-[16px] font-bold disabled:cursor-not-allowed" style={{ backgroundColor: selectedOption ? C.espresso : '#D9CCB6', color: selectedOption ? C.cream : C.muted }}>
                   Check answer
+                </button>
+              )}
+
+              {hasSubmitted && questionExpanded && (
+                <button type="button" onClick={() => setQuestionExpanded(false)} className="mt-5 text-[12px] font-semibold underline underline-offset-4" style={{ color: C.muted }}>
+                  Hide case
                 </button>
               )}
             </section>
           ) : (
-            <button
-              type="button"
-              onClick={() => setQuestionExpanded(true)}
-              className="flex w-full items-center justify-between border-y py-4 text-left"
-              style={{ borderColor: C.line }}
-            >
-              <span>
-                <span className="block text-[15px] font-bold" style={{ color: C.espresso }}>
-                  {isCorrect ? '✓' : '×'} {displayedSelectedText || conceptTitle}
-                </span>
-                <span className="mt-0.5 block text-[12px] font-medium" style={{ color: C.muted }}>
-                  {conceptTitle} · {isCorrect ? 'Correct' : `Correct: ${correctOptionText}`}
+            <button type="button" onClick={() => setQuestionExpanded(true)} className="flex w-full items-center justify-between border-y py-4 text-left" style={{ borderColor: C.line }}>
+              <span className="min-w-0 pr-4">
+                <span className="block truncate text-[15px] font-bold" style={{ color: C.espresso }}>{isCorrect ? '✓' : '×'} {conceptTitle}</span>
+                <span className="mt-0.5 block truncate text-[12px] font-medium" style={{ color: C.muted }}>
+                  {isCorrect ? `You chose ${displayedSelectedText}` : `You chose ${displayedSelectedText} · Correct: ${correctOptionText}`}
                 </span>
               </span>
-              <span className="text-[12px] font-semibold" style={{ color: C.muted }}>Show question</span>
+              <span className="shrink-0 text-[12px] font-semibold" style={{ color: C.muted }}>Show case</span>
             </button>
           )}
 
-          {hasSubmitted && (
+          {hasSubmitted && !questionExpanded && (
             <section ref={tutorRef} className="mt-8 scroll-mt-24" aria-label="Answer and tutor">
-              {questionExpanded && (
-                <button
-                  type="button"
-                  onClick={() => setQuestionExpanded(false)}
-                  className="mb-7 text-[12px] font-semibold underline underline-offset-4"
-                  style={{ color: C.muted }}
-                >
-                  Collapse question
-                </button>
-              )}
-
               <div className="mb-7 flex items-center gap-2.5 text-[15px] font-bold" style={{ color: isCorrect ? '#62734F' : '#94483D' }}>
-                <span
-                  className="flex h-7 w-7 items-center justify-center rounded-full text-white"
-                  style={{ backgroundColor: isCorrect ? C.sage : C.blush }}
-                >
-                  {isCorrect ? '✓' : '×'}
-                </span>
+                <span className="flex h-7 w-7 items-center justify-center rounded-full text-white" style={{ backgroundColor: isCorrect ? C.sage : C.blush }}>{isCorrect ? '✓' : '×'}</span>
                 {isCorrect ? 'Correct' : 'Not quite'}
               </div>
 
               <div className="mb-5 flex items-center gap-2">
-                <span className="flex h-7 w-7 items-center justify-center rounded-full" style={{ backgroundColor: '#F6D9D3', color: '#B7655B' }}>
-                  <Sparkles className="h-3.5 w-3.5" />
-                </span>
-                <div className="text-[10px] font-bold uppercase tracking-[0.22em]" style={{ color: '#A9675D' }}>
-                  StudyEdit Tutor
-                </div>
+                <span className="flex h-7 w-7 items-center justify-center rounded-full" style={{ backgroundColor: '#F6D9D3', color: '#B7655B' }}><Sparkles className="h-3.5 w-3.5" /></span>
+                <div className="text-[10px] font-bold uppercase tracking-[0.22em]" style={{ color: '#A9675D' }}>StudyEdit Tutor</div>
               </div>
 
-              {aiStreaming && tutorTurns.length === 0 && (
-                <div className="py-3 text-[16px] font-medium" style={{ color: C.muted }}>
-                  Thinking about what you need next…
-                </div>
-              )}
+              {aiStreaming && tutorTurns.length === 0 && <div className="py-3 text-[16px] font-medium" style={{ color: C.muted }}>Thinking about what you need next…</div>}
 
               <div className="space-y-6">
                 {tutorTurns.map((turn, index) => {
                   if (!turn.text) return null;
                   if (turn.role === 'student') {
-                    return (
-                      <div
-                        key={index}
-                        className="ml-auto max-w-[86%] rounded-[18px] px-4 py-3 text-[15px] font-medium leading-6"
-                        style={{ backgroundColor: C.espresso, color: C.cream }}
-                      >
-                        {turn.text}
-                      </div>
-                    );
+                    return <div key={index} className="ml-auto max-w-[86%] rounded-[18px] px-4 py-3 text-[15px] font-medium leading-6" style={{ backgroundColor: C.espresso, color: C.cream }}>{turn.text}</div>;
                   }
                   const tutorIndex = tutorTurns.slice(0, index + 1).filter(item => item.role === 'tutor' && item.text).length;
                   return <TutorMessage key={index} text={turn.text} first={tutorIndex === 1} />;
                 })}
               </div>
 
-              <form
-                className="mt-7 flex items-center gap-2 rounded-[18px] border bg-[#FFFDF8] p-2 pl-4 shadow-[0_8px_24px_rgba(31,20,12,0.04)]"
-                style={{ borderColor: '#DCCDB8' }}
-                onSubmit={event => {
-                  event.preventDefault();
-                  const query = aiQuestion.trim();
-                  if (query) void runTutor(query);
-                }}
-              >
-                <input
-                  value={aiQuestion}
-                  onChange={event => setAiQuestion(event.target.value)}
-                  placeholder="Reply or ask anything…"
-                  className="min-w-0 flex-1 bg-transparent py-2.5 text-[16px] font-medium outline-none placeholder:text-[#A89582]"
-                  style={{ color: C.espresso }}
-                />
-                <button
-                  type="submit"
-                  disabled={!aiQuestion.trim() || aiStreaming}
-                  className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full transition active:scale-[0.96] disabled:opacity-35"
-                  style={{ backgroundColor: C.espresso, color: C.cream }}
-                  aria-label="Reply to StudyEdit"
-                >
-                  <Send className="h-4 w-4" />
-                </button>
+              <form className="mt-7 flex items-center gap-2 rounded-[18px] border bg-[#FFFDF8] p-2 pl-4 shadow-[0_8px_24px_rgba(31,20,12,0.04)]" style={{ borderColor: '#DCCDB8' }} onSubmit={event => {
+                event.preventDefault();
+                const query = aiQuestion.trim();
+                if (query) void runTutor(query);
+              }}>
+                <input value={aiQuestion} onChange={event => setAiQuestion(event.target.value)} placeholder="Reply or ask anything…" className="min-w-0 flex-1 bg-transparent py-2.5 text-[16px] font-medium outline-none placeholder:text-[#A89582]" style={{ color: C.espresso }} />
+                <button type="submit" disabled={!aiQuestion.trim() || aiStreaming} className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full transition active:scale-[0.96] disabled:opacity-35" style={{ backgroundColor: C.espresso, color: C.cream }} aria-label="Reply to StudyEdit"><Send className="h-4 w-4" /></button>
               </form>
 
-              <button
-                type="button"
-                onClick={() => void runTutor(undefined, true)}
-                disabled={aiStreaming}
-                className="mt-3 text-[12px] font-semibold underline decoration-[#BBA995] underline-offset-4 disabled:opacity-40"
-                style={{ color: C.muted }}
-              >
-                Just explain it
-              </button>
+              <button type="button" onClick={() => void runTutor(undefined, true)} disabled={aiStreaming} className="mt-3 text-[12px] font-semibold underline decoration-[#BBA995] underline-offset-4 disabled:opacity-40" style={{ color: C.muted }}>Just explain it</button>
 
               {Object.keys(distractors).length > 0 && (
                 <div className="mt-8 border-t pt-4" style={{ borderColor: C.line }}>
-                  <button
-                    type="button"
-                    onClick={() => setShowAllDistractors(value => !value)}
-                    className="flex w-full items-center justify-between py-2 text-left text-[14px] font-semibold"
-                    style={{ color: C.muted }}
-                  >
+                  <button type="button" onClick={() => setShowAllDistractors(value => !value)} className="flex w-full items-center justify-between py-2 text-left text-[14px] font-semibold" style={{ color: C.muted }}>
                     <span>{showAllDistractors ? 'Hide other options' : 'Why the other options are wrong'}</span>
                     <ChevronDown className={`h-4 w-4 transition-transform ${showAllDistractors ? 'rotate-180' : ''}`} />
                   </button>
                   {showAllDistractors && (
                     <div className="mt-2 divide-y" style={{ borderColor: C.line }}>
-                      {Object.entries(distractors)
-                        .filter(([letter]) => letter !== correctAnswerId)
-                        .map(([letter, text]) => (
-                          <div key={letter} className="grid grid-cols-[26px_1fr] gap-3 py-3 text-[16px] font-medium leading-7" style={{ color: '#59483B', borderColor: C.line }}>
-                            <strong style={{ color: C.espresso }}>{letter}.</strong>
-                            <SkimmableMarkdown text={text} />
-                          </div>
-                        ))}
+                      {Object.entries(distractors).filter(([letter]) => letter !== correctAnswerId).map(([letter, text]) => (
+                        <div key={letter} className="grid grid-cols-[26px_1fr] gap-3 py-3 text-[17px] font-medium leading-7 sm:text-[18px]" style={{ color: '#59483B', borderColor: C.line }}>
+                          <strong style={{ color: C.espresso }}>{letter}.</strong>
+                          <SkimmableMarkdown text={text} />
+                        </div>
+                      ))}
                     </div>
                   )}
                 </div>
               )}
 
               <div className="my-10 flex items-center gap-4 text-[10px] font-bold uppercase tracking-[0.18em]" style={{ color: C.muted }}>
-                <span className="h-px flex-1" style={{ backgroundColor: C.line }} />
-                Next
-                <span className="h-px flex-1" style={{ backgroundColor: C.line }} />
+                <span className="h-px flex-1" style={{ backgroundColor: C.line }} />Next<span className="h-px flex-1" style={{ backgroundColor: C.line }} />
               </div>
 
-              <button
-                type="button"
-                onClick={handleNext}
-                className="flex w-full items-center justify-center rounded-full px-6 py-[18px] text-[16px] font-bold"
-                style={{ backgroundColor: C.espresso, color: C.cream }}
-              >
+              <button type="button" onClick={handleNext} className="flex w-full items-center justify-center rounded-full px-6 py-[18px] text-[16px] font-bold" style={{ backgroundColor: C.espresso, color: C.cream }}>
                 {nextButtonText || 'Continue'} →
               </button>
             </section>
