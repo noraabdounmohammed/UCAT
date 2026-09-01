@@ -546,7 +546,14 @@ export const UkmlaSBAQuestion: React.FC<UkmlaSBAQuestionProps> = ({
                 {tutorTurns.map((turn, index) => {
                   if (!turn.text) return null;
                   if (turn.role === 'student') {
-                    return <div key={index} className="ml-auto max-w-[86%] rounded-[18px] px-4 py-3 text-[15px] font-medium leading-6" style={{ backgroundColor: C.espresso, color: C.cream }}>{turn.text}</div>;
+                    return (
+                      <div key={index} className="border-y py-5" style={{ borderColor: C.line }}>
+                        <div className="mb-2 text-[10px] font-bold uppercase tracking-[0.18em]" style={{ color: C.muted }}>You</div>
+                        <div className="text-[20px] font-semibold leading-[1.55] tracking-[-0.01em] sm:text-[21px]" style={{ color: C.espresso }}>
+                          {turn.text}
+                        </div>
+                      </div>
+                    );
                   }
                   const tutorIndex = tutorTurns.slice(0, index + 1).filter(item => item.role === 'tutor' && item.text).length;
                   return <TutorMessage key={index} text={turn.text} first={tutorIndex === 1} />;
