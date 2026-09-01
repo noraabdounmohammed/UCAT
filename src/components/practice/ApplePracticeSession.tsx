@@ -5,6 +5,8 @@ import { ModernFlashcard } from './ModernFlashcard';
 import { UkmlaSBAQuestion } from './UkmlaSBAQuestion';
 import { Dialog } from '@/components/ui/dialog';
 import { cn } from '@/lib/utils';
+import { useAuth } from '@/contexts/AuthContext';
+import { getDaypartGreeting, getLearnerFirstName } from '@/lib/learnerIdentity';
 import './apple-question-styles.css';
 import { QuestionData } from './questionTypes';
 import { SessionReviewScreen } from './SessionReviewScreen';
@@ -39,6 +41,9 @@ export function ApplePracticeSession({
   onChangeFormat,
   onRestartWithFilters
 }: PracticeSessionProps) {
+  const { user } = useAuth();
+  const learnerFirstName = useMemo(() => getLearnerFirstName(user), [user]);
+  const sessionGreeting = useMemo(() => getDaypartGreeting(), [showSessionIntro]);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [showExitConfirmation, setShowExitConfirmation] = useState(false);
   const [sessionAnswers, setSessionAnswers] = useState<SessionAnswer[]>([]);
@@ -229,7 +234,7 @@ export function ApplePracticeSession({
           <div className="flex flex-1 flex-col justify-center py-14 sm:py-20">
             <div className="mb-5 text-[10px] font-bold uppercase tracking-[0.22em] text-[#A9675D]">I'll take it from here</div>
             <h1 className="max-w-[520px] text-[42px] font-light leading-[1.06] tracking-[-0.04em] text-[#1F140C] sm:text-[52px]" style={{ fontFamily: "'Fraunces', serif" }}>
-              You just need to turn up.
+              {learnerFirstName ? `${sessionGreeting}, ${learnerFirstName}.` : 'You just need to turn up.'}
             </h1>
             <p className="mt-6 max-w-[520px] text-[19px] font-medium leading-[1.65] text-[#3B2A1E] sm:text-[20px]">
               {introDirection}
