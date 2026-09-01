@@ -24,6 +24,8 @@ interface PracticeSessionProps {
   onRestartWithFilters?: (filters?: any) => void;
 }
 
+const tutorTopic = (q?: QuestionData) => String((q as any)?.concept_title || q?.title || q?.topic || '').trim();
+
 export function ApplePracticeSession({
   questions,
   onComplete,
@@ -44,40 +46,57 @@ export function ApplePracticeSession({
   const [activeQuestions, setActiveQuestions] = useState<QuestionData[]>(questions);
   const [sessionKey, setSessionKey] = useState(0);
   const [reviewingQuestionIndex, setReviewingQuestionIndex] = useState<number | null>(null);
+  const [showSessionIntro, setShowSessionIntro] = useState(true);
+  const [transitionCopy, setTransitionCopy] = useState<string | null>(null);
 
   const questionsRef = useRef<QuestionData[]>(questions);
   const containerRef = useRef<HTMLDivElement>(null);
+  const transitionTimerRef = useRef<number | null>(null);
 
   useEffect(() => {
     setActiveQuestions(questions);
+    setShowSessionIntro(true);
   }, [questions]);
 
   useEffect(() => {
     if (activeQuestions && activeQuestions.length > 0) {
       questionsRef.current = activeQuestions;
-      if (process.env.NODE_ENV === 'development') {
-        const mindMapCount = questions.filter(q => q.format === 'mindmap').length;
-        if (mindMapCount > 0) {
-          console.log('🗺️ ApplePracticeSession received mind map questions:', {
-            total: questions.length,
-            mindMaps: mindMapCount,
-            firstQuestion: questions[0]
-          });
-        }
-      }
     }
-  }, [questions, activeQuestions]);
+  }, [activeQuestions]);
 
   useEffect(() => {
     if ('scrollRestoration' in history) history.scrollRestoration = 'manual';
     window.scrollTo(0, 0);
+    return () => {
+      if (transitionTimerRef.current) window.clearTimeout(transitionTimerRef.current);
+    };
   }, []);
 
-  const handlePreviousQuestion = useCallback(() => {
-    if (currentIndex > 0) setCurrentIndex(currentIndex - 1);
-  }, [currentIndex]);
+  const introTopics = useMemo(() => {
+    const seen = new Set<string>();
+    const result: string[] = [];
+    activeQuestions.forEach(q => {
+      const topic = tutorTopic(q);
+      if (topic && !seen.has(topic) && result.length < 3) {
+        seen.add(topic);
+        result.push(topic);
+      }
+    });
+    return result;
+  }, [activeQuestions]);
 
-  const handleNextQuestion = useCallback(() => {
+  const introDirection = useMemo(() => {
+    if (introTopics.length === 0) return `I've got ${activeQuestions.length} question${activeQuestions.length === 1 ? '' : 's'} for us. I'll lead the session and slow down wherever your reasoning needs it.`;
+    if (introTopics.length === 1) return `We'll stay around ${introTopics[0]} today. I'll vary the angle and slow down whenever a distinction isn't secure yet.`;
+    return `We'll move through ${introTopics.join(', ')}${activeQuestions.length > introTopics.length ? ' and a little more' : ''}. I'll decide when to move on and when something deserves another look.`;
+  }, [activeQuestions.length, introTopics]);
+
+  const handlePreviousQuestion = useCallback(() => {
+    if (currentIndex > 0 && !transitionCopy) setCurrentIndex(currentIndex - 1);
+  }, [currentIndex, transitionCopy]);
+
+  const advanceNow = useCallback(() => {
+    setTransitionCopy(null);
     if (currentIndex < questionsRef.current.length - 1) {
       setCurrentIndex(currentIndex + 1);
       window.scrollTo(0, 0);
@@ -86,8 +105,37 @@ export function ApplePracticeSession({
     }
   }, [currentIndex]);
 
+  const handleNextQuestion = useCallback(() => {
+    if (transitionCopy) return;
+    if (currentIndex >= questionsRef.current.length - 1) {
+      setShowReview(true);
+      return;
+    }
+
+    const current = questionsRef.current[currentIndex];
+    const next = questionsRef.current[currentIndex + 1];
+    const currentTopic = tutorTopic(current);
+    const nextTopic = tutorTopic(next);
+    const answer = sessionAnswers.find(item => item.questionIndex === currentIndex);
+
+    let copy = 'Good. Let’s change the context and see what happens next.';
+    if (currentTopic && nextTopic && currentTopic === nextTopic) {
+      copy = answer?.isCorrect
+        ? `Good. Let's stay with ${nextTopic} for one more — I want to see if that still holds in a different vignette.`
+        : `Keep that last distinction in mind. We're staying with ${nextTopic} for one more, from a different angle.`;
+    } else if (nextTopic) {
+      copy = answer?.isCorrect
+        ? `Good. I'm switching us to ${nextTopic} now. New context — same job: find the decisive clue.`
+        : `That's enough on that for now. I'm moving us to ${nextTopic}; we'll bring the earlier gap back when it is useful.`;
+    }
+
+    setTransitionCopy(copy);
+    transitionTimerRef.current = window.setTimeout(advanceNow, 1450);
+  }, [advanceNow, currentIndex, sessionAnswers, transitionCopy]);
+
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
+      if (showSessionIntro) return;
       if (event.target instanceof HTMLInputElement || event.target instanceof HTMLTextAreaElement) return;
       const currentQuestion = questions[currentIndex];
       if (currentQuestion?.format === 'flashcard' && (event.key === 'ArrowLeft' || event.key === 'ArrowRight')) return;
@@ -112,24 +160,13 @@ export function ApplePracticeSession({
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [currentIndex, questions, handlePreviousQuestion, handleNextQuestion]);
+  }, [currentIndex, questions, handlePreviousQuestion, handleNextQuestion, showSessionIntro]);
 
   const currentQuestion = useMemo(() => questionsRef.current[currentIndex], [currentIndex]);
   const questionId = useMemo(() => currentQuestion?.id || `question-${currentIndex}`, [currentQuestion, currentIndex]);
 
   const questionContent = useMemo(() => {
     const q = currentQuestion;
-    if (process.env.NODE_ENV === 'development') {
-      console.log('🔍 ApplePracticeSession received question:', {
-        id: q.id,
-        question: q.question?.substring(0, 50) + '...',
-        question_stem: q.question_stem?.substring(0, 50) + '...',
-        question_stem_length: q.question_stem?.length,
-        has_clinical_vignette: !!q.clinical_vignette,
-        options_count: q.options?.length
-      });
-    }
-
     const questionText = q.question_stem || q.question || q.content || q.individual_question || '';
     const options = q.options.map((option, index) => {
       if (typeof option === 'string') return { id: String.fromCharCode(65 + index), text: option };
@@ -175,6 +212,7 @@ export function ApplePracticeSession({
     setSessionAnswers([]);
     setCurrentIndex(0);
     setShowReview(false);
+    setShowSessionIntro(false);
     setSessionKey(k => k + 1);
     window.scrollTo(0, 0);
   };
@@ -190,8 +228,8 @@ export function ApplePracticeSession({
     if (questionContent.format === 'flashcard' || questionContent.format === 'sba' || questionContent.format === 'ukmla_sba') {
       const prevBodyBg = document.body.style.backgroundColor;
       const prevHtmlBg = (document.documentElement as HTMLElement).style.backgroundColor;
-      document.body.style.backgroundColor = '#0a0a0a';
-      (document.documentElement as HTMLElement).style.backgroundColor = '#0a0a0a';
+      document.body.style.backgroundColor = '#F4ECDF';
+      (document.documentElement as HTMLElement).style.backgroundColor = '#F4ECDF';
       return () => {
         document.body.style.backgroundColor = prevBodyBg;
         (document.documentElement as HTMLElement).style.backgroundColor = prevHtmlBg;
@@ -208,6 +246,36 @@ export function ApplePracticeSession({
     setReviewingQuestionIndex(null);
     setShowReview(true);
   }, []);
+
+  if (showSessionIntro && activeQuestions.length > 0) {
+    return (
+      <main className="fixed inset-0 overflow-y-auto bg-[#F4ECDF] text-[#2A1E16]">
+        <div className="mx-auto flex min-h-full w-full max-w-[620px] flex-col px-5 pb-10 pt-7 sm:px-8 sm:pt-10">
+          <div className="text-[18px] font-semibold tracking-[-0.02em] text-[#1F140C]">StudyEdit</div>
+          <div className="flex flex-1 flex-col justify-center py-14 sm:py-20">
+            <div className="mb-5 text-[10px] font-bold uppercase tracking-[0.22em] text-[#A9675D]">I'll take it from here</div>
+            <h1 className="max-w-[520px] text-[42px] font-light leading-[1.06] tracking-[-0.04em] text-[#1F140C] sm:text-[52px]" style={{ fontFamily: "'Fraunces', serif" }}>
+              You just need to turn up.
+            </h1>
+            <p className="mt-6 max-w-[520px] text-[19px] font-medium leading-[1.65] text-[#3B2A1E] sm:text-[20px]">
+              {introDirection}
+            </p>
+            <p className="mt-5 max-w-[500px] text-[15px] font-medium leading-6 text-[#8A7560]">
+              Answer naturally. Tell me when you guessed. Ask me things. I'll handle the pacing, the follow-ups and what comes next.
+            </p>
+            <button
+              type="button"
+              onClick={() => setShowSessionIntro(false)}
+              className="mt-9 flex w-full items-center justify-center rounded-full bg-[#1F140C] px-6 py-[18px] text-[16px] font-bold text-[#FAF5EC] sm:max-w-[360px]"
+            >
+              Take me through it →
+            </button>
+            <div className="mt-3 text-[12px] font-medium text-[#8A7560]">{activeQuestions.length} question{activeQuestions.length === 1 ? '' : 's'} · I'll decide when to slow down</div>
+          </div>
+        </div>
+      </main>
+    );
+  }
 
   if (showReview) {
     return (
@@ -228,19 +296,19 @@ export function ApplePracticeSession({
     const format = reviewQuestion.format || defaultFormat;
 
     return (
-      <div className="flex flex-col h-screen overflow-hidden bg-gradient-to-br from-stone-900 via-stone-800 to-stone-900">
-        <header className="sticky top-0 z-10 bg-black/20 backdrop-blur-xl border-b border-white/10">
-          <div className="max-w-4xl mx-auto px-4 py-3 flex items-center gap-3">
-            <button onClick={handleBackToReview} className="flex items-center gap-2 text-white/70 hover:text-white transition-colors">
-              <ChevronLeft className="w-5 h-5" />
-              <span className="text-sm font-medium">Back to Review</span>
+      <div className="flex h-screen flex-col overflow-hidden bg-[#F4ECDF]">
+        <header className="sticky top-0 z-10 border-b border-[#E8DCC4] bg-[#F4ECDF]/90 backdrop-blur-xl">
+          <div className="mx-auto flex max-w-4xl items-center gap-3 px-4 py-3">
+            <button onClick={handleBackToReview} className="flex items-center gap-2 text-[#8A7560] transition-colors hover:text-[#1F140C]">
+              <ChevronLeft className="h-5 w-5" />
+              <span className="text-sm font-medium">Back to review</span>
             </button>
             <div className="flex-1" />
-            <span className="text-xs text-white/40">Question {reviewingQuestionIndex + 1} of {activeQuestions.length}</span>
+            <span className="text-xs text-[#8A7560]">Question {reviewingQuestionIndex + 1} of {activeQuestions.length}</span>
           </div>
         </header>
         <div className="flex-1 overflow-y-auto">
-          <div className="max-w-4xl mx-auto px-4 py-6">
+          <div className="mx-auto max-w-4xl px-4 py-6">
             {format === 'flashcard' ? (
               <ModernFlashcard key={`review-${reviewingQuestionIndex}`} question={reviewQuestion} onAnswer={() => {}} onNext={handleBackToReview} />
             ) : (
@@ -253,7 +321,7 @@ export function ApplePracticeSession({
                 totalQuestions={activeQuestions.length}
                 preSelectedAnswer={reviewAnswer?.selectedOption}
                 preSubmitted={true}
-                nextButtonText="Back to Review"
+                nextButtonText="Back to review"
               />
             )}
           </div>
@@ -262,36 +330,47 @@ export function ApplePracticeSession({
     );
   }
 
+  if (transitionCopy) {
+    return (
+      <main className="fixed inset-0 overflow-hidden bg-[#F4ECDF] text-[#2A1E16]">
+        <div className="mx-auto flex min-h-full w-full max-w-[620px] flex-col justify-center px-5 py-10 sm:px-8">
+          <div className="mb-4 text-[10px] font-bold uppercase tracking-[0.22em] text-[#A9675D]">StudyEdit</div>
+          <p className="max-w-[540px] text-[29px] font-medium leading-[1.45] tracking-[-0.025em] text-[#1F140C] sm:text-[33px]" style={{ fontFamily: "'Fraunces', serif" }}>
+            {transitionCopy}
+          </p>
+          <button type="button" onClick={() => { if (transitionTimerRef.current) window.clearTimeout(transitionTimerRef.current); advanceNow(); }} className="mt-8 w-fit text-[13px] font-semibold text-[#8A7560] underline decoration-[#BBA995] underline-offset-4">
+            Continue now
+          </button>
+        </div>
+      </main>
+    );
+  }
+
   const isSba = questionContent.format === 'flashcard' || questionContent.format === 'sba' || questionContent.format === 'ukmla_sba';
 
   return (
-    <div className={cn('flex flex-col h-screen overflow-hidden', isSba ? 'bg-gradient-to-br from-stone-900 via-stone-800 to-stone-900' : 'bg-gradient-to-br from-stone-50 to-stone-100/50')}>
+    <div className={cn('flex h-screen flex-col overflow-hidden', isSba ? 'bg-[#F4ECDF]' : 'bg-gradient-to-br from-stone-50 to-stone-100/50')}>
       {!isSba && (
-        <header className="sticky top-0 z-10 bg-white/60 backdrop-blur-2xl border-b border-white/30">
-          <div className="max-w-4xl mx-auto px-4 py-3 flex items-center justify-between">
-            <button onClick={() => setShowExitConfirmation(true)} className="flex items-center justify-center w-8 h-8 rounded-full hover:bg-black/5 dark:hover:bg-white/5 transition-colors">
-              <X className="h-5 w-5 text-zinc-600 dark:text-zinc-400" />
+        <header className="sticky top-0 z-10 border-b border-white/30 bg-white/60 backdrop-blur-2xl">
+          <div className="mx-auto flex max-w-4xl items-center justify-between px-4 py-3">
+            <button onClick={() => setShowExitConfirmation(true)} className="flex h-8 w-8 items-center justify-center rounded-full transition-colors hover:bg-black/5">
+              <X className="h-5 w-5 text-zinc-600" />
             </button>
             <div className="flex items-center gap-2">
-              <div className="px-3 py-1.5 bg-white/60 dark:bg-zinc-800/60 backdrop-blur-xl rounded-lg border border-black/[0.08] dark:border-white/[0.08]">
-                <span className="text-[15px] font-semibold text-zinc-900 dark:text-white">{currentIndex + 1}</span>
-                <span className="text-[13px] text-zinc-500 dark:text-zinc-400 mx-1">of</span>
-                <span className="text-[15px] font-medium text-zinc-600 dark:text-zinc-400">{activeQuestions.length}</span>
+              <div className="rounded-lg border border-black/[0.08] bg-white/60 px-3 py-1.5 backdrop-blur-xl">
+                <span className="text-[15px] font-semibold text-zinc-900">{currentIndex + 1}</span>
+                <span className="mx-1 text-[13px] text-zinc-500">of</span>
+                <span className="text-[15px] font-medium text-zinc-600">{activeQuestions.length}</span>
               </div>
             </div>
             <div className="flex items-center gap-2">
               {sessionAnswers.length > 0 && <SessionProgressDropdown answers={sessionAnswers} total={activeQuestions.length} currentIndex={currentIndex} isLightMode={true} />}
-              <button onClick={handlePreviousQuestion} disabled={currentIndex === 0} className={`flex items-center justify-center w-8 h-8 rounded-full transition-all group ${currentIndex === 0 ? 'text-zinc-300 dark:text-zinc-600 cursor-not-allowed' : 'text-zinc-600 dark:text-zinc-400 hover:bg-black/5 dark:hover:bg-white/5 active:scale-95'}`} title="Previous (← or H)">
+              <button onClick={handlePreviousQuestion} disabled={currentIndex === 0} className="flex h-8 w-8 items-center justify-center rounded-full text-zinc-600 disabled:text-zinc-300">
                 <ChevronLeft className="h-5 w-5" />
               </button>
-              <button onClick={handleNextQuestion} className="flex items-center justify-center w-8 h-8 rounded-full text-zinc-600 dark:text-zinc-400 hover:bg-black/5 dark:hover:bg-white/5 transition-all active:scale-95 group" title="Next (→ or L)">
+              <button onClick={handleNextQuestion} className="flex h-8 w-8 items-center justify-center rounded-full text-zinc-600">
                 <ChevronRight className="h-5 w-5" />
               </button>
-            </div>
-          </div>
-          <div className="max-w-4xl mx-auto px-4 pb-2">
-            <div className="h-1 bg-zinc-200/60 dark:bg-zinc-700/60 rounded-full overflow-hidden">
-              <div className="h-full bg-[#007AFF] transition-all duration-300 ease-out rounded-full" style={{ width: `${((currentIndex + 1) / activeQuestions.length) * 100}%` }} />
             </div>
           </div>
         </header>
@@ -339,36 +418,17 @@ export function ApplePracticeSession({
       {showExitConfirmation && (
         <Dialog open={showExitConfirmation}>
           <div className="fixed inset-0 z-50 flex items-end justify-center bg-[#1F140C]/20 p-4 pb-6 sm:items-center sm:p-6" onClick={handleExitCancel}>
-            <div
-              role="dialog"
-              aria-modal="true"
-              aria-labelledby="exit-practice-title"
-              className="w-full max-w-[420px] rounded-[28px] border border-[#E8DCC4] bg-[#FFFDF8] px-6 pb-6 pt-7 shadow-[0_18px_55px_rgba(31,20,12,0.16)] sm:px-7 sm:pb-7 sm:pt-8"
-              onClick={(event) => event.stopPropagation()}
-            >
-              <div className="mb-2 text-[10px] font-semibold uppercase tracking-[0.22em] text-[#8A7560]">Leave this session?</div>
+            <div role="dialog" aria-modal="true" aria-labelledby="exit-practice-title" className="w-full max-w-[420px] rounded-[28px] border border-[#E8DCC4] bg-[#FFFDF8] px-6 pb-6 pt-7 shadow-[0_18px_55px_rgba(31,20,12,0.16)] sm:px-7 sm:pb-7 sm:pt-8" onClick={(event) => event.stopPropagation()}>
+              <div className="mb-2 text-[10px] font-semibold uppercase tracking-[0.22em] text-[#8A7560]">Pause here?</div>
               <h2 id="exit-practice-title" className="text-[30px] font-light leading-[1.08] tracking-[-0.03em] text-[#1F140C]" style={{ fontFamily: "'Fraunces', serif" }}>
-                Stop here for now?
+                We can stop here.
               </h2>
-              <p className="mt-3 text-[15px] font-medium leading-6 text-[#8A7560]" style={{ fontFamily: 'Inter, sans-serif' }}>
-                Your answered questions are already saved. You can head home without losing today’s progress.
+              <p className="mt-3 text-[15px] font-medium leading-6 text-[#8A7560]">
+                I've already kept what we learned from the questions you've answered. You won't lose the useful part of this session.
               </p>
-
               <div className="mt-7 flex flex-col gap-2.5 sm:flex-row-reverse">
-                <button
-                  onClick={handleExitConfirm}
-                  className="flex min-h-[52px] flex-1 items-center justify-center rounded-full bg-[#1F140C] px-5 text-[15px] font-semibold text-[#FAF5EC] transition active:scale-[0.99]"
-                  style={{ fontFamily: 'Inter, sans-serif' }}
-                >
-                  Exit to Home
-                </button>
-                <button
-                  onClick={handleExitCancel}
-                  className="flex min-h-[52px] flex-1 items-center justify-center rounded-full border border-[#E8DCC4] bg-[#FAF5EC] px-5 text-[15px] font-semibold text-[#2A1E16] transition active:scale-[0.99]"
-                  style={{ fontFamily: 'Inter, sans-serif' }}
-                >
-                  Keep practising
-                </button>
+                <button onClick={handleExitConfirm} className="flex min-h-[52px] flex-1 items-center justify-center rounded-full bg-[#1F140C] px-5 text-[15px] font-semibold text-[#FAF5EC]">Stop for now</button>
+                <button onClick={handleExitCancel} className="flex min-h-[52px] flex-1 items-center justify-center rounded-full border border-[#E8DCC4] bg-[#FAF5EC] px-5 text-[15px] font-semibold text-[#2A1E16]">Keep going</button>
               </div>
             </div>
           </div>
