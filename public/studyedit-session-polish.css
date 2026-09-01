@@ -1,0 +1,26 @@
+/* StudyEdit session polish: learner messages remain conversational without shrinking the learning text. */
+section[aria-label="Answer and tutor"] .space-y-6 > .border-y.py-5 {
+  margin-left: auto !important;
+  width: fit-content !important;
+  max-width: 86% !important;
+  padding: 14px 18px 15px !important;
+  border: 0 !important;
+  border-radius: 22px !important;
+  background: #1F140C !important;
+  box-shadow: 0 8px 24px rgba(31, 20, 12, 0.08) !important;
+}
+
+section[aria-label="Answer and tutor"] .space-y-6 > .border-y.py-5 > div:first-child {
+  margin-bottom: 6px !important;
+  color: rgba(250, 245, 236, 0.62) !important;
+}
+
+section[aria-label="Answer and tutor"] .space-y-6 > .border-y.py-5 > div:nth-child(2) {
+  color: #FAF5EC !important;
+}
+
+@media (max-width: 600px) {
+  section[aria-label="Answer and tutor"] .space-y-6 > .border-y.py-5 {
+    max-width: 90% !important;
+  }
+}
