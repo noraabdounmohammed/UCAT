@@ -1,5 +1,7 @@
 import OpenAI from 'openai';
 import { hydrateLearnerMemoryFromCloud, persistLearnerMemoryEvent, readCloudLearnerEvents } from '@/services/learnerMemory';
+import { supabase } from '@/lib/supabase';
+import { getLearnerFirstName } from '@/lib/learnerIdentity';
 
 export interface QuestionContext {
   question: string;
@@ -78,6 +80,15 @@ function stableHash(value: string): string {
 function safelyParse(value: string | null): any {
   if (!value) return null;
   try { return JSON.parse(value); } catch { return null; }
+}
+
+async function currentLearnerFirstName(): Promise<string | null> {
+  try {
+    const { data: { session } } = await supabase.auth.getSession();
+    return getLearnerFirstName(session?.user || null);
+  } catch {
+    return null;
+  }
 }
 
 function readLearnerEvents(): LearnerEvent[] {
@@ -408,7 +419,7 @@ function compactLearnerContext(snapshot: LearnerSnapshot): string {
   ].filter(Boolean).join('\n\n');
 }
 
-function buildCacheKey(userQuery: string, context: QuestionContext): string {
+function buildCacheKey(userQuery: string, context: QuestionContext, learnerName: string | null): string {
   const learnerSnapshot = buildLearnerSnapshot();
   const fingerprint = JSON.stringify({
     query: userQuery.trim(),
@@ -417,21 +428,24 @@ function buildCacheKey(userQuery: string, context: QuestionContext): string {
     correctAnswer: context.correctAnswer,
     selectedAnswer: context.selectedAnswer,
     explanation: context.explanation,
+    learnerName,
     learnerSnapshot,
   });
   return `ai_${stableHash(fingerprint)}`;
 }
 
-function buildUserPrompt(userQuery: string, context: QuestionContext): string {
+function buildUserPrompt(userQuery: string, context: QuestionContext, learnerName: string | null): string {
   syncPersistentLearnerMemory(context);
   const learnerContext = compactLearnerContext(buildLearnerSnapshot());
-  return `CURRENT QUESTION CONTEXT\n\nQUESTION / VIGNETTE:\n${context.question}\n\nOPTIONS:\n${context.options.join('\n') || 'Not supplied'}\n\nSTUDENT SELECTED:\n${context.selectedAnswer || 'Not supplied'}\n\nCORRECT ANSWER:\n${context.correctAnswer}\n\nGROUNDING EXPLANATION:\n${context.explanation || 'Not supplied'}\n\nLONGITUDINAL LEARNER MEMORY\n${learnerContext}\n\nUSER REQUEST:\n${userQuery}\n\nTEACHING POLICY\n- The current question and grounding explanation are the clinical source of truth. Learner memory is for personalisation, not for inventing medical facts.\n- Treat history as longitudinal evidence, not as a licence to overclaim. Only mention a repeated pattern when multiple supplied observations support it.\n- If the learner repeatedly misses a related concept or discriminator, make that pattern explicit and focus on it.\n- If the learner has repeatedly retrieved prerequisite material successfully, skip basic reteaching and teach the missing layer.\n- A correct low-confidence response is weaker evidence than confident retrieval. A confident incorrect response can indicate a misconception.\n- The selected wrong option is diagnostic information. Explain why it was tempting and the clue or principle that should have shifted the decision when the supplied context supports that.\n- Prefer the shortest explanation that changes this learner's future decision-making.\n- Never expose internal scores, mastery levels, storage fields, event IDs, fingerprints or system terminology to the learner.\n- Keep the answer concise and action-oriented.`;
+  return `LEARNER IDENTITY\nFirst name: ${learnerName || 'Not supplied'}\n\nCURRENT QUESTION CONTEXT\n\nQUESTION / VIGNETTE:\n${context.question}\n\nOPTIONS:\n${context.options.join('\n') || 'Not supplied'}\n\nSTUDENT SELECTED:\n${context.selectedAnswer || 'Not supplied'}\n\nCORRECT ANSWER:\n${context.correctAnswer}\n\nGROUNDING EXPLANATION:\n${context.explanation || 'Not supplied'}\n\nLONGITUDINAL LEARNER MEMORY\n${learnerContext}\n\nUSER REQUEST:\n${userQuery}\n\nTEACHING POLICY\n- The current question and grounding explanation are the clinical source of truth. Learner memory is for personalisation, not for inventing medical facts.\n- If a first name is supplied, use it sparingly and naturally. Good moments are a session opening, a meaningful redirect, after resolving a misconception, or at closure. Do not address the learner by name in every reply.\n- Make personalisation visible through teaching choices, not flattery: adapt depth, questioning and examples to the supplied history and current confidence.\n- Treat history as longitudinal evidence, not as a licence to overclaim. Only mention a repeated pattern when multiple supplied observations support it.\n- If the learner repeatedly misses a related concept or discriminator, make that pattern explicit and focus on it.\n- If the learner has repeatedly retrieved prerequisite material successfully, skip basic reteaching and teach the missing layer.\n- A correct low-confidence response is weaker evidence than confident retrieval. A confident incorrect response can indicate a misconception.\n- The selected wrong option is diagnostic information. Explain why it was tempting and the clue or principle that should have shifted the decision when the supplied context supports that.\n- Prefer the shortest explanation that changes this learner's future decision-making.\n- Never expose internal scores, mastery levels, storage fields, event IDs, fingerprints or system terminology to the learner.\n- Keep the answer concise and action-oriented.`;
 }
 
 const systemPrompt = `You are StudyEdit, an expert medical education assistant for UKMLA AKT students.
 - Be concise, clear and clinically careful.
 - Use the supplied current-question context as the clinical source of truth.
 - Personalise teaching using the supplied longitudinal learner memory when relevant.
+- When a learner first name is supplied, use it like an excellent human tutor would: occasionally and purposefully, never mechanically.
+- Make the learner feel known by remembering demonstrated strengths, uncertainty and recurring gaps, but never invent a pattern that is not in the supplied evidence.
 - The student's selected answer is explicitly provided when known; never claim it was not provided if it appears in the context.
 - Do not contradict the supplied correct answer or grounding explanation.
 - Do not invent prior learner history, references, links, guidelines or unsupported medical facts.
@@ -464,6 +478,7 @@ export async function generateAIResponseStream(
   abortSignal?: AbortSignal,
 ): Promise<string> {
   await hydrateLearnerMemoryFromCloud();
+  const learnerName = await currentLearnerFirstName();
 
   if (!openai) {
     const fallback = generateFallbackResponse(userQuery, context);
@@ -472,7 +487,7 @@ export async function generateAIResponseStream(
     return fallback;
   }
 
-  const cacheKey = buildCacheKey(userQuery, context);
+  const cacheKey = buildCacheKey(userQuery, context, learnerName);
   const cached = responseCache[cacheKey];
   if (cached && Date.now() - cached.timestamp < CACHE_EXPIRY_MS) {
     onStart?.();
@@ -487,7 +502,7 @@ export async function generateAIResponseStream(
       model: 'deepseek-chat',
       messages: [
         { role: 'system', content: systemPrompt },
-        { role: 'user', content: buildUserPrompt(userQuery, context) },
+        { role: 'user', content: buildUserPrompt(userQuery, context, learnerName) },
       ],
       temperature: 0.25,
       max_tokens: 500,
@@ -519,10 +534,11 @@ export async function generateAIResponseStream(
 
 export async function generateAIResponse(userQuery: string, context: QuestionContext): Promise<string> {
   await hydrateLearnerMemoryFromCloud();
+  const learnerName = await currentLearnerFirstName();
 
   if (!openai) return generateFallbackResponse(userQuery, context);
 
-  const cacheKey = buildCacheKey(userQuery, context);
+  const cacheKey = buildCacheKey(userQuery, context, learnerName);
   const cached = responseCache[cacheKey];
   if (cached && Date.now() - cached.timestamp < CACHE_EXPIRY_MS) return cached.response;
 
@@ -531,7 +547,7 @@ export async function generateAIResponse(userQuery: string, context: QuestionCon
       model: 'deepseek-chat',
       messages: [
         { role: 'system', content: systemPrompt },
-        { role: 'user', content: buildUserPrompt(userQuery, context) },
+        { role: 'user', content: buildUserPrompt(userQuery, context, learnerName) },
       ],
       temperature: 0.25,
       max_tokens: 500,
