@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { ChevronDown, Send, Sparkles, X } from 'lucide-react';
+import { ChevronDown, Send, X } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
-import { generateAIResponseStream, QuestionContext } from '@/services/openai';
+import { generateAIResponse, generateAIResponseStream, QuestionContext } from '@/services/openai';
 import type { FilterState } from './PracticeFilterModalParchment';
 import type { QuestionData } from './questionTypes';
 import type { SessionAnswer } from './SessionProgressDropdown';
@@ -30,6 +30,7 @@ interface UkmlaSBAQuestionProps {
 
 type ConfidenceLevel = 'know' | 'unsure' | 'guess';
 type TutorTurn = { role: 'student' | 'tutor'; text: string };
+type TutorAssessment = 'pass' | 'partial' | 'fail' | 'clarify';
 
 const C = {
   parchment: '#F4ECDF',
@@ -65,7 +66,7 @@ function splitSentences(text: string): string[] {
   return String(text || '')
     .replace(/\s+/g, ' ')
     .trim()
-    .split(/(?<=[.!?])\s+(?=[A-Z])/)
+    .split(/(?<=[.!?])\s+(?=[A-Z])/) 
     .filter(Boolean);
 }
 
@@ -133,6 +134,21 @@ function buildVignetteParagraphs(text: string): string[] {
     .split(/\n{2,}/)
     .map(part => part.replace(/\n+/g, ' ').replace(/\s+/g, ' ').trim())
     .filter(Boolean);
+}
+
+function requiredEvidence(correct: boolean, confidence: ConfidenceLevel | null): number {
+  if (correct && confidence === 'know') return 0;
+  if (correct && confidence === 'unsure') return 1;
+  if (correct && confidence === 'guess') return 2;
+  return 2;
+}
+
+function parseTutorAssessment(text: string): TutorAssessment {
+  const value = String(text || '').trim().toUpperCase();
+  if (value.includes('CLARIFY')) return 'clarify';
+  if (value.includes('PASS')) return 'pass';
+  if (value.includes('FAIL')) return 'fail';
+  return 'partial';
 }
 
 const emphasisStyle: React.CSSProperties = {
@@ -222,17 +238,23 @@ async function waitForConfidence(conceptTitle: string, startedAt: number): Promi
 
 function proactiveOpeningInstruction(correct: boolean, confidence: ConfidenceLevel | null): string {
   const common = 'You are StudyEdit Tutor. The learner has just answered this SBA. Use the verified explanation and key point as ground truth. Do not invent why they chose an option. Make ONE pedagogical move only, usually 1-3 short sentences. Do not dump a full explanation unless instructed. End with at most one question.';
-  if (correct && confidence === 'know') return `${common} They were correct and said they knew it. Give a very brief confirmation of the decisive clue and do not interrogate them. Do not end with a question.`;
-  if (correct && confidence === 'unsure') return `${common} They were correct but unsure. Briefly name the decisive discriminator, then ask one tiny check question that confirms they can use it deliberately. Prefix that final check with "Quick check:".`;
+  if (correct && confidence === 'know') return `${common} They were correct and said they knew it. Give a very brief confirmation of the decisive clue. Do not ask another question. Tell them you have seen enough evidence and are moving on.`;
+  if (correct && confidence === 'unsure') return `${common} They were correct but unsure. Briefly name the decisive discriminator, then ask one tiny transfer check that confirms they can use it deliberately. Prefix that final check with "Quick check:".`;
   if (correct && confidence === 'guess') return `${common} They were correct but guessed. Do not imply mastery. Ask what made them choose this answer before teaching it, so you can distinguish lucky recognition from partial reasoning.`;
   if (!correct && confidence === 'know') return `${common} They were wrong but said they knew it, which may indicate a misconception. Do NOT explain the answer yet. Ask them to talk you through how they got to their selected answer.`;
   if (!correct && confidence === 'unsure') return `${common} They were wrong and unsure. Do NOT explain the answer yet. Ask what made them lean toward their selected answer. Keep it warm and specific to the option they chose.`;
-  if (!correct && confidence === 'guess') return `${common} They were wrong and guessed. There may be no reasoning to interrogate, so do not ask why they picked it. Teach the smallest prerequisite or rule needed to start, then ask one short prerequisite check. Prefix the check with "Quick check:".`;
+  if (!correct && confidence === 'guess') return `${common} They were wrong and guessed. Teach the smallest prerequisite or rule needed to start, then ask one short prerequisite check. Prefix the check with "Quick check:".`;
   return `${common} Confidence is unavailable. Ask one short neutral question to understand what the learner was thinking before you explain.`;
 }
 
 function directExplanationInstruction(): string {
-  return 'Give the direct explanation now. Use the verified explanation as ground truth. Explain the decisive mechanism/discriminator in about 80-120 words and finish with one short carry-forward rule. Do not invent the learner\'s reasoning.';
+  return 'Give the direct explanation now. Use the verified explanation as ground truth. Explain the decisive mechanism or discriminator in about 60-100 words. Then ask one short application question so you can verify the learner can use it. Prefix that question with "Quick check:". Do not invent the learner\'s reasoning.';
+}
+
+function secureClosingInstruction(isFinalQuestion: boolean): string {
+  return isFinalQuestion
+    ? 'The learner has now given enough evidence that this distinction is secure for this session. Confirm the exact thing they now have right in one concise sentence. Do not teach anything new and do not ask another question. End naturally by saying that is enough for today.'
+    : 'The learner has now given enough evidence that this distinction is secure for this session. Confirm the exact thing they now have right in one concise sentence. Do not teach anything new and do not ask another question. End naturally by telling them you have seen enough here and are moving on.';
 }
 
 export const UkmlaSBAQuestion: React.FC<UkmlaSBAQuestionProps> = ({
@@ -255,10 +277,22 @@ export const UkmlaSBAQuestion: React.FC<UkmlaSBAQuestionProps> = ({
   const [aiQuestion, setAiQuestion] = useState('');
   const [aiStreaming, setAiStreaming] = useState(false);
   const [answerStartedAt, setAnswerStartedAt] = useState(0);
+  const [confidenceLevel, setConfidenceLevel] = useState<ConfidenceLevel | null>(null);
+  const [passedChecks, setPassedChecks] = useState(0);
+  const [advancePending, setAdvancePending] = useState(false);
   const abortControllerRef = useRef<AbortController | null>(null);
+  const advanceTimerRef = useRef<number | null>(null);
   const scrollRef = useRef<HTMLDivElement | null>(null);
   const tutorRef = useRef<HTMLDivElement | null>(null);
+  const inputRef = useRef<HTMLInputElement | null>(null);
   const getStorageKey = () => `sba_answer_${question.id || question.question?.substring(0, 50)}`;
+
+  const clearAdvanceTimer = () => {
+    if (advanceTimerRef.current !== null) {
+      window.clearTimeout(advanceTimerRef.current);
+      advanceTimerRef.current = null;
+    }
+  };
 
   useEffect(() => {
     if (preSubmitted) {
@@ -293,8 +327,13 @@ export const UkmlaSBAQuestion: React.FC<UkmlaSBAQuestionProps> = ({
     setAiQuestion('');
     setAiStreaming(false);
     setAnswerStartedAt(0);
+    setConfidenceLevel(null);
+    setPassedChecks(0);
+    setAdvancePending(false);
     abortControllerRef.current?.abort();
+    clearAdvanceTimer();
     requestAnimationFrame(() => scrollRef.current?.scrollTo({ top: 0 }));
+    return () => clearAdvanceTimer();
   }, [question.id, question.question, question.question_stem, preSubmitted, preSelectedAnswer]);
 
   const options = useMemo(
@@ -318,6 +357,7 @@ export const UkmlaSBAQuestion: React.FC<UkmlaSBAQuestionProps> = ({
   const correctOptionText = options.find((option: any) => option.id === correctAnswerId)?.text || '';
   const isCorrect = hasSubmitted && committedAnswer === correctAnswerId;
   const progress = totalQuestions ? Math.min(100, ((currentIndex + (hasSubmitted ? 1 : 0)) / totalQuestions) * 100) : 0;
+  const isFinalQuestion = Boolean(totalQuestions && currentIndex >= totalQuestions - 1);
 
   const handleOptionSelect = (id: string) => {
     if (hasSubmitted) return;
@@ -325,22 +365,31 @@ export const UkmlaSBAQuestion: React.FC<UkmlaSBAQuestionProps> = ({
     sessionStorage.setItem(getStorageKey(), JSON.stringify({ selectedOption: id, hasSubmitted: false }));
   };
 
-  const runTutor = async (studentText?: string, forceDirect = false, selectedOverride?: string, startedOverride?: number) => {
-    if (aiStreaming) return;
-    const selectedId = selectedOverride || committedAnswer;
-    if (!selectedId) return;
+  const handleNext = () => {
+    clearAdvanceTimer();
+    setAdvancePending(false);
+    abortControllerRef.current?.abort();
+    onNext();
+    requestAnimationFrame(() => scrollRef.current?.scrollTo({ top: 0, behavior: 'smooth' }));
+  };
 
+  const scheduleAdvance = () => {
+    if (preSubmitted) return;
+    clearAdvanceTimer();
+    setAdvancePending(true);
+    advanceTimerRef.current = window.setTimeout(handleNext, 3200);
+  };
+
+  const cancelAdvance = () => {
+    clearAdvanceTimer();
+    setAdvancePending(false);
+    window.setTimeout(() => inputRef.current?.focus(), 40);
+  };
+
+  const makeContext = (selectedId: string, confidence: ConfidenceLevel | null): QuestionContext => {
     const selectedText = options.find((option: any) => option.id === selectedId)?.text || 'Selected option';
-    const confidence = await waitForConfidence(conceptTitle, startedOverride || answerStartedAt || Date.now());
-    const wasCorrect = selectedId === correctAnswerId;
-    const priorTurns = tutorTurns.slice(-6);
-
-    if (studentText?.trim()) setTutorTurns(previous => [...previous, { role: 'student', text: studentText.trim() }]);
-    setAiQuestion('');
-    setAiStreaming(true);
-
     const optionLines = options.map((option: any) => `${option.id}. ${option.text}`).join('\n');
-    const context: QuestionContext = {
+    return {
       question: [
         `CONCEPT: ${conceptTitle}`,
         `QUESTION: ${askLine || rawQuestionContent}`,
@@ -358,17 +407,40 @@ export const UkmlaSBAQuestion: React.FC<UkmlaSBAQuestionProps> = ({
       selectedAnswer: `${selectedId}. ${selectedText}`,
       explanation: explanation || keyFact,
     };
+  };
 
+  const runTutor = async (
+    studentText?: string,
+    forceDirect = false,
+    selectedOverride?: string,
+    startedOverride?: number,
+    instructionOverride?: string,
+    advanceAfter = false,
+  ) => {
+    if (aiStreaming) return;
+    const selectedId = selectedOverride || committedAnswer;
+    if (!selectedId) return;
+
+    const confidence = confidenceLevel || await waitForConfidence(conceptTitle, startedOverride || answerStartedAt || Date.now());
+    if (confidence && confidence !== confidenceLevel) setConfidenceLevel(confidence);
+    const wasCorrect = selectedId === correctAnswerId;
+    const priorTurns = tutorTurns.slice(-8);
+
+    if (studentText?.trim()) setTutorTurns(previous => [...previous, { role: 'student', text: studentText.trim() }]);
+    setAiQuestion('');
+    setAiStreaming(true);
+
+    const context = makeContext(selectedId, confidence);
     const transcript = [
       ...priorTurns,
       ...(studentText?.trim() ? [{ role: 'student' as const, text: studentText.trim() }] : []),
     ].map(turn => `${turn.role === 'student' ? 'LEARNER' : 'TUTOR'}: ${turn.text}`).join('\n');
 
-    const instruction = forceDirect
+    const instruction = instructionOverride || (forceDirect
       ? directExplanationInstruction()
       : studentText?.trim()
-        ? 'Continue the tutoring conversation. Respond directly to the learner\'s latest message. Diagnose only what their words support. If they reveal a gap, address that exact gap. Prefer a short Socratic step or concise explanation over a lecture. You may ask one follow-up question when useful. If you ask a transfer/application question, prefix it with "Quick check:". Never claim they thought something they did not say.'
-        : proactiveOpeningInstruction(wasCorrect, confidence);
+        ? 'Continue the tutoring conversation. Respond directly to the learner\'s latest message. Diagnose only what their words support. Make one pedagogical move. If understanding still needs evidence, end with one short application question prefixed "Quick check:". Never declare the concept secure unless the tutoring controller has explicitly instructed you to close.'
+        : proactiveOpeningInstruction(wasCorrect, confidence));
 
     const prompt = `${instruction}\n\nCONVERSATION SO FAR:\n${transcript || '(none yet)'}\n\nUse only the supplied current-question context for medical claims. Do not contradict the verified explanation. Keep the interaction concise and tutor-like.`;
     const controller = new AbortController();
@@ -406,9 +478,71 @@ export const UkmlaSBAQuestion: React.FC<UkmlaSBAQuestionProps> = ({
         });
       }
     } finally {
-      if (!controller.signal.aborted) setAiStreaming(false);
+      if (!controller.signal.aborted) {
+        setAiStreaming(false);
+        if (advanceAfter || (!studentText && wasCorrect && confidence === 'know')) scheduleAdvance();
+      }
       abortControllerRef.current = null;
     }
+  };
+
+  const handleStudentReply = async (studentText: string) => {
+    const query = studentText.trim();
+    if (!query || aiStreaming || !committedAnswer) return;
+    cancelAdvance();
+
+    const confidence = confidenceLevel || readLatestConfidence(conceptTitle, answerStartedAt - 1000);
+    if (confidence && confidence !== confidenceLevel) setConfidenceLevel(confidence);
+    const context = makeContext(committedAnswer, confidence);
+    const recentTranscript = [
+      ...tutorTurns.slice(-8),
+      { role: 'student' as const, text: query },
+    ].map(turn => `${turn.role === 'student' ? 'LEARNER' : 'TUTOR'}: ${turn.text}`).join('\n');
+
+    const assessmentPrompt = `You are the hidden StudyEdit tutoring controller. Judge the learner's latest reply against the tutor's immediately preceding question or instruction and the verified current-question context. Return exactly ONE label and nothing else: PASS, PARTIAL, FAIL, or CLARIFY.\n\nPASS = the reply correctly demonstrates the understanding the tutor just tested.\nPARTIAL = directionally right but incomplete, vague, or still dependent on prompting.\nFAIL = incorrect or reveals the same misconception.\nCLARIFY = the learner is asking a genuine question, requesting explanation, or otherwise not attempting the tutor's check.\n\nDo not reward confident wording if the medical content is wrong. Do not require wording identical to the model answer.\n\nTRANSCRIPT:\n${recentTranscript}`;
+
+    let assessment: TutorAssessment = 'partial';
+    try {
+      assessment = parseTutorAssessment(await generateAIResponse(assessmentPrompt, context));
+    } catch {
+      assessment = 'partial';
+    }
+
+    if (assessment === 'clarify') {
+      await runTutor(
+        query,
+        false,
+        undefined,
+        undefined,
+        'The learner is asking for clarification rather than attempting the check. Answer their question directly and concisely. Then, if understanding still needs evidence, return to the learning goal with one short Quick check. Do not declare mastery yet.',
+      );
+      return;
+    }
+
+    if (assessment === 'pass') {
+      const nextPassed = passedChecks + 1;
+      setPassedChecks(nextPassed);
+      const needed = requiredEvidence(isCorrect, confidence);
+
+      if (nextPassed >= needed) {
+        await runTutor(query, false, undefined, undefined, secureClosingInstruction(isFinalQuestion), true);
+      } else {
+        await runTutor(
+          query,
+          false,
+          undefined,
+          undefined,
+          'The learner answered that step correctly, but you still need stronger evidence before moving on. Briefly acknowledge it, then ask ONE transfer question that changes one clinically meaningful variable or asks them for the decisive discriminator. Prefix it with "Quick check:". Do not repeat the same question and do not declare mastery yet.',
+        );
+      }
+      return;
+    }
+
+    const correctionInstruction = assessment === 'fail'
+      ? 'The learner has not demonstrated the target understanding yet. Correct the exact misconception in the shortest useful way, then ask one simpler Quick check that tests the same discriminator from a different angle. Do not move on.'
+      : 'The learner is partly there but the evidence is not secure. Name the missing piece without overexplaining, then ask one focused Quick check that requires them to supply that missing piece. Do not move on.';
+
+    await runTutor(query, false, undefined, undefined, correctionInstruction);
   };
 
   const handleCheckAnswer = () => {
@@ -423,12 +557,6 @@ export const UkmlaSBAQuestion: React.FC<UkmlaSBAQuestionProps> = ({
     onAnswer(correct);
     void runTutor(undefined, false, selectedOption, startedAt);
     window.setTimeout(() => tutorRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 180);
-  };
-
-  const handleNext = () => {
-    abortControllerRef.current?.abort();
-    onNext();
-    requestAnimationFrame(() => scrollRef.current?.scrollTo({ top: 0, behavior: 'smooth' }));
   };
 
   return (
@@ -530,17 +658,11 @@ export const UkmlaSBAQuestion: React.FC<UkmlaSBAQuestionProps> = ({
 
           {hasSubmitted && !questionExpanded && (
             <section ref={tutorRef} className="mt-8 scroll-mt-24" aria-label="Answer and tutor">
-              <div className="mb-7 flex items-center gap-2.5 text-[15px] font-bold" style={{ color: isCorrect ? '#62734F' : '#94483D' }}>
-                <span className="flex h-7 w-7 items-center justify-center rounded-full text-white" style={{ backgroundColor: isCorrect ? C.sage : C.blush }}>{isCorrect ? '✓' : '×'}</span>
+              <div className="mb-6 text-[11px] font-bold uppercase tracking-[0.18em]" style={{ color: isCorrect ? '#62734F' : '#94483D' }}>
                 {isCorrect ? 'Correct' : 'Not quite'}
               </div>
 
-              <div className="mb-5 flex items-center gap-2">
-                <span className="flex h-7 w-7 items-center justify-center rounded-full" style={{ backgroundColor: '#F6D9D3', color: '#B7655B' }}><Sparkles className="h-3.5 w-3.5" /></span>
-                <div className="text-[10px] font-bold uppercase tracking-[0.22em]" style={{ color: '#A9675D' }}>StudyEdit Tutor</div>
-              </div>
-
-              {aiStreaming && tutorTurns.length === 0 && <div className="py-3 text-[16px] font-medium" style={{ color: C.muted }}>Thinking about what you need next…</div>}
+              {aiStreaming && tutorTurns.length === 0 && <div className="py-3 text-[16px] font-medium" style={{ color: C.muted }}>Working out what you need next…</div>}
 
               <div className="space-y-6">
                 {tutorTurns.map((turn, index) => {
@@ -560,18 +682,31 @@ export const UkmlaSBAQuestion: React.FC<UkmlaSBAQuestionProps> = ({
                 })}
               </div>
 
-              <form className="mt-7 flex items-center gap-2 rounded-[18px] border bg-[#FFFDF8] p-2 pl-4 shadow-[0_8px_24px_rgba(31,20,12,0.04)]" style={{ borderColor: '#DCCDB8' }} onSubmit={event => {
-                event.preventDefault();
-                const query = aiQuestion.trim();
-                if (query) void runTutor(query);
-              }}>
-                <input value={aiQuestion} onChange={event => setAiQuestion(event.target.value)} placeholder="Reply or ask anything…" className="min-w-0 flex-1 bg-transparent py-2.5 text-[16px] font-medium outline-none placeholder:text-[#A89582]" style={{ color: C.espresso }} />
-                <button type="submit" disabled={!aiQuestion.trim() || aiStreaming} className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full transition active:scale-[0.96] disabled:opacity-35" style={{ backgroundColor: C.espresso, color: C.cream }} aria-label="Reply to StudyEdit"><Send className="h-4 w-4" /></button>
-              </form>
+              {!preSubmitted && advancePending && (
+                <div className="mt-7 flex items-center justify-between gap-4 border-t pt-4" style={{ borderColor: C.line }}>
+                  <span className="text-[12px] font-semibold" style={{ color: C.muted }}>{isFinalQuestion ? 'Wrapping up…' : 'Moving on…'}</span>
+                  <button type="button" onClick={cancelAdvance} className="text-[12px] font-semibold underline decoration-[#BBA995] underline-offset-4" style={{ color: C.muted }}>
+                    Wait — I have a question
+                  </button>
+                </div>
+              )}
 
-              <button type="button" onClick={() => void runTutor(undefined, true)} disabled={aiStreaming} className="mt-3 text-[12px] font-semibold underline decoration-[#BBA995] underline-offset-4 disabled:opacity-40" style={{ color: C.muted }}>Just explain it</button>
+              {!preSubmitted && !advancePending && (
+                <>
+                  <form className="mt-7 flex items-center gap-2 rounded-[18px] border bg-[#FFFDF8] p-2 pl-4 shadow-[0_8px_24px_rgba(31,20,12,0.04)]" style={{ borderColor: '#DCCDB8' }} onSubmit={event => {
+                    event.preventDefault();
+                    const query = aiQuestion.trim();
+                    if (query) void handleStudentReply(query);
+                  }}>
+                    <input ref={inputRef} value={aiQuestion} onChange={event => setAiQuestion(event.target.value)} placeholder="Reply or ask anything…" className="min-w-0 flex-1 bg-transparent py-2.5 text-[16px] font-medium outline-none placeholder:text-[#A89582]" style={{ color: C.espresso }} />
+                    <button type="submit" disabled={!aiQuestion.trim() || aiStreaming} className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full transition active:scale-[0.96] disabled:opacity-35" style={{ backgroundColor: C.espresso, color: C.cream }} aria-label="Reply to StudyEdit"><Send className="h-4 w-4" /></button>
+                  </form>
 
-              {Object.keys(distractors).length > 0 && (
+                  <button type="button" onClick={() => void runTutor(undefined, true)} disabled={aiStreaming} className="mt-3 text-[12px] font-semibold underline decoration-[#BBA995] underline-offset-4 disabled:opacity-40" style={{ color: C.muted }}>Just explain it</button>
+                </>
+              )}
+
+              {Object.keys(distractors).length > 0 && !advancePending && (
                 <div className="mt-8 border-t pt-4" style={{ borderColor: C.line }}>
                   <button type="button" onClick={() => setShowAllDistractors(value => !value)} className="flex w-full items-center justify-between py-2 text-left text-[14px] font-semibold" style={{ color: C.muted }}>
                     <span>{showAllDistractors ? 'Hide other options' : 'Why the other options are wrong'}</span>
@@ -590,13 +725,11 @@ export const UkmlaSBAQuestion: React.FC<UkmlaSBAQuestionProps> = ({
                 </div>
               )}
 
-              <div className="my-10 flex items-center gap-4 text-[10px] font-bold uppercase tracking-[0.18em]" style={{ color: C.muted }}>
-                <span className="h-px flex-1" style={{ backgroundColor: C.line }} />Next<span className="h-px flex-1" style={{ backgroundColor: C.line }} />
-              </div>
-
-              <button type="button" onClick={handleNext} className="flex w-full items-center justify-center rounded-full px-6 py-[18px] text-[16px] font-bold" style={{ backgroundColor: C.espresso, color: C.cream }}>
-                {nextButtonText || 'Continue'} →
-              </button>
+              {preSubmitted && nextButtonText && (
+                <button type="button" onClick={handleNext} className="mt-9 flex w-full items-center justify-center rounded-full px-6 py-[18px] text-[16px] font-bold" style={{ backgroundColor: C.espresso, color: C.cream }}>
+                  {nextButtonText} →
+                </button>
+              )}
             </section>
           )}
         </main>
