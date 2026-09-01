@@ -66,7 +66,7 @@ function splitSentences(text: string): string[] {
   return String(text || '')
     .replace(/\s+/g, ' ')
     .trim()
-    .split(/(?<=[.!?])\s+(?=[A-Z])/) 
+    .split(/(?<=[.!?])\s+(?=[A-Z])/)
     .filter(Boolean);
 }
 
@@ -205,6 +205,23 @@ function TutorMessage({ text, first }: { text: string; first: boolean }) {
   );
 }
 
+function TutorWorkingIndicator() {
+  return (
+    <div className="flex items-center gap-2 py-2" role="status" aria-live="polite" aria-label="StudyEdit is thinking">
+      <span className="text-[12px] font-semibold" style={{ color: C.muted }}>StudyEdit is thinking</span>
+      <span className="inline-flex items-center gap-1" aria-hidden="true">
+        {[0, 1, 2].map(index => (
+          <span
+            key={index}
+            className="h-1.5 w-1.5 animate-pulse rounded-full"
+            style={{ backgroundColor: C.muted, animationDelay: `${index * 180}ms` }}
+          />
+        ))}
+      </span>
+    </div>
+  );
+}
+
 function readLatestConfidence(conceptTitle: string, notBefore = 0): ConfidenceLevel | null {
   try {
     let latest: { value: ConfidenceLevel; at: number } | null = null;
@@ -276,6 +293,7 @@ export const UkmlaSBAQuestion: React.FC<UkmlaSBAQuestionProps> = ({
   const [tutorTurns, setTutorTurns] = useState<TutorTurn[]>([]);
   const [aiQuestion, setAiQuestion] = useState('');
   const [aiStreaming, setAiStreaming] = useState(false);
+  const [tutorAssessing, setTutorAssessing] = useState(false);
   const [answerStartedAt, setAnswerStartedAt] = useState(0);
   const [confidenceLevel, setConfidenceLevel] = useState<ConfidenceLevel | null>(null);
   const [passedChecks, setPassedChecks] = useState(0);
@@ -326,6 +344,7 @@ export const UkmlaSBAQuestion: React.FC<UkmlaSBAQuestionProps> = ({
     setTutorTurns([]);
     setAiQuestion('');
     setAiStreaming(false);
+    setTutorAssessing(false);
     setAnswerStartedAt(0);
     setConfidenceLevel(null);
     setPassedChecks(0);
@@ -358,6 +377,13 @@ export const UkmlaSBAQuestion: React.FC<UkmlaSBAQuestionProps> = ({
   const isCorrect = hasSubmitted && committedAnswer === correctAnswerId;
   const progress = totalQuestions ? Math.min(100, ((currentIndex + (hasSubmitted ? 1 : 0)) / totalQuestions) * 100) : 0;
   const isFinalQuestion = Boolean(totalQuestions && currentIndex >= totalQuestions - 1);
+  const tutorBusy = tutorAssessing || aiStreaming;
+  const lastTutorTurn = tutorTurns[tutorTurns.length - 1];
+  const waitingForTutorText = tutorBusy && (
+    !lastTutorTurn ||
+    lastTutorTurn.role === 'student' ||
+    (lastTutorTurn.role === 'tutor' && !lastTutorTurn.text)
+  );
 
   const handleOptionSelect = (id: string) => {
     if (hasSubmitted) return;
@@ -488,61 +514,68 @@ export const UkmlaSBAQuestion: React.FC<UkmlaSBAQuestionProps> = ({
 
   const handleStudentReply = async (studentText: string) => {
     const query = studentText.trim();
-    if (!query || aiStreaming || !committedAnswer) return;
+    if (!query || aiStreaming || tutorAssessing || !committedAnswer) return;
+
     cancelAdvance();
+    setAiQuestion('');
+    setTutorAssessing(true);
 
-    const confidence = confidenceLevel || readLatestConfidence(conceptTitle, answerStartedAt - 1000);
-    if (confidence && confidence !== confidenceLevel) setConfidenceLevel(confidence);
-    const context = makeContext(committedAnswer, confidence);
-    const recentTranscript = [
-      ...tutorTurns.slice(-8),
-      { role: 'student' as const, text: query },
-    ].map(turn => `${turn.role === 'student' ? 'LEARNER' : 'TUTOR'}: ${turn.text}`).join('\n');
-
-    const assessmentPrompt = `You are the hidden StudyEdit tutoring controller. Judge the learner's latest reply against the tutor's immediately preceding question or instruction and the verified current-question context. Return exactly ONE label and nothing else: PASS, PARTIAL, FAIL, or CLARIFY.\n\nPASS = the reply correctly demonstrates the understanding the tutor just tested.\nPARTIAL = directionally right but incomplete, vague, or still dependent on prompting.\nFAIL = incorrect or reveals the same misconception.\nCLARIFY = the learner is asking a genuine question, requesting explanation, or otherwise not attempting the tutor's check.\n\nDo not reward confident wording if the medical content is wrong. Do not require wording identical to the model answer.\n\nTRANSCRIPT:\n${recentTranscript}`;
-
-    let assessment: TutorAssessment = 'partial';
     try {
-      assessment = parseTutorAssessment(await generateAIResponse(assessmentPrompt, context));
-    } catch {
-      assessment = 'partial';
-    }
+      const confidence = confidenceLevel || readLatestConfidence(conceptTitle, answerStartedAt - 1000);
+      if (confidence && confidence !== confidenceLevel) setConfidenceLevel(confidence);
+      const context = makeContext(committedAnswer, confidence);
+      const recentTranscript = [
+        ...tutorTurns.slice(-8),
+        { role: 'student' as const, text: query },
+      ].map(turn => `${turn.role === 'student' ? 'LEARNER' : 'TUTOR'}: ${turn.text}`).join('\n');
 
-    if (assessment === 'clarify') {
-      await runTutor(
-        query,
-        false,
-        undefined,
-        undefined,
-        'The learner is asking for clarification rather than attempting the check. Answer their question directly and concisely. Then, if understanding still needs evidence, return to the learning goal with one short Quick check. Do not declare mastery yet.',
-      );
-      return;
-    }
+      const assessmentPrompt = `You are the hidden StudyEdit tutoring controller. Judge the learner's latest reply against the tutor's immediately preceding question or instruction and the verified current-question context. Return exactly ONE label and nothing else: PASS, PARTIAL, FAIL, or CLARIFY.\n\nPASS = the reply correctly demonstrates the understanding the tutor just tested.\nPARTIAL = directionally right but incomplete, vague, or still dependent on prompting.\nFAIL = incorrect or reveals the same misconception.\nCLARIFY = the learner is asking a genuine question, requesting explanation, or otherwise not attempting the tutor's check.\n\nDo not reward confident wording if the medical content is wrong. Do not require wording identical to the model answer.\n\nTRANSCRIPT:\n${recentTranscript}`;
 
-    if (assessment === 'pass') {
-      const nextPassed = passedChecks + 1;
-      setPassedChecks(nextPassed);
-      const needed = requiredEvidence(isCorrect, confidence);
+      let assessment: TutorAssessment = 'partial';
+      try {
+        assessment = parseTutorAssessment(await generateAIResponse(assessmentPrompt, context));
+      } catch {
+        assessment = 'partial';
+      }
 
-      if (nextPassed >= needed) {
-        await runTutor(query, false, undefined, undefined, secureClosingInstruction(isFinalQuestion), true);
-      } else {
+      if (assessment === 'clarify') {
         await runTutor(
           query,
           false,
           undefined,
           undefined,
-          'The learner answered that step correctly, but you still need stronger evidence before moving on. Briefly acknowledge it, then ask ONE transfer question that changes one clinically meaningful variable or asks them for the decisive discriminator. Prefix it with "Quick check:". Do not repeat the same question and do not declare mastery yet.',
+          'The learner is asking for clarification rather than attempting the check. Answer their question directly and concisely. Then, if understanding still needs evidence, return to the learning goal with one short Quick check. Do not declare mastery yet.',
         );
+        return;
       }
-      return;
+
+      if (assessment === 'pass') {
+        const nextPassed = passedChecks + 1;
+        setPassedChecks(nextPassed);
+        const needed = requiredEvidence(isCorrect, confidence);
+
+        if (nextPassed >= needed) {
+          await runTutor(query, false, undefined, undefined, secureClosingInstruction(isFinalQuestion), true);
+        } else {
+          await runTutor(
+            query,
+            false,
+            undefined,
+            undefined,
+            'The learner answered that step correctly, but you still need stronger evidence before moving on. Briefly acknowledge it, then ask ONE transfer question that changes one clinically meaningful variable or asks them for the decisive discriminator. Prefix it with "Quick check:". Do not repeat the same question and do not declare mastery yet.',
+          );
+        }
+        return;
+      }
+
+      const correctionInstruction = assessment === 'fail'
+        ? 'The learner has not demonstrated the target understanding yet. Correct the exact misconception in the shortest useful way, then ask one simpler Quick check that tests the same discriminator from a different angle. Do not move on.'
+        : 'The learner is partly there but the evidence is not secure. Name the missing piece without overexplaining, then ask one focused Quick check that requires them to supply that missing piece. Do not move on.';
+
+      await runTutor(query, false, undefined, undefined, correctionInstruction);
+    } finally {
+      setTutorAssessing(false);
     }
-
-    const correctionInstruction = assessment === 'fail'
-      ? 'The learner has not demonstrated the target understanding yet. Correct the exact misconception in the shortest useful way, then ask one simpler Quick check that tests the same discriminator from a different angle. Do not move on.'
-      : 'The learner is partly there but the evidence is not secure. Name the missing piece without overexplaining, then ask one focused Quick check that requires them to supply that missing piece. Do not move on.';
-
-    await runTutor(query, false, undefined, undefined, correctionInstruction);
   };
 
   const handleCheckAnswer = () => {
@@ -662,8 +695,6 @@ export const UkmlaSBAQuestion: React.FC<UkmlaSBAQuestionProps> = ({
                 {isCorrect ? 'Correct' : 'Not quite'}
               </div>
 
-              {aiStreaming && tutorTurns.length === 0 && <div className="py-3 text-[16px] font-medium" style={{ color: C.muted }}>Working out what you need next…</div>}
-
               <div className="space-y-6">
                 {tutorTurns.map((turn, index) => {
                   if (!turn.text) return null;
@@ -680,6 +711,8 @@ export const UkmlaSBAQuestion: React.FC<UkmlaSBAQuestionProps> = ({
                   const tutorIndex = tutorTurns.slice(0, index + 1).filter(item => item.role === 'tutor' && item.text).length;
                   return <TutorMessage key={index} text={turn.text} first={tutorIndex === 1} />;
                 })}
+
+                {waitingForTutorText && <TutorWorkingIndicator />}
               </div>
 
               {!preSubmitted && advancePending && (
@@ -698,15 +731,31 @@ export const UkmlaSBAQuestion: React.FC<UkmlaSBAQuestionProps> = ({
                     const query = aiQuestion.trim();
                     if (query) void handleStudentReply(query);
                   }}>
-                    <input ref={inputRef} value={aiQuestion} onChange={event => setAiQuestion(event.target.value)} placeholder="Reply or ask anything…" className="min-w-0 flex-1 bg-transparent py-2.5 text-[16px] font-medium outline-none placeholder:text-[#A89582]" style={{ color: C.espresso }} />
-                    <button type="submit" disabled={!aiQuestion.trim() || aiStreaming} className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full transition active:scale-[0.96] disabled:opacity-35" style={{ backgroundColor: C.espresso, color: C.cream }} aria-label="Reply to StudyEdit"><Send className="h-4 w-4" /></button>
+                    <input
+                      ref={inputRef}
+                      value={aiQuestion}
+                      onChange={event => setAiQuestion(event.target.value)}
+                      disabled={tutorBusy}
+                      placeholder={tutorBusy ? 'StudyEdit is thinking…' : 'Reply or ask anything…'}
+                      className="min-w-0 flex-1 bg-transparent py-2.5 text-[16px] font-medium outline-none placeholder:text-[#A89582] disabled:cursor-wait"
+                      style={{ color: C.espresso }}
+                    />
+                    <button
+                      type="submit"
+                      disabled={!aiQuestion.trim() || tutorBusy}
+                      className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full transition active:scale-[0.96] disabled:opacity-35"
+                      style={{ backgroundColor: C.espresso, color: C.cream }}
+                      aria-label="Reply to StudyEdit"
+                    >
+                      <Send className="h-4 w-4" />
+                    </button>
                   </form>
 
-                  <button type="button" onClick={() => void runTutor(undefined, true)} disabled={aiStreaming} className="mt-3 text-[12px] font-semibold underline decoration-[#BBA995] underline-offset-4 disabled:opacity-40" style={{ color: C.muted }}>Just explain it</button>
+                  <button type="button" onClick={() => void runTutor(undefined, true)} disabled={tutorBusy} className="mt-3 text-[12px] font-semibold underline decoration-[#BBA995] underline-offset-4 disabled:opacity-40" style={{ color: C.muted }}>Just explain it</button>
                 </>
               )}
 
-              {Object.keys(distractors).length > 0 && !advancePending && (
+              {Object.keys(distractors).length > 0 && !advancePending && !tutorBusy && (
                 <div className="mt-8 border-t pt-4" style={{ borderColor: C.line }}>
                   <button type="button" onClick={() => setShowAllDistractors(value => !value)} className="flex w-full items-center justify-between py-2 text-left text-[14px] font-semibold" style={{ color: C.muted }}>
                     <span>{showAllDistractors ? 'Hide other options' : 'Why the other options are wrong'}</span>
