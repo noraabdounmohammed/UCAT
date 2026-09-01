@@ -101,9 +101,10 @@ export const LearningAwareSBA: React.FC<LearningAwareSBAProps> = (props) => {
   const settleTimerRef = useRef<number | null>(null);
   const releaseTimersRef = useRef<number[]>([]);
 
-  const conceptTitle = useMemo(() => String(
-    (props.question as any).concept_title || props.question.title || (props.question as any).topic || 'this concept'
-  ), [props.question]);
+  const conceptTitle = useMemo(
+    () => String((props.question as any).concept_title || props.question.title || (props.question as any).topic || 'this concept'),
+    [props.question],
+  );
 
   const saveSignal = (signal: string, value?: string, extra?: Record<string, unknown>) => {
     try {
@@ -115,6 +116,7 @@ export const LearningAwareSBA: React.FC<LearningAwareSBAProps> = (props) => {
   };
 
   const handleChildAnswer = (isCorrect: boolean) => {
+    // Capture confidence before allowing any correctness feedback to be visible.
     setPendingCorrect(isCorrect);
     setConfidenceOpen(true);
   };
@@ -172,16 +174,15 @@ export const LearningAwareSBA: React.FC<LearningAwareSBAProps> = (props) => {
       Math.max(estimatedButtonHalfWidth + 12, rect.left + rect.width / 2),
     );
     const roomAbove = rect.top > 78;
-    const position: SelectionActionPosition = {
-      left,
-      top: roomAbove ? rect.top - 16 : rect.bottom + 18,
-      placeBelow: !roomAbove,
-    };
 
     return {
       phrase,
       origin: insideExplainer ? 'explainer' : 'question',
-      position,
+      position: {
+        left,
+        top: roomAbove ? rect.top - 16 : rect.bottom + 18,
+        placeBelow: !roomAbove,
+      },
     };
   };
 
@@ -391,43 +392,84 @@ export const LearningAwareSBA: React.FC<LearningAwareSBAProps> = (props) => {
 
       {confidenceOpen && (
         <div
-          className="fixed inset-0 z-[90] flex items-end justify-center bg-[#1F140C]/10 px-5 pb-7 sm:items-center sm:pb-0"
+          className="fixed inset-0 z-[120] flex items-center justify-center px-5"
           role="dialog"
           aria-modal="true"
           aria-label="Answer confidence"
-          style={{ fontFamily: learningFont }}
+          style={{ backgroundColor: C.parchment, fontFamily: learningFont }}
         >
-          <div className="w-full max-w-[520px] rounded-[24px] border px-5 pb-5 pt-5 shadow-[0_16px_45px_rgba(31,20,12,0.12)] sm:px-6 sm:pb-6" style={{ backgroundColor: C.parchment, borderColor: C.line }}>
-            <h2 className="text-[20px] font-semibold leading-[1.45] tracking-[-0.01em] sm:text-[21px]" style={{ color: C.espresso }}>
+          <div className="w-full max-w-[520px]">
+            <h2 className="text-[28px] font-semibold leading-[1.25] tracking-[-0.02em] sm:text-[30px]" style={{ color: C.espresso }}>
               How did that feel?
             </h2>
-            <div className="mt-4 grid grid-cols-3 gap-2.5">
-              <button type="button" onClick={() => commitConfidence('know')} className="min-h-[50px] rounded-full border px-3 text-[14px] font-bold transition active:scale-[0.98] sm:text-[15px]" style={{ borderColor: C.line, backgroundColor: C.paper, color: C.espresso }}>Knew it</button>
-              <button type="button" onClick={() => commitConfidence('unsure')} className="min-h-[50px] rounded-full border px-3 text-[14px] font-bold transition active:scale-[0.98] sm:text-[15px]" style={{ borderColor: C.line, backgroundColor: C.paper, color: C.espresso }}>Unsure</button>
-              <button type="button" onClick={() => commitConfidence('guess')} className="min-h-[50px] rounded-full border px-3 text-[14px] font-bold transition active:scale-[0.98] sm:text-[15px]" style={{ borderColor: '#E5B9B1', backgroundColor: C.blushSoft, color: C.espresso }}>Guessed</button>
+            <div className="mt-6 grid grid-cols-3 gap-2.5">
+              <button
+                type="button"
+                onClick={() => commitConfidence('know')}
+                className="min-h-[52px] rounded-full border px-3 text-[14px] font-bold transition active:scale-[0.98] sm:text-[15px]"
+                style={{ borderColor: C.line, backgroundColor: C.paper, color: C.espresso }}
+              >
+                Knew it
+              </button>
+              <button
+                type="button"
+                onClick={() => commitConfidence('unsure')}
+                className="min-h-[52px] rounded-full border px-3 text-[14px] font-bold transition active:scale-[0.98] sm:text-[15px]"
+                style={{ borderColor: C.line, backgroundColor: C.paper, color: C.espresso }}
+              >
+                Unsure
+              </button>
+              <button
+                type="button"
+                onClick={() => commitConfidence('guess')}
+                className="min-h-[52px] rounded-full border px-3 text-[14px] font-bold transition active:scale-[0.98] sm:text-[15px]"
+                style={{ borderColor: '#E5B9B1', backgroundColor: C.blushSoft, color: C.espresso }}
+              >
+                Guessed
+              </button>
             </div>
           </div>
         </div>
       )}
 
       {explainerOpen && (
-        <div className="fixed inset-0 z-[70] flex items-end justify-center bg-[#1F140C]/20 sm:items-center" role="dialog" aria-modal="true" aria-label="Clinical explainer" style={{ fontFamily: learningFont }}>
-          <div className="max-h-[90vh] w-full overflow-y-auto rounded-t-[30px] border-t px-6 pb-8 pt-5 sm:max-w-[600px] sm:rounded-[30px] sm:border" style={{ borderColor: C.line, backgroundColor: C.cream, color: C.ink }}>
+        <div
+          className="fixed inset-0 z-[70] flex items-end justify-center bg-[#1F140C]/20 sm:items-center"
+          role="dialog"
+          aria-modal="true"
+          aria-label="Clinical explainer"
+          style={{ fontFamily: learningFont }}
+        >
+          <div
+            className="max-h-[90vh] w-full overflow-y-auto rounded-t-[30px] border-t px-6 pb-8 pt-5 sm:max-w-[600px] sm:rounded-[30px] sm:border"
+            style={{ borderColor: C.line, backgroundColor: C.cream, color: C.ink }}
+          >
             <div className="mx-auto mb-5 h-1 w-10 rounded-full sm:hidden" style={{ backgroundColor: '#D9CCB6' }} />
             <div className="flex items-start justify-between gap-4">
               <div className="min-w-0">
                 {explorerStack.length > 1 && (
-                  <button type="button" onClick={goBackOneLayer} className="mb-3 inline-flex items-center gap-1 text-[12px] font-bold" style={{ color: C.muted }}><ChevronLeft className="h-4 w-4" />Previous layer</button>
+                  <button type="button" onClick={goBackOneLayer} className="mb-3 inline-flex items-center gap-1 text-[12px] font-bold" style={{ color: C.muted }}>
+                    <ChevronLeft className="h-4 w-4" />Previous layer
+                  </button>
                 )}
                 <div className="text-[10px] font-bold uppercase tracking-[0.22em]" style={{ color: '#A9675D' }}>Clinical explainer</div>
-                <h2 className="mt-2 line-clamp-3 text-[20px] font-semibold leading-[1.45] tracking-[-0.01em] sm:text-[21px]" style={{ color: C.espresso }}>{currentExplorerNode?.selection || selectedPhrase || 'Selected text'}</h2>
+                <h2 className="mt-2 line-clamp-3 text-[20px] font-semibold leading-[1.45] tracking-[-0.01em] sm:text-[21px]" style={{ color: C.espresso }}>
+                  {currentExplorerNode?.selection || selectedPhrase || 'Selected text'}
+                </h2>
               </div>
-              <button type="button" onClick={closeExplainer} className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border" style={{ borderColor: C.line, color: C.muted }} aria-label="Back to question"><X className="h-5 w-5" /></button>
+              <button type="button" onClick={closeExplainer} className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border" style={{ borderColor: C.line, color: C.muted }} aria-label="Back to question">
+                <X className="h-5 w-5" />
+              </button>
             </div>
 
             {explorerStack.length > 1 && (
               <div className="mt-3 flex gap-1 overflow-x-auto pb-1 text-[10px] font-semibold" style={{ color: C.muted }}>
-                {explorerStack.map((node, index) => <React.Fragment key={`${node.selection}-${index}`}><span className="max-w-[150px] shrink-0 truncate">{node.selection}</span>{index < explorerStack.length - 1 && <span>›</span>}</React.Fragment>)}
+                {explorerStack.map((node, index) => (
+                  <React.Fragment key={`${node.selection}-${index}`}>
+                    <span className="max-w-[150px] shrink-0 truncate">{node.selection}</span>
+                    {index < explorerStack.length - 1 && <span>›</span>}
+                  </React.Fragment>
+                ))}
               </div>
             )}
 
@@ -436,12 +478,20 @@ export const LearningAwareSBA: React.FC<LearningAwareSBAProps> = (props) => {
               className="mt-5 select-text rounded-[22px] border p-5"
               style={{ borderColor: '#E5B9B1', backgroundColor: C.blushSoft, WebkitUserSelect: 'text', userSelect: 'text', WebkitTouchCallout: 'default' }}
             >
-              {explainerLoading && !explainerText && <div className="text-[16px] font-medium leading-7" style={{ color: C.muted }}>Building the clinical meaning…</div>}
-              {explainerText && <div className="text-[20px] font-medium leading-[1.65] tracking-[-0.01em] sm:text-[21px]" style={{ color: '#4B372A' }}><ReactMarkdown>{explainerText}</ReactMarkdown></div>}
+              {explainerLoading && !explainerText && (
+                <div className="text-[16px] font-medium leading-7" style={{ color: C.muted }}>Building the clinical meaning…</div>
+              )}
+              {explainerText && (
+                <div className="text-[20px] font-medium leading-[1.65] tracking-[-0.01em] sm:text-[21px]" style={{ color: '#4B372A' }}>
+                  <ReactMarkdown>{explainerText}</ReactMarkdown>
+                </div>
+              )}
             </div>
 
             <p className="mt-4 text-[12px] leading-5" style={{ color: C.muted }}><strong>Anything unclear?</strong> Highlight it, then tap Explain.</p>
-            <button type="button" onClick={closeExplainer} className="mt-5 flex w-full items-center justify-center rounded-full px-6 py-[17px] text-[15px] font-bold" style={{ backgroundColor: C.espresso, color: C.cream }}>Back to the case →</button>
+            <button type="button" onClick={closeExplainer} className="mt-5 flex w-full items-center justify-center rounded-full px-6 py-[17px] text-[15px] font-bold" style={{ backgroundColor: C.espresso, color: C.cream }}>
+              Back to the case →
+            </button>
           </div>
         </div>
       )}
