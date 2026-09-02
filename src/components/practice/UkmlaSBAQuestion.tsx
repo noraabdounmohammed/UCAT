@@ -544,7 +544,6 @@ export const UkmlaSBAQuestion: React.FC<UkmlaSBAQuestionProps> = ({
     const wasCorrect = selectedId === correctAnswerId;
     const priorTurns = tutorTurns.slice(-8);
 
-    if (studentText?.trim()) setTutorTurns(previous => [...previous, { role: 'student', text: studentText.trim() }]);
     setAiQuestion('');
     setAiStreaming(true);
 
@@ -639,6 +638,13 @@ export const UkmlaSBAQuestion: React.FC<UkmlaSBAQuestionProps> = ({
 
     cancelAdvance();
     setAiQuestion('');
+    if (!assessmentOverride) {
+      setTutorTurns(previous => [...previous, { role: 'student', text: query }]);
+      requestAnimationFrame(() => {
+        const container = scrollRef.current;
+        if (container) container.scrollTo({ top: container.scrollHeight, behavior: 'smooth' });
+      });
+    }
     setTutorAssessing(true);
 
     try {
