@@ -83,6 +83,24 @@ section[aria-label="Answer and tutor"] [role="status"] > span:first-child {
   letter-spacing: -0.01em;
 }
 
+/* When StudyEdit has decided to move on, the tutor's words are the transition.
+   The only visible control is the learner's right to interrupt. */
+section[aria-label="Answer and tutor"] [data-studyedit-advance="true"] {
+  margin-top: 8px !important;
+  padding-top: 0 !important;
+  border-top: 0 !important;
+  justify-content: flex-end !important;
+}
+
+section[aria-label="Answer and tutor"] [data-studyedit-advance="true"] > span:first-child {
+  display: none !important;
+}
+
+section[aria-label="Answer and tutor"] [data-studyedit-advance="true"] button {
+  font-size: 11px !important;
+  opacity: 0.82;
+}
+
 /* The composer is part of the conversation, not a separate control panel. */
 section[aria-label="Answer and tutor"] form {
   margin-top: 28px !important;
