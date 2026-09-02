@@ -398,7 +398,6 @@ export const UkmlaSBAQuestion: React.FC<UkmlaSBAQuestionProps> = ({
     setResolvedFollowUpIds([]);
     abortControllerRef.current?.abort();
     clearAdvanceTimer();
-    requestAnimationFrame(() => scrollRef.current?.scrollTo({ top: 0 }));
     return () => clearAdvanceTimer();
   }, [question.id, question.question, question.question_stem, preSubmitted, preSelectedAnswer]);
 
@@ -444,7 +443,6 @@ export const UkmlaSBAQuestion: React.FC<UkmlaSBAQuestionProps> = ({
     setAdvancePending(false);
     abortControllerRef.current?.abort();
     onNext();
-    requestAnimationFrame(() => scrollRef.current?.scrollTo({ top: 0, behavior: 'smooth' }));
   };
 
   const scheduleAdvance = () => {
@@ -640,10 +638,6 @@ export const UkmlaSBAQuestion: React.FC<UkmlaSBAQuestionProps> = ({
     setAiQuestion('');
     if (!assessmentOverride || (assessmentOverride === 'clarify' && wasReadyToMoveOn)) {
       setTutorTurns(previous => [...previous, { role: 'student', text: query }]);
-      requestAnimationFrame(() => {
-        const container = scrollRef.current;
-        if (container) container.scrollTo({ top: container.scrollHeight, behavior: 'smooth' });
-      });
     }
     setTutorAssessing(true);
 
@@ -741,7 +735,6 @@ export const UkmlaSBAQuestion: React.FC<UkmlaSBAQuestionProps> = ({
     sessionStorage.setItem(getStorageKey(), JSON.stringify({ selectedOption, hasSubmitted: true }));
     onAnswer(correct);
     void runTutor(undefined, false, selectedOption, startedAt);
-    window.setTimeout(() => tutorRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 180);
   };
 
   return (
