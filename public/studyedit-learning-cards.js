@@ -1,6 +1,8 @@
 (() => {
   const STYLE_ID = 'studyedit-learning-card-styles';
   const CARD_MARKER = 'data-studyedit-followup-card';
+  const WRAP_MARKER = 'data-studyedit-wrapup-guard';
+  const wrapTimers = new WeakMap();
 
   const text = (node) => (node?.textContent || '').replace(/\s+/g, ' ').trim();
 
@@ -123,6 +125,20 @@
         padding: 18px;
       }
 
+      [${WRAP_MARKER}="true"] form,
+      [${WRAP_MARKER}="true"] [data-studyedit-stuck="true"] {
+        display: none !important;
+      }
+
+      [data-studyedit-wrapup-note="true"] {
+        margin-top: 20px;
+        padding-top: 14px;
+        border-top: 1px solid #E2D6C3;
+        color: #8A7560;
+        font-size: 12px;
+        font-weight: 650;
+      }
+
       @media (max-width: 600px) {
         [${CARD_MARKER}="true"] {
           margin-left: -2px;
@@ -145,6 +161,7 @@
 
   const markerRegex = /quick\s*check(?:\s+from\s+(?:a|another)\s+(?:different\s+)?angle)?\s*:\s*/i;
   const optionRegex = /^\s*(?:[•*\-]\s*)?([A-E])\s*[.)\-:]\s+(.+)$/i;
+  const explicitClosingRegex = /\b(?:full picture locked in|seen enough(?: evidence)?|have seen enough|you've got (?:that|this) now|you have got (?:that|this) now|secure for this session|that is enough for today|that's enough for today|moving on)\b/i;
 
   const parseFollowup = (raw) => {
     const clean = String(raw || '').replace(/\r/g, '').trim();
@@ -314,6 +331,83 @@
     card.replaceWith(replacement);
   };
 
+  const findReactOnNext = (section) => {
+    let node = section;
+    while (node) {
+      const fiberKey = Object.keys(node).find(key => key.startsWith('__reactFiber$'));
+      if (fiberKey) {
+        let fiber = node[fiberKey];
+        while (fiber) {
+          const props = fiber.memoizedProps;
+          if (props && typeof props.onNext === 'function') return props.onNext;
+          fiber = fiber.return;
+        }
+      }
+      node = node.parentElement;
+    }
+    return null;
+  };
+
+  const latestTutorTurn = (section) => {
+    const thread = section.querySelector('.space-y-6');
+    if (!thread) return null;
+    const candidates = Array.from(thread.children).filter(child => {
+      if (!(child instanceof HTMLElement)) return false;
+      if (child.matches('[role="status"], [data-studyedit-turn="student"], .border-y.py-5')) return false;
+      return text(child).length > 0;
+    });
+    return candidates[candidates.length - 1] || null;
+  };
+
+  const primaryAdvanceAlreadyActive = (section) => {
+    if (section.querySelector('[data-studyedit-advance="true"]')) return true;
+    return Array.from(section.children).some(child => /Moving on…|Wrapping up…/.test(text(child)));
+  };
+
+  const clearWrapGuard = (section) => {
+    section.removeAttribute(WRAP_MARKER);
+    section.querySelector('[data-studyedit-wrapup-note="true"]')?.remove();
+    const timer = wrapTimers.get(section);
+    if (timer) window.clearTimeout(timer);
+    wrapTimers.delete(section);
+  };
+
+  const syncWrapGuard = (section) => {
+    if (!(section instanceof HTMLElement)) return;
+    if (section.querySelector('[role="status"]')) return;
+
+    const last = latestTutorTurn(section);
+    const value = text(last);
+    const explicitlyClosed = Boolean(value && explicitClosingRegex.test(value) && !markerRegex.test(value));
+
+    if (!explicitlyClosed) {
+      if (section.hasAttribute(WRAP_MARKER) && !primaryAdvanceAlreadyActive(section)) clearWrapGuard(section);
+      return;
+    }
+
+    section.setAttribute(WRAP_MARKER, 'true');
+
+    if (!section.querySelector('[data-studyedit-wrapup-note="true"]') && !primaryAdvanceAlreadyActive(section)) {
+      const note = document.createElement('div');
+      note.setAttribute('data-studyedit-wrapup-note', 'true');
+      note.textContent = 'Moving on…';
+      section.appendChild(note);
+    }
+
+    if (wrapTimers.has(section)) return;
+    const timer = window.setTimeout(() => {
+      wrapTimers.delete(section);
+      if (!section.isConnected) return;
+      if (primaryAdvanceAlreadyActive(section)) return;
+      const currentLast = latestTutorTurn(section);
+      if (!explicitClosingRegex.test(text(currentLast))) return;
+
+      const onNext = findReactOnNext(section);
+      if (typeof onNext === 'function') onNext();
+    }, 2200);
+    wrapTimers.set(section, timer);
+  };
+
   const enhanceSection = (section) => {
     if (!(section instanceof HTMLElement)) return;
     if (section.querySelector('[role="status"]')) return;
@@ -327,6 +421,8 @@
       const content = text(card);
       if (/quick\s*check/i.test(content)) enhanceExistingQuickCheckCard(card, section);
     });
+
+    syncWrapGuard(section);
   };
 
   const polish = () => {
