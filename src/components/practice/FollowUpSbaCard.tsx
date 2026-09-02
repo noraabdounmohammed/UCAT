@@ -2,7 +2,6 @@ import React, { useState } from 'react';
 import type {
   StructuredComparisonObject,
   StructuredFollowUpSba,
-  StructuredWhatChangedObject,
 } from '@/services/structuredFollowUpSba';
 
 const C = {
@@ -54,89 +53,71 @@ const ComparisonCard: React.FC<{ comparison: StructuredComparisonObject }> = ({ 
   </div>
 );
 
-const WhatChangedCard: React.FC<{ object: StructuredWhatChangedObject }> = ({ object }) => (
-  <div
-    className="mt-4 rounded-[22px] border px-4 py-4 sm:px-5"
-    style={{ borderColor: '#E5B9B1', backgroundColor: C.blushSoft }}
-    data-studyedit-teaching-object="what_changed"
-  >
-    <div className="space-y-2.5">
-      {object.changes.map((change, index) => (
-        <div key={`${change.from}-${change.to}-${index}`} className="grid grid-cols-[minmax(0,1fr)_22px_minmax(0,1fr)] items-center gap-2">
-          <div className="text-[15px] font-bold leading-[1.4]" style={{ color: '#6E4A43' }}>{change.from}</div>
-          <div className="text-center text-[15px] font-bold" style={{ color: '#A46C61' }}>→</div>
-          <div className="text-[15px] font-extrabold leading-[1.4]" style={{ color: C.espresso }}>{change.to}</div>
-        </div>
-      ))}
-    </div>
-    <div className="mt-4 border-t pt-3 text-[15px] font-semibold leading-[1.5]" style={{ borderColor: 'rgba(164,108,97,.22)', color: '#5C4039' }}>
-      {object.takeaway}
-    </div>
-  </div>
-);
-
 export const FollowUpSbaCard: React.FC<FollowUpSbaCardProps> = ({ sba, disabled = false, onSubmit }) => {
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [submitted, setSubmitted] = useState(false);
 
   const locked = disabled || submitted;
   const selectedCorrect = submitted && selectedId === sba.correctAnswerId;
-  const transferQuestion = sba.transferCase?.question || sba.stem;
+  const questionText = sba.transferCase?.question || sba.stem;
 
   return (
-    <>
+    <div data-studyedit-followup-shell="true">
       {sba.comparison && <ComparisonCard comparison={sba.comparison} />}
 
       <div
-        className="mt-5 rounded-[22px] border px-4 py-4 shadow-[0_10px_28px_rgba(31,20,12,0.035)] sm:px-5 sm:py-5"
-        style={{ borderColor: '#E2D6C3', backgroundColor: C.paper }}
+        className="mt-6"
         data-studyedit-structured-followup="true"
         data-studyedit-followup-qa="passed"
         data-studyedit-evidence-mode={sba.evidenceMode}
         data-studyedit-teaching-object={sba.transferCase ? 'transfer_case' : 'followup_sba'}
       >
         {sba.transferCase && (
-          <div className="mb-5 text-[17px] font-medium leading-[1.62] tracking-[-0.01em]" style={{ color: '#3B2A1E' }}>
+          <div className="text-[20px] font-medium leading-[1.65] tracking-[-0.01em] sm:text-[21px]" style={{ color: C.espresso }}>
             {sba.transferCase.vignette}
           </div>
         )}
 
-        <div className="text-[18px] font-bold leading-[1.55] tracking-[-0.01em] sm:text-[19px]" style={{ color: C.espresso }}>
-          {transferQuestion}
+        <div
+          className={`${sba.transferCase ? 'mt-8 border-t pt-6' : ''} text-[20px] font-bold leading-[1.55] tracking-[-0.01em] sm:text-[21px]`}
+          style={{ borderColor: C.line, color: C.espresso }}
+        >
+          {questionText}
         </div>
 
-        <div className="mt-4 flex flex-col gap-2.5">
+        <div className="mt-6 flex flex-col gap-3">
           {sba.options.map(option => {
             const selected = selectedId === option.id;
             const correctAfterSubmit = submitted && option.id === sba.correctAnswerId;
             const wrongSelected = submitted && selected && option.id !== sba.correctAnswerId;
+
             return (
               <button
                 key={option.id}
                 type="button"
                 disabled={locked}
                 onClick={() => setSelectedId(option.id)}
-                className="flex w-full items-center gap-3 rounded-[16px] border px-3.5 py-3 text-left transition active:scale-[0.997] disabled:cursor-default sm:px-4"
+                className="flex w-full items-center gap-4 rounded-[17px] border px-4 py-4 text-left transition active:scale-[0.997] disabled:cursor-default sm:px-5 sm:py-[18px]"
                 style={{
-                  borderColor: correctAfterSubmit ? C.sage : wrongSelected ? C.blush : selected ? C.espresso : '#E7DCCB',
-                  backgroundColor: correctAfterSubmit ? C.sageSoft : wrongSelected ? C.blushSoft : selected ? '#F4ECDF' : C.cream,
-                  opacity: submitted && !correctAfterSubmit && !wrongSelected ? 0.62 : 1,
+                  backgroundColor: correctAfterSubmit ? C.sageSoft : wrongSelected ? C.blushSoft : selected && !submitted ? C.cream : C.paper,
+                  borderColor: correctAfterSubmit ? C.sage : wrongSelected ? C.blush : selected && !submitted ? C.espresso : C.line,
+                  opacity: submitted && !correctAfterSubmit && !wrongSelected ? 0.52 : 1,
                 }}
               >
                 <span
-                  className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-[12px] font-extrabold"
+                  className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-[14px] font-bold"
                   style={{
-                    backgroundColor: selected && !submitted ? C.espresso : 'rgba(31,20,12,.065)',
+                    backgroundColor: selected && !submitted ? C.espresso : 'rgba(31,20,12,.06)',
                     color: selected && !submitted ? C.cream : C.espresso,
                   }}
                 >
                   {option.id}
                 </span>
-                <span className="flex-1 text-[16px] font-semibold leading-[1.45]" style={{ color: C.espresso }}>
+                <span className="flex-1 text-[17px] font-semibold leading-[1.45] sm:text-[18px]" style={{ color: C.espresso }}>
                   {option.text}
                 </span>
-                {correctAfterSubmit && <span className="font-extrabold" style={{ color: '#62734F' }}>✓</span>}
-                {wrongSelected && <span className="font-extrabold" style={{ color: '#9B5146' }}>×</span>}
+                {correctAfterSubmit && <span className="font-bold" style={{ color: '#62734F' }}>✓</span>}
+                {wrongSelected && <span className="font-bold" style={{ color: '#9B5146' }}>×</span>}
               </button>
             );
           })}
@@ -151,7 +132,7 @@ export const FollowUpSbaCard: React.FC<FollowUpSbaCardProps> = ({ sba, disabled 
               setSubmitted(true);
               void onSubmit(selectedId);
             }}
-            className="mt-4 flex w-full items-center justify-center rounded-full px-5 py-3 text-[14px] font-extrabold disabled:cursor-not-allowed"
+            className="mt-6 flex w-full items-center justify-center rounded-full px-6 py-[18px] text-[16px] font-bold disabled:cursor-not-allowed"
             style={{
               backgroundColor: selectedId && !disabled ? C.espresso : '#D9CCB6',
               color: selectedId && !disabled ? C.cream : C.muted,
@@ -161,7 +142,7 @@ export const FollowUpSbaCard: React.FC<FollowUpSbaCardProps> = ({ sba, disabled 
           </button>
         ) : (
           <div
-            className="mt-4 text-[14px] font-bold"
+            className="mt-5 text-[14px] font-bold"
             style={{ color: selectedCorrect ? '#62734F' : '#94483D' }}
             aria-live="polite"
           >
@@ -170,7 +151,7 @@ export const FollowUpSbaCard: React.FC<FollowUpSbaCardProps> = ({ sba, disabled 
         )}
       </div>
 
-      {submitted && sba.whatChanged && <WhatChangedCard object={sba.whatChanged} />}
-    </>
+      {/* whatChanged remains available in structured QA metadata but is intentionally not shown to learners. */}
+    </div>
   );
 };
