@@ -3,20 +3,19 @@ import path from 'node:path';
 
 type Confidence = 'know' | 'unsure' | 'guess';
 type Assessment = 'pass' | 'partial' | 'fail' | 'clarify';
-type EvidenceMode = 'guided' | 'independent' | 'none';
+type EvidenceMode = 'guided' | 'none';
 type PolicyAction =
   | 'MOVE_ON'
   | 'ASK_REASONING'
+  | 'APPLICATION_CHECK'
   | 'TEACH_PREREQUISITE'
-  | 'TRANSFER_CASE'
   | 'DISCRIMINATOR_CHECK'
-  | 'CLARIFY_AND_RECHECK';
+  | 'CLARIFY_NATURALLY'
+  | 'NATURAL_REPAIR';
 
 type Decision = {
   action: PolicyAction;
   evidenceMode: EvidenceMode;
-  comparisonBefore: boolean;
-  whatChangedTiming: 'after_answer' | 'none';
   reason: string;
 };
 
@@ -31,10 +30,8 @@ type OpeningScenario = {
 type AssessmentScenario = {
   kind: 'assessment';
   name: string;
-  originalCorrect: boolean;
-  confidence: Confidence;
-  passedChecks: number;
   assessment: Assessment;
+  structuredAttempts: number;
   expected: Partial<Decision>;
 };
 
@@ -51,31 +48,20 @@ type EvalResult = {
 const strict = process.argv.includes('--strict');
 const root = process.cwd();
 
-function requiredEvidence(correct: boolean, confidence: Confidence): number {
-  if (correct && confidence === 'know') return 0;
-  if (correct && confidence === 'unsure') return 1;
-  if (correct && confidence === 'guess') return 2;
-  return 2;
-}
-
 function openingDecision(correct: boolean, confidence: Confidence): Decision {
   if (correct && confidence === 'know') {
     return {
       action: 'MOVE_ON',
       evidenceMode: 'none',
-      comparisonBefore: false,
-      whatChangedTiming: 'none',
-      reason: 'Correct + confident is already strong evidence for this session.',
+      reason: 'Correct + knew it should get one concise confirmation and no extra teaching.',
     };
   }
 
   if (correct && confidence === 'unsure') {
     return {
-      action: 'TRANSFER_CASE',
-      evidenceMode: 'independent',
-      comparisonBefore: false,
-      whatChangedTiming: 'after_answer',
-      reason: 'Correct but unsure needs one clean transfer check without pre-answer scaffolding.',
+      action: 'APPLICATION_CHECK',
+      evidenceMode: 'guided',
+      reason: 'Correct + unsure gets one useful application check, not a mandatory transfer sequence.',
     };
   }
 
@@ -83,9 +69,7 @@ function openingDecision(correct: boolean, confidence: Confidence): Decision {
     return {
       action: 'ASK_REASONING',
       evidenceMode: 'none',
-      comparisonBefore: false,
-      whatChangedTiming: 'none',
-      reason: 'A lucky correct answer is not mastery; diagnose the learner model before teaching.',
+      reason: 'Correct + guessed should diagnose whether the answer was lucky before teaching.',
     };
   }
 
@@ -93,69 +77,48 @@ function openingDecision(correct: boolean, confidence: Confidence): Decision {
     return {
       action: 'TEACH_PREREQUISITE',
       evidenceMode: 'guided',
-      comparisonBefore: false,
-      whatChangedTiming: 'none',
-      reason: 'Wrong + guessed suggests missing prerequisite knowledge rather than a confident misconception.',
+      reason: 'Wrong + guessed gets the smallest prerequisite plus one check.',
     };
   }
 
   return {
     action: 'ASK_REASONING',
     evidenceMode: 'none',
-    comparisonBefore: false,
-    whatChangedTiming: 'none',
     reason: confidence === 'know'
-      ? 'Wrong + confident is a strong misconception signal; diagnose before revealing.'
-      : 'Wrong + unsure needs diagnosis before deciding what to teach.',
+      ? 'Wrong + confident is a misconception signal; diagnose reasoning first.'
+      : 'Wrong + unsure should diagnose the learner model before choosing an intervention.',
   };
 }
 
-function afterAssessmentDecision(
-  originalCorrect: boolean,
-  confidence: Confidence,
-  passedChecks: number,
-  assessment: Assessment,
-): Decision {
+function afterAssessmentDecision(assessment: Assessment, structuredAttempts: number): Decision {
   if (assessment === 'clarify') {
     return {
-      action: 'CLARIFY_AND_RECHECK',
-      evidenceMode: 'guided',
-      comparisonBefore: false,
-      whatChangedTiming: 'none',
-      reason: 'Clarification is not evidence; answer the question then obtain fresh evidence.',
+      action: 'CLARIFY_NATURALLY',
+      evidenceMode: 'none',
+      reason: 'A learner question should be answered directly without automatically appending another SBA.',
     };
   }
 
   if (assessment === 'pass') {
-    const nextPassed = passedChecks + 1;
-    const needed = requiredEvidence(originalCorrect, confidence);
-    if (nextPassed >= needed) {
-      return {
-        action: 'MOVE_ON',
-        evidenceMode: 'none',
-        comparisonBefore: false,
-        whatChangedTiming: 'none',
-        reason: `Evidence threshold met (${nextPassed}/${needed}).`,
-      };
-    }
-
     return {
-      action: 'TRANSFER_CASE',
-      evidenceMode: 'independent',
-      comparisonBefore: false,
-      whatChangedTiming: 'after_answer',
-      reason: `Some evidence is positive, but stronger independent transfer is still required (${nextPassed}/${needed}).`,
+      action: 'MOVE_ON',
+      evidenceMode: 'none',
+      reason: 'One genuinely diagnostic pass is enough for the current learning step; repetition is not evidence by itself.',
+    };
+  }
+
+  if (structuredAttempts < 2) {
+    return {
+      action: 'DISCRIMINATOR_CHECK',
+      evidenceMode: 'guided',
+      reason: 'A fail or partial answer can justify one concise correction and at most one further structured discriminator check.',
     };
   }
 
   return {
-    action: 'DISCRIMINATOR_CHECK',
-    evidenceMode: 'guided',
-    comparisonBefore: true,
-    whatChangedTiming: 'none',
-    reason: assessment === 'fail'
-      ? 'Failure should trigger correction of the exact misconception followed by a guided discriminator check.'
-      : 'Partial understanding should expose only the missing distinction and re-check it.',
+    action: 'NATURAL_REPAIR',
+    evidenceMode: 'none',
+    reason: 'After repeated structured failure, change modality instead of generating endless SBAs.',
   };
 }
 
@@ -169,14 +132,14 @@ const scenarios: Scenario[] = [
   },
   {
     kind: 'opening',
-    name: 'correct + unsure asks for independent transfer',
+    name: 'correct + unsure gets one application check rather than forced transfer',
     correct: true,
     confidence: 'unsure',
-    expected: { action: 'TRANSFER_CASE', evidenceMode: 'independent', comparisonBefore: false, whatChangedTiming: 'after_answer' },
+    expected: { action: 'APPLICATION_CHECK', evidenceMode: 'guided' },
   },
   {
     kind: 'opening',
-    name: 'correct + guessed diagnoses reasoning before teaching',
+    name: 'correct + guessed diagnoses reasoning first',
     correct: true,
     confidence: 'guess',
     expected: { action: 'ASK_REASONING', evidenceMode: 'none' },
@@ -197,73 +160,52 @@ const scenarios: Scenario[] = [
   },
   {
     kind: 'opening',
-    name: 'wrong + guessed teaches prerequisite and uses guided evidence',
+    name: 'wrong + guessed teaches only the smallest prerequisite',
     correct: false,
     confidence: 'guess',
     expected: { action: 'TEACH_PREREQUISITE', evidenceMode: 'guided' },
   },
   {
     kind: 'assessment',
-    name: 'clarification never counts as mastery evidence',
-    originalCorrect: false,
-    confidence: 'unsure',
-    passedChecks: 0,
+    name: 'one diagnostic pass closes the loop',
+    assessment: 'pass',
+    structuredAttempts: 1,
+    expected: { action: 'MOVE_ON', evidenceMode: 'none' },
+  },
+  {
+    kind: 'assessment',
+    name: 'pass after reasoning also closes without a second SBA',
+    assessment: 'pass',
+    structuredAttempts: 0,
+    expected: { action: 'MOVE_ON', evidenceMode: 'none' },
+  },
+  {
+    kind: 'assessment',
+    name: 'clarification is answered naturally rather than forcing a check',
     assessment: 'clarify',
-    expected: { action: 'CLARIFY_AND_RECHECK', evidenceMode: 'guided' },
+    structuredAttempts: 0,
+    expected: { action: 'CLARIFY_NATURALLY', evidenceMode: 'none' },
   },
   {
     kind: 'assessment',
-    name: 'first pass after wrong answer is not enough',
-    originalCorrect: false,
-    confidence: 'unsure',
-    passedChecks: 0,
-    assessment: 'pass',
-    expected: { action: 'TRANSFER_CASE', evidenceMode: 'independent', comparisonBefore: false, whatChangedTiming: 'after_answer' },
-  },
-  {
-    kind: 'assessment',
-    name: 'second pass after wrong answer closes the loop',
-    originalCorrect: false,
-    confidence: 'unsure',
-    passedChecks: 1,
-    assessment: 'pass',
-    expected: { action: 'MOVE_ON', evidenceMode: 'none' },
-  },
-  {
-    kind: 'assessment',
-    name: 'failed check does not move on',
-    originalCorrect: false,
-    confidence: 'know',
-    passedChecks: 0,
+    name: 'first failed structured check can get one discriminator retry',
     assessment: 'fail',
-    expected: { action: 'DISCRIMINATOR_CHECK', evidenceMode: 'guided', comparisonBefore: true },
+    structuredAttempts: 1,
+    expected: { action: 'DISCRIMINATOR_CHECK', evidenceMode: 'guided' },
   },
   {
     kind: 'assessment',
-    name: 'partial check focuses the missing discriminator',
-    originalCorrect: false,
-    confidence: 'unsure',
-    passedChecks: 0,
+    name: 'partial reasoning can get one focused discriminator check',
     assessment: 'partial',
-    expected: { action: 'DISCRIMINATOR_CHECK', evidenceMode: 'guided', comparisonBefore: true },
+    structuredAttempts: 0,
+    expected: { action: 'DISCRIMINATOR_CHECK', evidenceMode: 'guided' },
   },
   {
     kind: 'assessment',
-    name: 'correct but guessed requires two evidence steps',
-    originalCorrect: true,
-    confidence: 'guess',
-    passedChecks: 0,
-    assessment: 'pass',
-    expected: { action: 'TRANSFER_CASE', evidenceMode: 'independent' },
-  },
-  {
-    kind: 'assessment',
-    name: 'correct but guessed can close after second pass',
-    originalCorrect: true,
-    confidence: 'guess',
-    passedChecks: 1,
-    assessment: 'pass',
-    expected: { action: 'MOVE_ON', evidenceMode: 'none' },
+    name: 'repeated failure changes modality instead of looping SBAs',
+    assessment: 'fail',
+    structuredAttempts: 2,
+    expected: { action: 'NATURAL_REPAIR', evidenceMode: 'none' },
   },
 ];
 
@@ -275,14 +217,6 @@ function compareDecision(expected: Partial<Decision>, actual: Decision): string[
       failures.push(`${key}: expected ${JSON.stringify(expectedValue)}, got ${JSON.stringify(actualValue)}`);
     }
   }
-
-  // Cross-cutting pedagogical invariants that must hold regardless of the scenario.
-  if (actual.evidenceMode === 'independent' && actual.comparisonBefore) {
-    failures.push('Independent evidence was contaminated by a comparison shown before retrieval.');
-  }
-  if (actual.action === 'TRANSFER_CASE' && actual.whatChangedTiming !== 'after_answer') {
-    failures.push('Transfer debrief must be revealed only after the learner answers.');
-  }
   if (actual.action === 'MOVE_ON' && actual.evidenceMode !== 'none') {
     failures.push('MOVE_ON should not simultaneously request new evidence.');
   }
@@ -292,12 +226,7 @@ function compareDecision(expected: Partial<Decision>, actual: Decision): string[
 function evaluateScenario(scenario: Scenario): EvalResult {
   const actual = scenario.kind === 'opening'
     ? openingDecision(scenario.correct, scenario.confidence)
-    : afterAssessmentDecision(
-        scenario.originalCorrect,
-        scenario.confidence,
-        scenario.passedChecks,
-        scenario.assessment,
-      );
+    : afterAssessmentDecision(scenario.assessment, scenario.structuredAttempts);
   const failures = compareDecision(scenario.expected, actual);
   return { name: scenario.name, pass: failures.length === 0, expected: scenario.expected, actual, failures };
 }
@@ -311,12 +240,14 @@ function includesAll(source: string, needles: string[]): boolean {
 function runSourceContractChecks(): SourceCheck[] {
   const controllerPath = path.join(root, 'src/components/practice/UkmlaSBAQuestion.tsx');
   const objectPath = path.join(root, 'src/services/structuredFollowUpSba.ts');
+  const cardPath = path.join(root, 'src/components/practice/FollowUpSbaCard.tsx');
   const controller = fs.existsSync(controllerPath) ? fs.readFileSync(controllerPath, 'utf8') : '';
   const objects = fs.existsSync(objectPath) ? fs.readFileSync(objectPath, 'utf8') : '';
+  const card = fs.existsSync(cardPath) ? fs.readFileSync(cardPath, 'utf8') : '';
 
-  const checks: SourceCheck[] = [
+  return [
     {
-      name: 'production controller exposes confidence-sensitive branches',
+      name: 'production controller keeps confidence-sensitive openings',
       pass: includesAll(controller, [
         "correct && confidence === 'know'",
         "correct && confidence === 'unsure'",
@@ -326,53 +257,69 @@ function runSourceContractChecks(): SourceCheck[] {
         "!correct && confidence === 'guess'",
       ]),
       severity: 'gate',
-      detail: 'The real tutor controller must retain distinct confidence/correctness pathways.',
+      detail: 'The real tutor must retain distinct confidence/correctness pathways.',
     },
     {
-      name: 'production controller uses transfer, prerequisite and discriminator actions',
-      pass: includesAll(controller, ["mode: 'transfer'", "mode: 'prerequisite'", "mode: 'discriminator'"]),
+      name: 'old evidence-count treadmill is removed',
+      pass: !controller.includes('requiredEvidence(') && !controller.includes('passedChecks'),
       severity: 'gate',
-      detail: 'The real tutor must have distinct evidence-seeking actions rather than one generic follow-up.',
+      detail: 'A learner should not be forced through a numeric count of repeated passes.',
     },
     {
-      name: 'mastery close is controller-owned',
-      pass: controller.includes('secureClosingInstruction(isFinalQuestion)') && controller.includes('advanceAfter'),
+      name: 'correct + unsure uses one application check, not mandatory transfer',
+      pass: includesAll(controller, ["correct && confidence === 'unsure'", "mode: 'application'", 'single quality-checked application SBA']),
       severity: 'gate',
-      detail: 'A PASS crossing the evidence threshold should close via the controller and advance.',
+      detail: 'Uncertainty should trigger one useful check rather than an automatic transfer chain.',
     },
     {
-      name: 'transfer is explicitly independent evidence',
-      pass: objects.includes("evidenceMode: request.mode === 'transfer' ? 'independent' : 'guided'"),
+      name: 'one PASS closes through the controller',
+      pass: controller.includes("if (assessment === 'pass')") && controller.includes('secureClosingInstruction(isFinalQuestion), true'),
       severity: 'gate',
-      detail: 'Transfer success must be distinguishable from guided success.',
+      detail: 'One genuinely diagnostic pass should be sufficient for the current learning step.',
     },
     {
-      name: 'independent transfer forbids pre-answer comparison scaffolding',
-      pass: includesAll(objects, ['comparison: null. Independent transfer must not be scaffolded', 'For transfer mode: a comparison or other scaffold reveals the answer before independent retrieval']),
+      name: 'clarification does not automatically append another SBA',
+      pass: controller.includes('Do not automatically generate another SBA'),
       severity: 'gate',
-      detail: 'Test before reveal: a comparison cannot cue an independent transfer answer.',
+      detail: 'A learner question should be answered as a learner question.',
     },
     {
-      name: 'what-changed object is post-answer transfer debrief',
-      pass: includesAll(objects, ['whatChanged', 'AFTER the learner answers']),
-      severity: 'gate',
-      detail: 'The blush delta object should explain the discriminator after retrieval, not before.',
-    },
-    {
-      name: 'structured follow-up has independent QA and retry/fallback behavior',
-      pass: includesAll(objects, ['quality checker', 'for (let attempt = 1; attempt <= 2; attempt += 1)', 'return null;']),
-      severity: 'gate',
-      detail: 'Bad structured teaching objects must fail closed rather than being shown anyway.',
-    },
-    {
-      name: 'repeated-failure strategy changes modality rather than looping forever',
-      pass: /failureStreak|consecutiveFailures|failedChecks|strategyShift|escalat/i.test(controller),
+      name: 'repeated structured failure changes modality',
+      pass: includesAll(controller, ['structuredAttempts < 2', 'Stop generating more SBAs', 'NATURAL']),
       severity: 'warning',
-      detail: 'Current controller does not yet appear to track repeated failures explicitly; Phase 4 should surface this as the next policy gap.',
+      detail: 'The source should cap structured retries and switch to natural free response.',
+    },
+    {
+      name: 'follow-up generation sees previous stems and rejects repetition',
+      pass: includesAll(controller, ['priorFollowUpStems', 'avoidStems']) && includesAll(objects, ['avoidStems?: string[]', 'DO NOT REPEAT THESE PREVIOUS CHECKS']),
+      severity: 'gate',
+      detail: 'The generator and QA should know what has already been asked.',
+    },
+    {
+      name: 'cosmetic vignette mutations do not qualify as transfer',
+      pass: includesAll(objects, ['Changing age, sex, drug name, timing', 'same cognitive task', 'superficial vignette details']),
+      severity: 'gate',
+      detail: 'Changing demographics while testing the identical fact must be rejected.',
+    },
+    {
+      name: 'comparison remains available for genuine discriminator teaching',
+      pass: includesAll(objects, ["mode === 'discriminator'", 'comparison: include a quiet two-column comparison']),
+      severity: 'gate',
+      detail: 'The useful comparison table should remain a tool for real confusion.',
+    },
+    {
+      name: 'pink what-changed metadata is not learner-facing',
+      pass: !card.includes('WhatChangedCard') && !card.includes('sba.whatChanged'),
+      severity: 'gate',
+      detail: 'Internal transfer metadata should not be rendered as the rejected pink alteration box.',
+    },
+    {
+      name: 'tutor prompt explicitly suppresses repetitive mastery narration',
+      pass: includesAll(controller, ['Never narrate the tutoring machinery or evidence count', 'do not state it again', 'mastered']),
+      severity: 'gate',
+      detail: 'Tutor prose should not repeat content or narrate its internal mastery logic.',
     },
   ];
-
-  return checks;
 }
 
 const journeyResults = scenarios.map(evaluateScenario);
@@ -382,7 +329,7 @@ const sourceGateFailures = sourceChecks.filter(check => check.severity === 'gate
 const warnings = sourceChecks.filter(check => check.severity === 'warning' && !check.pass);
 
 const report = {
-  eval: 'studyedit-tutor-policy-v1',
+  eval: 'studyedit-tutor-policy-v2',
   ranAt: new Date().toISOString(),
   strict,
   summary: {
@@ -397,7 +344,7 @@ const report = {
   sourceChecks,
 };
 
-console.log('\nStudyEdit tutor-policy eval\n');
+console.log('\nStudyEdit tutor-policy eval v2\n');
 for (const result of journeyResults) {
   console.log(`${result.pass ? '✓' : '✗'} ${result.name}`);
   result.failures.forEach(failure => console.log(`    ${failure}`));
