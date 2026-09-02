@@ -51,13 +51,14 @@ export type StructuredFollowUpSba = {
     passed: true;
     attempts: number;
     checker: 'automated';
-    version: 'followup-sba-v2';
+    version: 'followup-sba-v3';
   };
 };
 
 export type FollowUpSbaRequest = {
   mode: FollowUpSbaMode;
   teachingObjective: string;
+  avoidStems?: string[];
 };
 
 type CandidateFollowUpSba = {
@@ -165,9 +166,6 @@ function parseCandidate(raw: string, request: FollowUpSbaRequest): CandidateFoll
       teachingObjective.length >= 8;
 
     if (!structurallySound) return null;
-
-    // A transfer check only counts as independent transfer when StudyEdit can build a
-    // genuinely altered, fully grounded case and explain the changed discriminators afterwards.
     if (request.mode === 'transfer' && (!transferCase || !whatChanged)) return null;
 
     return {
@@ -203,13 +201,19 @@ function candidateJson(candidate: CandidateFollowUpSba): string {
   return JSON.stringify(candidate, null, 2);
 }
 
+function avoidedQuestionText(request: FollowUpSbaRequest): string {
+  const stems = (request.avoidStems || []).map(cleanText).filter(Boolean).slice(-4);
+  if (!stems.length) return '';
+  return `\nDO NOT REPEAT THESE PREVIOUS CHECKS OR TEST THE SAME THING WITH COSMETIC CHANGES:\n- ${stems.join('\n- ')}\n`;
+}
+
 function objectInstructions(mode: FollowUpSbaMode): string {
   if (mode === 'transfer') {
-    return `\nSTRUCTURED TEACHING OBJECTS REQUIRED FOR TRANSFER:\n- transferCase: a complete altered clinical vignette plus its question. It must test the SAME verified rule without highlighting or naming the decisive clue. Change only facts whose old and new values are both supported by the verified context. If you cannot do this without outside medical knowledge, do not invent it.\n- whatChanged: 1-5 concise from → to changes that explain, AFTER the learner answers, which verified variables made the altered case different. The takeaway must state the discriminator without adding a new rule.\n- comparison: null. Independent transfer must not be scaffolded by a comparison before the answer.`;
+    return `\nSTRUCTURED TEACHING OBJECTS REQUIRED FOR TRANSFER:\n- transferCase: a complete altered clinical vignette plus its question. It must require a genuinely different application of the SAME verified rule without highlighting or naming the decisive clue. Changing age, sex, drug name, timing, or other demographics alone does NOT count as transfer unless that change alters the reasoning required. If the learner could answer by repeating the exact same fact in the exact same way, it is not transfer.\n- whatChanged: internal QA metadata describing only clinically meaningful changes. It is not a learner-facing teaching requirement.\n- comparison: null. Independent transfer must not be scaffolded by a comparison before the answer.`;
   }
 
   if (mode === 'discriminator') {
-    return `\nSTRUCTURED TEACHING OBJECTS FOR A MISCONCEPTION/PARTIAL MODEL:\n- comparison: include a quiet two-column comparison ONLY if the verified context fully supports both sides. Use 2-6 matched features. If the context does not support a safe comparison, return null.\n- transferCase: null.\n- whatChanged: null.`;
+    return `\nSTRUCTURED TEACHING OBJECTS FOR A MISCONCEPTION/PARTIAL MODEL:\n- comparison: include a quiet two-column comparison ONLY if the verified context fully supports both sides and it clarifies the learner's actual confusion. Use 2-6 matched features. If the context does not support a safe or useful comparison, return null.\n- transferCase: null.\n- whatChanged: null.`;
   }
 
   return `\nSTRUCTURED TEACHING OBJECTS:\n- comparison: null unless the verified context clearly supports two meaningful sides and comparison is necessary for the requested objective.\n- transferCase: null.\n- whatChanged: null.`;
@@ -217,7 +221,7 @@ function objectInstructions(mode: FollowUpSbaMode): string {
 
 function generatorPrompt(request: FollowUpSbaRequest, repairIssues: string[] = []): string {
   const modeRule = request.mode === 'transfer'
-    ? 'Test independent transfer of the SAME verified discriminator. Do not reveal the pattern before the learner answers.'
+    ? 'Test independent transfer of the SAME verified discriminator. The learner must have to apply the rule in a meaningfully different way, not answer an isomorphic copy.'
     : request.mode === 'prerequisite'
       ? 'Test the smallest prerequisite or rule the learner needs in order to answer the verified current concept.'
       : request.mode === 'discriminator'
@@ -228,11 +232,11 @@ function generatorPrompt(request: FollowUpSbaRequest, repairIssues: string[] = [
     ? `\nThe previous candidate failed QA for these reasons. Fix ALL of them:\n- ${repairIssues.join('\n- ')}\n`
     : '';
 
-  return `You are StudyEdit's structured follow-up SBA generator. Create ONE short, high-quality medical single-best-answer question from the VERIFIED CURRENT-QUESTION CONTEXT supplied separately.\n\nTeaching objective: ${request.teachingObjective}\nMode: ${request.mode}\n${modeRule}${objectInstructions(request.mode)}${repair}\n\nNON-NEGOTIABLE RULES:\n- Use ONLY medical facts contained in the verified current-question context. Do not rely on outside knowledge to make the keyed answer true.\n- There must be exactly ONE unambiguously best answer.\n- Return exactly four options labelled A, B, C, D.\n- The keyed answer must be directly supported by the verified explanation/key fact/distractor feedback.\n- Distractors must be plausible enough to diagnose reasoning, but clearly wrong from the same verified context.\n- Do not use “all of the above”, “none of the above”, trick wording, double negatives, or trivia.\n- Avoid answer-position, grammar, length, or wording clues.\n- Do not simply restate the original question.\n- Keep the stem concise and clinically meaningful.\n- The rationale must explain why the keyed answer is uniquely best using only the supplied verified context.\n- Never fabricate a comparison, altered case, or changed variable merely to satisfy the schema. If the verified context cannot support the requested transfer safely, generation should fail rather than introduce outside facts.\n\nReturn JSON ONLY in exactly this shape:\n{\n  "stem": "Question ending in ?",\n  "options": [\n    {"id":"A","text":"..."},\n    {"id":"B","text":"..."},\n    {"id":"C","text":"..."},\n    {"id":"D","text":"..."}\n  ],\n  "correctAnswerId": "A",\n  "rationale": "...",\n  "teachingObjective": "...",\n  "comparison": null OR {\n    "leftTitle":"...",\n    "rightTitle":"...",\n    "rows":[{"feature":"...","left":"...","right":"..."}],\n    "takeaway":"optional concise distinction"\n  },\n  "transferCase": null OR {\n    "vignette":"complete altered vignette",\n    "question":"question ending in ?"\n  },\n  "whatChanged": null OR {\n    "changes":[{"from":"...","to":"..."}],\n    "takeaway":"concise discriminator revealed after the answer"\n  }\n}`;
+  return `You are StudyEdit's structured follow-up SBA generator. Create ONE short, high-quality medical single-best-answer question from the VERIFIED CURRENT-QUESTION CONTEXT supplied separately.\n\nTeaching objective: ${request.teachingObjective}\nMode: ${request.mode}\n${modeRule}${objectInstructions(request.mode)}${avoidedQuestionText(request)}${repair}\n\nNON-NEGOTIABLE RULES:\n- Use ONLY medical facts contained in the verified current-question context. Do not rely on outside knowledge to make the keyed answer true.\n- There must be exactly ONE unambiguously best answer.\n- Return exactly four options labelled A, B, C, D.\n- The keyed answer must be directly supported by the verified explanation/key fact/distractor feedback.\n- Distractors must be plausible enough to diagnose reasoning, but clearly wrong from the same verified context.\n- Do not use “all of the above”, “none of the above”, trick wording, double negatives, or trivia.\n- Avoid answer-position, grammar, length, or wording clues.\n- Do not simply restate the original question or a previous follow-up.\n- Do not create an apparently new case by merely swapping demographics, antibiotic names, dates, or other irrelevant details while testing the identical recall step.\n- Keep the stem concise and clinically meaningful.\n- The rationale must explain why the keyed answer is uniquely best using only the supplied verified context.\n- Never fabricate a comparison, altered case, or changed variable merely to satisfy the schema.\n\nReturn JSON ONLY in exactly this shape:\n{\n  "stem": "Question ending in ?",\n  "options": [\n    {"id":"A","text":"..."},\n    {"id":"B","text":"..."},\n    {"id":"C","text":"..."},\n    {"id":"D","text":"..."}\n  ],\n  "correctAnswerId": "A",\n  "rationale": "...",\n  "teachingObjective": "...",\n  "comparison": null OR {\n    "leftTitle":"...",\n    "rightTitle":"...",\n    "rows":[{"feature":"...","left":"...","right":"..."}],\n    "takeaway":"optional concise distinction"\n  },\n  "transferCase": null OR {\n    "vignette":"complete altered vignette",\n    "question":"question ending in ?"\n  },\n  "whatChanged": null OR {\n    "changes":[{"from":"...","to":"..."}],\n    "takeaway":"internal concise discriminator"\n  }\n}`;
 }
 
 function qaPrompt(candidate: CandidateFollowUpSba, request: FollowUpSbaRequest): string {
-  return `You are the independent StudyEdit follow-up SBA and teaching-object quality checker. Judge the candidate ONLY against the VERIFIED CURRENT-QUESTION CONTEXT supplied separately.\n\nRequested teaching objective: ${request.teachingObjective}\nRequested mode: ${request.mode}\n\nCANDIDATE:\n${candidateJson(candidate)}\n\nReject the candidate if ANY of these are true:\n1. The keyed answer is not directly entailed by the verified context.\n2. More than one option could reasonably be correct.\n3. A distractor is medically unsupported or requires outside knowledge to rule out.\n4. The question tests something other than the requested teaching objective.\n5. The stem, options, comparison, transfer case, what-changed object, or rationale introduces a clinically important fact not supported by the verified context.\n6. The correct answer is cued by wording, grammar, option length, absolutes, obvious implausibility, highlighting, or a teaching object shown before the answer.\n7. It is effectively the same question as the original rather than a useful new check.\n8. The rationale does not justify why the keyed option is uniquely best.\n9. The wording is ambiguous, unsafe, misleading, or not appropriate for a UK medical learner.\n10. A comparison claims a difference that the verified context does not explicitly support on BOTH sides.\n11. For transfer mode: transferCase is not a complete altered vignette, changes more than can be safely supported, or the whatChanged pairs are not exact verified differences between the original and altered presentation.\n12. For transfer mode: a comparison or other scaffold reveals the answer before independent retrieval.\n13. The whatChanged takeaway adds a new medical rule rather than revealing the structure already supported by the verified context.\n\nReturn JSON ONLY:\n{"pass": true, "issues": []}\nor\n{"pass": false, "issues": ["specific issue", "specific issue"]}`;
+  return `You are the independent StudyEdit follow-up SBA and teaching-object quality checker. Judge the candidate ONLY against the VERIFIED CURRENT-QUESTION CONTEXT supplied separately.\n\nRequested teaching objective: ${request.teachingObjective}\nRequested mode: ${request.mode}${avoidedQuestionText(request)}\nCANDIDATE:\n${candidateJson(candidate)}\n\nReject the candidate if ANY of these are true:\n1. The keyed answer is not directly entailed by the verified context.\n2. More than one option could reasonably be correct.\n3. A distractor is medically unsupported or requires outside knowledge to rule out.\n4. The question tests something other than the requested teaching objective.\n5. The stem, options, comparison, transfer case, what-changed object, or rationale introduces a clinically important fact not supported by the verified context.\n6. The correct answer is cued by wording, grammar, option length, absolutes, obvious implausibility, highlighting, or a teaching object shown before the answer.\n7. It is effectively the same cognitive task as the original or any previous follow-up, including when only age, sex, drug name, timing, or other superficial vignette details have changed.\n8. The rationale does not justify why the keyed option is uniquely best.\n9. The wording is ambiguous, unsafe, misleading, or not appropriate for a UK medical learner.\n10. A comparison claims a difference that the verified context does not explicitly support on BOTH sides, or is included without adding useful discrimination.\n11. For transfer mode: the case does not require a meaningfully different application of the rule, or the learner could answer by simply repeating the exact same fact from the previous check.\n12. For transfer mode: a comparison or other scaffold reveals the answer before independent retrieval.\n13. The whatChanged metadata adds a new medical rule rather than describing supported structure.\n\nReturn JSON ONLY:\n{"pass": true, "issues": []}\nor\n{"pass": false, "issues": ["specific issue", "specific issue"]}`;
 }
 
 export async function generateQualityCheckedFollowUpSba(
@@ -252,7 +256,7 @@ export async function generateQualityCheckedFollowUpSba(
 
     if (!candidate) {
       repairIssues = request.mode === 'transfer'
-        ? ['Return valid JSON with exactly four A-D options plus a fully grounded transferCase and whatChanged object. Do not invent unsupported clinical facts.']
+        ? ['Return valid JSON with exactly four A-D options plus a fully grounded, genuinely non-isomorphic transferCase and whatChanged metadata. Do not invent unsupported clinical facts.']
         : ['Return the required valid JSON structure with exactly four A-D options and one keyed answer.'];
       continue;
     }
@@ -274,7 +278,7 @@ export async function generateQualityCheckedFollowUpSba(
           passed: true,
           attempts: attempt,
           checker: 'automated',
-          version: 'followup-sba-v2',
+          version: 'followup-sba-v3',
         },
       };
     }
