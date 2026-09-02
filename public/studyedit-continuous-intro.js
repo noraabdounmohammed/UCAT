@@ -2,9 +2,8 @@
   const style = document.createElement('style');
   style.textContent = `
     [data-studyedit-session-prelude="true"] {
-      margin: 4px 0 38px;
-      padding: 6px 0 30px;
-      border-bottom: 1px solid rgba(196, 177, 153, 0.48);
+      margin: 8px 0 44px;
+      padding: 10px 0 0;
       color: #2A1E16;
     }
 
@@ -12,40 +11,71 @@
       margin: 0;
       max-width: 620px;
       font-family: 'Fraunces', Georgia, 'Times New Roman', serif;
-      font-size: clamp(31px, 7vw, 42px);
+      font-size: clamp(31px, 6.6vw, 40px);
       font-weight: 400;
       line-height: 1.08;
-      letter-spacing: -0.04em;
+      letter-spacing: -0.038em;
       color: #1F140C;
     }
 
     [data-studyedit-session-prelude="true"] .studyedit-prelude-body {
-      margin: 18px 0 0;
-      max-width: 610px;
-      font-size: 18px;
+      margin: 17px 0 0;
+      max-width: 590px;
+      font-size: 17px;
       font-weight: 500;
-      line-height: 1.62;
-      letter-spacing: -0.01em;
-      color: #3B2A1E;
+      line-height: 1.66;
+      letter-spacing: -0.008em;
+      color: #4A382B;
     }
 
     [data-studyedit-session-prelude="true"] .studyedit-prelude-handoff {
-      margin: 15px 0 0;
-      font-size: 14px;
-      font-weight: 600;
-      line-height: 1.5;
-      color: #8A7560;
+      margin: 23px 0 0;
+      font-family: 'Fraunces', Georgia, 'Times New Roman', serif;
+      font-size: 20px;
+      font-weight: 400;
+      line-height: 1.35;
+      letter-spacing: -0.02em;
+      color: #1F140C;
+    }
+
+    main[data-studyedit-tutor-loading="true"] {
+      min-height: 100dvh !important;
+      background: #F4ECDF !important;
+    }
+
+    main[data-studyedit-tutor-loading="true"] > div {
+      min-height: 100dvh !important;
+      justify-content: flex-start !important;
+      padding-top: min(30vh, 230px) !important;
+    }
+
+    main[data-studyedit-tutor-loading="true"] h1 {
+      max-width: 500px !important;
+      font-size: clamp(30px, 7vw, 40px) !important;
+      line-height: 1.1 !important;
+      letter-spacing: -0.035em !important;
+    }
+
+    main[data-studyedit-tutor-loading="true"] [data-studyedit-loading-note="true"] {
+      margin-top: 16px !important;
+      font-size: 13px !important;
+      color: #8A7560 !important;
     }
 
     @media (max-width: 600px) {
       [data-studyedit-session-prelude="true"] {
-        margin-bottom: 30px;
-        padding-bottom: 25px;
+        margin-bottom: 36px;
+        padding-top: 6px;
       }
 
       [data-studyedit-session-prelude="true"] .studyedit-prelude-body {
-        font-size: 17px;
-        line-height: 1.58;
+        font-size: 16px;
+        line-height: 1.62;
+      }
+
+      [data-studyedit-session-prelude="true"] .studyedit-prelude-handoff {
+        margin-top: 21px;
+        font-size: 19px;
       }
     }
   `;
@@ -53,21 +83,45 @@
 
   let pendingPrelude = null;
   let introSequence = 0;
+  const JOURNEY_KEY = 'studyedit_current_journey_v1';
 
   const text = (node) => (node?.textContent || '').trim();
 
+  const rememberJourneyFromHome = () => {
+    const bodyText = text(document.body);
+    if (/study medicine with someone paying attention/i.test(bodyText)) {
+      sessionStorage.setItem(JOURNEY_KEY, 'cold');
+      return;
+    }
+    if (/let[’']s find your starting point/i.test(bodyText)) {
+      sessionStorage.setItem(JOURNEY_KEY, 'new');
+      return;
+    }
+    if (/i[’']d start with what has been giving you trouble|i[’']d start with what is due|ready\? i[’']ll choose the next useful five/i.test(bodyText)) {
+      sessionStorage.setItem(JOURNEY_KEY, 'returning');
+    }
+  };
+
   const makePrelude = (rawGreeting) => {
-    const hasPersonalGreeting = Boolean(rawGreeting && !/you just need to turn up/i.test(rawGreeting));
-    const greeting = hasPersonalGreeting ? rawGreeting : 'Hi — good to meet you.';
-    const body = hasPersonalGreeting
-      ? "I've got a sense of where I want to start. Let's do one together and I'll adjust as we go. If you're guessing, tell me. If something feels obvious, say so. And if I'm not making sense, stop me."
-      : "I want to get a feel for how you think before I decide what you need from me. Let's start with one case. If you're guessing, tell me. If you want to ask why or stop me halfway through, just do.";
+    const journey = sessionStorage.getItem(JOURNEY_KEY) || 'cold';
+    const personalGreeting = Boolean(rawGreeting && !/you just need to turn up/i.test(rawGreeting));
+
+    let greeting = personalGreeting ? rawGreeting : 'Hi — good to meet you.';
+    let body = "I want to see how you think before I decide what you need from me. We'll start with one case. If you're guessing, tell me. If I’m not making sense, stop me.";
+
+    if (journey === 'new' && personalGreeting) {
+      body = "Before I decide what will actually help, I want to see how you approach one case. If you're guessing, tell me. If something feels obvious, say so. You can stop me whenever you want.";
+    }
+
+    if (journey === 'returning' && personalGreeting) {
+      body = "I’ve got a place I want to start. Let’s do one together and I’ll adjust as we go. If something feels obvious, say so. If I’m missing what you mean, stop me.";
+    }
 
     return {
       id: ++introSequence,
       greeting,
       body,
-      handoff: "Okay — here's the first one.",
+      handoff: "Alright — here’s the first one.",
     };
   };
 
@@ -84,7 +138,7 @@
     pendingPrelude = makePrelude(text(heading));
     introButton.dataset.studyeditContinuousIntroHandled = 'true';
 
-    // The intro belongs to the lesson itself, so don't make the learner click through a separate app-like screen.
+    // The introduction is part of the tutorial, not an onboarding screen.
     introSurface.style.opacity = '0';
     introSurface.style.pointerEvents = 'none';
     requestAnimationFrame(() => introButton.click());
@@ -127,22 +181,27 @@
     document.querySelectorAll('main h1').forEach((heading) => {
       if (!(heading instanceof HTMLElement)) return;
       const value = text(heading);
-      if (value === 'I’m choosing a good place to start.') heading.textContent = 'Alright — give me a second.';
-      if (value === 'I’m choosing the next useful question.') heading.textContent = 'One sec — I know what I want to give you next.';
+      if (value === 'I’m choosing a good place to start.') heading.textContent = 'Give me a second.';
+      if (value === 'I’m choosing the next useful question.') heading.textContent = 'One second.';
     });
 
     document.querySelectorAll('main').forEach((main) => {
       if (!(main instanceof HTMLElement)) return;
       const heading = main.querySelector('h1');
-      if (!heading || !/alright — give me a second|one sec — i know what i want/i.test(text(heading))) return;
+      if (!heading || !/give me a second|one second/i.test(text(heading))) return;
+      main.setAttribute('data-studyedit-tutor-loading', 'true');
       const label = Array.from(main.querySelectorAll('div')).find((node) => text(node) === 'StudyEdit');
       if (label instanceof HTMLElement) label.style.display = 'none';
       const moment = Array.from(main.querySelectorAll('span')).find((node) => text(node) === 'One moment');
-      if (moment instanceof HTMLElement) moment.textContent = 'I’m choosing where to start';
+      if (moment instanceof HTMLElement) {
+        moment.textContent = 'I’m thinking about where to start.';
+        moment.parentElement?.setAttribute('data-studyedit-loading-note', 'true');
+      }
     });
   };
 
   const run = () => {
+    rememberJourneyFromHome();
     softenLoadingVoice();
     consumeSeparateIntro();
     injectPreludeIntoLesson();
