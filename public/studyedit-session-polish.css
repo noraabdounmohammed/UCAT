@@ -111,10 +111,26 @@ section[aria-label="Answer and tutor"] [data-studyedit-advance="true"] button {
   font-size: 12px !important;
 }
 
-/* The composer is part of the conversation, not a separate control panel. */
+/* Keep one scroll surface in charge when the mobile keyboard opens. */
+div.fixed.inset-0.flex.flex-col.overflow-hidden > .flex-1.overflow-y-auto {
+  overscroll-behavior-y: contain;
+  scroll-padding-bottom: calc(92px + env(safe-area-inset-bottom));
+  -webkit-overflow-scrolling: touch;
+}
+
+/* The composer is part of the conversation. Once it enters view it stays at the bottom
+   of the lesson instead of making the browser chase it around when the keyboard opens. */
 section[aria-label="Answer and tutor"] form {
+  position: sticky !important;
+  bottom: max(10px, env(safe-area-inset-bottom)) !important;
+  z-index: 24 !important;
   margin-top: 28px !important;
-  box-shadow: 0 6px 20px rgba(31, 20, 12, 0.035) !important;
+  box-shadow: 0 6px 20px rgba(31, 20, 12, 0.055), 0 0 0 10px rgba(244, 236, 223, 0.90) !important;
+  transform: translateZ(0);
+}
+
+section[aria-label="Answer and tutor"] form:focus-within {
+  box-shadow: 0 8px 28px rgba(31, 20, 12, 0.09), 0 0 0 10px rgba(244, 236, 223, 0.96) !important;
 }
 
 section[aria-label="Answer and tutor"] [data-studyedit-stuck="true"] {
@@ -216,6 +232,10 @@ section[aria-label="Question"].studyedit-case-enter {
   section[aria-label="Answer and tutor"] .space-y-6 > [data-studyedit-turn="student"],
   section[aria-label="Answer and tutor"] .space-y-6 > .border-y.py-5 {
     max-width: 90% !important;
+  }
+
+  section[aria-label="Answer and tutor"] form {
+    bottom: max(8px, env(safe-area-inset-bottom)) !important;
   }
 
   .studyedit-archived-lesson [data-studyedit-archive-main="true"] {
