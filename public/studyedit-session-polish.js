@@ -2,6 +2,12 @@
   const state = {
     lastTurnCount: 0,
     lastCase: null,
+    activeKey: null,
+    activeSnapshot: null,
+    activeCaseSnapshot: null,
+    archives: [],
+    activeGone: true,
+    injectedSignature: '',
   };
 
   const text = (node) => (node?.textContent || '').trim();
@@ -120,6 +126,180 @@
     currentCase.classList.add('studyedit-case-enter');
   };
 
+  const findActiveLesson = () => {
+    const section = document.querySelector('section[aria-label="Question"], section[aria-label="Answer and tutor"]');
+    if (!section) return null;
+
+    const shell = section.closest('div.fixed.inset-0.flex.flex-col.overflow-hidden');
+    if (!shell) return null;
+
+    const scroll = Array.from(shell.children).find((child) =>
+      child instanceof HTMLElement && child.classList.contains('flex-1') && child.classList.contains('overflow-y-auto')
+    );
+    if (!(scroll instanceof HTMLElement)) return null;
+
+    const main = Array.from(scroll.children).find((child) => child instanceof HTMLElement && child.tagName === 'MAIN');
+    if (!(main instanceof HTMLElement)) return null;
+
+    const headerText = text(shell.querySelector('header'));
+    const progressMatch = headerText.match(/(\d+)\s*\/\s*(\d+)/);
+    const index = progressMatch ? Number(progressMatch[1]) : null;
+    const total = progressMatch ? Number(progressMatch[2]) : null;
+    const concept = text(main.querySelector('section[aria-label="Question"] > div:first-child')) ||
+      text(main.querySelector('[data-studyedit-case-summary="true"] span:first-child')) ||
+      'lesson';
+    const key = progressMatch ? `${index}/${total}` : `${concept}|${text(main).slice(0, 120)}`;
+
+    return { shell, scroll, main, key, index, total };
+  };
+
+  const makeStatic = (root) => {
+    root.querySelectorAll('input, textarea, form, [role="status"], [data-studyedit-advance="true"], [data-studyedit-stuck="true"]').forEach((node) => node.remove());
+
+    root.querySelectorAll('button').forEach((button) => {
+      const value = text(button);
+      if (
+        value === 'Review alternatives' ||
+        value === 'Hide other options' ||
+        value === 'Why the other options are wrong' ||
+        value === "I'm stuck" ||
+        value.includes('Wait — I have a question')
+      ) {
+        button.remove();
+        return;
+      }
+      button.setAttribute('disabled', 'true');
+      button.setAttribute('tabindex', '-1');
+      button.style.pointerEvents = 'none';
+    });
+  };
+
+  const snapshotCase = (main) => {
+    const questionSection = main.querySelector('section[aria-label="Question"]');
+    if (!questionSection) return;
+    const clone = questionSection.cloneNode(true);
+    if (!(clone instanceof HTMLElement)) return;
+    makeStatic(clone);
+    clone.querySelectorAll('button').forEach((button) => {
+      if (text(button) === 'Check answer' || text(button) === 'Hide case') button.remove();
+    });
+    clone.classList.remove('studyedit-case-enter');
+    clone.setAttribute('data-studyedit-archived-case', 'true');
+    state.activeCaseSnapshot = clone;
+  };
+
+  const buildArchiveSnapshot = (main) => {
+    const tutorSection = main.querySelector('section[aria-label="Answer and tutor"]');
+    if (!tutorSection || !text(tutorSection)) return null;
+
+    const clone = main.cloneNode(true);
+    if (!(clone instanceof HTMLElement)) return null;
+    makeStatic(clone);
+    clone.removeAttribute('ref');
+    clone.setAttribute('data-studyedit-archive-main', 'true');
+
+    const summary = clone.querySelector('[data-studyedit-case-summary="true"]');
+    if (summary instanceof HTMLElement) {
+      const label = Array.from(summary.querySelectorAll('span')).find((span) => text(span) === 'Review case');
+      label?.remove();
+      summary.style.pointerEvents = 'none';
+    }
+
+    if (state.activeCaseSnapshot) {
+      const details = document.createElement('details');
+      details.className = 'studyedit-archive-case-details';
+      const summaryNode = document.createElement('summary');
+      summaryNode.textContent = 'Review the case';
+      const body = document.createElement('div');
+      body.className = 'studyedit-archive-case-body';
+      body.appendChild(state.activeCaseSnapshot.cloneNode(true));
+      details.append(summaryNode, body);
+
+      const caseSummary = clone.querySelector('[data-studyedit-case-summary="true"]');
+      if (caseSummary?.parentNode) caseSummary.parentNode.insertBefore(details, caseSummary.nextSibling);
+      else clone.insertBefore(details, clone.firstChild);
+    }
+
+    return clone;
+  };
+
+  const archivePreviousLesson = () => {
+    if (!state.activeSnapshot || !state.activeKey) return;
+    if (state.archives.some((item) => item.key === state.activeKey)) return;
+    state.archives.push({ key: state.activeKey, node: state.activeSnapshot.cloneNode(true) });
+  };
+
+  const resetContinuousHistory = () => {
+    state.activeKey = null;
+    state.activeSnapshot = null;
+    state.activeCaseSnapshot = null;
+    state.archives = [];
+    state.injectedSignature = '';
+    state.lastTurnCount = 0;
+    state.lastCase = null;
+  };
+
+  const injectHistory = (lesson, movedToNewQuestion) => {
+    let host = lesson.scroll.querySelector(':scope > [data-studyedit-history="true"]');
+    if (!(host instanceof HTMLElement)) {
+      host = document.createElement('div');
+      host.setAttribute('data-studyedit-history', 'true');
+      lesson.scroll.insertBefore(host, lesson.main);
+    }
+
+    const signature = `${lesson.key}|${state.archives.map((item) => item.key).join(',')}`;
+    if (host.dataset.signature !== signature) {
+      host.replaceChildren();
+      state.archives.forEach((archive) => {
+        const wrapper = document.createElement('section');
+        wrapper.className = 'studyedit-archived-lesson';
+        wrapper.setAttribute('data-studyedit-archive-key', archive.key);
+        wrapper.appendChild(archive.node.cloneNode(true));
+        host.appendChild(wrapper);
+      });
+      host.dataset.signature = signature;
+      state.injectedSignature = signature;
+    }
+
+    if (movedToNewQuestion && state.archives.length) {
+      window.setTimeout(() => {
+        const top = Math.max(0, lesson.main.offsetTop - 18);
+        lesson.scroll.scrollTo({ top, behavior: 'smooth' });
+      }, 120);
+    }
+  };
+
+  const maintainContinuousHistory = () => {
+    const lesson = findActiveLesson();
+    if (!lesson) {
+      state.activeGone = true;
+      return;
+    }
+
+    if (state.activeGone && lesson.index === 1 && state.activeKey && lesson.key !== state.activeKey) {
+      resetContinuousHistory();
+    }
+    state.activeGone = false;
+
+    let movedToNewQuestion = false;
+    if (state.activeKey && lesson.key !== state.activeKey) {
+      archivePreviousLesson();
+      state.activeSnapshot = null;
+      state.activeCaseSnapshot = null;
+      state.lastTurnCount = 0;
+      state.lastCase = null;
+      movedToNewQuestion = true;
+    }
+
+    if (!state.activeKey || lesson.key !== state.activeKey) state.activeKey = lesson.key;
+
+    snapshotCase(lesson.main);
+    const finalSnapshot = buildArchiveSnapshot(lesson.main);
+    if (finalSnapshot) state.activeSnapshot = finalSnapshot;
+
+    injectHistory(lesson, movedToNewQuestion);
+  };
+
   const polish = () => {
     document.querySelectorAll('section[aria-label="Answer and tutor"]').forEach((section) => {
       cleanMarkdownArtifacts(section);
@@ -130,6 +310,7 @@
     });
     polishCaseSummary();
     animateNewCase();
+    maintainContinuousHistory();
   };
 
   let queued = false;
