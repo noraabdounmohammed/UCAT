@@ -31,12 +31,26 @@
     });
   };
 
+  const currentCaseSummary = () => document.querySelector('[data-studyedit-case-summary="true"]');
+
   const markOutcome = (section) => {
+    const caseSummary = currentCaseSummary();
+    const correctAnswer = caseSummary?.dataset?.studyeditCorrectAnswer || '';
+
     Array.from(section.children).forEach((child) => {
       const value = text(child).toLowerCase();
-      if (value === 'correct' || value === 'not quite') {
-        child.setAttribute('data-studyedit-outcome', 'true');
-      }
+      if (value !== 'correct' && value !== 'not quite' && !child.hasAttribute('data-studyedit-outcome')) return;
+
+      const originalResult = child.dataset.studyeditResult || (value === 'correct' ? 'correct' : 'incorrect');
+      child.setAttribute('data-studyedit-outcome', 'true');
+      child.setAttribute('data-studyedit-result', originalResult);
+
+      const feedback = originalResult === 'correct'
+        ? 'Yes — you got that right.'
+        : correctAnswer
+          ? `Not quite — the answer was ${correctAnswer}.`
+          : 'Not quite — that one was wrong.';
+      setTextIfChanged(child, feedback);
     });
   };
 
@@ -89,6 +103,15 @@
       const firstBlock = button.querySelector(':scope > span:first-child');
       if (!firstBlock) return;
       const lines = firstBlock.querySelectorAll(':scope > span');
+
+      if (lines[1] && !button.dataset.studyeditSelectedAnswer) {
+        const raw = text(lines[1]);
+        const chosenMatch = raw.match(/^You chose\s+(.+?)(?:\s*·\s*Correct:|$)/i);
+        const correctMatch = raw.match(/\s*·\s*Correct:\s*(.+)$/i);
+        if (chosenMatch?.[1]) button.dataset.studyeditSelectedAnswer = chosenMatch[1].trim();
+        if (correctMatch?.[1]) button.dataset.studyeditCorrectAnswer = correctMatch[1].trim();
+      }
+
       if (lines[0]) {
         const next = text(lines[0]).replace(/^[✓×]\s*/, '');
         if (text(lines[0]) !== next) setTextIfChanged(lines[0], next);
@@ -301,6 +324,8 @@
   };
 
   const polish = () => {
+    // Capture the selected/correct answer before simplifying the case summary.
+    polishCaseSummary();
     document.querySelectorAll('section[aria-label="Answer and tutor"]').forEach((section) => {
       cleanMarkdownArtifacts(section);
       markOutcome(section);
@@ -308,7 +333,6 @@
       markTurns(section);
       humanizeControls(section);
     });
-    polishCaseSummary();
     animateNewCase();
     maintainContinuousHistory();
   };
