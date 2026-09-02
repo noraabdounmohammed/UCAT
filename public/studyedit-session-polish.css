@@ -1,9 +1,25 @@
 /* StudyEdit continuous lesson polish.
    The session should feel like one tutor-led surface, not a stack of software states. */
 
-/* The tutor communicates correctness in natural language; don't duplicate it with a status component. */
+/* Correctness should be unmistakable, but delivered like a tutor speaking rather than a status badge. */
 section[aria-label="Answer and tutor"] > [data-studyedit-outcome="true"] {
-  display: none !important;
+  display: block !important;
+  margin-bottom: 22px !important;
+  font-size: 19px !important;
+  font-weight: 750 !important;
+  line-height: 1.5 !important;
+  letter-spacing: -0.015em !important;
+  text-transform: none !important;
+  color: #3B2A1E !important;
+  animation: studyedit-turn-in 180ms ease-out both;
+}
+
+section[aria-label="Answer and tutor"] > [data-studyedit-outcome="true"][data-studyedit-result="correct"] {
+  color: #62734F !important;
+}
+
+section[aria-label="Answer and tutor"] > [data-studyedit-outcome="true"][data-studyedit-result="incorrect"] {
+  color: #94483D !important;
 }
 
 /* Keep the teaching transcript visually continuous. */
