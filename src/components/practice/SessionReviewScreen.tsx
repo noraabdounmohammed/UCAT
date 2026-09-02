@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { ArrowRight, Home, Plus, RotateCcw } from 'lucide-react';
+import { ArrowRight, RotateCcw } from 'lucide-react';
 import { generateAIResponseStream, QuestionContext } from '@/services/openai';
 import { SessionAnswer } from './SessionProgressDropdown';
 
@@ -18,25 +18,17 @@ interface TutorDebrief {
   nextStep: string;
 }
 
+type Journey = 'cold' | 'new' | 'returning';
+
 const T = {
-  cream: '#FAF5EC',
+  parchment: '#F4ECDF',
   paper: '#FFFDF8',
+  cream: '#FAF5EC',
   espresso: '#1F140C',
   ink: '#2A1E16',
   muted: '#8A7560',
-  line: '#E8DCC4',
-  blushDeep: '#E5A89D',
-  blushSoft: '#F9E4DF',
-  sage: '#8FA379',
-  sageSoft: '#E2EAD6',
-};
-
-const formatDuration = (seconds?: number) => {
-  if (!seconds) return '';
-  const mins = Math.floor(seconds / 60);
-  const secs = seconds % 60;
-  if (mins === 0) return `${secs}s`;
-  return `${mins}m ${secs}s`;
+  line: '#E1D4BF',
+  blush: '#E5A89D',
 };
 
 function cleanLine(value: string): string {
@@ -50,6 +42,17 @@ function parseTutorDebrief(raw: string): TutorDebrief | null {
   return { observation: cleanLine(observation), nextStep: cleanLine(nextStep) };
 }
 
+function readJourney(): Journey {
+  if (typeof window === 'undefined') return 'returning';
+  try {
+    const stored = window.sessionStorage.getItem('studyedit_current_journey_v1');
+    if (stored === 'cold' || stored === 'new' || stored === 'returning') return stored;
+  } catch {
+    // Journey styling must never block the lesson ending.
+  }
+  return 'returning';
+}
+
 export const SessionReviewScreen: React.FC<SessionReviewScreenProps> = ({
   answers,
   questions,
@@ -57,12 +60,12 @@ export const SessionReviewScreen: React.FC<SessionReviewScreenProps> = ({
   onDone,
   onAnotherFive,
   onViewQuestion,
-  sessionDuration,
 }) => {
   const [visible, setVisible] = useState(false);
   const [debrief, setDebrief] = useState<TutorDebrief | null>(null);
   const [debriefLoading, setDebriefLoading] = useState(false);
   const abortControllerRef = useRef<AbortController | null>(null);
+  const journey = useMemo(readJourney, []);
 
   useEffect(() => {
     const timer = window.setTimeout(() => setVisible(true), 40);
@@ -76,15 +79,14 @@ export const SessionReviewScreen: React.FC<SessionReviewScreenProps> = ({
   const concepts = useMemo(() => {
     return questions.map((question, index) => {
       const answer = answers.find(a => a.questionIndex === index);
-      const title = question?.concept_title || question?.title || question?.topic || `Concept ${index + 1}`;
+      const title = question?.concept_title || question?.title || question?.topic || `Question ${index + 1}`;
       const stem = question?.clinical_vignette || question?.vignette || question?.question_stem || question?.question || question?.content || '';
       const leadIn = question?.question_text || question?.individual_question || question?.question || '';
       const keyFact = question?.key_fact || '';
-      const preview = stem.length > 90 ? `${stem.slice(0, 90)}…` : stem;
+      const preview = stem.length > 112 ? `${stem.slice(0, 112)}…` : stem;
       return {
         index,
         title,
-        stem,
         leadIn,
         keyFact,
         preview,
@@ -95,13 +97,6 @@ export const SessionReviewScreen: React.FC<SessionReviewScreenProps> = ({
   }, [questions, answers]);
 
   const weakConcepts = concepts.filter(concept => !concept.isCorrect);
-  const heldConcepts = concepts.filter(concept => concept.isCorrect);
-
-  const uniqueTitles = (items: typeof concepts) => Array.from(new Set(items.map(item => item.title))).slice(0, 3);
-  const heldTitles = uniqueTitles(heldConcepts);
-  const weakTitles = uniqueTitles(weakConcepts);
-
-  const evidenceConceptCount = useMemo(() => new Set(concepts.map(concept => concept.title)).size, [concepts]);
 
   const repeatedMiss = useMemo(() => {
     const counts = new Map<string, number>();
@@ -110,16 +105,16 @@ export const SessionReviewScreen: React.FC<SessionReviewScreenProps> = ({
   }, [weakConcepts]);
 
   const deterministicObservation = useMemo(() => {
-    if (needsReview === 0) return `Nothing obvious needs chasing from this session. I’d keep the concepts in rotation and let spacing do the work.`;
-    if (repeatedMiss) return `${repeatedMiss[0]} caught you more than once today. That is enough evidence for me to bring that distinction back deliberately.`;
-    if (needsReview === 1) return `One concept needs another look, but there isn’t enough evidence here to call it a broader pattern.`;
-    return `The misses were spread across different concepts, so I wouldn’t call a broader pattern yet.`;
+    if (needsReview === 0) return `Nothing obvious needs chasing from that. I’d leave those alone for now rather than testing them again just because we can.`;
+    if (repeatedMiss) return `${repeatedMiss[0]} caught you more than once. I’d bring that distinction back deliberately rather than repeating everything.`;
+    if (needsReview === 1) return `There’s one thing I want another look at, but I wouldn’t turn one miss into a story about your ability.`;
+    return `The misses were on different things. I’d bring them back separately rather than pretending they’re one big weakness.`;
   }, [needsReview, repeatedMiss]);
 
   const deterministicNext = useMemo(() => {
-    if (needsReview === 0) return `I’ll use today’s successful retrieval to decide what can wait and what should come back later.`;
-    if (repeatedMiss) return `I’ll bring ${repeatedMiss[0]} back soon in a different vignette, and space the other misses separately.`;
-    return `I’ll bring the missed concepts back in different vignettes, spaced apart rather than repeated immediately.`;
+    if (needsReview === 0) return `Next time I’d move on and let today’s successful retrieval earn some space.`;
+    if (repeatedMiss) return `Next time I’d start by checking ${repeatedMiss[0]} from a different angle, then move on.`;
+    return `Next time I’d revisit the misses in different cases, spaced apart.`;
   }, [needsReview, repeatedMiss]);
 
   useEffect(() => {
@@ -140,7 +135,7 @@ export const SessionReviewScreen: React.FC<SessionReviewScreenProps> = ({
     }).join('\n');
 
     const sessionSignature = questions.map(q => q?.id || q?.concept_id || '').join('-').slice(0, 90);
-    const prompt = `SessionDebrief-${sessionSignature}-${correct}-${needsReview}.\n\nYou are StudyEdit giving a short, perceptive UKMLA tutor debrief from REAL SESSION EVIDENCE only. Return EXACTLY two single-line fields and nothing else:\nOBSERVATION: [max 22 words]\nNEXT: [max 20 words]\n\nRules:\n- Sound like a sharp human tutor who has just watched the session: calm, specific, economical.\n- Do NOT restate the score or say how many answers were wrong; that is already visible on screen.\n- Do NOT use vague phrases such as "broad diagnostic uncertainty", "varied topics", "areas of weakness", "performance pattern", "knowledge gaps" or similar report language.\n- No congratulations, emojis, hype, motivational filler, coaching clichés or generic AI language.\n- Never use "mastered", "strong at", "weak at" or readiness percentages.\n- Only claim a repeated pattern when at least TWO separate questions genuinely support the SAME concept, distinction or reasoning feature.\n- A repeated concept is valid evidence. A vague category such as diagnosis/management is NOT valid unless the supplied lead-ins clearly support it at least twice.\n- If there is no supported repeated signal, say so simply: e.g. "The misses were spread across different concepts, so I wouldn’t call a broader pattern yet."\n- Do not invent medical facts, prior history, learner traits, question categories or causal explanations.\n- NEXT must sound like StudyEdit taking the next action: use "I’ll bring...", "I’ll space...", "I’ll vary...". Never use engineering words such as flag, log, item, queue, algorithm or dataset.\n- NEXT should normally prioritise a repeated missed concept first, then space unrelated misses separately.\n\nSESSION:\n${sessionRows}`;
+    const prompt = `SessionDebrief-${sessionSignature}-${correct}-${needsReview}.\n\nYou are StudyEdit closing a private UKMLA tutorial. Return EXACTLY two single-line fields and nothing else:\nOBSERVATION: [max 24 words]\nNEXT: [max 22 words]\n\nRules:\n- Sound like the same sharp human tutor who has just spent the lesson with this learner. Calm, specific, economical.\n- Do not sound like a report, dashboard, analytics product or coaching app.\n- Do NOT restate the score.\n- No congratulations, emojis, hype, motivational filler or generic AI language.\n- Never use mastered, strong at, weak at, readiness, performance, knowledge gaps, evidence count or learning signal.\n- Only claim a repeated pattern when at least TWO separate questions genuinely support the SAME concept or distinction.\n- If there is no supported repeated signal, say so plainly rather than manufacturing a pattern.\n- Do not invent medical facts, learner traits or causal explanations.\n- NEXT should sound like you personally deciding what to do when they return: “I’d bring…”, “I’d start…”, “I’d leave…”.\n\nSESSION:\n${sessionRows}`;
 
     const context: QuestionContext = {
       question: sessionRows,
@@ -176,131 +171,107 @@ export const SessionReviewScreen: React.FC<SessionReviewScreenProps> = ({
 
   const observation = debrief?.observation || deterministicObservation;
   const nextStep = debrief?.nextStep || deterministicNext;
+  const closingTitle = journey === 'cold' ? 'That’s enough for a first pass.' : 'Good place to stop.';
+  const closingLead = journey === 'cold'
+    ? 'I’ve seen enough to stop treating you like a blank slate.'
+    : journey === 'new'
+      ? 'That gave me something useful to work with next time.'
+      : 'I’ve got a clearer idea of what I want to bring back next time.';
 
   return (
     <main
-      className={`fixed inset-0 overflow-y-auto transition-opacity duration-300 ${visible ? 'opacity-100' : 'opacity-0'}`}
-      style={{ backgroundColor: T.cream, color: T.ink }}
+      className={`fixed inset-0 overflow-y-auto transition-opacity duration-200 ${visible ? 'opacity-100' : 'opacity-0'}`}
+      style={{ backgroundColor: T.parchment, color: T.ink }}
     >
-      <div className="mx-auto min-h-full w-full max-w-[540px] px-5 pb-10 pt-5 sm:px-7">
-        <header className="flex items-center justify-between border-b pb-4" style={{ borderColor: T.line }}>
-          <div>
-            <div className="text-[17px] font-semibold tracking-tight" style={{ color: T.espresso }}>StudyEdit</div>
-            <div className="mt-0.5 text-[10px] uppercase tracking-[0.2em]" style={{ color: T.muted }}>Session review</div>
-          </div>
-          <button onClick={onDone} className="inline-flex items-center gap-2 rounded-full border px-3.5 py-2 text-xs font-medium" style={{ borderColor: T.line, color: T.ink, backgroundColor: T.paper }}>
-            <Home className="h-3.5 w-3.5" /> Home
-          </button>
-        </header>
+      <div className="mx-auto min-h-full w-full max-w-[700px] px-5 pb-14 pt-7 sm:px-8 sm:pt-10">
+        <div className="text-[23px] tracking-[-0.045em]" style={{ fontFamily: "'Fraunces', Georgia, serif", color: T.espresso }}>
+          studyedit<span style={{ color: T.blush }}>.</span>
+        </div>
 
-        <section className="pt-9">
-          <div className="text-[10px] font-medium uppercase tracking-[0.22em]" style={{ color: T.muted }}>
-            Session complete · {total} question{total === 1 ? '' : 's'}{sessionDuration ? ` · ${formatDuration(sessionDuration)}` : ''}
-          </div>
-          <h1 className="mt-3 text-[39px] font-light leading-[1.04] tracking-[-0.035em]" style={{ fontFamily: "'Fraunces', serif", color: T.espresso }}>
-            That was useful.
+        <section className="pt-[12vh] sm:pt-[14vh]">
+          <h1
+            className="max-w-[610px] text-[40px] font-light leading-[1.05] tracking-[-0.04em] sm:text-[50px]"
+            style={{ fontFamily: "'Fraunces', Georgia, serif", color: T.espresso }}
+          >
+            {closingTitle}
           </h1>
-          <p className="mt-4 max-w-md text-[15px] font-medium leading-6" style={{ color: T.ink }}>
-            I’ve got fresh evidence from <strong>{evidenceConceptCount}</strong> concept{evidenceConceptCount === 1 ? '' : 's'}. Here’s what changed.
+          <p className="mt-5 max-w-[570px] text-[17px] font-medium leading-7" style={{ color: '#4A382B' }}>
+            {closingLead}
           </p>
-        </section>
 
-        <section className="mt-7 flex items-end gap-3 border-b pb-6" style={{ borderColor: T.line }}>
-          <div className="text-[52px] font-light leading-none" style={{ fontFamily: "'Fraunces', serif", color: T.espresso }}>{correct}</div>
-          <div className="pb-1 text-sm leading-5" style={{ color: T.muted }}>
-            of {total}<br />retrieved this time
+          <div className="mt-8 max-w-[590px] border-t pt-7" style={{ borderColor: T.line }}>
+            <p className="text-[20px] font-medium leading-[1.6] tracking-[-0.01em]" style={{ color: T.espresso }}>
+              {debriefLoading && !debrief ? deterministicObservation : observation}
+            </p>
+            <p className="mt-5 text-[16px] font-medium leading-7" style={{ color: T.muted }}>
+              {debriefLoading && !debrief ? deterministicNext : nextStep}
+            </p>
           </div>
-        </section>
 
-        {heldTitles.length > 0 && (
-          <section className="mt-7">
-            <div className="text-[10px] font-bold uppercase tracking-[0.2em]" style={{ color: '#647452' }}>What held up</div>
-            <div className="mt-3 flex flex-wrap gap-2">
-              {heldTitles.map(title => (
-                <span key={title} className="rounded-full border px-3 py-2 text-[13px] font-semibold" style={{ backgroundColor: T.sageSoft, borderColor: T.sage, color: T.espresso }}>{title}</span>
-              ))}
-            </div>
-          </section>
-        )}
+          <div className="mt-7 text-[12px]" style={{ color: T.muted }}>
+            First pass: {correct} of {total}.
+          </div>
 
-        {weakTitles.length > 0 && (
-          <section className="mt-7">
-            <div className="text-[10px] font-bold uppercase tracking-[0.2em]" style={{ color: '#9C655D' }}>Where I’d spend the next effort</div>
-            <div className="mt-3 flex flex-wrap gap-2">
-              {weakTitles.map(title => (
-                <span key={title} className="rounded-full border px-3 py-2 text-[13px] font-semibold" style={{ backgroundColor: T.blushSoft, borderColor: T.blushDeep, color: T.espresso }}>{title}</span>
-              ))}
-            </div>
-          </section>
-        )}
-
-        <section className="mt-8 border-l-[3px] pl-5" style={{ borderColor: T.blushDeep }}>
-          <div className="text-[10px] font-bold uppercase tracking-[0.2em]" style={{ color: T.muted }}>Something I noticed</div>
-          <p className="mt-2 text-[18px] font-semibold leading-[1.5] tracking-[-0.01em]" style={{ color: T.espresso }}>
-            {debriefLoading && !debrief ? deterministicObservation : observation}
-          </p>
-        </section>
-
-        <section className="mt-7 rounded-[20px] border p-5" style={{ backgroundColor: T.paper, borderColor: T.line }}>
-          <div className="text-[10px] font-bold uppercase tracking-[0.2em]" style={{ color: T.muted }}>So next time…</div>
-          <p className="mt-2 text-[16px] font-medium leading-6" style={{ color: T.espresso }}>
-            {debriefLoading && !debrief ? deterministicNext : nextStep}
-          </p>
-        </section>
-
-        {weakConcepts.length > 0 && (
-          <section className="mt-7">
-            <details>
-              <summary className="cursor-pointer list-none rounded-[18px] border px-4 py-4 text-[13px] font-semibold" style={{ backgroundColor: T.paper, borderColor: T.line, color: T.espresso }}>
-                Review the {needsReview} miss{needsReview === 1 ? '' : 'es'} <span className="ml-1" style={{ color: T.muted }}>↓</span>
+          {weakConcepts.length > 0 && (
+            <details className="mt-8 max-w-[590px] border-t pt-5" style={{ borderColor: T.line }}>
+              <summary className="cursor-pointer list-none text-[13px] font-semibold underline decoration-[#BBA995] underline-offset-4" style={{ color: T.espresso }}>
+                Want to look back at {needsReview === 1 ? 'the one I’d revisit' : 'the ones I’d revisit'}?
               </summary>
-              <div className="mt-3 overflow-hidden rounded-[20px] border" style={{ backgroundColor: T.paper, borderColor: T.line }}>
+              <div className="mt-4 border-t" style={{ borderColor: T.line }}>
                 {weakConcepts.map((concept, position) => (
-                  <button key={concept.index} onClick={() => onViewQuestion?.(concept.index)} disabled={!onViewQuestion} className="flex w-full items-center gap-3 px-4 py-4 text-left disabled:cursor-default" style={{ borderTop: position ? `1px solid ${T.line}` : 'none' }}>
-                    <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-xs" style={{ backgroundColor: T.blushSoft, border: `1px solid ${T.blushDeep}`, color: '#9C655D' }}>×</span>
+                  <button
+                    key={concept.index}
+                    onClick={() => onViewQuestion?.(concept.index)}
+                    disabled={!onViewQuestion}
+                    className="flex w-full items-start justify-between gap-4 py-4 text-left disabled:cursor-default"
+                    style={{ borderTop: position ? `1px solid ${T.line}` : 'none' }}
+                  >
                     <div className="min-w-0 flex-1">
-                      <div className="text-[15px] font-semibold" style={{ color: T.espresso }}>{concept.title}</div>
-                      {concept.preview && <div className="mt-1 truncate text-xs" style={{ color: T.muted }}>{concept.preview}</div>}
+                      <div className="text-[14px] font-semibold" style={{ color: T.espresso }}>Question {concept.index + 1}</div>
+                      {concept.preview && <div className="mt-1 line-clamp-2 text-[12px] leading-5" style={{ color: T.muted }}>{concept.preview}</div>}
                     </div>
-                    {onViewQuestion && <ArrowRight className="h-4 w-4 shrink-0" style={{ color: T.muted }} />}
+                    {onViewQuestion && <ArrowRight className="mt-1 h-4 w-4 shrink-0" style={{ color: T.muted }} />}
                   </button>
                 ))}
               </div>
             </details>
-          </section>
-        )}
-
-        <section className="mt-9 border-t pt-6" style={{ borderColor: T.line }}>
-          <button onClick={onDone} className="flex w-full items-center justify-between rounded-full px-5 py-4 text-sm font-semibold" style={{ backgroundColor: T.espresso, color: T.cream }}>
-            <span>Back to Home</span><ArrowRight className="h-4 w-4" />
-          </button>
-
-          {needsReview > 0 && (
-            <button onClick={onRetryIncorrect} className="mt-3 flex w-full items-center justify-center gap-2 rounded-full border px-5 py-4 text-sm font-medium" style={{ backgroundColor: T.paper, borderColor: T.line, color: T.ink }}>
-              <RotateCcw className="h-4 w-4" /> Retry the {needsReview}
-            </button>
           )}
 
-          {onAnotherFive && (
-            <button onClick={() => onAnotherFive(undefined)} className="mt-2 flex w-full items-center justify-center gap-2 px-5 py-3 text-sm" style={{ color: T.muted }}>
-              <Plus className="h-4 w-4" /> Another 5
-            </button>
-          )}
-        </section>
-
-        <section className="mt-8">
-          <details>
-            <summary className="cursor-pointer text-xs font-medium uppercase tracking-[0.18em]" style={{ color: T.muted }}>All concepts visited</summary>
-            <div className="mt-3 overflow-hidden rounded-[20px] border" style={{ backgroundColor: T.paper, borderColor: T.line }}>
-              {concepts.map((concept, position) => (
-                <button key={concept.index} onClick={() => onViewQuestion?.(concept.index)} disabled={!onViewQuestion} className="flex w-full items-center gap-3 px-4 py-3.5 text-left disabled:cursor-default" style={{ borderTop: position ? `1px solid ${T.line}` : 'none' }}>
-                  <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-[11px]" style={{ backgroundColor: concept.isCorrect ? T.sageSoft : T.blushSoft, border: `1px solid ${concept.isCorrect ? T.sage : T.blushDeep}`, color: concept.isCorrect ? '#647452' : '#9C655D' }}>{concept.isCorrect ? '✓' : '×'}</span>
-                  <span className="min-w-0 flex-1 truncate text-sm" style={{ color: T.ink }}>{concept.title}</span>
-                  {onViewQuestion && <ArrowRight className="h-3.5 w-3.5" style={{ color: T.muted }} />}
+          <div className="mt-10 max-w-[590px] border-t pt-6" style={{ borderColor: T.line }}>
+            {journey === 'cold' ? (
+              <>
+                <button
+                  onClick={onDone}
+                  className="group flex items-center gap-3 text-[17px] font-semibold"
+                  style={{ color: T.espresso }}
+                >
+                  Remember this for next time <ArrowRight className="h-4 w-4 transition-transform group-active:translate-x-0.5" />
                 </button>
-              ))}
+                <p className="mt-2 text-[12px] leading-5" style={{ color: T.muted }}>That’s the point where I’d ask you to save it — not before.</p>
+              </>
+            ) : (
+              <button
+                onClick={onDone}
+                className="group flex items-center gap-3 text-[17px] font-semibold"
+                style={{ color: T.espresso }}
+              >
+                Done for now <ArrowRight className="h-4 w-4 transition-transform group-active:translate-x-0.5" />
+              </button>
+            )}
+
+            <div className="mt-5 flex flex-wrap items-center gap-x-6 gap-y-3 text-[13px] font-medium" style={{ color: T.muted }}>
+              {onAnotherFive && (
+                <button onClick={() => onAnotherFive(undefined)} className="underline decoration-[#BBA995] underline-offset-4">
+                  Keep going
+                </button>
+              )}
+              {needsReview > 0 && (
+                <button onClick={onRetryIncorrect} className="inline-flex items-center gap-1.5 underline decoration-[#BBA995] underline-offset-4">
+                  <RotateCcw className="h-3.5 w-3.5" /> Revisit the misses now
+                </button>
+              )}
             </div>
-          </details>
+          </div>
         </section>
       </div>
     </main>
