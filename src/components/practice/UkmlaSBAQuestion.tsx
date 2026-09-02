@@ -143,13 +143,6 @@ function buildVignetteParagraphs(text: string): string[] {
     .filter(Boolean);
 }
 
-function requiredEvidence(correct: boolean, confidence: ConfidenceLevel | null): number {
-  if (correct && confidence === 'know') return 0;
-  if (correct && confidence === 'unsure') return 1;
-  if (correct && confidence === 'guess') return 2;
-  return 2;
-}
-
 function parseTutorAssessment(text: string): TutorAssessment {
   const value = String(text || '').trim().toUpperCase();
   if (value.includes('CLARIFY')) return 'clarify';
@@ -267,42 +260,65 @@ async function waitForConfidence(conceptTitle: string, startedAt: number): Promi
 }
 
 function proactiveOpeningPlan(correct: boolean, confidence: ConfidenceLevel | null): TutorPlan {
-  const common = 'You are StudyEdit Tutor. The learner has just answered this SBA. Use the verified explanation and key point as ground truth. Do not invent why they chose an option. Make ONE pedagogical move only, usually 1-3 short sentences. Do not dump a full explanation unless instructed.';
+  const common = 'You are StudyEdit Tutor. The learner has just answered this SBA. Use the verified explanation and key point as ground truth. Do not invent why they chose an option. Make ONE useful pedagogical move only. Usually use one or two concise sentences. Say something only if it changes or sharpens what the learner understands.';
+
   if (correct && confidence === 'know') {
-    return { instruction: `${common} They were correct and said they knew it. Give a very brief confirmation of the decisive clue. Do not ask another question. Tell them you have seen enough evidence and are moving on.` };
+    return {
+      instruction: `${common} They were correct and said they knew it. Give ONE brief confirmation of the decisive clue, then stop. Do not ask another question and do not say they have mastered, secured, locked in, or solidified the concept.`,
+    };
   }
+
   if (correct && confidence === 'unsure') {
     return {
-      instruction: `${common} They were correct but unsure. Briefly name the decisive discriminator. Do not ask a question or write answer options; a separate quality-checked SBA will follow.`,
-      followUp: { mode: 'transfer', teachingObjective: 'Apply the verified decisive discriminator deliberately in a fresh, grounded presentation.' },
+      instruction: `${common} They were correct but unsure. Briefly name the decisive discriminator once. Do not repeat the whole explanation. A single quality-checked application SBA will follow, so do not write a question or options in prose.`,
+      followUp: {
+        mode: 'application',
+        teachingObjective: 'Demonstrate deliberate use of the verified decisive discriminator in one genuinely useful new check.',
+      },
     };
   }
+
   if (correct && confidence === 'guess') {
-    return { instruction: `${common} They were correct but guessed. Do not imply mastery. Ask what made them choose this answer before teaching it, so you can distinguish lucky recognition from partial reasoning.` };
+    return {
+      instruction: `${common} They were correct but guessed. Do not teach immediately and do not imply mastery. Ask one short question about what made them choose that option so you can distinguish lucky recognition from partial reasoning.`,
+    };
   }
+
   if (!correct && confidence === 'know') {
-    return { instruction: `${common} They were wrong but said they knew it, which may indicate a misconception. Do NOT explain the answer yet. Ask them to talk you through how they got to their selected answer.` };
+    return {
+      instruction: `${common} They were wrong but said they knew it, suggesting a possible misconception. Do not explain the full answer yet. Ask them, in one sentence, to talk you through the reasoning that led to their selected option.`,
+    };
   }
+
   if (!correct && confidence === 'unsure') {
-    return { instruction: `${common} They were wrong and unsure. Do NOT explain the answer yet. Ask what made them lean toward their selected answer. Keep it warm and specific to the option they chose.` };
+    return {
+      instruction: `${common} They were wrong and unsure. Do not explain everything yet. Ask one short, specific question about what made them lean toward their selected option.`,
+    };
   }
+
   if (!correct && confidence === 'guess') {
     return {
-      instruction: `${common} They were wrong and guessed. Teach the smallest prerequisite or rule needed to start. Do not ask a question or write answer options; a separate quality-checked SBA will follow.`,
-      followUp: { mode: 'prerequisite', teachingObjective: 'Recall and apply the smallest verified prerequisite or rule needed for this concept.' },
+      instruction: `${common} They were wrong and guessed. Teach only the smallest verified rule needed to orient them, in no more than two short sentences. A single quality-checked prerequisite SBA will follow, so do not write a question or options in prose.`,
+      followUp: {
+        mode: 'prerequisite',
+        teachingObjective: 'Apply the smallest verified prerequisite or rule needed for this concept.',
+      },
     };
   }
-  return { instruction: `${common} Confidence is unavailable. Ask one short neutral question to understand what the learner was thinking before you explain.` };
+
+  return {
+    instruction: `${common} Confidence is unavailable. Ask one short neutral question to understand what the learner was thinking before explaining.`,
+  };
 }
 
 function directExplanationInstruction(): string {
-  return 'Give the direct explanation now. Use the verified explanation as ground truth. Explain the decisive mechanism or discriminator in about 60-100 words. Do not ask a question or write answer options; a separate quality-checked SBA will follow. Do not invent the learner\'s reasoning.';
+  return 'Give the direct explanation now using the verified explanation as ground truth. Explain only the decisive mechanism or discriminator in about 50-80 words. Avoid repeating points already made. Do not narrate mastery or evidence counting. Do not write answer options; one quality-checked application SBA may follow.';
 }
 
 function secureClosingInstruction(isFinalQuestion: boolean): string {
   return isFinalQuestion
-    ? 'The learner has now given enough evidence that this distinction is secure for this session. Confirm the exact thing they now have right in one concise sentence. Do not teach anything new and do not ask another question. End naturally by saying that is enough for today.'
-    : 'The learner has now given enough evidence that this distinction is secure for this session. Confirm the exact thing they now have right in one concise sentence. Do not teach anything new and do not ask another question. End naturally by telling them you have seen enough here and are moving on.';
+    ? 'The learner has demonstrated the target distinction. Acknowledge the exact distinction in ONE short sentence only. Do not restate the teaching, do not say mastered/secure/solid/locked in, do not mention evidence counts, and do not ask another question. End naturally.'
+    : 'The learner has demonstrated the target distinction. Acknowledge the exact distinction in ONE short sentence only. Do not restate the teaching, do not say mastered/secure/solid/locked in, do not mention evidence counts, and do not say “I have seen enough”. Do not ask another question. The interface will move on automatically.';
 }
 
 export const UkmlaSBAQuestion: React.FC<UkmlaSBAQuestionProps> = ({
@@ -327,7 +343,6 @@ export const UkmlaSBAQuestion: React.FC<UkmlaSBAQuestionProps> = ({
   const [tutorAssessing, setTutorAssessing] = useState(false);
   const [answerStartedAt, setAnswerStartedAt] = useState(0);
   const [confidenceLevel, setConfidenceLevel] = useState<ConfidenceLevel | null>(null);
-  const [passedChecks, setPassedChecks] = useState(0);
   const [advancePending, setAdvancePending] = useState(false);
   const [resolvedFollowUpIds, setResolvedFollowUpIds] = useState<string[]>([]);
   const abortControllerRef = useRef<AbortController | null>(null);
@@ -379,7 +394,6 @@ export const UkmlaSBAQuestion: React.FC<UkmlaSBAQuestionProps> = ({
     setTutorAssessing(false);
     setAnswerStartedAt(0);
     setConfidenceLevel(null);
-    setPassedChecks(0);
     setAdvancePending(false);
     setResolvedFollowUpIds([]);
     abortControllerRef.current?.abort();
@@ -437,7 +451,7 @@ export const UkmlaSBAQuestion: React.FC<UkmlaSBAQuestionProps> = ({
     if (preSubmitted) return;
     clearAdvanceTimer();
     setAdvancePending(true);
-    advanceTimerRef.current = window.setTimeout(handleNext, 3200);
+    advanceTimerRef.current = window.setTimeout(handleNext, 2600);
   };
 
   const cancelAdvance = () => {
@@ -503,7 +517,7 @@ export const UkmlaSBAQuestion: React.FC<UkmlaSBAQuestionProps> = ({
           const base = next[index].text.trim();
           next[index] = {
             ...next[index],
-            text: `${base}${base ? '\n\n' : ''}Before we move on, tell me the decisive rule you would use here.`,
+            text: `${base}${base ? '\n\n' : ''}In one sentence, what makes the correct option better than the closest alternative?`,
           };
           break;
         }
@@ -540,24 +554,30 @@ export const UkmlaSBAQuestion: React.FC<UkmlaSBAQuestionProps> = ({
       ...(studentText?.trim() ? [{ role: 'student' as const, text: studentText.trim() }] : []),
     ] as TutorTurn[];
     const transcript = transcriptTurns.map(turnForTranscript).join('\n');
+    const priorFollowUpStems = priorTurns
+      .map(turn => turn.followUpSba?.stem || turn.followUpSba?.transferCase?.question || '')
+      .filter(Boolean);
 
     const openingPlan = !instructionOverride && !forceDirect && !studentText?.trim()
       ? proactiveOpeningPlan(wasCorrect, confidence)
       : null;
     const effectiveFollowUp = followUpRequest || (forceDirect
-      ? { mode: 'application' as const, teachingObjective: 'Apply the verified explanation to a fresh, grounded question.' }
+      ? { mode: 'application' as const, teachingObjective: 'Apply the verified explanation once in a useful new check.' }
       : openingPlan?.followUp);
+    const followUpWithHistory = effectiveFollowUp
+      ? { ...effectiveFollowUp, avoidStems: priorFollowUpStems }
+      : undefined;
 
     const instruction = instructionOverride || (forceDirect
       ? directExplanationInstruction()
       : studentText?.trim()
-        ? 'Continue the tutoring conversation. Respond directly to the learner\'s latest message. Diagnose only what their words support. Make one pedagogical move. Do not invent an A-D question in prose. Never declare the concept secure unless the tutoring controller has explicitly instructed you to close.'
+        ? 'Continue the tutoring conversation naturally. Respond directly to the learner’s latest message. Diagnose only what their words support. Make ONE useful pedagogical move. Do not invent an A-D question in prose. Do not repeat a point already made unless the learner is still getting that exact point wrong.'
         : openingPlan?.instruction || proactiveOpeningPlan(wasCorrect, confidence).instruction);
 
-    const structuredNote = effectiveFollowUp
+    const structuredNote = followUpWithHistory
       ? '\n\nA separate structured, quality-checked SBA will be generated after your teaching turn. Do NOT include a question, “Quick check”, or A-D answer options in your prose.'
       : '';
-    const prompt = `${instruction}${structuredNote}\n\nCONVERSATION SO FAR:\n${transcript || '(none yet)'}\n\nUse only the supplied current-question context for medical claims. Do not contradict the verified explanation. Keep the interaction concise and tutor-like.`;
+    const prompt = `${instruction}${structuredNote}\n\nCONVERSATION SO FAR:\n${transcript || '(none yet)'}\n\nUse only the supplied current-question context for medical claims. Do not contradict the verified explanation. Keep the interaction concise and tutor-like. Prefer 1-2 sentences and usually stay under 55 words unless answering a genuine learner question. Never narrate the tutoring machinery or evidence count. Avoid phrases such as “lock this in”, “pattern to remember”, “you've got this solidly”, “secure”, “mastered”, or “I've seen enough”. If a point was already clearly stated in the preceding tutor turn, do not state it again unless correcting a repeated error.`;
     const controller = new AbortController();
     abortControllerRef.current = controller;
     let streamed = '';
@@ -581,8 +601,8 @@ export const UkmlaSBAQuestion: React.FC<UkmlaSBAQuestionProps> = ({
         controller.signal,
       );
 
-      if (!controller.signal.aborted && effectiveFollowUp) {
-        const followUp = await generateQualityCheckedFollowUpSba(context, effectiveFollowUp);
+      if (!controller.signal.aborted && followUpWithHistory) {
+        const followUp = await generateQualityCheckedFollowUpSba(context, followUpWithHistory);
         if (controller.signal.aborted) return;
         if (followUp) attachFollowUpToLatestTutorTurn(followUp);
         else appendSafeFallbackCheck();
@@ -603,13 +623,17 @@ export const UkmlaSBAQuestion: React.FC<UkmlaSBAQuestionProps> = ({
     } finally {
       if (!controller.signal.aborted) {
         setAiStreaming(false);
-        if (advanceAfter || (!effectiveFollowUp && !studentText && wasCorrect && confidence === 'know')) scheduleAdvance();
+        if (advanceAfter || (!followUpWithHistory && !studentText && wasCorrect && confidence === 'know')) scheduleAdvance();
       }
       abortControllerRef.current = null;
     }
   };
 
-  const handleStudentReply = async (studentText: string, assessmentOverride?: TutorAssessment) => {
+  const handleStudentReply = async (
+    studentText: string,
+    assessmentOverride?: TutorAssessment,
+    structuredAttemptNumber = 0,
+  ) => {
     const query = studentText.trim();
     if (!query || aiStreaming || tutorAssessing || !committedAnswer) return;
 
@@ -628,7 +652,7 @@ export const UkmlaSBAQuestion: React.FC<UkmlaSBAQuestionProps> = ({
 
       let assessment: TutorAssessment = assessmentOverride || 'partial';
       if (!assessmentOverride) {
-        const assessmentPrompt = `You are the hidden StudyEdit tutoring controller. Judge the learner's latest reply against the tutor's immediately preceding question or instruction and the verified current-question context. Return exactly ONE label and nothing else: PASS, PARTIAL, FAIL, or CLARIFY.\n\nPASS = the reply correctly demonstrates the understanding the tutor just tested.\nPARTIAL = directionally right but incomplete, vague, or still dependent on prompting.\nFAIL = incorrect or reveals the same misconception.\nCLARIFY = the learner is asking a genuine question, requesting explanation, or otherwise not attempting the tutor's check.\n\nDo not reward confident wording if the medical content is wrong. Do not require wording identical to the model answer.\n\nTRANSCRIPT:\n${recentTranscript}`;
+        const assessmentPrompt = `You are the hidden StudyEdit tutoring controller. Judge the learner's latest reply against the tutor's immediately preceding question or instruction and the verified current-question context. Return exactly ONE label and nothing else: PASS, PARTIAL, FAIL, or CLARIFY.\n\nPASS = the reply correctly demonstrates the specific understanding the tutor just tested. A single genuinely diagnostic PASS is sufficient evidence for this learning step; do not demand repetition for its own sake.\nPARTIAL = directionally right but incomplete, vague, or still dependent on prompting.\nFAIL = incorrect or reveals the same misconception.\nCLARIFY = the learner is asking a genuine question, requesting explanation, or otherwise not attempting the tutor's check.\n\nDo not reward confident wording if the medical content is wrong. Do not require wording identical to the model answer.\n\nTRANSCRIPT:\n${recentTranscript}`;
         try {
           assessment = parseTutorAssessment(await generateAIResponse(assessmentPrompt, context));
         } catch {
@@ -642,52 +666,46 @@ export const UkmlaSBAQuestion: React.FC<UkmlaSBAQuestionProps> = ({
           false,
           undefined,
           undefined,
-          'The learner is asking for clarification rather than attempting the check. Answer their question directly and concisely. Do not write a follow-up question or answer options; a separate quality-checked SBA will follow. Do not declare mastery yet.',
-          false,
-          { mode: 'application', teachingObjective: 'Apply the clarified verified rule to the current concept.' },
+          'The learner is asking for clarification rather than attempting a check. Answer their question directly and concisely. Do not automatically generate another SBA. If evidence is still needed, end with ONE short natural question that targets the unresolved point. Do not narrate mastery or the tutoring process.',
         );
         return;
       }
 
       if (assessment === 'pass') {
-        const nextPassed = passedChecks + 1;
-        setPassedChecks(nextPassed);
-        const needed = requiredEvidence(isCorrect, confidence);
-
-        if (nextPassed >= needed) {
-          await runTutor(query, false, undefined, undefined, secureClosingInstruction(isFinalQuestion), true);
-        } else {
-          await runTutor(
-            query,
-            false,
-            undefined,
-            undefined,
-            'The learner answered that step correctly, but you still need stronger evidence before moving on. Briefly acknowledge it. Do not ask a question or write answer options; a separate quality-checked transfer SBA will follow. Do not declare mastery yet.',
-            false,
-            { mode: 'transfer', teachingObjective: 'Transfer the same verified discriminator to a slightly altered but fully grounded presentation.' },
-          );
-        }
+        await runTutor(query, false, undefined, undefined, secureClosingInstruction(isFinalQuestion), true);
         return;
       }
 
-      const correctionInstruction = assessment === 'fail'
-        ? 'The learner has not demonstrated the target understanding yet. Correct the exact misconception in the shortest useful way. Do not ask a question or write answer options; a separate quality-checked SBA will re-test the same discriminator from a simpler angle. Do not move on.'
-        : 'The learner is partly there but the evidence is not secure. Name the missing piece without overexplaining. Do not ask a question or write answer options; a separate quality-checked SBA will test the missing piece. Do not move on.';
+      const structuredAttempts = structuredAttemptNumber || resolvedFollowUpIds.length;
+      const allowAnotherStructuredCheck = structuredAttempts < 2;
 
-      await runTutor(
-        query,
-        false,
-        undefined,
-        undefined,
-        correctionInstruction,
-        false,
-        {
-          mode: 'discriminator',
-          teachingObjective: assessment === 'fail'
-            ? 'Re-test the same verified discriminator after correction, from a simpler angle.'
-            : 'Apply the specific verified piece that was missing from the learner’s partial answer.',
-        },
-      );
+      if (allowAnotherStructuredCheck) {
+        const correctionInstruction = assessment === 'fail'
+          ? 'Correct the exact misconception in the shortest useful way. Do not repeat the full previous explanation. Use no more than two short sentences. A single quality-checked discriminator SBA will follow, so do not write a question or options in prose.'
+          : 'Name only the missing piece in the learner’s reasoning without overexplaining or repeating what they already got right. A single quality-checked discriminator SBA will follow, so do not write a question or options in prose.';
+
+        await runTutor(
+          query,
+          false,
+          undefined,
+          undefined,
+          correctionInstruction,
+          false,
+          {
+            mode: 'discriminator',
+            teachingObjective: assessment === 'fail'
+              ? 'Check the corrected discriminator once from a genuinely useful angle, without repeating the previous SBA.'
+              : 'Check only the specific verified piece that remained missing, without repeating the previous SBA.',
+          },
+        );
+        return;
+      }
+
+      const naturalInstruction = assessment === 'fail'
+        ? 'The learner is still getting the same point wrong after structured checks. Stop generating more SBAs. Correct only the exact remaining misconception in one or two sentences, then ask ONE short natural free-response question that would reveal whether they now understand it. Do not repeat prior wording.'
+        : 'The learner remains partly correct after structured checks. Stop generating more SBAs. Name only the remaining missing piece, then ask ONE short natural free-response question. Do not repeat prior wording.';
+
+      await runTutor(query, false, undefined, undefined, naturalInstruction);
     } finally {
       setTutorAssessing(false);
     }
@@ -697,9 +715,10 @@ export const UkmlaSBAQuestion: React.FC<UkmlaSBAQuestionProps> = ({
     if (tutorBusy || resolvedFollowUpIds.includes(sba.id)) return;
     const selected = sba.options.find(option => option.id === answerId);
     if (!selected) return;
+    const attemptNumber = resolvedFollowUpIds.length + 1;
     setResolvedFollowUpIds(previous => previous.includes(sba.id) ? previous : [...previous, sba.id]);
     const assessment: TutorAssessment = answerId === sba.correctAnswerId ? 'pass' : 'fail';
-    await handleStudentReply(`${answerId}. ${selected.text}`, assessment);
+    await handleStudentReply(`${answerId}. ${selected.text}`, assessment, attemptNumber);
   };
 
   const handleCheckAnswer = () => {
