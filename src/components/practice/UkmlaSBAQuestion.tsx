@@ -317,8 +317,8 @@ function directExplanationInstruction(): string {
 
 function secureClosingInstruction(isFinalQuestion: boolean): string {
   return isFinalQuestion
-    ? 'The learner has demonstrated the target distinction. Acknowledge the exact distinction in ONE short sentence only. Do not restate the teaching, do not say mastered/secure/solid/locked in, do not mention evidence counts, and do not ask another question. End naturally.'
-    : 'The learner has demonstrated the target distinction. Acknowledge the exact distinction in ONE short sentence only. Do not restate the teaching, do not say mastered/secure/solid/locked in, do not mention evidence counts, and do not say “I have seen enough”. Do not ask another question. The interface will move on automatically.';
+    ? 'The learner has demonstrated the target distinction. Acknowledge the exact distinction in ONE short sentence only. Do not restate the teaching, do not say mastered/secure/solid/locked in, do not mention evidence counts, and do not ask another test question. End naturally; the interface will invite any final questions.'
+    : 'The learner has demonstrated the target distinction. Acknowledge the exact distinction in ONE short sentence only. Do not restate the teaching, do not say mastered/secure/solid/locked in, do not mention evidence counts, and do not say “I have seen enough”. Do not ask another test question. End naturally; the interface will invite questions before moving on.';
 }
 
 export const UkmlaSBAQuestion: React.FC<UkmlaSBAQuestionProps> = ({
@@ -451,7 +451,6 @@ export const UkmlaSBAQuestion: React.FC<UkmlaSBAQuestionProps> = ({
     if (preSubmitted) return;
     clearAdvanceTimer();
     setAdvancePending(true);
-    advanceTimerRef.current = window.setTimeout(handleNext, 2600);
   };
 
   const cancelAdvance = () => {
@@ -636,9 +635,10 @@ export const UkmlaSBAQuestion: React.FC<UkmlaSBAQuestionProps> = ({
     const query = studentText.trim();
     if (!query || aiStreaming || tutorAssessing || !committedAnswer) return;
 
+    const wasReadyToMoveOn = advancePending;
     cancelAdvance();
     setAiQuestion('');
-    if (!assessmentOverride) {
+    if (!assessmentOverride || (assessmentOverride === 'clarify' && wasReadyToMoveOn)) {
       setTutorTurns(previous => [...previous, { role: 'student', text: query }]);
       requestAnimationFrame(() => {
         const container = scrollRef.current;
@@ -672,8 +672,11 @@ export const UkmlaSBAQuestion: React.FC<UkmlaSBAQuestionProps> = ({
           false,
           undefined,
           undefined,
-          'The learner is asking for clarification rather than attempting a check. Answer their question directly and concisely. Do not automatically generate another SBA. If evidence is still needed, end with ONE short natural question that targets the unresolved point. Do not narrate mastery or the tutoring process.',
+          wasReadyToMoveOn
+            ? 'The learning step is already complete and the learner is asking a curiosity question before moving on. Answer their question directly, warmly, and concisely using the verified context. Do not test them, do not generate another SBA, and do not reopen mastery assessment. End naturally; the interface will again offer space for another question or the next case.'
+            : 'The learner is asking for clarification rather than attempting a check. Answer their question directly and concisely. Do not automatically generate another SBA. If evidence is still needed, end with ONE short natural question that targets the unresolved point. Do not narrate mastery or the tutoring process.',
         );
+        if (wasReadyToMoveOn) setAdvancePending(true);
         return;
       }
 
@@ -850,7 +853,6 @@ export const UkmlaSBAQuestion: React.FC<UkmlaSBAQuestionProps> = ({
                   if (turn.role === 'student') {
                     return (
                       <div key={index} className="border-y py-5" style={{ borderColor: C.line }}>
-                        <div className="mb-2 text-[10px] font-bold uppercase tracking-[0.18em]" style={{ color: C.muted }}>You</div>
                         <div className="text-[20px] font-semibold leading-[1.55] tracking-[-0.01em] sm:text-[21px]" style={{ color: C.espresso }}>
                           {turn.text}
                         </div>
@@ -873,11 +875,45 @@ export const UkmlaSBAQuestion: React.FC<UkmlaSBAQuestionProps> = ({
                 {waitingForTutorText && <TutorWorkingIndicator />}
               </div>
 
-              {!preSubmitted && advancePending && (
-                <div className="mt-7 flex items-center justify-between gap-4 border-t pt-4" style={{ borderColor: C.line }}>
-                  <span className="text-[12px] font-semibold" style={{ color: C.muted }}>{isFinalQuestion ? 'Wrapping up…' : 'Moving on…'}</span>
-                  <button type="button" onClick={cancelAdvance} className="text-[12px] font-semibold underline decoration-[#BBA995] underline-offset-4" style={{ color: C.muted }}>
-                    Wait — I have a question
+              {!preSubmitted && advancePending && !hasOpenFollowUp && (
+                <div className="mt-7 border-t pt-5" style={{ borderColor: C.line }} data-studyedit-advance="true">
+                  <div className="text-[16px] font-semibold leading-6" style={{ color: C.espresso }}>
+                    {isFinalQuestion ? 'Any questions before we finish?' : 'Any questions before we move on?'}
+                  </div>
+
+                  <form className="mt-4 flex items-center gap-2 rounded-[18px] border bg-[#FFFDF8] p-2 pl-4 shadow-[0_8px_24px_rgba(31,20,12,0.04)]" style={{ borderColor: '#DCCDB8' }} onSubmit={event => {
+                    event.preventDefault();
+                    const query = aiQuestion.trim();
+                    if (query) void handleStudentReply(query, 'clarify');
+                  }}>
+                    <input
+                      ref={inputRef}
+                      value={aiQuestion}
+                      onChange={event => setAiQuestion(event.target.value)}
+                      disabled={tutorBusy}
+                      placeholder={tutorBusy ? 'StudyEdit is thinking…' : (isFinalQuestion ? 'Ask anything before we finish…' : 'Ask anything before the next case…')}
+                      className="min-w-0 flex-1 bg-transparent py-2.5 text-[16px] font-medium outline-none placeholder:text-[#A89582] disabled:cursor-wait"
+                      style={{ color: C.espresso }}
+                    />
+                    <button
+                      type="submit"
+                      disabled={!aiQuestion.trim() || tutorBusy}
+                      className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full transition active:scale-[0.96] disabled:opacity-35"
+                      style={{ backgroundColor: C.espresso, color: C.cream }}
+                      aria-label="Ask StudyEdit before moving on"
+                    >
+                      <Send className="h-4 w-4" />
+                    </button>
+                  </form>
+
+                  <button
+                    type="button"
+                    onClick={handleNext}
+                    disabled={tutorBusy}
+                    className="mt-3 text-[12px] font-semibold underline decoration-[#BBA995] underline-offset-4 disabled:opacity-40"
+                    style={{ color: C.muted }}
+                  >
+                    {isFinalQuestion ? 'No more questions — finish →' : 'No questions — next case →'}
                   </button>
                 </div>
               )}
