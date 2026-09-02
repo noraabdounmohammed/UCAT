@@ -70,9 +70,6 @@
   const currentCaseSummary = () => document.querySelector('[data-studyedit-case-summary="true"]');
 
   const markOutcome = (section) => {
-    const caseSummary = currentCaseSummary();
-    const correctAnswer = caseSummary?.dataset?.studyeditCorrectAnswer || '';
-
     Array.from(section.children).forEach((child) => {
       const value = text(child).toLowerCase();
       if (value !== 'correct' && value !== 'not quite' && !child.hasAttribute('data-studyedit-outcome')) return;
@@ -81,12 +78,7 @@
       child.setAttribute('data-studyedit-outcome', 'true');
       child.setAttribute('data-studyedit-result', originalResult);
 
-      const feedback = originalResult === 'correct'
-        ? 'Yes — you got that right.'
-        : correctAnswer
-          ? `Not quite — the answer was ${correctAnswer}.`
-          : 'Not quite — that one was wrong.';
-      setTextIfChanged(child, feedback);
+      setTextIfChanged(child, originalResult === 'correct' ? 'Yes.' : 'Not quite.');
     });
   };
 
@@ -182,7 +174,7 @@
     });
 
     section.querySelectorAll('[role="status"] span:first-child').forEach((node) => {
-      if (text(node).toLowerCase().startsWith('studyedit is thinking')) setTextIfChanged(node, 'Thinking');
+      if (text(node).toLowerCase().startsWith('studyedit is thinking')) setTextIfChanged(node, 'One sec…');
     });
   };
 
