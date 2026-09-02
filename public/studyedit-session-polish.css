@@ -38,28 +38,23 @@ section[aria-label="Answer and tutor"] .space-y-6 > [data-studyedit-turn="tutor"
   animation: studyedit-turn-in 240ms ease-out both;
 }
 
-/* Learner voice: clearly conversational, but still on the learning text scale. */
+/* Learner voice: a compact dark bubble. The shape already says who is speaking, so no "You" label is needed. */
 section[aria-label="Answer and tutor"] .space-y-6 > [data-studyedit-turn="student"],
 section[aria-label="Answer and tutor"] .space-y-6 > .border-y.py-5 {
   margin-left: auto !important;
   width: fit-content !important;
   max-width: 86% !important;
-  padding: 14px 18px 15px !important;
+  padding: 10px 16px 11px !important;
   border: 0 !important;
-  border-radius: 22px !important;
+  border-radius: 20px !important;
   background: #1F140C !important;
   box-shadow: 0 8px 24px rgba(31, 20, 12, 0.08) !important;
   animation: studyedit-turn-in 180ms ease-out both;
 }
 
-section[aria-label="Answer and tutor"] .space-y-6 > [data-studyedit-turn="student"] > div:first-child,
-section[aria-label="Answer and tutor"] .space-y-6 > .border-y.py-5 > div:first-child {
-  margin-bottom: 6px !important;
-  color: rgba(250, 245, 236, 0.62) !important;
-}
-
-section[aria-label="Answer and tutor"] .space-y-6 > [data-studyedit-turn="student"] > div:nth-child(2),
-section[aria-label="Answer and tutor"] .space-y-6 > .border-y.py-5 > div:nth-child(2) {
+section[aria-label="Answer and tutor"] .space-y-6 > [data-studyedit-turn="student"] > div,
+section[aria-label="Answer and tutor"] .space-y-6 > .border-y.py-5 > div {
+  margin: 0 !important;
   color: #FAF5EC !important;
 }
 
@@ -99,22 +94,15 @@ section[aria-label="Answer and tutor"] [role="status"] > span:first-child {
   letter-spacing: -0.01em;
 }
 
-/* When StudyEdit has decided to move on, the tutor's words are the transition.
-   The only visible control is the learner's right to interrupt. */
+/* A tutor who is ready to continue still leaves space for curiosity. */
 section[aria-label="Answer and tutor"] [data-studyedit-advance="true"] {
   margin-top: 8px !important;
   padding-top: 0 !important;
   border-top: 0 !important;
-  justify-content: flex-end !important;
-}
-
-section[aria-label="Answer and tutor"] [data-studyedit-advance="true"] > span:first-child {
-  display: none !important;
 }
 
 section[aria-label="Answer and tutor"] [data-studyedit-advance="true"] button {
-  font-size: 11px !important;
-  opacity: 0.82;
+  font-size: 12px !important;
 }
 
 /* The composer is part of the conversation, not a separate control panel. */
