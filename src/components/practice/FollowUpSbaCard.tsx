@@ -61,6 +61,75 @@ export const FollowUpSbaCard: React.FC<FollowUpSbaCardProps> = ({ sba, disabled 
   const selectedCorrect = submitted && selectedId === sba.correctAnswerId;
   const questionText = sba.transferCase?.question || sba.stem;
 
+  const answerOptions = (
+    <>
+      <div className="mt-5 flex flex-col gap-2.5">
+        {sba.options.map(option => {
+          const selected = selectedId === option.id;
+          const correctAfterSubmit = submitted && option.id === sba.correctAnswerId;
+          const wrongSelected = submitted && selected && option.id !== sba.correctAnswerId;
+
+          return (
+            <button
+              key={option.id}
+              type="button"
+              disabled={locked}
+              onClick={() => setSelectedId(option.id)}
+              className="flex w-full items-center gap-3.5 rounded-[16px] border px-4 py-3.5 text-left transition active:scale-[0.997] disabled:cursor-default sm:px-4.5 sm:py-4"
+              style={{
+                backgroundColor: correctAfterSubmit ? C.sageSoft : wrongSelected ? C.blushSoft : selected && !submitted ? C.cream : '#FAF6EF',
+                borderColor: correctAfterSubmit ? C.sage : wrongSelected ? C.blush : selected && !submitted ? C.espresso : '#E7DCCB',
+                opacity: submitted && !correctAfterSubmit && !wrongSelected ? 0.52 : 1,
+              }}
+            >
+              <span
+                className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-[13px] font-bold"
+                style={{
+                  backgroundColor: selected && !submitted ? C.espresso : 'rgba(31,20,12,.06)',
+                  color: selected && !submitted ? C.cream : C.espresso,
+                }}
+              >
+                {option.id}
+              </span>
+              <span className="flex-1 text-[16px] font-semibold leading-[1.45] sm:text-[17px]" style={{ color: C.espresso }}>
+                {option.text}
+              </span>
+              {correctAfterSubmit && <span className="font-bold" style={{ color: '#62734F' }}>✓</span>}
+              {wrongSelected && <span className="font-bold" style={{ color: '#9B5146' }}>×</span>}
+            </button>
+          );
+        })}
+      </div>
+
+      {!submitted ? (
+        <button
+          type="button"
+          disabled={!selectedId || disabled}
+          onClick={() => {
+            if (!selectedId || disabled) return;
+            setSubmitted(true);
+            void onSubmit(selectedId);
+          }}
+          className="mt-4 flex w-full items-center justify-center rounded-full px-6 py-[14px] text-[15px] font-bold disabled:cursor-not-allowed"
+          style={{
+            backgroundColor: selectedId && !disabled ? C.espresso : '#D9CCB6',
+            color: selectedId && !disabled ? C.cream : C.muted,
+          }}
+        >
+          Check answer
+        </button>
+      ) : (
+        <div
+          className="mt-4 text-[14px] font-bold"
+          style={{ color: selectedCorrect ? '#62734F' : '#94483D' }}
+          aria-live="polite"
+        >
+          {selectedCorrect ? '✓ Yes — you got that right.' : `Not quite — the answer was ${sba.correctAnswerId}.`}
+        </div>
+      )}
+    </>
+  );
+
   return (
     <div data-studyedit-followup-shell="true">
       {sba.comparison && <ComparisonCard comparison={sba.comparison} />}
@@ -72,81 +141,31 @@ export const FollowUpSbaCard: React.FC<FollowUpSbaCardProps> = ({ sba, disabled 
         data-studyedit-evidence-mode={sba.evidenceMode}
         data-studyedit-teaching-object={sba.transferCase ? 'transfer_case' : 'followup_sba'}
       >
-        {sba.transferCase && (
-          <div className="text-[20px] font-medium leading-[1.65] tracking-[-0.01em] sm:text-[21px]" style={{ color: C.espresso }}>
-            {sba.transferCase.vignette}
-          </div>
-        )}
-
-        <div
-          className={`${sba.transferCase ? 'mt-8 border-t pt-6' : ''} text-[20px] font-bold leading-[1.55] tracking-[-0.01em] sm:text-[21px]`}
-          style={{ borderColor: C.line, color: C.espresso }}
-        >
-          {questionText}
-        </div>
-
-        <div className="mt-6 flex flex-col gap-3">
-          {sba.options.map(option => {
-            const selected = selectedId === option.id;
-            const correctAfterSubmit = submitted && option.id === sba.correctAnswerId;
-            const wrongSelected = submitted && selected && option.id !== sba.correctAnswerId;
-
-            return (
-              <button
-                key={option.id}
-                type="button"
-                disabled={locked}
-                onClick={() => setSelectedId(option.id)}
-                className="flex w-full items-center gap-4 rounded-[17px] border px-4 py-4 text-left transition active:scale-[0.997] disabled:cursor-default sm:px-5 sm:py-[18px]"
-                style={{
-                  backgroundColor: correctAfterSubmit ? C.sageSoft : wrongSelected ? C.blushSoft : selected && !submitted ? C.cream : C.paper,
-                  borderColor: correctAfterSubmit ? C.sage : wrongSelected ? C.blush : selected && !submitted ? C.espresso : C.line,
-                  opacity: submitted && !correctAfterSubmit && !wrongSelected ? 0.52 : 1,
-                }}
-              >
-                <span
-                  className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-[14px] font-bold"
-                  style={{
-                    backgroundColor: selected && !submitted ? C.espresso : 'rgba(31,20,12,.06)',
-                    color: selected && !submitted ? C.cream : C.espresso,
-                  }}
-                >
-                  {option.id}
-                </span>
-                <span className="flex-1 text-[17px] font-semibold leading-[1.45] sm:text-[18px]" style={{ color: C.espresso }}>
-                  {option.text}
-                </span>
-                {correctAfterSubmit && <span className="font-bold" style={{ color: '#62734F' }}>✓</span>}
-                {wrongSelected && <span className="font-bold" style={{ color: '#9B5146' }}>×</span>}
-              </button>
-            );
-          })}
-        </div>
-
-        {!submitted ? (
-          <button
-            type="button"
-            disabled={!selectedId || disabled}
-            onClick={() => {
-              if (!selectedId || disabled) return;
-              setSubmitted(true);
-              void onSubmit(selectedId);
-            }}
-            className="mt-6 flex w-full items-center justify-center rounded-full px-6 py-[18px] text-[16px] font-bold disabled:cursor-not-allowed"
-            style={{
-              backgroundColor: selectedId && !disabled ? C.espresso : '#D9CCB6',
-              color: selectedId && !disabled ? C.cream : C.muted,
-            }}
-          >
-            Check answer
-          </button>
+        {sba.transferCase ? (
+          <>
+            <div className="text-[20px] font-medium leading-[1.65] tracking-[-0.01em] sm:text-[21px]" style={{ color: C.espresso }}>
+              {sba.transferCase.vignette}
+            </div>
+            <div
+              className="mt-8 border-t pt-6 text-[20px] font-bold leading-[1.55] tracking-[-0.01em] sm:text-[21px]"
+              style={{ borderColor: C.line, color: C.espresso }}
+            >
+              {questionText}
+            </div>
+            {answerOptions}
+          </>
         ) : (
           <div
-            className="mt-5 text-[14px] font-bold"
-            style={{ color: selectedCorrect ? '#62734F' : '#94483D' }}
-            aria-live="polite"
+            className="rounded-[22px] border px-4 py-4 shadow-[0_10px_28px_rgba(31,20,12,0.035)] sm:px-5 sm:py-5"
+            style={{ borderColor: '#E2D6C3', backgroundColor: C.paper }}
+            data-studyedit-active-recall-card="true"
+            role="group"
+            aria-label="Active recall check"
           >
-            {selectedCorrect ? '✓ Yes — you got that right.' : `Not quite — the answer was ${sba.correctAnswerId}.`}
+            <div className="text-[18px] font-bold leading-[1.55] tracking-[-0.01em] sm:text-[19px]" style={{ color: C.espresso }}>
+              {questionText}
+            </div>
+            {answerOptions}
           </div>
         )}
       </div>
