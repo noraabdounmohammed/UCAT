@@ -64,29 +64,33 @@ section[aria-label="Answer and tutor"] .space-y-6 > .border-y.py-5 > div {
   color: #FAF5EC !important;
 }
 
-/* A completed case becomes a quiet reference line rather than another component to operate. */
+/* Once the learner has answered, don't turn the case into an app-style record card.
+   Keep only a quiet way back to the vignette; the tutor conversation should be the thing that remains. */
 [data-studyedit-case-summary="true"] {
-  border-top: 1px solid #E8DCC4 !important;
-  border-bottom: 0 !important;
-  padding: 14px 0 10px !important;
-  opacity: 0.9;
+  width: fit-content !important;
+  margin: 0 0 4px auto !important;
+  padding: 0 !important;
+  border: 0 !important;
+  background: transparent !important;
+  opacity: 0.78;
+  justify-content: flex-end !important;
 }
 
-[data-studyedit-case-summary="true"] > span:first-child > span:first-child {
-  font-size: 14px !important;
-  font-weight: 700 !important;
-}
-
-[data-studyedit-case-summary="true"] > span:first-child > span:nth-child(2) {
-  margin-top: 2px !important;
-  font-size: 12px !important;
+[data-studyedit-case-summary="true"] > span:first-child {
+  display: none !important;
 }
 
 [data-studyedit-case-summary="true"] > span:last-child {
   font-size: 11px !important;
+  font-weight: 650 !important;
+  color: #8A7560 !important;
   text-decoration: underline;
   text-underline-offset: 3px;
   text-decoration-color: #C7B6A1;
+}
+
+[data-studyedit-case-summary="true"] + section[aria-label="Answer and tutor"] {
+  margin-top: 10px !important;
 }
 
 /* Thinking should read like a pause in a conversation, not an app loading state. */
