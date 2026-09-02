@@ -118,6 +118,80 @@ section[aria-label="Question"].studyedit-case-enter {
   animation: studyedit-case-in 300ms cubic-bezier(.2,.8,.2,1) both;
 }
 
+/* Previous teaching stays physically above the active case.
+   It is not a results drawer or a history screen; it is simply the page you have already written together. */
+[data-studyedit-history="true"] {
+  width: 100%;
+}
+
+.studyedit-archived-lesson {
+  position: relative;
+  width: 100%;
+  border-bottom: 1px solid rgba(196, 177, 153, 0.52);
+}
+
+.studyedit-archived-lesson [data-studyedit-archive-main="true"] {
+  padding-top: 30px !important;
+  padding-bottom: 42px !important;
+}
+
+.studyedit-archived-lesson section[aria-label="Answer and tutor"] {
+  margin-top: 24px !important;
+}
+
+.studyedit-archived-lesson [data-studyedit-case-summary="true"] {
+  cursor: default !important;
+}
+
+.studyedit-archived-lesson [data-studyedit-case-summary="true"] > span:last-child:empty {
+  display: none !important;
+}
+
+.studyedit-archive-case-details {
+  margin-top: 4px;
+  padding-bottom: 4px;
+}
+
+.studyedit-archive-case-details > summary {
+  width: fit-content;
+  cursor: pointer;
+  list-style: none;
+  color: #8A7560;
+  font-size: 11px;
+  font-weight: 650;
+  text-decoration: underline;
+  text-decoration-color: #C7B6A1;
+  text-underline-offset: 3px;
+}
+
+.studyedit-archive-case-details > summary::-webkit-details-marker {
+  display: none;
+}
+
+.studyedit-archive-case-details[open] > summary {
+  margin-bottom: 20px;
+}
+
+.studyedit-archive-case-body {
+  padding: 22px 0 10px;
+  border-top: 1px solid rgba(232, 220, 196, 0.8);
+}
+
+.studyedit-archive-case-body [data-studyedit-archived-case="true"] {
+  opacity: 0.94;
+}
+
+.studyedit-archive-case-body [data-studyedit-archived-case="true"] button {
+  cursor: default !important;
+}
+
+/* Don't replay entrance animations every time an archived turn is re-injected. */
+.studyedit-archived-lesson [data-studyedit-turn],
+.studyedit-archived-lesson section[aria-label="Answer and tutor"] [role="status"],
+.studyedit-archive-case-body section[aria-label="Question"] {
+  animation: none !important;
+}
+
 @keyframes studyedit-turn-in {
   from { opacity: 0; transform: translateY(5px); }
   to { opacity: 1; transform: translateY(0); }
@@ -132,6 +206,10 @@ section[aria-label="Question"].studyedit-case-enter {
   section[aria-label="Answer and tutor"] .space-y-6 > [data-studyedit-turn="student"],
   section[aria-label="Answer and tutor"] .space-y-6 > .border-y.py-5 {
     max-width: 90% !important;
+  }
+
+  .studyedit-archived-lesson [data-studyedit-archive-main="true"] {
+    padding-bottom: 36px !important;
   }
 }
 
