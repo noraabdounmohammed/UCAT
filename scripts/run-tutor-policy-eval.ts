@@ -284,6 +284,29 @@ function runSourceContractChecks(): SourceCheck[] {
       detail: 'A learner question should be answered as a learner question.',
     },
     {
+      name: 'latest clickable answer outranks the original SBA selection',
+      pass: includesAll(controller, [
+        'structuredAttemptHistoryRef',
+        'FOLLOW-UP ATTEMPT HISTORY',
+        'preferLatestInteraction',
+        'latest follow-up record',
+        'Do not confuse an option from the original SBA with a later quick check',
+      ]),
+      severity: 'gate',
+      detail: 'Tutor context must track the actual follow-up option the learner clicked instead of falling back to the original SBA choice.',
+    },
+    {
+      name: 'learner corrections of a misreported choice are not treated as medical failure',
+      pass: includesAll(controller, [
+        'isSelectionCorrectionMessage',
+        "selectionCorrection ? 'clarify'",
+        'This is an interaction correction, not a medical error',
+        'do not argue with them or repeat the stale choice',
+      ]),
+      severity: 'gate',
+      detail: 'If the learner says StudyEdit got their answer wrong, the tutor should acknowledge the record error rather than doubling down.',
+    },
+    {
       name: 'repeated structured failure changes modality',
       pass: includesAll(controller, ['structuredAttempts < 2', 'Stop generating more SBAs', 'NATURAL']),
       severity: 'warning',
