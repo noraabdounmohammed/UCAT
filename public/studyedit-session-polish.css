@@ -1,6 +1,12 @@
 /* StudyEdit continuous lesson polish.
    The session should feel like one tutor-led surface, not a stack of software states. */
 
+/* Never reveal curriculum/concept metadata while the learner is still solving the case.
+   Labels such as "Chronic glaucoma – management aim" can collapse the diagnostic task. */
+section[aria-label="Question"] > div:first-child {
+  display: none !important;
+}
+
 /* Correctness should be unmistakable, but delivered like a tutor speaking rather than a status badge. */
 section[aria-label="Answer and tutor"] > [data-studyedit-outcome="true"] {
   display: block !important;
