@@ -34,6 +34,16 @@
     });
   };
 
+  const markAdvance = (section) => {
+    Array.from(section.children).forEach((child) => {
+      if (!(child instanceof HTMLElement)) return;
+      const value = text(child);
+      if ((value.includes('Moving on…') || value.includes('Wrapping up…')) && value.includes('Wait — I have a question')) {
+        child.setAttribute('data-studyedit-advance', 'true');
+      }
+    });
+  };
+
   const markTurns = (section) => {
     const thread = section.querySelector('.space-y-6');
     if (!thread) return;
@@ -114,6 +124,7 @@
     document.querySelectorAll('section[aria-label="Answer and tutor"]').forEach((section) => {
       cleanMarkdownArtifacts(section);
       markOutcome(section);
+      markAdvance(section);
       markTurns(section);
       humanizeControls(section);
     });
