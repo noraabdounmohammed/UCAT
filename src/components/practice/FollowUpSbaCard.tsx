@@ -24,29 +24,28 @@ type FollowUpSbaCardProps = {
 
 const ComparisonCard: React.FC<{ comparison: StructuredComparisonObject }> = ({ comparison }) => (
   <div
-    className="mt-5 rounded-[22px] border px-4 py-4 sm:px-5 sm:py-5"
+    className="mt-4 rounded-[18px] border px-3.5 py-3.5 sm:px-4 sm:py-4"
     style={{ borderColor: '#E2D6C3', backgroundColor: C.paper }}
     data-studyedit-teaching-object="comparison"
   >
-    <div className="grid grid-cols-2 gap-4 border-b pb-3" style={{ borderColor: C.line }}>
-      <div className="text-[15px] font-extrabold leading-[1.35]" style={{ color: C.espresso }}>{comparison.leftTitle}</div>
-      <div className="text-[15px] font-extrabold leading-[1.35]" style={{ color: C.espresso }}>{comparison.rightTitle}</div>
+    <div className="grid grid-cols-[72px_1fr_1fr] items-end gap-2 border-b pb-2.5" style={{ borderColor: C.line }}>
+      <div />
+      <div className="text-[13px] font-extrabold leading-[1.25]" style={{ color: C.espresso }}>{comparison.leftTitle}</div>
+      <div className="text-[13px] font-extrabold leading-[1.25]" style={{ color: C.espresso }}>{comparison.rightTitle}</div>
     </div>
 
     <div>
       {comparison.rows.map((row, index) => (
-        <div key={`${row.feature}-${index}`} className="border-b py-3 last:border-b-0" style={{ borderColor: 'rgba(232,220,196,.75)' }}>
-          <div className="mb-1.5 text-[10px] font-bold uppercase tracking-[0.14em]" style={{ color: C.muted }}>{row.feature}</div>
-          <div className="grid grid-cols-2 gap-4">
-            <div className="text-[15px] font-semibold leading-[1.45]" style={{ color: '#49372A' }}>{row.left}</div>
-            <div className="text-[15px] font-semibold leading-[1.45]" style={{ color: '#49372A' }}>{row.right}</div>
-          </div>
+        <div key={`${row.feature}-${index}`} className="grid grid-cols-[72px_1fr_1fr] gap-2 border-b py-2.5 last:border-b-0" style={{ borderColor: 'rgba(232,220,196,.75)' }}>
+          <div className="text-[9px] font-bold uppercase leading-[1.3] tracking-[0.11em]" style={{ color: C.muted }}>{row.feature}</div>
+          <div className="text-[13px] font-semibold leading-[1.38]" style={{ color: '#49372A' }}>{row.left}</div>
+          <div className="text-[13px] font-semibold leading-[1.38]" style={{ color: '#49372A' }}>{row.right}</div>
         </div>
       ))}
     </div>
 
     {comparison.takeaway && (
-      <div className="mt-3 text-[14px] font-semibold leading-[1.5]" style={{ color: '#59483B' }}>
+      <div className="mt-2.5 border-t pt-2.5 text-[13px] font-semibold leading-[1.45]" style={{ borderColor: C.line, color: '#59483B' }}>
         {comparison.takeaway}
       </div>
     )}
@@ -63,7 +62,7 @@ export const FollowUpSbaCard: React.FC<FollowUpSbaCardProps> = ({ sba, disabled 
 
   const answerOptions = (
     <>
-      <div className="mt-5 flex flex-col gap-2.5">
+      <div className="mt-4 flex flex-col gap-2.5">
         {sba.options.map(option => {
           const selected = selectedId === option.id;
           const correctAfterSubmit = submitted && option.id === sba.correctAnswerId;
@@ -75,7 +74,7 @@ export const FollowUpSbaCard: React.FC<FollowUpSbaCardProps> = ({ sba, disabled 
               type="button"
               disabled={locked}
               onClick={() => setSelectedId(option.id)}
-              className="flex w-full items-center gap-3.5 rounded-[16px] border px-4 py-3.5 text-left transition active:scale-[0.997] disabled:cursor-default sm:px-4.5 sm:py-4"
+              className="flex w-full items-center gap-3 rounded-[15px] border px-3.5 py-3 text-left transition active:scale-[0.997] disabled:cursor-default sm:px-4 sm:py-3.5"
               style={{
                 backgroundColor: correctAfterSubmit ? C.sageSoft : wrongSelected ? C.blushSoft : selected && !submitted ? C.cream : '#FAF6EF',
                 borderColor: correctAfterSubmit ? C.sage : wrongSelected ? C.blush : selected && !submitted ? C.espresso : '#E7DCCB',
@@ -83,7 +82,7 @@ export const FollowUpSbaCard: React.FC<FollowUpSbaCardProps> = ({ sba, disabled 
               }}
             >
               <span
-                className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-[13px] font-bold"
+                className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-[12px] font-bold"
                 style={{
                   backgroundColor: selected && !submitted ? C.espresso : 'rgba(31,20,12,.06)',
                   color: selected && !submitted ? C.cream : C.espresso,
@@ -91,7 +90,7 @@ export const FollowUpSbaCard: React.FC<FollowUpSbaCardProps> = ({ sba, disabled 
               >
                 {option.id}
               </span>
-              <span className="flex-1 text-[16px] font-semibold leading-[1.45] sm:text-[17px]" style={{ color: C.espresso }}>
+              <span className="flex-1 text-[15px] font-semibold leading-[1.4] sm:text-[16px]" style={{ color: C.espresso }}>
                 {option.text}
               </span>
               {correctAfterSubmit && <span className="font-bold" style={{ color: '#62734F' }}>✓</span>}
@@ -110,7 +109,7 @@ export const FollowUpSbaCard: React.FC<FollowUpSbaCardProps> = ({ sba, disabled 
             setSubmitted(true);
             void onSubmit(selectedId);
           }}
-          className="mt-4 flex w-full items-center justify-center rounded-full px-6 py-[14px] text-[15px] font-bold disabled:cursor-not-allowed"
+          className="mt-4 flex w-full items-center justify-center rounded-full px-6 py-[13px] text-[14px] font-bold disabled:cursor-not-allowed"
           style={{
             backgroundColor: selectedId && !disabled ? C.espresso : '#D9CCB6',
             color: selectedId && !disabled ? C.cream : C.muted,
@@ -120,7 +119,7 @@ export const FollowUpSbaCard: React.FC<FollowUpSbaCardProps> = ({ sba, disabled 
         </button>
       ) : (
         <div
-          className="mt-4 text-[14px] font-bold"
+          className="mt-4 text-[13px] font-bold"
           style={{ color: selectedCorrect ? '#62734F' : '#94483D' }}
           aria-live="polite"
         >
@@ -135,39 +134,34 @@ export const FollowUpSbaCard: React.FC<FollowUpSbaCardProps> = ({ sba, disabled 
       {sba.comparison && <ComparisonCard comparison={sba.comparison} />}
 
       <div
-        className="mt-6"
+        className="mt-4"
         data-studyedit-structured-followup="true"
         data-studyedit-followup-qa="passed"
         data-studyedit-evidence-mode={sba.evidenceMode}
         data-studyedit-teaching-object={sba.transferCase ? 'transfer_case' : 'followup_sba'}
       >
-        {sba.transferCase ? (
-          <>
-            <div className="text-[20px] font-medium leading-[1.65] tracking-[-0.01em] sm:text-[21px]" style={{ color: C.espresso }}>
+        <div
+          className="rounded-[20px] border px-4 py-4 shadow-[0_8px_24px_rgba(31,20,12,0.03)] sm:px-5 sm:py-5"
+          style={{ borderColor: '#E2D6C3', backgroundColor: C.paper }}
+          data-studyedit-active-recall-card="true"
+          role="group"
+          aria-label="Active recall check"
+        >
+          <div className="mb-2 text-[10px] font-bold uppercase tracking-[0.16em]" style={{ color: C.muted }}>
+            Quick check
+          </div>
+
+          {sba.transferCase && (
+            <div className="mb-4 text-[16px] font-medium leading-[1.5] tracking-[-0.005em] sm:text-[17px]" style={{ color: C.espresso }}>
               {sba.transferCase.vignette}
             </div>
-            <div
-              className="mt-8 border-t pt-6 text-[20px] font-bold leading-[1.55] tracking-[-0.01em] sm:text-[21px]"
-              style={{ borderColor: C.line, color: C.espresso }}
-            >
-              {questionText}
-            </div>
-            {answerOptions}
-          </>
-        ) : (
-          <div
-            className="rounded-[22px] border px-4 py-4 shadow-[0_10px_28px_rgba(31,20,12,0.035)] sm:px-5 sm:py-5"
-            style={{ borderColor: '#E2D6C3', backgroundColor: C.paper }}
-            data-studyedit-active-recall-card="true"
-            role="group"
-            aria-label="Active recall check"
-          >
-            <div className="text-[18px] font-bold leading-[1.55] tracking-[-0.01em] sm:text-[19px]" style={{ color: C.espresso }}>
-              {questionText}
-            </div>
-            {answerOptions}
+          )}
+
+          <div className="text-[17px] font-bold leading-[1.5] tracking-[-0.01em] sm:text-[18px]" style={{ color: C.espresso }}>
+            {questionText}
           </div>
-        )}
+          {answerOptions}
+        </div>
       </div>
 
       {/* whatChanged remains available in structured QA metadata but is intentionally not shown to learners. */}
