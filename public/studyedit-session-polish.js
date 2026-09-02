@@ -8,11 +8,47 @@
     archives: [],
     activeGone: true,
     injectedSignature: '',
+    followConversation: false,
+    boundScroll: null,
+    scrollHandler: null,
   };
 
   const text = (node) => (node?.textContent || '').trim();
   const setTextIfChanged = (node, value) => {
     if (node && node.textContent !== value) node.textContent = value;
+  };
+
+  const isNearBottom = (scroll) => {
+    if (!(scroll instanceof HTMLElement)) return false;
+    const distance = scroll.scrollHeight - scroll.scrollTop - scroll.clientHeight;
+    return distance <= 180;
+  };
+
+  const bindScrollIntent = (scroll) => {
+    if (!(scroll instanceof HTMLElement) || state.boundScroll === scroll) return;
+
+    if (state.boundScroll instanceof HTMLElement && state.scrollHandler) {
+      state.boundScroll.removeEventListener('scroll', state.scrollHandler);
+    }
+
+    state.boundScroll = scroll;
+    state.followConversation = isNearBottom(scroll);
+    state.scrollHandler = () => {
+      state.followConversation = isNearBottom(scroll);
+    };
+    scroll.addEventListener('scroll', state.scrollHandler, { passive: true });
+  };
+
+  const revealLatestOnlyWhenFollowing = (scroll, node) => {
+    if (!(scroll instanceof HTMLElement) || !(node instanceof HTMLElement) || !state.followConversation) return;
+
+    const scrollRect = scroll.getBoundingClientRect();
+    const nodeRect = node.getBoundingClientRect();
+    const lowerEdge = scrollRect.bottom - 24;
+
+    if (nodeRect.bottom > lowerEdge) {
+      node.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }
   };
 
   const cleanMarkdownArtifacts = (root) => {
@@ -57,8 +93,9 @@
   const markAdvance = (section) => {
     Array.from(section.children).forEach((child) => {
       if (!(child instanceof HTMLElement)) return;
+      if (child.hasAttribute('data-studyedit-advance')) return;
       const value = text(child);
-      if ((value.includes('Moving on…') || value.includes('Wrapping up…')) && value.includes('Wait — I have a question')) {
+      if (value.includes('Any questions before we move on?') || value.includes('Any questions before we finish?')) {
         child.setAttribute('data-studyedit-advance', 'true');
       }
     });
@@ -68,6 +105,15 @@
     const thread = section.querySelector('.space-y-6');
     if (!thread) return;
 
+    const shell = section.closest('div.fixed.inset-0.flex.flex-col.overflow-hidden');
+    const scroll = shell
+      ? Array.from(shell.children).find((child) =>
+          child instanceof HTMLElement && child.classList.contains('flex-1') && child.classList.contains('overflow-y-auto')
+        )
+      : null;
+    if (scroll instanceof HTMLElement) bindScrollIntent(scroll);
+
+    const turns = [];
     Array.from(thread.children).forEach((child) => {
       if (!(child instanceof HTMLElement)) return;
       if (child.matches('[role="status"]')) return;
@@ -76,14 +122,13 @@
       } else {
         child.setAttribute('data-studyedit-turn', 'tutor');
       }
+      turns.push(child);
     });
 
-    const count = thread.children.length;
-    if (count > state.lastTurnCount) {
-      const latest = thread.lastElementChild;
-      window.setTimeout(() => {
-        latest?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-      }, 70);
+    const count = turns.length;
+    if (count > state.lastTurnCount && scroll instanceof HTMLElement) {
+      const latest = turns[turns.length - 1];
+      window.setTimeout(() => revealLatestOnlyWhenFollowing(scroll, latest), 80);
     }
     state.lastTurnCount = count;
   };
@@ -160,6 +205,7 @@
       child instanceof HTMLElement && child.classList.contains('flex-1') && child.classList.contains('overflow-y-auto')
     );
     if (!(scroll instanceof HTMLElement)) return null;
+    bindScrollIntent(scroll);
 
     const main = Array.from(scroll.children).find((child) => child instanceof HTMLElement && child.tagName === 'MAIN');
     if (!(main instanceof HTMLElement)) return null;
@@ -260,6 +306,7 @@
     state.injectedSignature = '';
     state.lastTurnCount = 0;
     state.lastCase = null;
+    state.followConversation = false;
   };
 
   const injectHistory = (lesson, movedToNewQuestion) => {
@@ -285,10 +332,11 @@
     }
 
     if (movedToNewQuestion && state.archives.length) {
-      window.setTimeout(() => {
+      requestAnimationFrame(() => {
         const top = Math.max(0, lesson.main.offsetTop - 18);
-        lesson.scroll.scrollTo({ top, behavior: 'smooth' });
-      }, 120);
+        lesson.scroll.scrollTo({ top, behavior: 'auto' });
+        state.followConversation = false;
+      });
     }
   };
 
@@ -324,7 +372,6 @@
   };
 
   const polish = () => {
-    // Capture the selected/correct answer before simplifying the case summary.
     polishCaseSummary();
     document.querySelectorAll('section[aria-label="Answer and tutor"]').forEach((section) => {
       cleanMarkdownArtifacts(section);
