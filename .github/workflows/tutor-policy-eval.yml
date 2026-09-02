@@ -1,0 +1,42 @@
+name: Tutor policy eval
+
+on:
+  push:
+    branches: [master]
+    paths:
+      - 'src/components/practice/UkmlaSBAQuestion.tsx'
+      - 'src/components/practice/FollowUpSbaCard.tsx'
+      - 'src/services/structuredFollowUpSba.ts'
+      - 'scripts/run-tutor-policy-eval.ts'
+      - 'package.json'
+      - 'package-lock.json'
+      - '.github/workflows/tutor-policy-eval.yml'
+  pull_request:
+    paths:
+      - 'src/components/practice/UkmlaSBAQuestion.tsx'
+      - 'src/components/practice/FollowUpSbaCard.tsx'
+      - 'src/services/structuredFollowUpSba.ts'
+      - 'scripts/run-tutor-policy-eval.ts'
+      - 'package.json'
+      - 'package-lock.json'
+      - '.github/workflows/tutor-policy-eval.yml'
+
+jobs:
+  tutor-policy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run tutor-policy journey evals
+        run: npm run eval:tutor
