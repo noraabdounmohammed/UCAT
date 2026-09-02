@@ -1,13 +1,20 @@
 (() => {
   const STYLE_ID = 'studyedit-quiet-navbar-styles';
 
-  const text = (node) => (node?.textContent || '').replace(/\s+/g, ' ').trim();
-
   const ensureStyles = () => {
     if (document.getElementById(STYLE_ID)) return;
     const style = document.createElement('style');
     style.id = STYLE_ID;
     style.textContent = `
+      header[data-studyedit-quiet-nav-host="true"] {
+        position: relative !important;
+        z-index: 30 !important;
+        border-bottom: 1px solid rgba(227, 214, 194, 0.58) !important;
+        background: rgba(244, 236, 223, 0.95) !important;
+        -webkit-backdrop-filter: blur(16px) !important;
+        backdrop-filter: blur(16px) !important;
+      }
+
       header[data-studyedit-quiet-nav-host="true"] > div:not([data-studyedit-quiet-nav="true"]) {
         display: none !important;
       }
@@ -22,6 +29,10 @@
         padding: 11px 18px;
       }
 
+      [data-studyedit-nav-spacer="true"] {
+        min-width: 0;
+      }
+
       [data-studyedit-nav-back="true"],
       [data-studyedit-nav-more="true"] {
         display: flex;
@@ -34,6 +45,7 @@
         background: transparent;
         color: #8A7560;
         font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+        -webkit-tap-highlight-color: transparent;
       }
 
       [data-studyedit-nav-back="true"] {
@@ -56,20 +68,6 @@
         background: rgba(31, 20, 12, 0.05);
       }
 
-      [data-studyedit-nav-topic="true"] {
-        min-width: 0;
-        overflow: hidden;
-        padding: 0 10px;
-        color: #1F140C;
-        font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-        font-size: 14px;
-        font-weight: 750;
-        line-height: 1.35;
-        text-align: center;
-        text-overflow: ellipsis;
-        white-space: nowrap;
-      }
-
       [data-studyedit-nav-menu="true"] {
         position: absolute;
         top: calc(100% + 4px);
@@ -78,10 +76,11 @@
         display: none;
         min-width: 148px;
         overflow: hidden;
-        border: 1px solid #DCCDB8;
+        border: 1px solid rgba(220, 205, 184, 0.9);
         border-radius: 16px;
-        background: rgba(255, 253, 248, 0.99);
+        background: rgba(255, 253, 248, 0.94);
         box-shadow: 0 12px 32px rgba(31, 20, 12, 0.10);
+        -webkit-backdrop-filter: blur(16px);
         backdrop-filter: blur(16px);
       }
 
@@ -110,6 +109,7 @@
           padding-left: 14px;
           padding-right: 14px;
         }
+
         [data-studyedit-nav-menu="true"] {
           right: 14px;
         }
@@ -128,25 +128,7 @@
     const header = shell.querySelector(':scope > header');
     if (!(header instanceof HTMLElement)) return null;
 
-    const scroll = Array.from(shell.children).find((child) =>
-      child instanceof HTMLElement && child.classList.contains('flex-1') && child.classList.contains('overflow-y-auto')
-    );
-    if (!(scroll instanceof HTMLElement)) return null;
-
-    const main = Array.from(scroll.children).find((child) => child instanceof HTMLElement && child.tagName === 'MAIN');
-    if (!(main instanceof HTMLElement)) return null;
-
-    return { shell, header, main };
-  };
-
-  const currentTopic = (main) => {
-    const activeQuestion = main.querySelector('section[aria-label="Question"]');
-    const topic = text(activeQuestion?.querySelector(':scope > div:first-child'));
-    if (topic) return topic;
-
-    const summary = main.querySelector('[data-studyedit-case-summary="true"] span:first-child');
-    const summaryText = text(summary).replace(/^[✓×]\s*/, '');
-    return summaryText || 'StudyEdit';
+    return { header };
   };
 
   const findOriginalExit = (header) => {
@@ -156,8 +138,7 @@
     return candidates.find((button) => button.getAttribute('aria-label') === 'Exit practice') || null;
   };
 
-  const ensureQuietNav = (lesson) => {
-    const { header, main } = lesson;
+  const ensureQuietNav = ({ header }) => {
     header.setAttribute('data-studyedit-quiet-nav-host', 'true');
 
     let nav = header.querySelector(':scope > [data-studyedit-quiet-nav="true"]');
@@ -171,8 +152,9 @@
       back.setAttribute('data-studyedit-nav-back', 'true');
       back.setAttribute('aria-label', 'Leave lesson');
 
-      const topic = document.createElement('div');
-      topic.setAttribute('data-studyedit-nav-topic', 'true');
+      const spacer = document.createElement('div');
+      spacer.setAttribute('data-studyedit-nav-spacer', 'true');
+      spacer.setAttribute('aria-hidden', 'true');
 
       const more = document.createElement('button');
       more.type = 'button';
@@ -209,15 +191,8 @@
         more.setAttribute('aria-expanded', opening ? 'true' : 'false');
       });
 
-      nav.append(back, topic, more, menu);
+      nav.append(back, spacer, more, menu);
       header.appendChild(nav);
-    }
-
-    const topicNode = nav.querySelector('[data-studyedit-nav-topic="true"]');
-    if (topicNode) {
-      const value = currentTopic(main);
-      if (topicNode.textContent !== value) topicNode.textContent = value;
-      topicNode.setAttribute('title', value);
     }
 
     const originalExit = findOriginalExit(header);
@@ -260,6 +235,5 @@
   new MutationObserver(queue).observe(document.documentElement, {
     childList: true,
     subtree: true,
-    characterData: true,
   });
 })();
