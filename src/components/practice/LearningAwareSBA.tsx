@@ -36,10 +36,11 @@ type EvidenceClass =
   | 'uninformative_negative';
 
 const C = {
+  paper: '#FFFDF8',
   parchment: '#F4ECDF',
   espresso: '#1F140C',
-  muted: '#8A7560',
-  line: '#DCCDB8',
+  line: '#E8DCC4',
+  blushSoft: '#F9E4DF',
 };
 
 const learningFont = "Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif";
@@ -67,13 +68,6 @@ export const LearningAwareSBA: React.FC<LearningAwareSBAProps> = (props) => {
     setPendingCorrect(null);
   }, [props.question.id, props.currentIndex]);
 
-  useEffect(() => {
-    if (typeof document === 'undefined') return;
-    if (confidenceOpen) document.documentElement.setAttribute('data-studyedit-confidence-open', 'true');
-    else document.documentElement.removeAttribute('data-studyedit-confidence-open');
-    return () => document.documentElement.removeAttribute('data-studyedit-confidence-open');
-  }, [confidenceOpen]);
-
   const saveSignal = (signal: string, value?: string, extra?: Record<string, unknown>) => {
     try {
       const key = `learning_frontier_${props.question.id || props.question.concept_id || props.currentIndex || 0}_${signal}_${value || ''}`;
@@ -84,6 +78,7 @@ export const LearningAwareSBA: React.FC<LearningAwareSBAProps> = (props) => {
   };
 
   const handleChildAnswer = (isCorrect: boolean) => {
+    // Confidence is deliberately captured before correctness reaches the parent session.
     setPendingCorrect(isCorrect);
     setConfidenceOpen(true);
   };
@@ -106,31 +101,46 @@ export const LearningAwareSBA: React.FC<LearningAwareSBAProps> = (props) => {
 
   return (
     <>
+      {/* Keep the question surface simple. Highlight-to-explain was intentionally removed. */}
       <UkmlaSBAQuestion {...props} onAnswer={handleChildAnswer} />
 
       {confidenceOpen && (
         <div
-          className="pointer-events-none fixed inset-x-0 bottom-0 z-[120]"
+          className="fixed inset-0 z-[120] flex items-center justify-center px-5"
           role="dialog"
+          aria-modal="true"
           aria-label="Answer confidence"
-          style={{
-            fontFamily: learningFont,
-            background: `linear-gradient(to top, ${C.parchment} 76%, rgba(244,236,223,0))`,
-          }}
+          style={{ backgroundColor: C.parchment, fontFamily: learningFont }}
         >
-          <div className="mx-auto w-full max-w-[700px] px-5 pb-[max(14px,env(safe-area-inset-bottom))] pt-8 sm:px-8">
-            <div
-              className="pointer-events-auto flex flex-wrap items-center gap-x-5 gap-y-3 border-t pt-4"
-              style={{ borderColor: C.line, backgroundColor: C.parchment }}
-            >
-              <div className="mr-auto text-[15px] font-semibold tracking-[-0.01em]" style={{ color: C.espresso }}>
-                How sure were you?
-              </div>
-              <div className="flex items-center gap-4 text-[14px] font-semibold" style={{ color: C.espresso }}>
-                <button type="button" onClick={() => commitConfidence('know')} className="underline decoration-[#C5B39D] underline-offset-4 active:opacity-55">Knew it</button>
-                <button type="button" onClick={() => commitConfidence('unsure')} className="underline decoration-[#C5B39D] underline-offset-4 active:opacity-55">Unsure</button>
-                <button type="button" onClick={() => commitConfidence('guess')} className="underline decoration-[#C5B39D] underline-offset-4 active:opacity-55">Guessed</button>
-              </div>
+          <div className="w-full max-w-[520px]">
+            <h2 className="text-[28px] font-semibold leading-[1.25] tracking-[-0.02em] sm:text-[30px]" style={{ color: C.espresso }}>
+              How did that feel?
+            </h2>
+            <div className="mt-6 grid grid-cols-3 gap-2.5">
+              <button
+                type="button"
+                onClick={() => commitConfidence('know')}
+                className="min-h-[52px] rounded-full border px-3 text-[14px] font-bold transition active:scale-[0.98] sm:text-[15px]"
+                style={{ borderColor: C.line, backgroundColor: C.paper, color: C.espresso }}
+              >
+                Knew it
+              </button>
+              <button
+                type="button"
+                onClick={() => commitConfidence('unsure')}
+                className="min-h-[52px] rounded-full border px-3 text-[14px] font-bold transition active:scale-[0.98] sm:text-[15px]"
+                style={{ borderColor: C.line, backgroundColor: C.paper, color: C.espresso }}
+              >
+                Unsure
+              </button>
+              <button
+                type="button"
+                onClick={() => commitConfidence('guess')}
+                className="min-h-[52px] rounded-full border px-3 text-[14px] font-bold transition active:scale-[0.98] sm:text-[15px]"
+                style={{ borderColor: '#E5B9B1', backgroundColor: C.blushSoft, color: C.espresso }}
+              >
+                Guessed
+              </button>
             </div>
           </div>
         </div>
