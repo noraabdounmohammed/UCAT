@@ -1,4 +1,29 @@
-/* StudyEdit session polish: learner messages remain conversational without shrinking the learning text. */
+/* StudyEdit continuous lesson polish.
+   The session should feel like one tutor-led surface, not a stack of software states. */
+
+/* The tutor communicates correctness in natural language; don't duplicate it with a status component. */
+section[aria-label="Answer and tutor"] > [data-studyedit-outcome="true"] {
+  display: none !important;
+}
+
+/* Keep the teaching transcript visually continuous. */
+section[aria-label="Answer and tutor"] .space-y-6 {
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 26px !important;
+}
+
+section[aria-label="Answer and tutor"] .space-y-6 > .border-t.pt-6 {
+  border-top: 0 !important;
+  padding-top: 0 !important;
+}
+
+section[aria-label="Answer and tutor"] .space-y-6 > [data-studyedit-turn="tutor"] {
+  animation: studyedit-turn-in 240ms ease-out both;
+}
+
+/* Learner voice: clearly conversational, but still on the learning text scale. */
+section[aria-label="Answer and tutor"] .space-y-6 > [data-studyedit-turn="student"],
 section[aria-label="Answer and tutor"] .space-y-6 > .border-y.py-5 {
   margin-left: auto !important;
   width: fit-content !important;
@@ -8,19 +33,94 @@ section[aria-label="Answer and tutor"] .space-y-6 > .border-y.py-5 {
   border-radius: 22px !important;
   background: #1F140C !important;
   box-shadow: 0 8px 24px rgba(31, 20, 12, 0.08) !important;
+  animation: studyedit-turn-in 180ms ease-out both;
 }
 
+section[aria-label="Answer and tutor"] .space-y-6 > [data-studyedit-turn="student"] > div:first-child,
 section[aria-label="Answer and tutor"] .space-y-6 > .border-y.py-5 > div:first-child {
   margin-bottom: 6px !important;
   color: rgba(250, 245, 236, 0.62) !important;
 }
 
+section[aria-label="Answer and tutor"] .space-y-6 > [data-studyedit-turn="student"] > div:nth-child(2),
 section[aria-label="Answer and tutor"] .space-y-6 > .border-y.py-5 > div:nth-child(2) {
   color: #FAF5EC !important;
 }
 
+/* A completed case becomes a quiet reference line rather than another component to operate. */
+[data-studyedit-case-summary="true"] {
+  border-top: 1px solid #E8DCC4 !important;
+  border-bottom: 0 !important;
+  padding: 14px 0 10px !important;
+  opacity: 0.9;
+}
+
+[data-studyedit-case-summary="true"] > span:first-child > span:first-child {
+  font-size: 14px !important;
+  font-weight: 700 !important;
+}
+
+[data-studyedit-case-summary="true"] > span:first-child > span:nth-child(2) {
+  margin-top: 2px !important;
+  font-size: 12px !important;
+}
+
+[data-studyedit-case-summary="true"] > span:last-child {
+  font-size: 11px !important;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  text-decoration-color: #C7B6A1;
+}
+
+/* Thinking should read like a pause in a conversation, not an app loading state. */
+section[aria-label="Answer and tutor"] [role="status"] {
+  min-height: 28px;
+  animation: studyedit-turn-in 180ms ease-out both;
+}
+
+section[aria-label="Answer and tutor"] [role="status"] > span:first-child {
+  font-weight: 600 !important;
+  letter-spacing: -0.01em;
+}
+
+/* The composer is part of the conversation, not a separate control panel. */
+section[aria-label="Answer and tutor"] form {
+  margin-top: 28px !important;
+  box-shadow: 0 6px 20px rgba(31, 20, 12, 0.035) !important;
+}
+
+section[aria-label="Answer and tutor"] [data-studyedit-stuck="true"] {
+  margin-top: 10px !important;
+  font-size: 12px !important;
+  text-decoration-thickness: 1px !important;
+}
+
+/* The next vignette arrives softly, rather than reading like a new page load. */
+section[aria-label="Question"].studyedit-case-enter {
+  animation: studyedit-case-in 300ms cubic-bezier(.2,.8,.2,1) both;
+}
+
+@keyframes studyedit-turn-in {
+  from { opacity: 0; transform: translateY(5px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes studyedit-case-in {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
 @media (max-width: 600px) {
+  section[aria-label="Answer and tutor"] .space-y-6 > [data-studyedit-turn="student"],
   section[aria-label="Answer and tutor"] .space-y-6 > .border-y.py-5 {
     max-width: 90% !important;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  section[aria-label="Answer and tutor"] .space-y-6 > [data-studyedit-turn],
+  section[aria-label="Question"].studyedit-case-enter,
+  section[aria-label="Answer and tutor"] [role="status"] {
+    animation: none !important;
   }
 }
