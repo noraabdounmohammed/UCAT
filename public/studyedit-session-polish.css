@@ -1,23 +1,57 @@
-/* StudyEdit continuous lesson polish.
-   The session should feel like one tutor-led surface, not a stack of software states. */
+/* StudyEdit lesson surface: one tutor, one typeface, very little chrome. */
 
-/* Never reveal curriculum/concept metadata while the learner is still solving the case.
-   Labels such as "Chronic glaucoma – management aim" can collapse the diagnostic task. */
+html body,
+html body button,
+html body input,
+html body textarea,
+html body select,
+html body summary,
+html body h1,
+html body h2,
+html body h3,
+html body h4,
+html body p,
+html body div,
+html body span {
+  font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif !important;
+}
+
+/* Never reveal curriculum/concept metadata while the learner is solving the case. */
 section[aria-label="Question"] > div:first-child {
   display: none !important;
 }
 
-/* Correctness should be unmistakable, but delivered like a tutor speaking rather than a status badge. */
+/* The case itself should read like ordinary, well-set text. */
+section[aria-label="Question"] {
+  letter-spacing: 0 !important;
+}
+
+section[aria-label="Question"] > div:nth-child(2),
+section[aria-label="Question"] > div:nth-child(3) {
+  font-size: 17px !important;
+  line-height: 1.62 !important;
+  letter-spacing: 0 !important;
+}
+
+/* Once the learner has answered, the tutor continues. No record-card header. */
+[data-studyedit-case-summary="true"] {
+  display: none !important;
+}
+
+[data-studyedit-case-summary="true"] + section[aria-label="Answer and tutor"] {
+  margin-top: 6px !important;
+}
+
+/* Correctness is a quiet acknowledgement, not a banner. */
 section[aria-label="Answer and tutor"] > [data-studyedit-outcome="true"] {
   display: block !important;
-  margin-bottom: 22px !important;
-  font-size: 19px !important;
-  font-weight: 750 !important;
-  line-height: 1.5 !important;
-  letter-spacing: -0.015em !important;
+  margin: 0 0 14px !important;
+  font-size: 15px !important;
+  font-weight: 650 !important;
+  line-height: 1.45 !important;
+  letter-spacing: 0 !important;
   text-transform: none !important;
-  color: #3B2A1E !important;
-  animation: studyedit-turn-in 180ms ease-out both;
+  animation: studyedit-turn-in 160ms ease-out both;
 }
 
 section[aria-label="Answer and tutor"] > [data-studyedit-outcome="true"][data-studyedit-result="correct"] {
@@ -25,14 +59,14 @@ section[aria-label="Answer and tutor"] > [data-studyedit-outcome="true"][data-st
 }
 
 section[aria-label="Answer and tutor"] > [data-studyedit-outcome="true"][data-studyedit-result="incorrect"] {
-  color: #94483D !important;
+  color: #8F5148 !important;
 }
 
-/* Keep the teaching transcript visually continuous. */
+/* Tutor prose is deliberately the same readable body face as the question. */
 section[aria-label="Answer and tutor"] .space-y-6 {
   display: flex !important;
   flex-direction: column !important;
-  gap: 26px !important;
+  gap: 18px !important;
 }
 
 section[aria-label="Answer and tutor"] .space-y-6 > .border-t.pt-6 {
@@ -41,115 +75,130 @@ section[aria-label="Answer and tutor"] .space-y-6 > .border-t.pt-6 {
 }
 
 section[aria-label="Answer and tutor"] .space-y-6 > [data-studyedit-turn="tutor"] {
-  animation: studyedit-turn-in 240ms ease-out both;
+  animation: studyedit-turn-in 190ms ease-out both;
 }
 
-/* Learner voice: a compact dark bubble. The shape already says who is speaking, so no "You" label is needed. */
+section[aria-label="Answer and tutor"] .space-y-6 > [data-studyedit-turn="tutor"] > div,
+section[aria-label="Answer and tutor"] .space-y-6 > [data-studyedit-turn="tutor"] p {
+  font-size: 17px !important;
+  line-height: 1.62 !important;
+  letter-spacing: 0 !important;
+  font-weight: 450 !important;
+}
+
+section[aria-label="Answer and tutor"] strong,
+section[aria-label="Answer and tutor"] em {
+  background: none !important;
+  text-decoration: none !important;
+  font-style: normal !important;
+  font-weight: 700 !important;
+}
+
+/* Learner voice: one compact dark reply bubble. */
 section[aria-label="Answer and tutor"] .space-y-6 > [data-studyedit-turn="student"],
 section[aria-label="Answer and tutor"] .space-y-6 > .border-y.py-5 {
   margin-left: auto !important;
   width: fit-content !important;
   max-width: 86% !important;
-  padding: 10px 16px 11px !important;
+  padding: 9px 14px 10px !important;
   border: 0 !important;
-  border-radius: 20px !important;
+  border-radius: 18px !important;
   background: #1F140C !important;
-  box-shadow: 0 8px 24px rgba(31, 20, 12, 0.08) !important;
-  animation: studyedit-turn-in 180ms ease-out both;
+  box-shadow: none !important;
+  animation: studyedit-turn-in 160ms ease-out both;
 }
 
 section[aria-label="Answer and tutor"] .space-y-6 > [data-studyedit-turn="student"] > div,
 section[aria-label="Answer and tutor"] .space-y-6 > .border-y.py-5 > div {
   margin: 0 !important;
   color: #FAF5EC !important;
+  font-size: 16px !important;
+  line-height: 1.5 !important;
 }
 
-/* Once the learner has answered, don't turn the case into an app-style record card.
-   Keep only a quiet way back to the vignette; the tutor conversation should be the thing that remains. */
-[data-studyedit-case-summary="true"] {
-  width: fit-content !important;
-  margin: 0 0 4px auto !important;
-  padding: 0 !important;
-  border: 0 !important;
-  background: transparent !important;
-  opacity: 0.78;
-  justify-content: flex-end !important;
+/* The confidence question comes before any result/tutor machinery is visible. */
+html[data-studyedit-confidence-open="true"] section[aria-label="Answer and tutor"],
+html[data-studyedit-confidence-open="true"] [data-studyedit-case-summary="true"] {
+  visibility: hidden !important;
 }
 
-[data-studyedit-case-summary="true"] > span:first-child {
-  display: none !important;
-}
-
-[data-studyedit-case-summary="true"] > span:last-child {
-  font-size: 11px !important;
-  font-weight: 650 !important;
-  color: #8A7560 !important;
-  text-decoration: underline;
-  text-underline-offset: 3px;
-  text-decoration-color: #C7B6A1;
-}
-
-[data-studyedit-case-summary="true"] + section[aria-label="Answer and tutor"] {
-  margin-top: 10px !important;
-}
-
-/* Thinking should read like a pause in a conversation, not an app loading state. */
+/* Thinking is just a conversational pause. Do not show a disabled composer underneath it. */
 section[aria-label="Answer and tutor"] [role="status"] {
-  min-height: 28px;
-  animation: studyedit-turn-in 180ms ease-out both;
+  min-height: 24px;
+  padding: 2px 0 !important;
+  animation: studyedit-turn-in 150ms ease-out both;
 }
 
 section[aria-label="Answer and tutor"] [role="status"] > span:first-child {
-  font-weight: 600 !important;
-  letter-spacing: -0.01em;
+  font-size: 12px !important;
+  font-weight: 500 !important;
+  letter-spacing: 0 !important;
 }
 
-/* A tutor who is ready to continue still leaves space for curiosity. */
+section[aria-label="Answer and tutor"]:has([role="status"]) form,
+section[aria-label="Answer and tutor"]:has([role="status"]) [data-studyedit-stuck="true"] {
+  display: none !important;
+}
+
+/* 'I'm stuck' is useful as language, but it does not need permanent screen real estate. */
+section[aria-label="Answer and tutor"] [data-studyedit-stuck="true"] {
+  display: none !important;
+}
+
+/* A tutor who is ready to continue leaves a small, calm opening for curiosity. */
 section[aria-label="Answer and tutor"] [data-studyedit-advance="true"] {
-  margin-top: 8px !important;
-  padding-top: 0 !important;
-  border-top: 0 !important;
+  margin-top: 14px !important;
+  padding-top: 16px !important;
+  border-top: 1px solid #E3D6C2 !important;
+}
+
+section[aria-label="Answer and tutor"] [data-studyedit-advance="true"] > div:first-child {
+  font-size: 15px !important;
+  font-weight: 650 !important;
 }
 
 section[aria-label="Answer and tutor"] [data-studyedit-advance="true"] button {
   font-size: 12px !important;
 }
 
-/* Keep one scroll surface in charge when the mobile keyboard opens. */
+/* One scroll surface controls the mobile keyboard. */
 div.fixed.inset-0.flex.flex-col.overflow-hidden > .flex-1.overflow-y-auto {
   overscroll-behavior-y: contain;
-  scroll-padding-bottom: calc(92px + env(safe-area-inset-bottom));
+  scroll-padding-bottom: calc(84px + env(safe-area-inset-bottom));
   -webkit-overflow-scrolling: touch;
 }
 
-/* The composer is part of the conversation. Once it enters view it stays at the bottom
-   of the lesson instead of making the browser chase it around when the keyboard opens. */
+/* Composer: plain tool at the edge of the lesson, not a floating app component. */
 section[aria-label="Answer and tutor"] form {
   position: sticky !important;
-  bottom: max(10px, env(safe-area-inset-bottom)) !important;
+  bottom: max(8px, env(safe-area-inset-bottom)) !important;
   z-index: 24 !important;
-  margin-top: 28px !important;
-  box-shadow: 0 6px 20px rgba(31, 20, 12, 0.055), 0 0 0 10px rgba(244, 236, 223, 0.90) !important;
+  margin-top: 22px !important;
+  border-radius: 15px !important;
+  box-shadow: 0 0 0 7px rgba(244, 236, 223, 0.95) !important;
   transform: translateZ(0);
 }
 
 section[aria-label="Answer and tutor"] form:focus-within {
-  box-shadow: 0 8px 28px rgba(31, 20, 12, 0.09), 0 0 0 10px rgba(244, 236, 223, 0.96) !important;
+  box-shadow: 0 0 0 7px rgba(244, 236, 223, 1) !important;
 }
 
-section[aria-label="Answer and tutor"] [data-studyedit-stuck="true"] {
-  margin-top: 10px !important;
-  font-size: 12px !important;
-  text-decoration-thickness: 1px !important;
+section[aria-label="Answer and tutor"] form input {
+  font-size: 15px !important;
+  font-weight: 450 !important;
 }
 
-/* The next vignette arrives softly, rather than reading like a new page load. */
+section[aria-label="Answer and tutor"] form button[type="submit"] {
+  width: 38px !important;
+  height: 38px !important;
+}
+
+/* New cases enter softly. */
 section[aria-label="Question"].studyedit-case-enter {
-  animation: studyedit-case-in 300ms cubic-bezier(.2,.8,.2,1) both;
+  animation: studyedit-case-in 220ms cubic-bezier(.2,.8,.2,1) both;
 }
 
-/* Previous teaching stays physically above the active case.
-   It is not a results drawer or a history screen; it is simply the page you have already written together. */
+/* Previous teaching remains above the active case, but stays visually quiet. */
 [data-studyedit-history="true"] {
   width: 100%;
 }
@@ -157,29 +206,21 @@ section[aria-label="Question"].studyedit-case-enter {
 .studyedit-archived-lesson {
   position: relative;
   width: 100%;
-  border-bottom: 1px solid rgba(196, 177, 153, 0.52);
+  border-bottom: 1px solid rgba(196, 177, 153, 0.38);
 }
 
 .studyedit-archived-lesson [data-studyedit-archive-main="true"] {
-  padding-top: 30px !important;
-  padding-bottom: 42px !important;
+  padding-top: 24px !important;
+  padding-bottom: 32px !important;
 }
 
 .studyedit-archived-lesson section[aria-label="Answer and tutor"] {
-  margin-top: 24px !important;
-}
-
-.studyedit-archived-lesson [data-studyedit-case-summary="true"] {
-  cursor: default !important;
-}
-
-.studyedit-archived-lesson [data-studyedit-case-summary="true"] > span:last-child:empty {
-  display: none !important;
+  margin-top: 18px !important;
 }
 
 .studyedit-archive-case-details {
-  margin-top: 4px;
-  padding-bottom: 4px;
+  margin-top: 5px;
+  padding-bottom: 2px;
 }
 
 .studyedit-archive-case-details > summary {
@@ -188,7 +229,7 @@ section[aria-label="Question"].studyedit-case-enter {
   list-style: none;
   color: #8A7560;
   font-size: 11px;
-  font-weight: 650;
+  font-weight: 550;
   text-decoration: underline;
   text-decoration-color: #C7B6A1;
   text-underline-offset: 3px;
@@ -199,12 +240,12 @@ section[aria-label="Question"].studyedit-case-enter {
 }
 
 .studyedit-archive-case-details[open] > summary {
-  margin-bottom: 20px;
+  margin-bottom: 16px;
 }
 
 .studyedit-archive-case-body {
-  padding: 22px 0 10px;
-  border-top: 1px solid rgba(232, 220, 196, 0.8);
+  padding: 18px 0 8px;
+  border-top: 1px solid rgba(232, 220, 196, 0.72);
 }
 
 .studyedit-archive-case-body [data-studyedit-archived-case="true"] {
@@ -215,7 +256,6 @@ section[aria-label="Question"].studyedit-case-enter {
   cursor: default !important;
 }
 
-/* Don't replay entrance animations every time an archived turn is re-injected. */
 .studyedit-archived-lesson [data-studyedit-turn],
 .studyedit-archived-lesson section[aria-label="Answer and tutor"] [role="status"],
 .studyedit-archive-case-body section[aria-label="Question"] {
@@ -223,12 +263,12 @@ section[aria-label="Question"].studyedit-case-enter {
 }
 
 @keyframes studyedit-turn-in {
-  from { opacity: 0; transform: translateY(5px); }
+  from { opacity: 0; transform: translateY(3px); }
   to { opacity: 1; transform: translateY(0); }
 }
 
 @keyframes studyedit-case-in {
-  from { opacity: 0; transform: translateY(8px); }
+  from { opacity: 0; transform: translateY(5px); }
   to { opacity: 1; transform: translateY(0); }
 }
 
@@ -238,12 +278,8 @@ section[aria-label="Question"].studyedit-case-enter {
     max-width: 90% !important;
   }
 
-  section[aria-label="Answer and tutor"] form {
-    bottom: max(8px, env(safe-area-inset-bottom)) !important;
-  }
-
   .studyedit-archived-lesson [data-studyedit-archive-main="true"] {
-    padding-bottom: 36px !important;
+    padding-bottom: 28px !important;
   }
 }
 
