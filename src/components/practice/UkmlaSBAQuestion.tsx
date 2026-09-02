@@ -38,6 +38,15 @@ type ConfidenceLevel = 'know' | 'unsure' | 'guess';
 type TutorTurn = { role: 'student' | 'tutor'; text: string; followUpSba?: StructuredFollowUpSba };
 type TutorAssessment = 'pass' | 'partial' | 'fail' | 'clarify';
 type TutorPlan = { instruction: string; followUp?: FollowUpSbaRequest };
+type StructuredAttemptRecord = {
+  sbaId: string;
+  stem: string;
+  selectedId: string;
+  selectedText: string;
+  correctAnswerId: string;
+  correctAnswerText: string;
+  result: 'correct' | 'incorrect';
+};
 
 const C = {
   parchment: '#F4ECDF',
@@ -149,6 +158,14 @@ function parseTutorAssessment(text: string): TutorAssessment {
   if (value.includes('PASS')) return 'pass';
   if (value.includes('FAIL')) return 'fail';
   return 'partial';
+}
+
+function isSelectionCorrectionMessage(text: string): boolean {
+  const value = String(text || '').trim().toLowerCase();
+  return /(?:that's|thats|that is|this is) not what i (?:chose|picked|selected|answered)/.test(value)
+    || /i (?:didn't|did not) (?:choose|pick|select|answer)/.test(value)
+    || /you (?:said|say|think|thought) i (?:chose|picked|selected)/.test(value)
+    || /you(?:'re| are) saying i (?:chose|picked|selected)/.test(value);
 }
 
 const emphasisStyle: React.CSSProperties = {
@@ -345,6 +362,7 @@ export const UkmlaSBAQuestion: React.FC<UkmlaSBAQuestionProps> = ({
   const [confidenceLevel, setConfidenceLevel] = useState<ConfidenceLevel | null>(null);
   const [advancePending, setAdvancePending] = useState(false);
   const [resolvedFollowUpIds, setResolvedFollowUpIds] = useState<string[]>([]);
+  const structuredAttemptHistoryRef = useRef<StructuredAttemptRecord[]>([]);
   const abortControllerRef = useRef<AbortController | null>(null);
   const advanceTimerRef = useRef<number | null>(null);
   const scrollRef = useRef<HTMLDivElement | null>(null);
@@ -396,6 +414,7 @@ export const UkmlaSBAQuestion: React.FC<UkmlaSBAQuestionProps> = ({
     setConfidenceLevel(null);
     setAdvancePending(false);
     setResolvedFollowUpIds([]);
+    structuredAttemptHistoryRef.current = [];
     abortControllerRef.current?.abort();
     clearAdvanceTimer();
     return () => clearAdvanceTimer();
@@ -457,19 +476,44 @@ export const UkmlaSBAQuestion: React.FC<UkmlaSBAQuestionProps> = ({
     window.setTimeout(() => inputRef.current?.focus(), 40);
   };
 
-  const makeContext = (selectedId: string, confidence: ConfidenceLevel | null): QuestionContext => {
+  const makeContext = (
+    selectedId: string,
+    confidence: ConfidenceLevel | null,
+    preferLatestInteraction = false,
+  ): QuestionContext => {
     const selectedText = options.find((option: any) => option.id === selectedId)?.text || 'Selected option';
     const optionLines = options.map((option: any) => `${option.id}. ${option.text}`).join('\n');
     const sourceLabel = String((question as any).guideline || (question as any).source_type || '').trim();
     const sourceUrl = String((question as any).guideline_url || '').trim();
     const sourceSection = String((question as any).guideline_section || '').trim();
+    const attemptHistory = structuredAttemptHistoryRef.current.slice(-4);
+    const latestAttempt = attemptHistory[attemptHistory.length - 1];
+    const attemptHistoryText = attemptHistory.length
+      ? [
+          'FOLLOW-UP ATTEMPT HISTORY — these happened AFTER the original SBA and take precedence when discussing later clickable answers:',
+          ...attemptHistory.map((attempt, index) => [
+            `FOLLOW-UP ${index + 1}: ${attempt.stem}`,
+            `LEARNER CHOSE: ${attempt.selectedId}. ${attempt.selectedText}`,
+            `KEYED ANSWER: ${attempt.correctAnswerId}. ${attempt.correctAnswerText}`,
+            `RESULT: ${attempt.result.toUpperCase()}`,
+          ].join('\n')),
+        ].join('\n\n')
+      : '';
+    const activeSelectedAnswer = preferLatestInteraction && latestAttempt
+      ? `${latestAttempt.selectedId}. ${latestAttempt.selectedText}`
+      : `${selectedId}. ${selectedText}`;
+    const activeCorrectAnswer = preferLatestInteraction && latestAttempt
+      ? `${latestAttempt.correctAnswerId}. ${latestAttempt.correctAnswerText}`
+      : `${correctAnswerId}. ${correctOptionText}`;
+
     return {
       question: [
         `CONCEPT: ${conceptTitle}`,
         `QUESTION: ${askLine || rawQuestionContent}`,
         `CLINICAL VIGNETTE: ${displayQuestionContent}`,
-        `STUDENT SELECTED: ${selectedId}. ${selectedText}`,
-        `CORRECT ANSWER: ${correctAnswerId}. ${correctOptionText}`,
+        `ORIGINAL SBA STUDENT SELECTED: ${selectedId}. ${selectedText}`,
+        `ORIGINAL SBA CORRECT ANSWER: ${correctAnswerId}. ${correctOptionText}`,
+        attemptHistoryText,
         `CONFIDENCE: ${confidence || 'not supplied'}`,
         `VERIFIED EXPLANATION: ${explanation || 'Not supplied'}`,
         `KEY FACT: ${keyFact || 'Not supplied'}`,
@@ -477,11 +521,11 @@ export const UkmlaSBAQuestion: React.FC<UkmlaSBAQuestionProps> = ({
         sourceLabel ? `SOURCE LABEL: ${sourceLabel}` : '',
         sourceSection ? `SOURCE SECTION: ${sourceSection}` : '',
         sourceUrl ? `SOURCE URL METADATA: ${sourceUrl}` : '',
-        `OPTIONS:\n${optionLines}`,
+        `ORIGINAL OPTIONS:\n${optionLines}`,
       ].filter(Boolean).join('\n\n'),
       options: options.map((option: any) => `${option.id}. ${option.text}`),
-      correctAnswer: `${correctAnswerId}. ${correctOptionText}`,
-      selectedAnswer: `${selectedId}. ${selectedText}`,
+      correctAnswer: activeCorrectAnswer,
+      selectedAnswer: activeSelectedAnswer,
       explanation: explanation || keyFact,
     };
   };
@@ -514,7 +558,7 @@ export const UkmlaSBAQuestion: React.FC<UkmlaSBAQuestionProps> = ({
           const base = next[index].text.trim();
           next[index] = {
             ...next[index],
-            text: `${base}${base ? '\n\n' : ''}In one sentence, what makes the correct option better than the closest alternative?`,
+            text: `${base}${base ? '\n\n' : ''}Before we leave it: what would you use to make this decision next time?`,
           };
           break;
         }
@@ -544,7 +588,8 @@ export const UkmlaSBAQuestion: React.FC<UkmlaSBAQuestionProps> = ({
     setAiQuestion('');
     setAiStreaming(true);
 
-    const context = makeContext(selectedId, confidence);
+    const tutorContext = makeContext(selectedId, confidence, true);
+    const generationContext = makeContext(selectedId, confidence, false);
     const transcriptTurns = [
       ...priorTurns,
       ...(studentText?.trim() ? [{ role: 'student' as const, text: studentText.trim() }] : []),
@@ -573,7 +618,7 @@ export const UkmlaSBAQuestion: React.FC<UkmlaSBAQuestionProps> = ({
     const structuredNote = followUpWithHistory
       ? '\n\nA separate structured, quality-checked SBA will be generated after your teaching turn. Do NOT include a question, “Quick check”, or A-D answer options in your prose.'
       : '';
-    const prompt = `${instruction}${structuredNote}\n\nCONVERSATION SO FAR:\n${transcript || '(none yet)'}\n\nUse only the supplied current-question context for medical claims. Do not contradict the verified explanation. Keep the interaction concise and tutor-like. Prefer 1-2 sentences and usually stay under 55 words unless answering a genuine learner question. Never narrate the tutoring machinery or evidence count. Avoid phrases such as “lock this in”, “pattern to remember”, “you've got this solidly”, “secure”, “mastered”, or “I've seen enough”. If a point was already clearly stated in the preceding tutor turn, do not state it again unless correcting a repeated error.`;
+    const prompt = `${instruction}${structuredNote}\n\nCONVERSATION SO FAR:\n${transcript || '(none yet)'}\n\nINTERACTION TRUTH RULES:\n- The ORIGINAL SBA selection is an earlier event. If FOLLOW-UP ATTEMPT HISTORY exists, the latest follow-up record is the learner’s most recent clickable answer and takes precedence when you refer to what they just chose.\n- Never say “you chose”, “you picked”, or “you selected” an option unless that exact choice is supported by the latest applicable interaction record or the learner’s latest message.\n- Do not confuse an option from the original SBA with a later quick check.\n- If the learner says you misreported what they chose, treat that as a correction of your interaction record, not as a medical mistake. Acknowledge it immediately and do not argue with them or repeat the stale choice.\n\nUse only the supplied current-question context for medical claims. Do not contradict the verified explanation. Keep the interaction concise and tutor-like. Prefer 1-2 sentences and usually stay under 55 words unless answering a genuine learner question. Never narrate the tutoring machinery or evidence count. Avoid phrases such as “lock this in”, “pattern to remember”, “you've got this solidly”, “secure”, “mastered”, or “I've seen enough”. If a point was already clearly stated in the preceding tutor turn, do not state it again unless correcting a repeated error.`;
     const controller = new AbortController();
     abortControllerRef.current = controller;
     let streamed = '';
@@ -583,7 +628,7 @@ export const UkmlaSBAQuestion: React.FC<UkmlaSBAQuestionProps> = ({
     try {
       await generateAIResponseStream(
         prompt,
-        context,
+        tutorContext,
         token => {
           streamed += token;
           setTutorTurns(previous => {
@@ -598,7 +643,7 @@ export const UkmlaSBAQuestion: React.FC<UkmlaSBAQuestionProps> = ({
       );
 
       if (!controller.signal.aborted && followUpWithHistory) {
-        const followUp = await generateQualityCheckedFollowUpSba(context, followUpWithHistory);
+        const followUp = await generateQualityCheckedFollowUpSba(generationContext, followUpWithHistory);
         if (controller.signal.aborted) return;
         if (followUp) attachFollowUpToLatestTutorTurn(followUp);
         else appendSafeFallbackCheck();
@@ -634,6 +679,7 @@ export const UkmlaSBAQuestion: React.FC<UkmlaSBAQuestionProps> = ({
     if (!query || aiStreaming || tutorAssessing || !committedAnswer) return;
 
     const wasReadyToMoveOn = advancePending;
+    const selectionCorrection = isSelectionCorrectionMessage(query);
     cancelAdvance();
     setAiQuestion('');
     if (!assessmentOverride || (assessmentOverride === 'clarify' && wasReadyToMoveOn)) {
@@ -644,15 +690,15 @@ export const UkmlaSBAQuestion: React.FC<UkmlaSBAQuestionProps> = ({
     try {
       const confidence = confidenceLevel || readLatestConfidence(conceptTitle, answerStartedAt - 1000);
       if (confidence && confidence !== confidenceLevel) setConfidenceLevel(confidence);
-      const context = makeContext(committedAnswer, confidence);
+      const context = makeContext(committedAnswer, confidence, true);
       const recentTranscript = [
         ...tutorTurns.slice(-8),
         { role: 'student' as const, text: query },
       ].map(turnForTranscript).join('\n');
 
-      let assessment: TutorAssessment = assessmentOverride || 'partial';
-      if (!assessmentOverride) {
-        const assessmentPrompt = `You are the hidden StudyEdit tutoring controller. Judge the learner's latest reply against the tutor's immediately preceding question or instruction and the verified current-question context. Return exactly ONE label and nothing else: PASS, PARTIAL, FAIL, or CLARIFY.\n\nPASS = the reply correctly demonstrates the specific understanding the tutor just tested. A single genuinely diagnostic PASS is sufficient evidence for this learning step; do not demand repetition for its own sake.\nPARTIAL = directionally right but incomplete, vague, or still dependent on prompting.\nFAIL = incorrect or reveals the same misconception.\nCLARIFY = the learner is asking a genuine question, requesting explanation, or otherwise not attempting the tutor's check.\n\nDo not reward confident wording if the medical content is wrong. Do not require wording identical to the model answer.\n\nTRANSCRIPT:\n${recentTranscript}`;
+      let assessment: TutorAssessment = selectionCorrection ? 'clarify' : (assessmentOverride || 'partial');
+      if (!assessmentOverride && !selectionCorrection) {
+        const assessmentPrompt = `You are the hidden StudyEdit tutoring controller. Judge the learner's latest reply against the tutor's immediately preceding question or instruction and the verified current-question context. Return exactly ONE label and nothing else: PASS, PARTIAL, FAIL, or CLARIFY.\n\nPASS = the reply correctly demonstrates the specific understanding the tutor just tested. A single genuinely diagnostic PASS is sufficient evidence for this learning step; do not demand repetition for its own sake.\nPARTIAL = directionally right but incomplete, vague, or still dependent on prompting.\nFAIL = incorrect or reveals the same misconception.\nCLARIFY = the learner is asking a genuine question, requesting explanation, correcting what StudyEdit claims they chose, or otherwise not attempting the tutor's check. A message such as “that’s not what I chose” is CLARIFY, never FAIL.\n\nDo not reward confident wording if the medical content is wrong. Do not require wording identical to the model answer. When FOLLOW-UP ATTEMPT HISTORY exists, use the latest follow-up answer rather than an older original-SBA choice.\n\nTRANSCRIPT:\n${recentTranscript}`;
         try {
           assessment = parseTutorAssessment(await generateAIResponse(assessmentPrompt, context));
         } catch {
@@ -661,14 +707,18 @@ export const UkmlaSBAQuestion: React.FC<UkmlaSBAQuestionProps> = ({
       }
 
       if (assessment === 'clarify') {
+        const clarificationInstruction = selectionCorrection
+          ? 'The learner is correcting StudyEdit because you misreported what they chose. This is an interaction correction, not a medical error. Apologise briefly and plainly. If FOLLOW-UP ATTEMPT HISTORY clearly shows the latest clickable choice, use that record; otherwise say you should not assume and ask which option they selected. Do not defend or repeat an older ORIGINAL SBA choice. Do not reteach the whole concept and do not test them again in this turn.'
+          : wasReadyToMoveOn
+            ? 'The learning step is already complete and the learner is asking a curiosity question before moving on. Answer their question directly, warmly, and concisely using the verified context. Do not test them, do not generate another SBA, and do not reopen mastery assessment. End naturally; the interface will again offer space for another question or the next case.'
+            : 'The learner is asking for clarification rather than attempting a check. Answer their question directly and concisely. Do not automatically generate another SBA. If evidence is still needed, end with ONE short natural question that targets the unresolved point. Do not narrate mastery or the tutoring process.';
+
         await runTutor(
           query,
           false,
           undefined,
           undefined,
-          wasReadyToMoveOn
-            ? 'The learning step is already complete and the learner is asking a curiosity question before moving on. Answer their question directly, warmly, and concisely using the verified context. Do not test them, do not generate another SBA, and do not reopen mastery assessment. End naturally; the interface will again offer space for another question or the next case.'
-            : 'The learner is asking for clarification rather than attempting a check. Answer their question directly and concisely. Do not automatically generate another SBA. If evidence is still needed, end with ONE short natural question that targets the unresolved point. Do not narrate mastery or the tutoring process.',
+          clarificationInstruction,
         );
         if (wasReadyToMoveOn) setAdvancePending(true);
         return;
@@ -718,9 +768,24 @@ export const UkmlaSBAQuestion: React.FC<UkmlaSBAQuestionProps> = ({
     if (tutorBusy || resolvedFollowUpIds.includes(sba.id)) return;
     const selected = sba.options.find(option => option.id === answerId);
     if (!selected) return;
+    const correctOption = sba.options.find(option => option.id === sba.correctAnswerId);
     const attemptNumber = resolvedFollowUpIds.length + 1;
-    setResolvedFollowUpIds(previous => previous.includes(sba.id) ? previous : [...previous, sba.id]);
     const assessment: TutorAssessment = answerId === sba.correctAnswerId ? 'pass' : 'fail';
+
+    structuredAttemptHistoryRef.current = [
+      ...structuredAttemptHistoryRef.current,
+      {
+        sbaId: sba.id,
+        stem: sba.transferCase?.question || sba.stem,
+        selectedId: answerId,
+        selectedText: selected.text,
+        correctAnswerId: sba.correctAnswerId,
+        correctAnswerText: correctOption?.text || sba.correctAnswerId,
+        result: assessment === 'pass' ? 'correct' : 'incorrect',
+      },
+    ].slice(-6);
+
+    setResolvedFollowUpIds(previous => previous.includes(sba.id) ? previous : [...previous, sba.id]);
     await handleStudentReply(`${answerId}. ${selected.text}`, assessment, attemptNumber);
   };
 
