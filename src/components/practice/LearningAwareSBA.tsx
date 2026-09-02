@@ -36,7 +36,6 @@ type EvidenceClass =
   | 'uninformative_negative';
 
 const C = {
-  paper: '#FFFDF8',
   parchment: '#F4ECDF',
   espresso: '#1F140C',
   muted: '#8A7560',
@@ -68,6 +67,13 @@ export const LearningAwareSBA: React.FC<LearningAwareSBAProps> = (props) => {
     setPendingCorrect(null);
   }, [props.question.id, props.currentIndex]);
 
+  useEffect(() => {
+    if (typeof document === 'undefined') return;
+    if (confidenceOpen) document.documentElement.setAttribute('data-studyedit-confidence-open', 'true');
+    else document.documentElement.removeAttribute('data-studyedit-confidence-open');
+    return () => document.documentElement.removeAttribute('data-studyedit-confidence-open');
+  }, [confidenceOpen]);
+
   const saveSignal = (signal: string, value?: string, extra?: Record<string, unknown>) => {
     try {
       const key = `learning_frontier_${props.question.id || props.question.concept_id || props.currentIndex || 0}_${signal}_${value || ''}`;
@@ -78,8 +84,6 @@ export const LearningAwareSBA: React.FC<LearningAwareSBAProps> = (props) => {
   };
 
   const handleChildAnswer = (isCorrect: boolean) => {
-    // Confidence is captured before correctness reaches the parent session.
-    // Keep the case visible: this is the tutor asking one follow-up, not a new screen.
     setPendingCorrect(isCorrect);
     setConfidenceOpen(true);
   };
@@ -102,7 +106,6 @@ export const LearningAwareSBA: React.FC<LearningAwareSBAProps> = (props) => {
 
   return (
     <>
-      {/* Keep the question surface simple. Highlight-to-explain was intentionally removed. */}
       <UkmlaSBAQuestion {...props} onAnswer={handleChildAnswer} />
 
       {confidenceOpen && (
@@ -112,46 +115,21 @@ export const LearningAwareSBA: React.FC<LearningAwareSBAProps> = (props) => {
           aria-label="Answer confidence"
           style={{
             fontFamily: learningFont,
-            background: `linear-gradient(to top, ${C.parchment} 72%, rgba(244,236,223,0))`,
+            background: `linear-gradient(to top, ${C.parchment} 76%, rgba(244,236,223,0))`,
           }}
         >
-          <div className="mx-auto w-full max-w-[700px] px-5 pb-[max(14px,env(safe-area-inset-bottom))] pt-10 sm:px-8">
+          <div className="mx-auto w-full max-w-[700px] px-5 pb-[max(14px,env(safe-area-inset-bottom))] pt-8 sm:px-8">
             <div
-              className="pointer-events-auto border-t pt-4"
+              className="pointer-events-auto flex flex-wrap items-center gap-x-5 gap-y-3 border-t pt-4"
               style={{ borderColor: C.line, backgroundColor: C.parchment }}
             >
-              <div className="text-[16px] font-semibold tracking-[-0.01em]" style={{ color: C.espresso }}>
-                How did that feel?
+              <div className="mr-auto text-[15px] font-semibold tracking-[-0.01em]" style={{ color: C.espresso }}>
+                How sure were you?
               </div>
-              <div className="mt-1 text-[12px] leading-5" style={{ color: C.muted }}>
-                Knew it, unsure, or mostly a guess?
-              </div>
-
-              <div className="mt-3 grid grid-cols-3 border-y" style={{ borderColor: C.line }}>
-                <button
-                  type="button"
-                  onClick={() => commitConfidence('know')}
-                  className="min-h-[48px] px-2 text-[14px] font-semibold transition active:opacity-55"
-                  style={{ color: C.espresso, backgroundColor: 'transparent' }}
-                >
-                  Knew it
-                </button>
-                <button
-                  type="button"
-                  onClick={() => commitConfidence('unsure')}
-                  className="min-h-[48px] border-x px-2 text-[14px] font-semibold transition active:opacity-55"
-                  style={{ color: C.espresso, borderColor: C.line, backgroundColor: 'transparent' }}
-                >
-                  Unsure
-                </button>
-                <button
-                  type="button"
-                  onClick={() => commitConfidence('guess')}
-                  className="min-h-[48px] px-2 text-[14px] font-semibold transition active:opacity-55"
-                  style={{ color: C.espresso, backgroundColor: 'transparent' }}
-                >
-                  Guessed
-                </button>
+              <div className="flex items-center gap-4 text-[14px] font-semibold" style={{ color: C.espresso }}>
+                <button type="button" onClick={() => commitConfidence('know')} className="underline decoration-[#C5B39D] underline-offset-4 active:opacity-55">Knew it</button>
+                <button type="button" onClick={() => commitConfidence('unsure')} className="underline decoration-[#C5B39D] underline-offset-4 active:opacity-55">Unsure</button>
+                <button type="button" onClick={() => commitConfidence('guess')} className="underline decoration-[#C5B39D] underline-offset-4 active:opacity-55">Guessed</button>
               </div>
             </div>
           </div>
