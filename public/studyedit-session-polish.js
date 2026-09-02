@@ -5,6 +5,9 @@
   };
 
   const text = (node) => (node?.textContent || '').trim();
+  const setTextIfChanged = (node, value) => {
+    if (node && node.textContent !== value) node.textContent = value;
+  };
 
   const cleanMarkdownArtifacts = (root) => {
     if (!root) return;
@@ -65,13 +68,19 @@
       if (!labelNode) return;
 
       button.setAttribute('data-studyedit-case-summary', 'true');
-      labelNode.textContent = 'Review case';
+      if (text(labelNode) !== 'Review case') setTextIfChanged(labelNode, 'Review case');
 
       const firstBlock = button.querySelector(':scope > span:first-child');
       if (!firstBlock) return;
       const lines = firstBlock.querySelectorAll(':scope > span');
-      if (lines[0]) lines[0].textContent = text(lines[0]).replace(/^[✓×]\s*/, '');
-      if (lines[1]) lines[1].textContent = text(lines[1]).replace(/\s*·\s*Correct:.*$/i, '');
+      if (lines[0]) {
+        const next = text(lines[0]).replace(/^[✓×]\s*/, '');
+        if (text(lines[0]) !== next) setTextIfChanged(lines[0], next);
+      }
+      if (lines[1]) {
+        const next = text(lines[1]).replace(/\s*·\s*Correct:.*$/i, '');
+        if (text(lines[1]) !== next) setTextIfChanged(lines[1], next);
+      }
     });
   };
 
@@ -79,17 +88,17 @@
     section.querySelectorAll('button').forEach((button) => {
       const value = text(button);
       if (value === 'Just explain it') {
-        button.textContent = "I'm stuck";
+        setTextIfChanged(button, "I'm stuck");
         button.setAttribute('data-studyedit-stuck', 'true');
       }
       if (value === 'Why the other options are wrong') {
         const label = button.querySelector('span');
-        if (label) label.textContent = 'Review alternatives';
+        if (label) setTextIfChanged(label, 'Review alternatives');
       }
     });
 
     section.querySelectorAll('[role="status"] span:first-child').forEach((node) => {
-      if (text(node).toLowerCase().startsWith('studyedit is thinking')) node.textContent = 'Thinking';
+      if (text(node).toLowerCase().startsWith('studyedit is thinking')) setTextIfChanged(node, 'Thinking');
     });
   };
 
@@ -97,6 +106,7 @@
     const currentCase = document.querySelector('section[aria-label="Question"]');
     if (!currentCase || currentCase === state.lastCase) return;
     state.lastCase = currentCase;
+    state.lastTurnCount = 0;
     currentCase.classList.add('studyedit-case-enter');
   };
 
