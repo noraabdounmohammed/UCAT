@@ -2,39 +2,40 @@
   const style = document.createElement('style');
   style.textContent = `
     [data-studyedit-session-prelude="true"] {
-      margin: 8px 0 44px;
-      padding: 10px 0 0;
+      margin: 2px 0 28px;
+      padding: 2px 0 0;
       color: #2A1E16;
     }
 
     [data-studyedit-session-prelude="true"] .studyedit-prelude-greeting {
       margin: 0;
-      max-width: 620px;
-      font-family: 'Fraunces', Georgia, 'Times New Roman', serif;
-      font-size: clamp(31px, 6.6vw, 40px);
-      font-weight: 400;
-      line-height: 1.08;
-      letter-spacing: -0.038em;
+      max-width: 600px;
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif !important;
+      font-size: 25px;
+      font-weight: 650;
+      line-height: 1.25;
+      letter-spacing: -0.025em;
       color: #1F140C;
     }
 
     [data-studyedit-session-prelude="true"] .studyedit-prelude-body {
-      margin: 17px 0 0;
-      max-width: 590px;
-      font-size: 17px;
-      font-weight: 500;
-      line-height: 1.66;
-      letter-spacing: -0.008em;
+      margin: 12px 0 0;
+      max-width: 580px;
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif !important;
+      font-size: 16px;
+      font-weight: 450;
+      line-height: 1.6;
+      letter-spacing: 0;
       color: #4A382B;
     }
 
     [data-studyedit-session-prelude="true"] .studyedit-prelude-handoff {
-      margin: 23px 0 0;
-      font-family: 'Fraunces', Georgia, 'Times New Roman', serif;
-      font-size: 20px;
-      font-weight: 400;
-      line-height: 1.35;
-      letter-spacing: -0.02em;
+      margin: 16px 0 0;
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif !important;
+      font-size: 16px;
+      font-weight: 650;
+      line-height: 1.5;
+      letter-spacing: -0.01em;
       color: #1F140C;
     }
 
@@ -51,31 +52,31 @@
 
     main[data-studyedit-tutor-loading="true"] h1 {
       max-width: 500px !important;
-      font-size: clamp(30px, 7vw, 40px) !important;
-      line-height: 1.1 !important;
-      letter-spacing: -0.035em !important;
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif !important;
+      font-size: 24px !important;
+      font-weight: 650 !important;
+      line-height: 1.3 !important;
+      letter-spacing: -0.02em !important;
     }
 
     main[data-studyedit-tutor-loading="true"] [data-studyedit-loading-note="true"] {
-      margin-top: 16px !important;
+      margin-top: 12px !important;
       font-size: 13px !important;
       color: #8A7560 !important;
     }
 
     @media (max-width: 600px) {
       [data-studyedit-session-prelude="true"] {
-        margin-bottom: 36px;
-        padding-top: 6px;
+        margin-bottom: 24px;
+      }
+
+      [data-studyedit-session-prelude="true"] .studyedit-prelude-greeting {
+        font-size: 24px;
       }
 
       [data-studyedit-session-prelude="true"] .studyedit-prelude-body {
         font-size: 16px;
-        line-height: 1.62;
-      }
-
-      [data-studyedit-session-prelude="true"] .studyedit-prelude-handoff {
-        margin-top: 21px;
-        font-size: 19px;
+        line-height: 1.58;
       }
     }
   `;
@@ -107,21 +108,21 @@
     const personalGreeting = Boolean(rawGreeting && !/you just need to turn up/i.test(rawGreeting));
 
     let greeting = personalGreeting ? rawGreeting : 'Hi — good to meet you.';
-    let body = "I want to see how you think before I decide what you need from me. We'll start with one case. If you're guessing, tell me. If I’m not making sense, stop me.";
+    let body = "I’ll start with one case and get a feel for how you think. If you’re guessing, tell me. If something doesn’t make sense, stop me.";
 
     if (journey === 'new' && personalGreeting) {
-      body = "Before I decide what will actually help, I want to see how you approach one case. If you're guessing, tell me. If something feels obvious, say so. You can stop me whenever you want.";
+      body = "I’ll start with one case and get a feel for how you think. If you’re guessing, tell me. If something feels obvious, say so.";
     }
 
     if (journey === 'returning' && personalGreeting) {
-      body = "I’ve got a place I want to start. Let’s do one together and I’ll adjust as we go. If something feels obvious, say so. If I’m missing what you mean, stop me.";
+      body = "I’ve got a place I want to start. We’ll do one together and I’ll adjust from there.";
     }
 
     return {
       id: ++introSequence,
       greeting,
       body,
-      handoff: "Alright — here’s the first one.",
+      handoff: "Here’s the first one.",
     };
   };
 
@@ -138,7 +139,6 @@
     pendingPrelude = makePrelude(text(heading));
     introButton.dataset.studyeditContinuousIntroHandled = 'true';
 
-    // The introduction is part of the tutorial, not an onboarding screen.
     introSurface.style.opacity = '0';
     introSurface.style.pointerEvents = 'none';
     requestAnimationFrame(() => introButton.click());
@@ -194,7 +194,7 @@
       if (label instanceof HTMLElement) label.style.display = 'none';
       const moment = Array.from(main.querySelectorAll('span')).find((node) => text(node) === 'One moment');
       if (moment instanceof HTMLElement) {
-        moment.textContent = 'I’m thinking about where to start.';
+        moment.textContent = 'I’m choosing where to start.';
         moment.parentElement?.setAttribute('data-studyedit-loading-note', 'true');
       }
     });
