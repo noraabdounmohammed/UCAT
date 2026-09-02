@@ -13,7 +13,7 @@
       [data-studyedit-floating-exit="true"] {
         position: fixed;
         top: calc(env(safe-area-inset-top, 0px) + 12px);
-        left: 14px;
+        left: calc(env(safe-area-inset-left, 0px) + 12px);
         z-index: 70;
         display: flex;
         width: 42px;
@@ -41,12 +41,6 @@
 
       [data-studyedit-floating-exit-shell="true"] > div.flex-1.overflow-y-auto {
         padding-top: 18px;
-      }
-
-      @media (min-width: 740px) {
-        [data-studyedit-floating-exit="true"] {
-          left: max(18px, calc((100vw - 760px) / 2));
-        }
       }
     `;
     document.head.appendChild(style);
