@@ -10,17 +10,27 @@
     style.id = STYLE_ID;
     style.textContent = `
       [data-studyedit-teaching-object="true"] {
-        margin-top: 18px;
-        padding: 17px 17px 15px;
-        border: 1px solid #B9C5AB;
-        border-radius: 16px;
-        background: #E3E9DA;
-        color: #1F140C;
-        box-shadow: 0 5px 16px rgba(31,20,12,.035);
+        display: block !important;
+        margin: 18px 0 0 !important;
+        padding: 42px 17px 16px !important;
+        border: 1px solid #B9C5AB !important;
+        border-radius: 16px !important;
+        background: #E3E9DA !important;
+        color: #21170F !important;
+        box-shadow: 0 5px 16px rgba(31,20,12,.035) !important;
+        position: relative !important;
+        font-size: 17px !important;
+        font-weight: 720 !important;
+        line-height: 1.5 !important;
+        letter-spacing: -.01em !important;
+        text-decoration: none !important;
       }
 
-      [data-studyedit-teaching-object="true"] [data-studyedit-object-label="true"] {
-        margin: 0 0 9px;
+      [data-studyedit-teaching-object="true"]::before {
+        content: attr(data-studyedit-object-label);
+        position: absolute;
+        top: 16px;
+        left: 17px;
         color: #62734F;
         font-size: 10px;
         font-weight: 800;
@@ -29,97 +39,37 @@
         text-transform: uppercase;
       }
 
-      [data-studyedit-teaching-object="true"] [data-studyedit-object-prompt="true"] {
-        margin: 0 !important;
-        color: #21170F !important;
-        font-size: 17px !important;
-        font-weight: 720 !important;
-        line-height: 1.5 !important;
-        letter-spacing: -.01em !important;
-        text-decoration: none !important;
-        background: none !important;
-      }
-
-      [data-studyedit-object-helper="true"] {
-        margin-top: 7px;
+      [data-studyedit-teaching-object="true"]::after {
+        content: attr(data-studyedit-object-helper);
+        display: block;
+        margin-top: 8px;
         color: #6F8060;
         font-size: 12px;
         font-weight: 560;
         line-height: 1.45;
+        letter-spacing: 0;
       }
 
-      [data-studyedit-object-form="true"] {
-        position: static !important;
-        display: flex !important;
-        align-items: center;
-        gap: 8px;
-        margin: 13px 0 0 !important;
-        padding: 7px 7px 7px 12px !important;
-        border: 1px solid #C3CEB8 !important;
-        border-radius: 13px !important;
-        background: #FFFDF8 !important;
-        box-shadow: none !important;
-        transform: none !important;
+      section[aria-label="Answer and tutor"][data-studyedit-has-open-object="true"] > form:not([data-studyedit-advance-form="true"]) {
+        border-color: #AEBE9F !important;
+        box-shadow: 0 6px 20px rgba(31,20,12,.055), 0 0 0 10px rgba(244,236,223,.90) !important;
       }
 
-      [data-studyedit-object-input="true"] {
-        min-width: 0;
-        flex: 1;
-        border: 0;
-        outline: 0;
-        background: transparent;
-        color: #1F140C;
-        font: inherit;
-        font-size: 15px;
-        font-weight: 520;
-        line-height: 1.4;
-      }
-
-      [data-studyedit-object-input="true"]::placeholder {
-        color: #9A8B79;
-      }
-
-      [data-studyedit-object-send="true"] {
-        display: grid;
-        width: 36px;
-        height: 36px;
-        flex: 0 0 36px;
-        place-items: center;
-        border: 0;
-        border-radius: 999px;
-        background: #62734F;
-        color: #FFFDF8;
-        font-size: 17px;
-        line-height: 1;
-      }
-
-      [data-studyedit-object-send="true"]:disabled {
-        opacity: .38;
-      }
-
-      section[aria-label="Answer and tutor"][data-studyedit-has-open-object="true"] > form:not([data-studyedit-object-form="true"]) {
-        display: none !important;
-      }
-
-      [data-studyedit-teaching-object="true"][data-studyedit-object-answered="true"] [data-studyedit-object-form="true"],
-      [data-studyedit-teaching-object="true"][data-studyedit-object-answered="true"] [data-studyedit-object-helper="true"] {
-        display: none !important;
-      }
-
-      .studyedit-archived-lesson [data-studyedit-object-form="true"] {
-        display: none !important;
+      .studyedit-archived-lesson [data-studyedit-teaching-object="true"]::after {
+        display: none;
       }
 
       @media (max-width: 600px) {
         [data-studyedit-teaching-object="true"] {
-          margin-top: 15px;
-          padding: 15px;
-          border-radius: 15px;
-        }
-
-        [data-studyedit-teaching-object="true"] [data-studyedit-object-prompt="true"] {
+          margin-top: 15px !important;
+          padding: 40px 15px 15px !important;
+          border-radius: 15px !important;
           font-size: 16px !important;
           line-height: 1.48 !important;
+        }
+        [data-studyedit-teaching-object="true"]::before {
+          left: 15px;
+          top: 15px;
         }
       }
     `;
@@ -133,7 +83,7 @@
       events.push({ type, prompt: String(prompt || '').slice(0, 220), at: new Date().toISOString() });
       sessionStorage.setItem(EVENT_KEY, JSON.stringify(events.slice(-100)));
     } catch {
-      // Teaching should never fail because analytics did.
+      // Never let telemetry interfere with teaching.
     }
   };
 
@@ -174,98 +124,8 @@
     return null;
   };
 
-  const setReactInputValue = (input, value) => {
-    const setter = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value')?.set;
-    if (setter) setter.call(input, value);
-    else input.value = value;
-    input.dispatchEvent(new Event('input', { bubbles: true }));
-    input.dispatchEvent(new Event('change', { bubbles: true }));
-  };
-
-  const findConversationComposer = (section) => {
-    return Array.from(section.querySelectorAll('form')).find((form) =>
-      form instanceof HTMLFormElement &&
-      !form.hasAttribute('data-studyedit-object-form') &&
-      form.querySelector('input')
-    ) || null;
-  };
-
-  const submitThroughTutor = (section, answer) => {
-    const form = findConversationComposer(section);
-    if (!(form instanceof HTMLFormElement)) return false;
-    const input = form.querySelector('input');
-    if (!(input instanceof HTMLInputElement)) return false;
-    setReactInputValue(input, answer);
-    requestAnimationFrame(() => form.requestSubmit());
-    return true;
-  };
-
-  const buildObject = (section, turn, promptNode, classification, isAnswered) => {
-    if (!(promptNode instanceof HTMLElement)) return;
-    if (promptNode.closest('[data-studyedit-teaching-object="true"]')) return;
-
-    const wrapper = document.createElement('div');
-    wrapper.setAttribute('data-studyedit-teaching-object', 'true');
-    wrapper.setAttribute('data-studyedit-teaching-object-type', classification.type);
-    if (isAnswered) wrapper.setAttribute('data-studyedit-object-answered', 'true');
-
-    const label = document.createElement('div');
-    label.setAttribute('data-studyedit-object-label', 'true');
-    label.textContent = classification.label;
-
-    promptNode.setAttribute('data-studyedit-object-prompt', 'true');
-    if (text(promptNode) !== classification.prompt) promptNode.textContent = classification.prompt;
-
-    promptNode.parentNode?.insertBefore(wrapper, promptNode);
-    wrapper.append(label, promptNode);
-
-    if (!isAnswered) {
-      const helper = document.createElement('div');
-      helper.setAttribute('data-studyedit-object-helper', 'true');
-      helper.textContent = classification.helper;
-
-      const form = document.createElement('form');
-      form.setAttribute('data-studyedit-object-form', 'true');
-
-      const input = document.createElement('input');
-      input.type = 'text';
-      input.autocomplete = 'off';
-      input.placeholder = classification.type === 'reasoning' ? 'What were you thinking?' : 'Type your answer…';
-      input.setAttribute('data-studyedit-object-input', 'true');
-
-      const send = document.createElement('button');
-      send.type = 'submit';
-      send.disabled = true;
-      send.setAttribute('data-studyedit-object-send', 'true');
-      send.setAttribute('aria-label', 'Send answer to StudyEdit');
-      send.textContent = '↑';
-
-      input.addEventListener('input', () => {
-        send.disabled = !input.value.trim();
-      });
-
-      form.addEventListener('submit', (event) => {
-        event.preventDefault();
-        const answer = input.value.trim();
-        if (!answer) return;
-        if (!submitThroughTutor(section, answer)) return;
-        input.disabled = true;
-        send.disabled = true;
-        wrapper.setAttribute('data-studyedit-object-answered', 'true');
-        section.removeAttribute('data-studyedit-has-open-object');
-        recordEvent(`${classification.type}:answered`, classification.prompt);
-      });
-
-      wrapper.append(helper, form);
-      section.setAttribute('data-studyedit-has-open-object', 'true');
-      recordEvent(`${classification.type}:shown`, classification.prompt);
-    }
-
-    turn.setAttribute('data-studyedit-object-upgraded', 'true');
-  };
-
   const candidatePromptNode = (turn) => {
-    const paragraphs = Array.from(turn.querySelectorAll('p')).filter((node) => !node.closest('[data-studyedit-teaching-object="true"]'));
+    const paragraphs = Array.from(turn.querySelectorAll('p'));
     for (let index = paragraphs.length - 1; index >= 0; index -= 1) {
       if (classifyPrompt(text(paragraphs[index]))) return paragraphs[index];
     }
@@ -274,6 +134,40 @@
       node.children.length === 0 && classifyPrompt(text(node))
     );
     return leaves[leaves.length - 1] || null;
+  };
+
+  const polishPrompt = (node, classification) => {
+    if (!(node instanceof HTMLElement)) return;
+    const already = node.getAttribute('data-studyedit-teaching-object-type');
+    if (already === classification.type && text(node) === classification.prompt) return;
+
+    node.setAttribute('data-studyedit-teaching-object', 'true');
+    node.setAttribute('data-studyedit-teaching-object-type', classification.type);
+    node.setAttribute('data-studyedit-object-label', classification.label);
+    node.setAttribute('data-studyedit-object-helper', classification.helper);
+    if (text(node) !== classification.prompt) node.textContent = classification.prompt;
+    recordEvent(`${classification.type}:shown`, classification.prompt);
+  };
+
+  const tuneComposer = (section, hasOpenObject) => {
+    const forms = Array.from(section.querySelectorAll('form'));
+    const form = forms.find((candidate) => candidate instanceof HTMLFormElement && candidate.querySelector('input'));
+    if (!(form instanceof HTMLFormElement)) return;
+    const input = form.querySelector('input');
+    if (!(input instanceof HTMLInputElement)) return;
+
+    if (hasOpenObject) {
+      section.setAttribute('data-studyedit-has-open-object', 'true');
+      input.setAttribute('data-studyedit-object-composer', 'true');
+      if (!input.disabled) input.placeholder = 'Answer here…';
+      return;
+    }
+
+    section.removeAttribute('data-studyedit-has-open-object');
+    if (input.hasAttribute('data-studyedit-object-composer')) {
+      input.removeAttribute('data-studyedit-object-composer');
+      if (!input.disabled && !section.querySelector('[data-studyedit-advance="true"]')) input.placeholder = 'Reply or ask anything…';
+    }
   };
 
   const upgradeTeachingObjects = (section) => {
@@ -291,35 +185,23 @@
       const role = turn.getAttribute('data-studyedit-turn') || (turn.matches('.border-y.py-5') ? 'student' : 'tutor');
       if (role !== 'tutor') return;
 
-      const existing = turn.querySelector('[data-studyedit-teaching-object="true"]');
-      const nextTurn = turns[index + 1];
-      const nextIsStudent = nextTurn instanceof HTMLElement && (
-        nextTurn.getAttribute('data-studyedit-turn') === 'student' || nextTurn.matches('.border-y.py-5')
-      );
-
-      if (existing instanceof HTMLElement) {
-        if (nextIsStudent) {
-          existing.setAttribute('data-studyedit-object-answered', 'true');
-        } else if (!existing.hasAttribute('data-studyedit-object-answered')) {
-          hasOpenObject = true;
-        }
-        return;
-      }
-
-      // Structured clickable SBAs already have their own interaction language; leave them alone.
+      // Structured clickable SBAs already have a defined interaction language.
       if (turn.querySelectorAll('button').length >= 3) return;
 
       const promptNode = candidatePromptNode(turn);
       if (!(promptNode instanceof HTMLElement)) return;
       const classification = classifyPrompt(text(promptNode));
       if (!classification) return;
+      polishPrompt(promptNode, classification);
 
-      buildObject(section, turn, promptNode, classification, nextIsStudent);
+      const nextTurn = turns[index + 1];
+      const nextIsStudent = nextTurn instanceof HTMLElement && (
+        nextTurn.getAttribute('data-studyedit-turn') === 'student' || nextTurn.matches('.border-y.py-5')
+      );
       if (!nextIsStudent) hasOpenObject = true;
     });
 
-    if (hasOpenObject) section.setAttribute('data-studyedit-has-open-object', 'true');
-    else section.removeAttribute('data-studyedit-has-open-object');
+    tuneComposer(section, hasOpenObject);
   };
 
   const repairKnownVagueFallback = (section) => {
