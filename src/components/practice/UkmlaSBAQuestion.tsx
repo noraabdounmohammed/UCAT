@@ -2,15 +2,9 @@ import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { ChevronDown, Send, X } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import { generateAIResponse, generateAIResponseStream, QuestionContext } from '@/services/openai';
-import {
-  generateQualityCheckedFollowUpSba,
-  type FollowUpSbaRequest,
-  type StructuredFollowUpSba,
-} from '@/services/structuredFollowUpSba';
 import type { FilterState } from './PracticeFilterModalParchment';
 import type { QuestionData } from './questionTypes';
 import type { SessionAnswer } from './SessionProgressDropdown';
-import { FollowUpSbaCard } from './FollowUpSbaCard';
 
 interface UkmlaSBAQuestionProps {
   question: QuestionData;
@@ -35,18 +29,8 @@ interface UkmlaSBAQuestionProps {
 }
 
 type ConfidenceLevel = 'know' | 'unsure' | 'guess';
-type TutorTurn = { role: 'student' | 'tutor'; text: string; followUpSba?: StructuredFollowUpSba };
+type TutorTurn = { role: 'student' | 'tutor'; text: string };
 type TutorAssessment = 'pass' | 'partial' | 'fail' | 'clarify';
-type TutorPlan = { instruction: string; followUp?: FollowUpSbaRequest };
-type StructuredAttemptRecord = {
-  sbaId: string;
-  stem: string;
-  selectedId: string;
-  selectedText: string;
-  correctAnswerId: string;
-  correctAnswerText: string;
-  result: 'correct' | 'incorrect';
-};
 
 const C = {
   parchment: '#F4ECDF',
@@ -152,20 +136,19 @@ function buildVignetteParagraphs(text: string): string[] {
     .filter(Boolean);
 }
 
+function requiredEvidence(correct: boolean, confidence: ConfidenceLevel | null): number {
+  if (correct && confidence === 'know') return 0;
+  if (correct && confidence === 'unsure') return 1;
+  if (correct && confidence === 'guess') return 2;
+  return 2;
+}
+
 function parseTutorAssessment(text: string): TutorAssessment {
   const value = String(text || '').trim().toUpperCase();
   if (value.includes('CLARIFY')) return 'clarify';
   if (value.includes('PASS')) return 'pass';
   if (value.includes('FAIL')) return 'fail';
   return 'partial';
-}
-
-function isSelectionCorrectionMessage(text: string): boolean {
-  const value = String(text || '').trim().toLowerCase();
-  return /(?:that's|thats|that is|this is) not what i (?:chose|picked|selected|answered)/.test(value)
-    || /i (?:didn't|did not) (?:choose|pick|select|answer)/.test(value)
-    || /you (?:said|say|think|thought) i (?:chose|picked|selected)/.test(value)
-    || /you(?:'re| are) saying i (?:chose|picked|selected)/.test(value);
 }
 
 const emphasisStyle: React.CSSProperties = {
@@ -196,33 +179,27 @@ function SkimmableMarkdown({ text, className = '' }: { text: string; className?:
   );
 }
 
-function TutorMessage({
-  text,
-  first,
-  followUpSba,
-  followUpDisabled,
-  onFollowUpSubmit,
-}: {
-  text: string;
-  first: boolean;
-  followUpSba?: StructuredFollowUpSba;
-  followUpDisabled: boolean;
-  onFollowUpSubmit: (sba: StructuredFollowUpSba, answerId: string) => void | Promise<void>;
-}) {
+function TutorMessage({ text, first }: { text: string; first: boolean }) {
+  const match = text.match(/([\s\S]*?)(?:\n\s*)?(Quick check:)([\s\S]*)/i);
+  const body = match ? match[1].trim() : text;
+  const check = match ? match[3].trim() : '';
+
   return (
     <div className={first ? '' : 'border-t pt-6'} style={{ borderColor: C.line }}>
-      {text && (
+      {body && (
         <SkimmableMarkdown
-          text={text}
+          text={body}
           className="text-[20px] font-medium leading-[1.65] tracking-[-0.01em] text-[#3B2A1E] sm:text-[21px]"
         />
       )}
-      {followUpSba && (
-        <FollowUpSbaCard
-          sba={followUpSba}
-          disabled={followUpDisabled}
-          onSubmit={answerId => onFollowUpSubmit(followUpSba, answerId)}
-        />
+      {check && (
+        <div className="mt-5 rounded-[19px] border px-4 py-4 sm:px-5" style={{ borderColor: '#D6D9BE', backgroundColor: C.sageSoft }}>
+          <div className="mb-2 text-[10px] font-bold uppercase tracking-[0.18em]" style={{ color: '#76835F' }}>Quick check</div>
+          <SkimmableMarkdown
+            text={check}
+            className="text-[20px] font-semibold leading-[1.65] tracking-[-0.01em] text-[#3B2A1E] sm:text-[21px]"
+          />
+        </div>
       )}
     </div>
   );
@@ -276,66 +253,25 @@ async function waitForConfidence(conceptTitle: string, startedAt: number): Promi
   return readLatestConfidence(conceptTitle, startedAt - 1000);
 }
 
-function proactiveOpeningPlan(correct: boolean, confidence: ConfidenceLevel | null): TutorPlan {
-  const common = 'You are StudyEdit Tutor. The learner has just answered this SBA. Use the verified explanation and key point as ground truth. Do not invent why they chose an option. Make ONE useful pedagogical move only. Usually use one or two concise sentences. Say something only if it changes or sharpens what the learner understands.';
-
-  if (correct && confidence === 'know') {
-    return {
-      instruction: `${common} They were correct and said they knew it. Give ONE brief confirmation of the decisive clue, then stop. Do not ask another question and do not say they have mastered, secured, locked in, or solidified the concept.`,
-    };
-  }
-
-  if (correct && confidence === 'unsure') {
-    return {
-      instruction: `${common} They were correct but unsure. Briefly name the decisive discriminator once. Do not repeat the whole explanation. A single quality-checked application SBA will follow, so do not write a question or options in prose.`,
-      followUp: {
-        mode: 'application',
-        teachingObjective: 'Demonstrate deliberate use of the verified decisive discriminator in one genuinely useful new check.',
-      },
-    };
-  }
-
-  if (correct && confidence === 'guess') {
-    return {
-      instruction: `${common} They were correct but guessed. Do not teach immediately and do not imply mastery. Ask one short question about what made them choose that option so you can distinguish lucky recognition from partial reasoning.`,
-    };
-  }
-
-  if (!correct && confidence === 'know') {
-    return {
-      instruction: `${common} They were wrong but said they knew it, suggesting a possible misconception. Do not explain the full answer yet. Ask them, in one sentence, to talk you through the reasoning that led to their selected option.`,
-    };
-  }
-
-  if (!correct && confidence === 'unsure') {
-    return {
-      instruction: `${common} They were wrong and unsure. Do not explain everything yet. Ask one short, specific question about what made them lean toward their selected option.`,
-    };
-  }
-
-  if (!correct && confidence === 'guess') {
-    return {
-      instruction: `${common} They were wrong and guessed. Teach only the smallest verified rule needed to orient them, in no more than two short sentences. A single quality-checked prerequisite SBA will follow, so do not write a question or options in prose.`,
-      followUp: {
-        mode: 'prerequisite',
-        teachingObjective: 'Apply the smallest verified prerequisite or rule needed for this concept.',
-      },
-    };
-  }
-
-  return {
-    instruction: `${common} Confidence is unavailable. Ask one short neutral question to understand what the learner was thinking before explaining.`,
-  };
+function proactiveOpeningInstruction(correct: boolean, confidence: ConfidenceLevel | null): string {
+  const common = 'You are StudyEdit Tutor. The learner has just answered this SBA. Use the verified explanation and key point as ground truth. Do not invent why they chose an option. Make ONE pedagogical move only, usually 1-3 short sentences. Do not dump a full explanation unless instructed. End with at most one question.';
+  if (correct && confidence === 'know') return `${common} They were correct and said they knew it. Give a very brief confirmation of the decisive clue. Do not ask another question. Tell them you have seen enough evidence and are moving on.`;
+  if (correct && confidence === 'unsure') return `${common} They were correct but unsure. Briefly name the decisive discriminator, then ask one tiny transfer check that confirms they can use it deliberately. Prefix that final check with "Quick check:".`;
+  if (correct && confidence === 'guess') return `${common} They were correct but guessed. Do not imply mastery. Ask what made them choose this answer before teaching it, so you can distinguish lucky recognition from partial reasoning.`;
+  if (!correct && confidence === 'know') return `${common} They were wrong but said they knew it, which may indicate a misconception. Do NOT explain the answer yet. Ask them to talk you through how they got to their selected answer.`;
+  if (!correct && confidence === 'unsure') return `${common} They were wrong and unsure. Do NOT explain the answer yet. Ask what made them lean toward their selected answer. Keep it warm and specific to the option they chose.`;
+  if (!correct && confidence === 'guess') return `${common} They were wrong and guessed. Teach the smallest prerequisite or rule needed to start, then ask one short prerequisite check. Prefix the check with "Quick check:".`;
+  return `${common} Confidence is unavailable. Ask one short neutral question to understand what the learner was thinking before you explain.`;
 }
 
 function directExplanationInstruction(): string {
-  return 'Give the direct explanation now using the verified explanation as ground truth. Explain only the decisive mechanism or discriminator in about 50-80 words. Avoid repeating points already made. Do not narrate mastery or evidence counting. Do not write answer options; one quality-checked application SBA may follow.';
+  return 'Give the direct explanation now. Use the verified explanation as ground truth. Explain the decisive mechanism or discriminator in about 60-100 words. Then ask one short application question so you can verify the learner can use it. Prefix that question with "Quick check:". Do not invent the learner\'s reasoning.';
 }
 
 function secureClosingInstruction(isFinalQuestion: boolean): string {
   return isFinalQuestion
-    ? 'The learner has demonstrated the target distinction. Acknowledge the exact distinction in ONE short sentence only. Do not restate the teaching, do not say mastered/secure/solid/locked in, do not mention evidence counts, and do not ask another test question. End naturally; the interface will invite any final questions.'
-    : 'The learner has demonstrated the target distinction. Acknowledge the exact distinction in ONE short sentence only. Do not restate the teaching, do not say mastered/secure/solid/locked in, do not mention evidence counts, and do not say “I have seen enough”. Do not ask another test question. End naturally; the interface will invite questions before moving on.';
+    ? 'The learner has now given enough evidence that this distinction is secure for this session. Confirm the exact thing they now have right in one concise sentence. Do not teach anything new and do not ask another question. End naturally by saying that is enough for today.'
+    : 'The learner has now given enough evidence that this distinction is secure for this session. Confirm the exact thing they now have right in one concise sentence. Do not teach anything new and do not ask another question. End naturally by telling them you have seen enough here and are moving on.';
 }
 
 export const UkmlaSBAQuestion: React.FC<UkmlaSBAQuestionProps> = ({
@@ -360,9 +296,8 @@ export const UkmlaSBAQuestion: React.FC<UkmlaSBAQuestionProps> = ({
   const [tutorAssessing, setTutorAssessing] = useState(false);
   const [answerStartedAt, setAnswerStartedAt] = useState(0);
   const [confidenceLevel, setConfidenceLevel] = useState<ConfidenceLevel | null>(null);
+  const [passedChecks, setPassedChecks] = useState(0);
   const [advancePending, setAdvancePending] = useState(false);
-  const [resolvedFollowUpIds, setResolvedFollowUpIds] = useState<string[]>([]);
-  const structuredAttemptHistoryRef = useRef<StructuredAttemptRecord[]>([]);
   const abortControllerRef = useRef<AbortController | null>(null);
   const advanceTimerRef = useRef<number | null>(null);
   const scrollRef = useRef<HTMLDivElement | null>(null);
@@ -412,11 +347,11 @@ export const UkmlaSBAQuestion: React.FC<UkmlaSBAQuestionProps> = ({
     setTutorAssessing(false);
     setAnswerStartedAt(0);
     setConfidenceLevel(null);
+    setPassedChecks(0);
     setAdvancePending(false);
-    setResolvedFollowUpIds([]);
-    structuredAttemptHistoryRef.current = [];
     abortControllerRef.current?.abort();
     clearAdvanceTimer();
+    requestAnimationFrame(() => scrollRef.current?.scrollTo({ top: 0 }));
     return () => clearAdvanceTimer();
   }, [question.id, question.question, question.question_stem, preSubmitted, preSelectedAnswer]);
 
@@ -444,11 +379,10 @@ export const UkmlaSBAQuestion: React.FC<UkmlaSBAQuestionProps> = ({
   const isFinalQuestion = Boolean(totalQuestions && currentIndex >= totalQuestions - 1);
   const tutorBusy = tutorAssessing || aiStreaming;
   const lastTutorTurn = tutorTurns[tutorTurns.length - 1];
-  const hasOpenFollowUp = tutorTurns.some(turn => Boolean(turn.followUpSba && !resolvedFollowUpIds.includes(turn.followUpSba.id)));
   const waitingForTutorText = tutorBusy && (
     !lastTutorTurn ||
     lastTutorTurn.role === 'student' ||
-    (lastTutorTurn.role === 'tutor' && !lastTutorTurn.followUpSba)
+    (lastTutorTurn.role === 'tutor' && !lastTutorTurn.text)
   );
 
   const handleOptionSelect = (id: string) => {
@@ -462,12 +396,14 @@ export const UkmlaSBAQuestion: React.FC<UkmlaSBAQuestionProps> = ({
     setAdvancePending(false);
     abortControllerRef.current?.abort();
     onNext();
+    requestAnimationFrame(() => scrollRef.current?.scrollTo({ top: 0, behavior: 'smooth' }));
   };
 
   const scheduleAdvance = () => {
     if (preSubmitted) return;
     clearAdvanceTimer();
     setAdvancePending(true);
+    advanceTimerRef.current = window.setTimeout(handleNext, 3200);
   };
 
   const cancelAdvance = () => {
@@ -476,95 +412,27 @@ export const UkmlaSBAQuestion: React.FC<UkmlaSBAQuestionProps> = ({
     window.setTimeout(() => inputRef.current?.focus(), 40);
   };
 
-  const makeContext = (
-    selectedId: string,
-    confidence: ConfidenceLevel | null,
-    preferLatestInteraction = false,
-  ): QuestionContext => {
+  const makeContext = (selectedId: string, confidence: ConfidenceLevel | null): QuestionContext => {
     const selectedText = options.find((option: any) => option.id === selectedId)?.text || 'Selected option';
     const optionLines = options.map((option: any) => `${option.id}. ${option.text}`).join('\n');
-    const sourceLabel = String((question as any).guideline || (question as any).source_type || '').trim();
-    const sourceUrl = String((question as any).guideline_url || '').trim();
-    const sourceSection = String((question as any).guideline_section || '').trim();
-    const attemptHistory = structuredAttemptHistoryRef.current.slice(-4);
-    const latestAttempt = attemptHistory[attemptHistory.length - 1];
-    const attemptHistoryText = attemptHistory.length
-      ? [
-          'FOLLOW-UP ATTEMPT HISTORY — these happened AFTER the original SBA and take precedence when discussing later clickable answers:',
-          ...attemptHistory.map((attempt, index) => [
-            `FOLLOW-UP ${index + 1}: ${attempt.stem}`,
-            `LEARNER CHOSE: ${attempt.selectedId}. ${attempt.selectedText}`,
-            `KEYED ANSWER: ${attempt.correctAnswerId}. ${attempt.correctAnswerText}`,
-            `RESULT: ${attempt.result.toUpperCase()}`,
-          ].join('\n')),
-        ].join('\n\n')
-      : '';
-    const activeSelectedAnswer = preferLatestInteraction && latestAttempt
-      ? `${latestAttempt.selectedId}. ${latestAttempt.selectedText}`
-      : `${selectedId}. ${selectedText}`;
-    const activeCorrectAnswer = preferLatestInteraction && latestAttempt
-      ? `${latestAttempt.correctAnswerId}. ${latestAttempt.correctAnswerText}`
-      : `${correctAnswerId}. ${correctOptionText}`;
-
     return {
       question: [
         `CONCEPT: ${conceptTitle}`,
         `QUESTION: ${askLine || rawQuestionContent}`,
         `CLINICAL VIGNETTE: ${displayQuestionContent}`,
-        `ORIGINAL SBA STUDENT SELECTED: ${selectedId}. ${selectedText}`,
-        `ORIGINAL SBA CORRECT ANSWER: ${correctAnswerId}. ${correctOptionText}`,
-        attemptHistoryText,
+        `STUDENT SELECTED: ${selectedId}. ${selectedText}`,
+        `CORRECT ANSWER: ${correctAnswerId}. ${correctOptionText}`,
         `CONFIDENCE: ${confidence || 'not supplied'}`,
         `VERIFIED EXPLANATION: ${explanation || 'Not supplied'}`,
         `KEY FACT: ${keyFact || 'Not supplied'}`,
         `VERIFIED DISTRACTOR FEEDBACK: ${selectedId !== correctAnswerId ? (distractors[selectedId] || 'Not supplied') : 'Not applicable'}`,
-        sourceLabel ? `SOURCE LABEL: ${sourceLabel}` : '',
-        sourceSection ? `SOURCE SECTION: ${sourceSection}` : '',
-        sourceUrl ? `SOURCE URL METADATA: ${sourceUrl}` : '',
-        `ORIGINAL OPTIONS:\n${optionLines}`,
-      ].filter(Boolean).join('\n\n'),
+        `OPTIONS:\n${optionLines}`,
+      ].join('\n\n'),
       options: options.map((option: any) => `${option.id}. ${option.text}`),
-      correctAnswer: activeCorrectAnswer,
-      selectedAnswer: activeSelectedAnswer,
+      correctAnswer: `${correctAnswerId}. ${correctOptionText}`,
+      selectedAnswer: `${selectedId}. ${selectedText}`,
       explanation: explanation || keyFact,
     };
-  };
-
-  const turnForTranscript = (turn: TutorTurn): string => {
-    const prefix = turn.role === 'student' ? 'LEARNER' : 'TUTOR';
-    if (!turn.followUpSba) return `${prefix}: ${turn.text}`;
-    const optionLines = turn.followUpSba.options.map(option => `${option.id}. ${option.text}`).join('\n');
-    return `${prefix}: ${turn.text}\nSTRUCTURED FOLLOW-UP SBA: ${turn.followUpSba.stem}\n${optionLines}\nKEYED ANSWER: ${turn.followUpSba.correctAnswerId}\nRATIONALE: ${turn.followUpSba.rationale}`;
-  };
-
-  const attachFollowUpToLatestTutorTurn = (sba: StructuredFollowUpSba) => {
-    setTutorTurns(previous => {
-      const next = [...previous];
-      for (let index = next.length - 1; index >= 0; index -= 1) {
-        if (next[index].role === 'tutor') {
-          next[index] = { ...next[index], followUpSba: sba };
-          break;
-        }
-      }
-      return next;
-    });
-  };
-
-  const appendSafeFallbackCheck = () => {
-    setTutorTurns(previous => {
-      const next = [...previous];
-      for (let index = next.length - 1; index >= 0; index -= 1) {
-        if (next[index].role === 'tutor') {
-          const base = next[index].text.trim();
-          next[index] = {
-            ...next[index],
-            text: `${base}${base ? '\n\n' : ''}Before we leave it: what would you use to make this decision next time?`,
-          };
-          break;
-        }
-      }
-      return next;
-    });
   };
 
   const runTutor = async (
@@ -574,7 +442,6 @@ export const UkmlaSBAQuestion: React.FC<UkmlaSBAQuestionProps> = ({
     startedOverride?: number,
     instructionOverride?: string,
     advanceAfter = false,
-    followUpRequest?: FollowUpSbaRequest,
   ) => {
     if (aiStreaming) return;
     const selectedId = selectedOverride || committedAnswer;
@@ -585,40 +452,23 @@ export const UkmlaSBAQuestion: React.FC<UkmlaSBAQuestionProps> = ({
     const wasCorrect = selectedId === correctAnswerId;
     const priorTurns = tutorTurns.slice(-8);
 
+    if (studentText?.trim()) setTutorTurns(previous => [...previous, { role: 'student', text: studentText.trim() }]);
     setAiQuestion('');
     setAiStreaming(true);
 
-    const tutorContext = makeContext(selectedId, confidence, true);
-    const generationContext = makeContext(selectedId, confidence, false);
-    const transcriptTurns = [
+    const context = makeContext(selectedId, confidence);
+    const transcript = [
       ...priorTurns,
       ...(studentText?.trim() ? [{ role: 'student' as const, text: studentText.trim() }] : []),
-    ] as TutorTurn[];
-    const transcript = transcriptTurns.map(turnForTranscript).join('\n');
-    const priorFollowUpStems = priorTurns
-      .map(turn => turn.followUpSba?.stem || turn.followUpSba?.transferCase?.question || '')
-      .filter(Boolean);
-
-    const openingPlan = !instructionOverride && !forceDirect && !studentText?.trim()
-      ? proactiveOpeningPlan(wasCorrect, confidence)
-      : null;
-    const effectiveFollowUp = followUpRequest || (forceDirect
-      ? { mode: 'application' as const, teachingObjective: 'Apply the verified explanation once in a useful new check.' }
-      : openingPlan?.followUp);
-    const followUpWithHistory = effectiveFollowUp
-      ? { ...effectiveFollowUp, avoidStems: priorFollowUpStems }
-      : undefined;
+    ].map(turn => `${turn.role === 'student' ? 'LEARNER' : 'TUTOR'}: ${turn.text}`).join('\n');
 
     const instruction = instructionOverride || (forceDirect
       ? directExplanationInstruction()
       : studentText?.trim()
-        ? 'Continue the tutoring conversation naturally. Respond directly to the learner’s latest message. Diagnose only what their words support. Make ONE useful pedagogical move. Do not invent an A-D question in prose. Do not repeat a point already made unless the learner is still getting that exact point wrong.'
-        : openingPlan?.instruction || proactiveOpeningPlan(wasCorrect, confidence).instruction);
+        ? 'Continue the tutoring conversation. Respond directly to the learner\'s latest message. Diagnose only what their words support. Make one pedagogical move. If understanding still needs evidence, end with one short application question prefixed "Quick check:". Never declare the concept secure unless the tutoring controller has explicitly instructed you to close.'
+        : proactiveOpeningInstruction(wasCorrect, confidence));
 
-    const structuredNote = followUpWithHistory
-      ? '\n\nA separate structured, quality-checked SBA will be generated after your teaching turn. Do NOT include a question, “Quick check”, or A-D answer options in your prose.'
-      : '';
-    const prompt = `${instruction}${structuredNote}\n\nCONVERSATION SO FAR:\n${transcript || '(none yet)'}\n\nINTERACTION TRUTH RULES:\n- The ORIGINAL SBA selection is an earlier event. If FOLLOW-UP ATTEMPT HISTORY exists, the latest follow-up record is the learner’s most recent clickable answer and takes precedence when you refer to what they just chose.\n- Never say “you chose”, “you picked”, or “you selected” an option unless that exact choice is supported by the latest applicable interaction record or the learner’s latest message.\n- Do not confuse an option from the original SBA with a later quick check.\n- If the learner says you misreported what they chose, treat that as a correction of your interaction record, not as a medical mistake. Acknowledge it immediately and do not argue with them or repeat the stale choice.\n\nUse only the supplied current-question context for medical claims. Do not contradict the verified explanation. Keep the interaction concise and tutor-like. Prefer 1-2 sentences and usually stay under 55 words unless answering a genuine learner question. Never narrate the tutoring machinery or evidence count. Avoid phrases such as “lock this in”, “pattern to remember”, “you've got this solidly”, “secure”, “mastered”, or “I've seen enough”. If a point was already clearly stated in the preceding tutor turn, do not state it again unless correcting a repeated error.`;
+    const prompt = `${instruction}\n\nCONVERSATION SO FAR:\n${transcript || '(none yet)'}\n\nUse only the supplied current-question context for medical claims. Do not contradict the verified explanation. Keep the interaction concise and tutor-like.`;
     const controller = new AbortController();
     abortControllerRef.current = controller;
     let streamed = '';
@@ -628,26 +478,19 @@ export const UkmlaSBAQuestion: React.FC<UkmlaSBAQuestionProps> = ({
     try {
       await generateAIResponseStream(
         prompt,
-        tutorContext,
+        context,
         token => {
           streamed += token;
           setTutorTurns(previous => {
             const next = [...previous];
             const last = next[next.length - 1];
-            if (last?.role === 'tutor') next[next.length - 1] = { ...last, text: streamed };
+            if (last?.role === 'tutor') next[next.length - 1] = { role: 'tutor', text: streamed };
             return next;
           });
         },
         () => undefined,
         controller.signal,
       );
-
-      if (!controller.signal.aborted && followUpWithHistory) {
-        const followUp = await generateQualityCheckedFollowUpSba(generationContext, followUpWithHistory);
-        if (controller.signal.aborted) return;
-        if (followUp) attachFollowUpToLatestTutorTurn(followUp);
-        else appendSafeFallbackCheck();
-      }
     } catch (error) {
       if (!controller.signal.aborted) {
         console.error('StudyEdit tutor failed:', error);
@@ -656,137 +499,83 @@ export const UkmlaSBAQuestion: React.FC<UkmlaSBAQuestionProps> = ({
           : 'Talk me through what you were thinking, and we can work out the exact gap together.';
         setTutorTurns(previous => {
           const next = [...previous];
-          const last = next[next.length - 1];
-          if (last?.role === 'tutor') next[next.length - 1] = { ...last, text: fallback };
+          if (next[next.length - 1]?.role === 'tutor') next[next.length - 1] = { role: 'tutor', text: fallback };
           return next;
         });
       }
     } finally {
       if (!controller.signal.aborted) {
         setAiStreaming(false);
-        if (advanceAfter || (!followUpWithHistory && !studentText && wasCorrect && confidence === 'know')) scheduleAdvance();
+        if (advanceAfter || (!studentText && wasCorrect && confidence === 'know')) scheduleAdvance();
       }
       abortControllerRef.current = null;
     }
   };
 
-  const handleStudentReply = async (
-    studentText: string,
-    assessmentOverride?: TutorAssessment,
-    structuredAttemptNumber = 0,
-  ) => {
+  const handleStudentReply = async (studentText: string) => {
     const query = studentText.trim();
     if (!query || aiStreaming || tutorAssessing || !committedAnswer) return;
 
-    const wasReadyToMoveOn = advancePending;
-    const selectionCorrection = isSelectionCorrectionMessage(query);
     cancelAdvance();
     setAiQuestion('');
-    if (!assessmentOverride || (assessmentOverride === 'clarify' && wasReadyToMoveOn)) {
-      setTutorTurns(previous => [...previous, { role: 'student', text: query }]);
-    }
     setTutorAssessing(true);
 
     try {
       const confidence = confidenceLevel || readLatestConfidence(conceptTitle, answerStartedAt - 1000);
       if (confidence && confidence !== confidenceLevel) setConfidenceLevel(confidence);
-      const context = makeContext(committedAnswer, confidence, true);
+      const context = makeContext(committedAnswer, confidence);
       const recentTranscript = [
         ...tutorTurns.slice(-8),
         { role: 'student' as const, text: query },
-      ].map(turnForTranscript).join('\n');
+      ].map(turn => `${turn.role === 'student' ? 'LEARNER' : 'TUTOR'}: ${turn.text}`).join('\n');
 
-      let assessment: TutorAssessment = selectionCorrection ? 'clarify' : (assessmentOverride || 'partial');
-      if (!assessmentOverride && !selectionCorrection) {
-        const assessmentPrompt = `You are the hidden StudyEdit tutoring controller. Judge the learner's latest reply against the tutor's immediately preceding question or instruction and the verified current-question context. Return exactly ONE label and nothing else: PASS, PARTIAL, FAIL, or CLARIFY.\n\nPASS = the reply correctly demonstrates the specific understanding the tutor just tested. A single genuinely diagnostic PASS is sufficient evidence for this learning step; do not demand repetition for its own sake.\nPARTIAL = directionally right but incomplete, vague, or still dependent on prompting.\nFAIL = incorrect or reveals the same misconception.\nCLARIFY = the learner is asking a genuine question, requesting explanation, correcting what StudyEdit claims they chose, or otherwise not attempting the tutor's check. A message such as “that’s not what I chose” is CLARIFY, never FAIL.\n\nDo not reward confident wording if the medical content is wrong. Do not require wording identical to the model answer. When FOLLOW-UP ATTEMPT HISTORY exists, use the latest follow-up answer rather than an older original-SBA choice.\n\nTRANSCRIPT:\n${recentTranscript}`;
-        try {
-          assessment = parseTutorAssessment(await generateAIResponse(assessmentPrompt, context));
-        } catch {
-          assessment = 'partial';
-        }
+      const assessmentPrompt = `You are the hidden StudyEdit tutoring controller. Judge the learner's latest reply against the tutor's immediately preceding question or instruction and the verified current-question context. Return exactly ONE label and nothing else: PASS, PARTIAL, FAIL, or CLARIFY.\n\nPASS = the reply correctly demonstrates the understanding the tutor just tested.\nPARTIAL = directionally right but incomplete, vague, or still dependent on prompting.\nFAIL = incorrect or reveals the same misconception.\nCLARIFY = the learner is asking a genuine question, requesting explanation, or otherwise not attempting the tutor's check.\n\nDo not reward confident wording if the medical content is wrong. Do not require wording identical to the model answer.\n\nTRANSCRIPT:\n${recentTranscript}`;
+
+      let assessment: TutorAssessment = 'partial';
+      try {
+        assessment = parseTutorAssessment(await generateAIResponse(assessmentPrompt, context));
+      } catch {
+        assessment = 'partial';
       }
 
       if (assessment === 'clarify') {
-        const clarificationInstruction = selectionCorrection
-          ? 'The learner is correcting StudyEdit because you misreported what they chose. This is an interaction correction, not a medical error. Apologise briefly and plainly. If FOLLOW-UP ATTEMPT HISTORY clearly shows the latest clickable choice, use that record; otherwise say you should not assume and ask which option they selected. Do not defend or repeat an older ORIGINAL SBA choice. Do not reteach the whole concept and do not test them again in this turn.'
-          : wasReadyToMoveOn
-            ? 'The learning step is already complete and the learner is asking a curiosity question before moving on. Answer their question directly, warmly, and concisely using the verified context. Do not test them, do not generate another SBA, and do not reopen mastery assessment. End naturally; the interface will again offer space for another question or the next case.'
-            : 'The learner is asking for clarification rather than attempting a check. Answer their question directly and concisely. Do not automatically generate another SBA. If evidence is still needed, end with ONE short natural question that targets the unresolved point. Do not narrate mastery or the tutoring process.';
-
         await runTutor(
           query,
           false,
           undefined,
           undefined,
-          clarificationInstruction,
+          'The learner is asking for clarification rather than attempting the check. Answer their question directly and concisely. Then, if understanding still needs evidence, return to the learning goal with one short Quick check. Do not declare mastery yet.',
         );
-        if (wasReadyToMoveOn) setAdvancePending(true);
         return;
       }
 
       if (assessment === 'pass') {
-        await runTutor(query, false, undefined, undefined, secureClosingInstruction(isFinalQuestion), true);
+        const nextPassed = passedChecks + 1;
+        setPassedChecks(nextPassed);
+        const needed = requiredEvidence(isCorrect, confidence);
+
+        if (nextPassed >= needed) {
+          await runTutor(query, false, undefined, undefined, secureClosingInstruction(isFinalQuestion), true);
+        } else {
+          await runTutor(
+            query,
+            false,
+            undefined,
+            undefined,
+            'The learner answered that step correctly, but you still need stronger evidence before moving on. Briefly acknowledge it, then ask ONE transfer question that changes one clinically meaningful variable or asks them for the decisive discriminator. Prefix it with "Quick check:". Do not repeat the same question and do not declare mastery yet.',
+          );
+        }
         return;
       }
 
-      const structuredAttempts = structuredAttemptNumber || resolvedFollowUpIds.length;
-      const allowAnotherStructuredCheck = structuredAttempts < 2;
+      const correctionInstruction = assessment === 'fail'
+        ? 'The learner has not demonstrated the target understanding yet. Correct the exact misconception in the shortest useful way, then ask one simpler Quick check that tests the same discriminator from a different angle. Do not move on.'
+        : 'The learner is partly there but the evidence is not secure. Name the missing piece without overexplaining, then ask one focused Quick check that requires them to supply that missing piece. Do not move on.';
 
-      if (allowAnotherStructuredCheck) {
-        const correctionInstruction = assessment === 'fail'
-          ? 'Correct the exact misconception in the shortest useful way. Do not repeat the full previous explanation. Use no more than two short sentences. A single quality-checked discriminator SBA will follow, so do not write a question or options in prose.'
-          : 'Name only the missing piece in the learner’s reasoning without overexplaining or repeating what they already got right. A single quality-checked discriminator SBA will follow, so do not write a question or options in prose.';
-
-        await runTutor(
-          query,
-          false,
-          undefined,
-          undefined,
-          correctionInstruction,
-          false,
-          {
-            mode: 'discriminator',
-            teachingObjective: assessment === 'fail'
-              ? 'Check the corrected discriminator once from a genuinely useful angle, without repeating the previous SBA.'
-              : 'Check only the specific verified piece that remained missing, without repeating the previous SBA.',
-          },
-        );
-        return;
-      }
-
-      const naturalInstruction = assessment === 'fail'
-        ? 'The learner is still getting the same point wrong after structured checks. Stop generating more SBAs. Correct only the exact remaining misconception in one or two sentences, then ask ONE short natural free-response question that would reveal whether they now understand it. Do not repeat prior wording.'
-        : 'The learner remains partly correct after structured checks. Stop generating more SBAs. Name only the remaining missing piece, then ask ONE short natural free-response question. Do not repeat prior wording.';
-
-      await runTutor(query, false, undefined, undefined, naturalInstruction);
+      await runTutor(query, false, undefined, undefined, correctionInstruction);
     } finally {
       setTutorAssessing(false);
     }
-  };
-
-  const handleFollowUpAnswer = async (sba: StructuredFollowUpSba, answerId: string) => {
-    if (tutorBusy || resolvedFollowUpIds.includes(sba.id)) return;
-    const selected = sba.options.find(option => option.id === answerId);
-    if (!selected) return;
-    const correctOption = sba.options.find(option => option.id === sba.correctAnswerId);
-    const attemptNumber = resolvedFollowUpIds.length + 1;
-    const assessment: TutorAssessment = answerId === sba.correctAnswerId ? 'pass' : 'fail';
-
-    structuredAttemptHistoryRef.current = [
-      ...structuredAttemptHistoryRef.current,
-      {
-        sbaId: sba.id,
-        stem: sba.transferCase?.question || sba.stem,
-        selectedId: answerId,
-        selectedText: selected.text,
-        correctAnswerId: sba.correctAnswerId,
-        correctAnswerText: correctOption?.text || sba.correctAnswerId,
-        result: assessment === 'pass' ? 'correct' : 'incorrect',
-      },
-    ].slice(-6);
-
-    setResolvedFollowUpIds(previous => previous.includes(sba.id) ? previous : [...previous, sba.id]);
-    await handleStudentReply(`${answerId}. ${selected.text}`, assessment, attemptNumber);
   };
 
   const handleCheckAnswer = () => {
@@ -800,6 +589,7 @@ export const UkmlaSBAQuestion: React.FC<UkmlaSBAQuestionProps> = ({
     sessionStorage.setItem(getStorageKey(), JSON.stringify({ selectedOption, hasSubmitted: true }));
     onAnswer(correct);
     void runTutor(undefined, false, selectedOption, startedAt);
+    window.setTimeout(() => tutorRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 180);
   };
 
   return (
@@ -907,76 +697,34 @@ export const UkmlaSBAQuestion: React.FC<UkmlaSBAQuestionProps> = ({
 
               <div className="space-y-6">
                 {tutorTurns.map((turn, index) => {
-                  if (!turn.text && !turn.followUpSba) return null;
+                  if (!turn.text) return null;
                   if (turn.role === 'student') {
                     return (
                       <div key={index} className="border-y py-5" style={{ borderColor: C.line }}>
+                        <div className="mb-2 text-[10px] font-bold uppercase tracking-[0.18em]" style={{ color: C.muted }}>You</div>
                         <div className="text-[20px] font-semibold leading-[1.55] tracking-[-0.01em] sm:text-[21px]" style={{ color: C.espresso }}>
                           {turn.text}
                         </div>
                       </div>
                     );
                   }
-                  const tutorIndex = tutorTurns.slice(0, index + 1).filter(item => item.role === 'tutor' && (item.text || item.followUpSba)).length;
-                  return (
-                    <TutorMessage
-                      key={index}
-                      text={turn.text}
-                      first={tutorIndex === 1}
-                      followUpSba={turn.followUpSba}
-                      followUpDisabled={tutorBusy || Boolean(turn.followUpSba && resolvedFollowUpIds.includes(turn.followUpSba.id))}
-                      onFollowUpSubmit={handleFollowUpAnswer}
-                    />
-                  );
+                  const tutorIndex = tutorTurns.slice(0, index + 1).filter(item => item.role === 'tutor' && item.text).length;
+                  return <TutorMessage key={index} text={turn.text} first={tutorIndex === 1} />;
                 })}
 
                 {waitingForTutorText && <TutorWorkingIndicator />}
               </div>
 
-              {!preSubmitted && advancePending && !hasOpenFollowUp && (
-                <div className="mt-7 border-t pt-5" style={{ borderColor: C.line }} data-studyedit-advance="true">
-                  <div className="text-[16px] font-semibold leading-6" style={{ color: C.espresso }}>
-                    {isFinalQuestion ? 'Any questions before we finish?' : 'Any questions before we move on?'}
-                  </div>
-
-                  <form className="mt-4 flex items-center gap-2 rounded-[18px] border bg-[#FFFDF8] p-2 pl-4 shadow-[0_8px_24px_rgba(31,20,12,0.04)]" style={{ borderColor: '#DCCDB8' }} onSubmit={event => {
-                    event.preventDefault();
-                    const query = aiQuestion.trim();
-                    if (query) void handleStudentReply(query, 'clarify');
-                  }}>
-                    <input
-                      ref={inputRef}
-                      value={aiQuestion}
-                      onChange={event => setAiQuestion(event.target.value)}
-                      disabled={tutorBusy}
-                      placeholder={tutorBusy ? 'StudyEdit is thinking…' : (isFinalQuestion ? 'Ask anything before we finish…' : 'Ask anything before the next case…')}
-                      className="min-w-0 flex-1 bg-transparent py-2.5 text-[16px] font-medium outline-none placeholder:text-[#A89582] disabled:cursor-wait"
-                      style={{ color: C.espresso }}
-                    />
-                    <button
-                      type="submit"
-                      disabled={!aiQuestion.trim() || tutorBusy}
-                      className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full transition active:scale-[0.96] disabled:opacity-35"
-                      style={{ backgroundColor: C.espresso, color: C.cream }}
-                      aria-label="Ask StudyEdit before moving on"
-                    >
-                      <Send className="h-4 w-4" />
-                    </button>
-                  </form>
-
-                  <button
-                    type="button"
-                    onClick={handleNext}
-                    disabled={tutorBusy}
-                    className="mt-3 text-[12px] font-semibold underline decoration-[#BBA995] underline-offset-4 disabled:opacity-40"
-                    style={{ color: C.muted }}
-                  >
-                    {isFinalQuestion ? 'No more questions — finish →' : 'No questions — next case →'}
+              {!preSubmitted && advancePending && (
+                <div className="mt-7 flex items-center justify-between gap-4 border-t pt-4" style={{ borderColor: C.line }}>
+                  <span className="text-[12px] font-semibold" style={{ color: C.muted }}>{isFinalQuestion ? 'Wrapping up…' : 'Moving on…'}</span>
+                  <button type="button" onClick={cancelAdvance} className="text-[12px] font-semibold underline decoration-[#BBA995] underline-offset-4" style={{ color: C.muted }}>
+                    Wait — I have a question
                   </button>
                 </div>
               )}
 
-              {!preSubmitted && !advancePending && !hasOpenFollowUp && (
+              {!preSubmitted && !advancePending && (
                 <>
                   <form className="mt-7 flex items-center gap-2 rounded-[18px] border bg-[#FFFDF8] p-2 pl-4 shadow-[0_8px_24px_rgba(31,20,12,0.04)]" style={{ borderColor: '#DCCDB8' }} onSubmit={event => {
                     event.preventDefault();
@@ -1003,19 +751,11 @@ export const UkmlaSBAQuestion: React.FC<UkmlaSBAQuestionProps> = ({
                     </button>
                   </form>
 
-                  <button
-                    type="button"
-                    onClick={() => void runTutor(undefined, true)}
-                    disabled={tutorBusy}
-                    className="mt-3 text-[12px] font-semibold underline decoration-[#BBA995] underline-offset-4 disabled:opacity-40"
-                    style={{ color: C.muted }}
-                  >
-                    Just explain it
-                  </button>
+                  <button type="button" onClick={() => void runTutor(undefined, true)} disabled={tutorBusy} className="mt-3 text-[12px] font-semibold underline decoration-[#BBA995] underline-offset-4 disabled:opacity-40" style={{ color: C.muted }}>Just explain it</button>
                 </>
               )}
 
-              {Object.keys(distractors).length > 0 && !advancePending && !tutorBusy && !hasOpenFollowUp && (
+              {Object.keys(distractors).length > 0 && !advancePending && !tutorBusy && (
                 <div className="mt-8 border-t pt-4" style={{ borderColor: C.line }}>
                   <button type="button" onClick={() => setShowAllDistractors(value => !value)} className="flex w-full items-center justify-between py-2 text-left text-[14px] font-semibold" style={{ color: C.muted }}>
                     <span>{showAllDistractors ? 'Hide other options' : 'Why the other options are wrong'}</span>
