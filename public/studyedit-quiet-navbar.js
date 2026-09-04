@@ -2,6 +2,9 @@
   const STYLE_ID = 'studyedit-quiet-navbar-styles';
 
   const text = (node) => (node?.textContent || '').replace(/\s+/g, ' ').trim();
+  const setTextIfChanged = (node, value) => {
+    if (node && node.textContent !== value) node.textContent = value;
+  };
 
   const ensureStyles = () => {
     if (document.getElementById(STYLE_ID)) return;
@@ -311,6 +314,9 @@
   const buildRows = (sheet, current, total) => {
     const list = sheet.querySelector('[data-studyedit-progress-list="true"]');
     if (!(list instanceof HTMLElement)) return;
+    const signature = `${current}/${total}`;
+    if (list.dataset.signature === signature) return;
+    list.dataset.signature = signature;
     list.replaceChildren();
 
     if (!total) return;
@@ -350,10 +356,13 @@
     const meta = nav.querySelector('.studyedit-sheet-meta');
     const sheet = nav.querySelector('[data-studyedit-progress-sheet="true"]');
 
-    if (count) count.textContent = total ? `${current} of ${total}` : `Case ${current}`;
-    if (left) left.textContent = total ? `${Math.max(total - current, 0)} left` : '';
-    if (fill instanceof HTMLElement) fill.style.width = total ? `${Math.min(100, (current / total) * 100)}%` : '0%';
-    if (meta) meta.textContent = total ? `${Math.max(current - 1, 0)} completed · ${Math.max(total - current, 0)} remaining` : `Case ${current}`;
+    setTextIfChanged(count, total ? `${current} of ${total}` : `Case ${current}`);
+    setTextIfChanged(left, total ? `${Math.max(total - current, 0)} left` : '');
+    if (fill instanceof HTMLElement) {
+      const width = total ? `${Math.min(100, (current / total) * 100)}%` : '0%';
+      if (fill.style.width !== width) fill.style.width = width;
+    }
+    setTextIfChanged(meta, total ? `${Math.max(current - 1, 0)} completed · ${Math.max(total - current, 0)} remaining` : `Case ${current}`);
     if (sheet instanceof HTMLElement) buildRows(sheet, current, total);
   };
 
