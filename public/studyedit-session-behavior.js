@@ -2,6 +2,7 @@
   const STYLE_ID = 'studyedit-session-behavior-styles';
   const PENDING_ATTR = 'data-studyedit-pending-message';
   const WRAP_ATTR = 'data-studyedit-wrap-panel';
+  const ACTION_ATTR = 'data-studyedit-wrap-action';
 
   const state = {
     pending: [],
@@ -19,7 +20,14 @@
     const style = document.createElement('style');
     style.id = STYLE_ID;
     style.textContent = `
-      /* A learner reply should read like a compact message, not a second lesson card. */
+      /* The lesson should not expose internal concept labels or a question-bank result strip. */
+      section[aria-label="Question"] > div:first-child,
+      [data-studyedit-case-summary="true"],
+      section[aria-label="Answer and tutor"] > [data-studyedit-outcome="true"] {
+        display: none !important;
+      }
+
+      /* Learner voice: compact, immediate, and label-free. */
       section[aria-label="Answer and tutor"] .space-y-6 > [data-studyedit-turn="student"],
       section[aria-label="Answer and tutor"] .space-y-6 > .border-y.py-5 {
         margin-left: auto !important;
@@ -33,8 +41,6 @@
         box-shadow: 0 6px 18px rgba(31, 20, 12, 0.07) !important;
       }
 
-      /* Hide the old explicit “You” label. A two-child learner turn is label + message;
-         the one-child optimistic turn below is already only the message. */
       section[aria-label="Answer and tutor"] .space-y-6 > [data-studyedit-turn="student"] > div:first-child:nth-last-child(2),
       section[aria-label="Answer and tutor"] .space-y-6 > .border-y.py-5 > div:first-child:nth-last-child(2) {
         display: none !important;
@@ -54,26 +60,27 @@
         animation: studyedit-optimistic-message-in 130ms ease-out both !important;
       }
 
-      /* The composer belongs to the active conversation and should stay reachable on mobile. */
+      /* Keep the composer reachable whenever the learner can speak. */
       section[aria-label="Answer and tutor"] form {
         position: sticky !important;
         bottom: max(8px, env(safe-area-inset-bottom)) !important;
         z-index: 32 !important;
-        margin-top: 24px !important;
-        box-shadow: 0 6px 20px rgba(31, 20, 12, 0.055), 0 0 0 9px rgba(244, 236, 223, 0.94) !important;
+        margin-top: 18px !important;
+        box-shadow: 0 6px 20px rgba(31, 20, 12, 0.05), 0 0 0 8px rgba(244, 236, 223, 0.94) !important;
         transform: translateZ(0);
       }
 
       section[aria-label="Answer and tutor"] form:focus-within {
-        box-shadow: 0 8px 26px rgba(31, 20, 12, 0.08), 0 0 0 9px rgba(244, 236, 223, 0.98) !important;
+        box-shadow: 0 8px 26px rgba(31, 20, 12, 0.08), 0 0 0 8px rgba(244, 236, 223, 0.98) !important;
       }
 
-      /* Each new case is its own page. */
+      /* Each case is a fresh page rather than an endless lesson transcript. */
       [data-studyedit-history="true"],
       .studyedit-archived-lesson {
         display: none !important;
       }
 
+      /* Once the tutor has finished, its words carry the conclusion. UI only offers ask or continue. */
       [${WRAP_ATTR}="true"] {
         margin-top: 30px;
         padding-top: 20px;
@@ -88,34 +95,30 @@
         letter-spacing: -0.01em;
       }
 
-      [${WRAP_ATTR}="true"] .studyedit-wrap-hint {
-        margin-top: 5px;
-        color: #8A7560;
-        font-size: 13px;
-        font-weight: 550;
-        line-height: 1.5;
+      [${ACTION_ATTR}="true"] {
+        display: flex;
+        justify-content: flex-end;
+        margin-top: 12px;
       }
 
-      [${WRAP_ATTR}="true"] .studyedit-next-button {
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-        margin-top: 14px;
-        min-height: 44px;
+      [${ACTION_ATTR}="true"] .studyedit-next-button {
         border: 0;
-        border-radius: 999px;
-        padding: 11px 17px;
-        background: #1F140C;
-        color: #FAF5EC;
+        padding: 7px 0;
+        background: transparent;
+        color: #5E4E40;
         font: inherit;
-        font-size: 14px;
+        font-size: 15px;
         font-weight: 750;
+        text-decoration: underline;
+        text-decoration-color: #BBA995;
+        text-underline-offset: 4px;
         cursor: pointer;
         -webkit-tap-highlight-color: transparent;
       }
 
-      [${WRAP_ATTR}="true"] .studyedit-next-button:active {
-        transform: scale(.985);
+      [${ACTION_ATTR}="true"] .studyedit-next-button:disabled {
+        opacity: .38;
+        cursor: default;
       }
 
       section[aria-label="Answer and tutor"][data-studyedit-wrap-open="true"] [data-studyedit-stuck="true"] {
@@ -131,10 +134,6 @@
         section[aria-label="Answer and tutor"] .space-y-6 > [data-studyedit-turn="student"],
         section[aria-label="Answer and tutor"] .space-y-6 > .border-y.py-5 {
           max-width: 88% !important;
-        }
-
-        [${WRAP_ATTR}="true"] .studyedit-next-button {
-          width: 100%;
         }
       }
     `;
@@ -183,7 +182,7 @@
   const sectionIsFinalQuestion = (section) => {
     const shell = section?.closest('div.fixed.inset-0.flex.flex-col.overflow-hidden');
     const headerValue = text(shell?.querySelector('header'));
-    const match = headerValue.match(/(\d+)\s*\/\s*(\d+)/);
+    const match = headerValue.match(/(\d+)\s*(?:\/|of)\s*(\d+)/i);
     if (!match) return false;
     return Number(match[1]) >= Number(match[2]);
   };
@@ -269,14 +268,17 @@
     if (!alreadyPending) addOptimisticMessage(section, value);
   };
 
-  const goToNextQuestion = (section, panel) => {
+  const goToNextQuestion = (section) => {
     const onNext = findReactOnNext(section);
     if (typeof onNext !== 'function') return;
+
     state.wrapActive = false;
     state.wrapSection = null;
     section.removeAttribute('data-studyedit-wrap-open');
-    panel?.remove();
+    section.querySelector(`[${WRAP_ATTR}="true"]`)?.remove();
+    section.querySelector(`[${ACTION_ATTR}="true"]`)?.remove();
     onNext();
+
     requestAnimationFrame(() => {
       const active = document.querySelector('section[aria-label="Question"]');
       const shell = active?.closest('div.fixed.inset-0.flex.flex-col.overflow-hidden');
@@ -293,6 +295,7 @@
       ? state.wrapSection
       : document.querySelector('section[aria-label="Answer and tutor"]');
     if (!(section instanceof HTMLElement)) return;
+
     state.wrapSection = section;
     section.setAttribute('data-studyedit-wrap-open', 'true');
 
@@ -300,37 +303,44 @@
     if (!(panel instanceof HTMLElement)) {
       panel = document.createElement('div');
       panel.setAttribute(WRAP_ATTR, 'true');
-
       const question = document.createElement('div');
       question.className = 'studyedit-wrap-question';
+      panel.appendChild(question);
+    }
 
-      const hint = document.createElement('div');
-      hint.className = 'studyedit-wrap-hint';
-
+    let action = section.querySelector(`[${ACTION_ATTR}="true"]`);
+    if (!(action instanceof HTMLElement)) {
+      action = document.createElement('div');
+      action.setAttribute(ACTION_ATTR, 'true');
       const next = document.createElement('button');
       next.type = 'button';
       next.className = 'studyedit-next-button';
-      next.addEventListener('click', () => goToNextQuestion(section, panel));
-
-      panel.append(question, hint, next);
+      next.addEventListener('click', () => goToNextQuestion(section));
+      action.appendChild(next);
     }
 
     const question = panel.querySelector('.studyedit-wrap-question');
-    const hint = panel.querySelector('.studyedit-wrap-hint');
-    const next = panel.querySelector('.studyedit-next-button');
-    if (question) question.textContent = state.wrapFinal ? 'Anything you want to ask before we finish?' : 'Anything you want to ask before we move on?';
-    if (hint) hint.textContent = state.wrapFinal ? 'Ask below, or finish when you’re ready.' : 'Ask below, or go straight to the next case.';
+    const next = action.querySelector('.studyedit-next-button');
+    if (question) question.textContent = state.wrapFinal
+      ? 'Anything you want to ask before we finish?'
+      : 'Anything you want to ask before the next case?';
     if (next) next.textContent = state.wrapFinal ? 'Finish →' : 'Next question →';
+
+    const tutorBusy = Boolean(section.querySelector('[role="status"]'));
+    if (next instanceof HTMLButtonElement) next.disabled = tutorBusy;
 
     const form = section.querySelector('form');
     if (form?.parentNode) {
-      if (panel.parentNode !== form.parentNode || panel.nextSibling !== form) form.parentNode.insertBefore(panel, form);
+      const parent = form.parentNode;
+      if (panel.parentNode !== parent || panel.nextSibling !== form) parent.insertBefore(panel, form);
+      if (action.parentNode !== parent || form.nextSibling !== action) parent.insertBefore(action, form.nextSibling);
       const input = form.querySelector('input, textarea');
       if (input instanceof HTMLInputElement || input instanceof HTMLTextAreaElement) {
-        input.placeholder = state.wrapFinal ? 'Ask anything before we finish…' : 'Ask anything before the next question…';
+        input.placeholder = state.wrapFinal ? 'Ask StudyEdit…' : 'Ask StudyEdit…';
       }
-    } else if (!panel.isConnected) {
-      section.appendChild(panel);
+    } else {
+      if (!panel.isConnected) section.appendChild(panel);
+      if (!action.isConnected) section.appendChild(action);
     }
   };
 
@@ -343,22 +353,18 @@
   };
 
   const detectAndHoldWrap = () => {
-    const sections = document.querySelectorAll('section[aria-label="Answer and tutor"]');
-    sections.forEach((section) => {
+    document.querySelectorAll('section[aria-label="Answer and tutor"]').forEach((section) => {
       if (!(section instanceof HTMLElement)) return;
 
-      /* Strong signal: the baseline React tutor has scheduled its old automatic advance.
-         Cancel that timer and turn it into an explicit learner choice. */
+      /* The baseline tutor still schedules an automatic advance. Cancel it and make continuation explicit. */
       const waitButton = Array.from(section.querySelectorAll('button')).find((button) => /wait\s*[—-]\s*i have a question/i.test(text(button)));
       if (waitButton instanceof HTMLButtonElement) {
-        const full = text(section);
-        activateWrap(section, /wrapping up/i.test(full));
+        activateWrap(section, /wrapping up/i.test(text(section)));
         waitButton.click();
         return;
       }
 
-      /* Robust fallback: the tutor may finish with clear closing language without React
-         exposing the temporary advance control long enough for us to catch it. */
+      /* Some tutor completions do not expose the timer long enough to catch it. */
       const latest = latestTutorMessage(section);
       if (closingLanguage(latest)) activateWrap(section);
     });
@@ -369,16 +375,20 @@
     if (!question || question === state.lastQuestion) return;
     state.lastQuestion = question;
 
-    const answerSection = document.querySelector('section[aria-label="Answer and tutor"][data-studyedit-wrap-open="true"]');
-    answerSection?.removeAttribute('data-studyedit-wrap-open');
-
-    if (!state.wrapActive) {
-      const shell = question.closest('div.fixed.inset-0.flex.flex-col.overflow-hidden');
-      const scroller = shell
-        ? Array.from(shell.children).find((child) => child instanceof HTMLElement && child.classList.contains('overflow-y-auto'))
-        : null;
-      if (scroller instanceof HTMLElement) scroller.scrollTo({ top: 0, behavior: 'auto' });
+    if (state.wrapSection instanceof HTMLElement) {
+      state.wrapSection.removeAttribute('data-studyedit-wrap-open');
+      state.wrapSection.querySelector(`[${WRAP_ATTR}="true"]`)?.remove();
+      state.wrapSection.querySelector(`[${ACTION_ATTR}="true"]`)?.remove();
     }
+    state.wrapActive = false;
+    state.wrapFinal = false;
+    state.wrapSection = null;
+
+    const shell = question.closest('div.fixed.inset-0.flex.flex-col.overflow-hidden');
+    const scroller = shell
+      ? Array.from(shell.children).find((child) => child instanceof HTMLElement && child.classList.contains('overflow-y-auto'))
+      : null;
+    if (scroller instanceof HTMLElement) scroller.scrollTo({ top: 0, behavior: 'auto' });
   };
 
   const run = () => {
