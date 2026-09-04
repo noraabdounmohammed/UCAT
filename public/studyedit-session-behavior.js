@@ -14,20 +14,21 @@
 
   const text = (node) => (node?.textContent || '').replace(/\s+/g, ' ').trim();
   const normalise = (value) => String(value || '').replace(/\s+/g, ' ').trim().toLowerCase();
+  const setTextIfChanged = (node, value) => {
+    if (node && node.textContent !== value) node.textContent = value;
+  };
 
   const ensureStyles = () => {
     if (document.getElementById(STYLE_ID)) return;
     const style = document.createElement('style');
     style.id = STYLE_ID;
     style.textContent = `
-      /* The lesson should not expose internal concept labels or a question-bank result strip. */
       section[aria-label="Question"] > div:first-child,
       [data-studyedit-case-summary="true"],
       section[aria-label="Answer and tutor"] > [data-studyedit-outcome="true"] {
         display: none !important;
       }
 
-      /* Learner voice: compact, immediate, and label-free. */
       section[aria-label="Answer and tutor"] .space-y-6 > [data-studyedit-turn="student"],
       section[aria-label="Answer and tutor"] .space-y-6 > .border-y.py-5 {
         margin-left: auto !important;
@@ -60,7 +61,6 @@
         animation: studyedit-optimistic-message-in 130ms ease-out both !important;
       }
 
-      /* Keep the composer reachable whenever the learner can speak. */
       section[aria-label="Answer and tutor"] form {
         position: sticky !important;
         bottom: max(8px, env(safe-area-inset-bottom)) !important;
@@ -74,13 +74,11 @@
         box-shadow: 0 8px 26px rgba(31, 20, 12, 0.08), 0 0 0 8px rgba(244, 236, 223, 0.98) !important;
       }
 
-      /* Each case is a fresh page rather than an endless lesson transcript. */
       [data-studyedit-history="true"],
       .studyedit-archived-lesson {
         display: none !important;
       }
 
-      /* Once the tutor has finished, its words carry the conclusion. UI only offers ask or continue. */
       [${WRAP_ATTR}="true"] {
         margin-top: 30px;
         padding-top: 20px;
@@ -321,13 +319,11 @@
 
     const question = panel.querySelector('.studyedit-wrap-question');
     const next = action.querySelector('.studyedit-next-button');
-    if (question) question.textContent = state.wrapFinal
-      ? 'Anything you want to ask before we finish?'
-      : 'Anything you want to ask before the next case?';
-    if (next) next.textContent = state.wrapFinal ? 'Finish →' : 'Next question →';
+    setTextIfChanged(question, state.wrapFinal ? 'Anything you want to ask before we finish?' : 'Anything you want to ask before the next case?');
+    setTextIfChanged(next, state.wrapFinal ? 'Finish →' : 'Next question →');
 
     const tutorBusy = Boolean(section.querySelector('[role="status"]'));
-    if (next instanceof HTMLButtonElement) next.disabled = tutorBusy;
+    if (next instanceof HTMLButtonElement && next.disabled !== tutorBusy) next.disabled = tutorBusy;
 
     const form = section.querySelector('form');
     if (form?.parentNode) {
@@ -335,9 +331,7 @@
       if (panel.parentNode !== parent || panel.nextSibling !== form) parent.insertBefore(panel, form);
       if (action.parentNode !== parent || form.nextSibling !== action) parent.insertBefore(action, form.nextSibling);
       const input = form.querySelector('input, textarea');
-      if (input instanceof HTMLInputElement || input instanceof HTMLTextAreaElement) {
-        input.placeholder = state.wrapFinal ? 'Ask StudyEdit…' : 'Ask StudyEdit…';
-      }
+      if (input instanceof HTMLInputElement || input instanceof HTMLTextAreaElement) input.placeholder = 'Ask StudyEdit…';
     } else {
       if (!panel.isConnected) section.appendChild(panel);
       if (!action.isConnected) section.appendChild(action);
@@ -356,7 +350,6 @@
     document.querySelectorAll('section[aria-label="Answer and tutor"]').forEach((section) => {
       if (!(section instanceof HTMLElement)) return;
 
-      /* The baseline tutor still schedules an automatic advance. Cancel it and make continuation explicit. */
       const waitButton = Array.from(section.querySelectorAll('button')).find((button) => /wait\s*[—-]\s*i have a question/i.test(text(button)));
       if (waitButton instanceof HTMLButtonElement) {
         activateWrap(section, /wrapping up/i.test(text(section)));
@@ -364,7 +357,6 @@
         return;
       }
 
-      /* Some tutor completions do not expose the timer long enough to catch it. */
       const latest = latestTutorMessage(section);
       if (closingLanguage(latest)) activateWrap(section);
     });
