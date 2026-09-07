@@ -39,7 +39,6 @@ const C = {
   parchment: '#F4ECDF',
   paper: '#FFFDF8',
   espresso: '#1F140C',
-  muted: '#8A7560',
   line: '#E8DCC4',
 };
 
@@ -145,9 +144,6 @@ export const LearningAwareSBA: React.FC<LearningAwareSBAProps> = (props) => {
               >
                 Guessed
               </button>
-            </div>
-            <div className="mt-3 text-center text-[12px] font-medium" style={{ color: C.muted }}>
-              This changes what StudyEdit asks next.
             </div>
           </div>
         </div>
