@@ -59,7 +59,29 @@ export const QuestionRenderer: React.FC<QuestionRendererProps> = ({
   };
 
   const renderSba = () => (
-    <>
+    <div data-studyedit-question-shell="true">
+      <button
+        type="button"
+        onClick={onNext}
+        data-studyedit-native-next="true"
+        aria-hidden="true"
+        tabIndex={-1}
+        style={{ display: 'none' }}
+      >
+        Next question
+      </button>
+      {onExit && (
+        <button
+          type="button"
+          onClick={onExit}
+          data-studyedit-native-exit="true"
+          aria-hidden="true"
+          tabIndex={-1}
+          style={{ display: 'none' }}
+        >
+          Exit lesson
+        </button>
+      )}
       <LearningAwareSBA
         question={question}
         onAnswer={handleAnswer}
@@ -81,7 +103,7 @@ export const QuestionRenderer: React.FC<QuestionRendererProps> = ({
       <div className="mt-3 flex justify-end px-1">
         <ReportQuestionButton question={question} />
       </div>
-    </>
+    </div>
   );
 
   switch (format) {
