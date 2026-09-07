@@ -39,7 +39,7 @@ export class LearnerErrorBoundary extends React.Component<LearnerErrorBoundaryPr
             That page didn’t load properly.
           </h1>
           <p className="mt-3 text-[16px] font-medium leading-7 text-[#6F5D4C]">
-            Your progress is still safe. Try the page again, or go back home and start from there.
+            Anything already saved will still be there. Try the page again, or go back home and start from there.
           </p>
           <div className="mt-7 flex flex-col gap-3 sm:flex-row">
             <button
