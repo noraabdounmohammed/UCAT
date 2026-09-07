@@ -96,12 +96,16 @@
       [${ACTION_ATTR}="true"] {
         display: flex;
         justify-content: flex-end;
-        margin-top: 12px;
+        margin-top: 8px;
       }
 
       [${ACTION_ATTR}="true"] .studyedit-next-button {
+        display: inline-flex;
+        min-height: 44px;
+        align-items: center;
+        justify-content: center;
         border: 0;
-        padding: 7px 0;
+        padding: 7px 2px;
         background: transparent;
         color: #5E4E40;
         font: inherit;
@@ -136,23 +140,6 @@
       }
     `;
     document.head.appendChild(style);
-  };
-
-  const findReactOnNext = (section) => {
-    let node = section;
-    while (node) {
-      const fiberKey = Object.keys(node).find((key) => key.startsWith('__reactFiber$'));
-      if (fiberKey) {
-        let fiber = node[fiberKey];
-        while (fiber) {
-          const props = fiber.memoizedProps;
-          if (props && typeof props.onNext === 'function') return props.onNext;
-          fiber = fiber.return;
-        }
-      }
-      node = node.parentElement;
-    }
-    return null;
   };
 
   const getThread = (section) => section?.querySelector('.space-y-6');
@@ -266,16 +253,24 @@
     if (!alreadyPending) addOptimisticMessage(section, value);
   };
 
+  const findNativeNext = (section) => {
+    const shell = section?.closest('[data-studyedit-question-shell="true"]');
+    return shell?.querySelector('[data-studyedit-native-next="true"]') || document.querySelector('[data-studyedit-native-next="true"]');
+  };
+
   const goToNextQuestion = (section) => {
-    const onNext = findReactOnNext(section);
-    if (typeof onNext !== 'function') return;
+    const nativeNext = findNativeNext(section);
+    if (!(nativeNext instanceof HTMLButtonElement)) {
+      console.error('StudyEdit could not find the native next-question action.');
+      return;
+    }
 
     state.wrapActive = false;
     state.wrapSection = null;
     section.removeAttribute('data-studyedit-wrap-open');
     section.querySelector(`[${WRAP_ATTR}="true"]`)?.remove();
     section.querySelector(`[${ACTION_ATTR}="true"]`)?.remove();
-    onNext();
+    nativeNext.click();
 
     requestAnimationFrame(() => {
       const active = document.querySelector('section[aria-label="Question"]');
