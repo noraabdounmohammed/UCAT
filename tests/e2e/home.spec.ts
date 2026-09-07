@@ -1,31 +1,34 @@
 import { test, expect } from '@playwright/test';
 
-test.describe('home page', () => {
+test.describe('public learner journey', () => {
   test.beforeEach(async ({ context }) => {
-    // Clear localStorage so cookie consent shows fresh.
     await context.clearCookies();
   });
 
-  test('shows the Try Study Mode CTA', async ({ page }) => {
+  test('home explains the product and exposes the two ways to start', async ({ page }) => {
     await page.goto('/');
-    await expect(page.getByRole('link', { name: /try study mode/i })).toBeVisible();
+    await expect(page.getByRole('heading', { name: /know what to practise next/i })).toBeVisible();
+    await expect(page.getByRole('button', { name: /start 5 recommended questions/i })).toBeVisible();
+    await expect(page.getByRole('button', { name: /practise your way/i })).toBeVisible();
   });
 
-  test('clicking Try Study Mode navigates to /study', async ({ page }) => {
+  test('recommended practice takes a signed-out learner to a clear sign-in gate', async ({ page }) => {
     await page.goto('/');
-    await page.getByRole('link', { name: /try study mode/i }).click();
-    await expect(page).toHaveURL(/\/study/);
+    await page.getByRole('button', { name: /start 5 recommended questions/i }).click();
+    await expect(page).toHaveURL(/\/recommended-practice/);
+    await expect(page.getByRole('heading', { name: /sign in, then start/i })).toBeVisible();
+    await expect(page.getByRole('button', { name: /back home/i })).toBeVisible();
   });
 
-  test('shows made-by-a-doctor credit', async ({ page }) => {
+  test('privacy remains reachable from the home page', async ({ page }) => {
     await page.goto('/');
-    await expect(page.getByText(/made by a uk doctor/i).first()).toBeVisible();
+    await page.getByRole('button', { name: /^privacy$/i }).click();
+    await expect(page).toHaveURL(/\/privacy/);
   });
 
-  test('cookie consent banner appears on first visit', async ({ page }) => {
-    await page.addInitScript(() => localStorage.removeItem('cookie_consent'));
+  test('home has no horizontal overflow on a phone-sized viewport', async ({ page }) => {
     await page.goto('/');
-    await expect(page.getByRole('button', { name: /^accept$/i })).toBeVisible();
-    await expect(page.getByRole('button', { name: /^decline$/i })).toBeVisible();
+    const overflow = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
+    expect(overflow).toBeLessThanOrEqual(1);
   });
 });
