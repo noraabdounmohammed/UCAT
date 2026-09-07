@@ -1,10 +1,8 @@
 (() => {
   const STYLE_ID = 'studyedit-quiet-navbar-styles';
+  const NAV_ATTR = 'data-studyedit-quiet-nav';
 
   const text = (node) => (node?.textContent || '').replace(/\s+/g, ' ').trim();
-  const setTextIfChanged = (node, value) => {
-    if (node && node.textContent !== value) node.textContent = value;
-  };
 
   const ensureStyles = () => {
     if (document.getElementById(STYLE_ID)) return;
@@ -14,17 +12,17 @@
       header[data-studyedit-quiet-nav-host="true"] {
         position: relative !important;
         z-index: 40 !important;
-        border-bottom: 1px solid rgba(227, 214, 194, 0.58) !important;
-        background: rgba(244, 236, 223, 0.96) !important;
+        border-bottom: 1px solid rgba(227, 214, 194, .58) !important;
+        background: rgba(244, 236, 223, .96) !important;
         -webkit-backdrop-filter: blur(16px) !important;
         backdrop-filter: blur(16px) !important;
       }
 
-      header[data-studyedit-quiet-nav-host="true"] > div:not([data-studyedit-quiet-nav="true"]) {
+      header[data-studyedit-quiet-nav-host="true"] > :not([${NAV_ATTR}="true"]) {
         display: none !important;
       }
 
-      [data-studyedit-quiet-nav="true"] {
+      [${NAV_ATTR}="true"] {
         position: relative;
         display: grid;
         grid-template-columns: 40px minmax(0, 1fr) 40px;
@@ -65,6 +63,12 @@
         letter-spacing: 1px;
       }
 
+      [data-studyedit-nav-exit="true"]:active,
+      [data-studyedit-nav-more="true"]:active,
+      [data-studyedit-progress-trigger="true"]:active {
+        opacity: .65;
+      }
+
       [data-studyedit-progress-trigger="true"] {
         min-width: 0;
         border: 0;
@@ -87,7 +91,7 @@
       .studyedit-progress-count {
         font-size: 12px;
         font-weight: 800;
-        letter-spacing: -0.01em;
+        letter-spacing: -.01em;
       }
 
       .studyedit-progress-left {
@@ -109,7 +113,7 @@
         height: 100%;
         border-radius: inherit;
         background: #7A8C66;
-        transition: width 220ms ease;
+        transition: width 180ms ease;
       }
 
       [data-studyedit-nav-menu="true"] {
@@ -120,18 +124,17 @@
         display: none;
         min-width: 170px;
         overflow: hidden;
-        border: 1px solid rgba(220, 205, 184, 0.9);
+        border: 1px solid rgba(220, 205, 184, .9);
         border-radius: 16px;
-        background: rgba(255, 253, 248, 0.97);
-        box-shadow: 0 12px 32px rgba(31, 20, 12, 0.10);
-        -webkit-backdrop-filter: blur(16px);
-        backdrop-filter: blur(16px);
+        background: rgba(255, 253, 248, .98);
+        box-shadow: 0 12px 32px rgba(31, 20, 12, .10);
       }
 
       [data-studyedit-nav-menu="true"][data-open="true"] { display: block; }
 
       [data-studyedit-nav-menu="true"] button {
         width: 100%;
+        min-height: 44px;
         border: 0;
         border-bottom: 1px solid rgba(232, 220, 196, .72);
         background: transparent;
@@ -187,7 +190,7 @@
         color: #1F140C;
         font-size: 20px;
         font-weight: 800;
-        letter-spacing: -0.02em;
+        letter-spacing: -.02em;
       }
 
       .studyedit-sheet-meta {
@@ -198,8 +201,8 @@
       }
 
       .studyedit-sheet-close {
-        width: 34px;
-        height: 34px;
+        width: 44px;
+        height: 44px;
         border: 0;
         border-radius: 999px;
         background: transparent;
@@ -257,11 +260,7 @@
       }
 
       @media (max-width: 600px) {
-        [data-studyedit-quiet-nav="true"] {
-          padding-left: 14px;
-          padding-right: 14px;
-        }
-
+        [${NAV_ATTR}="true"] { padding-left: 14px; padding-right: 14px; }
         [data-studyedit-nav-menu="true"] { right: 14px; }
       }
     `;
@@ -275,27 +274,27 @@
     if (!(shell instanceof HTMLElement)) return null;
     const header = shell.querySelector(':scope > header');
     if (!(header instanceof HTMLElement)) return null;
-    return { header };
+    return { section, shell, header };
   };
 
-  const originalHeaderContent = (header) => Array.from(header.children).find(
-    (child) => child instanceof HTMLElement && !child.hasAttribute('data-studyedit-quiet-nav')
+  const originalHeader = (header) => Array.from(header.children).find(
+    child => child instanceof HTMLElement && !child.hasAttribute(NAV_ATTR),
   );
 
   const readProgress = (header) => {
-    const original = originalHeaderContent(header);
-    const value = text(original);
-    const match = value.match(/(\d+)\s*\/\s*(\d+)/);
+    const value = text(originalHeader(header));
+    const match = value.match(/(\d+)\s*(?:\/|of)\s*(\d+)/i);
     if (match) return { current: Number(match[1]), total: Number(match[2]) };
-    const one = value.match(/\b(\d+)\b/);
-    return { current: one ? Number(one[1]) : 1, total: 0 };
+    return { current: 1, total: 0 };
   };
 
-  const findOriginalExit = (header) => {
-    const original = originalHeaderContent(header);
+  const findExit = (header) => {
+    const native = document.querySelector('[data-studyedit-native-exit="true"]');
+    if (native instanceof HTMLButtonElement) return native;
+    const original = originalHeader(header);
     if (!(original instanceof HTMLElement)) return null;
     return Array.from(original.querySelectorAll('button')).find(
-      (button) => button.getAttribute('aria-label') === 'Exit practice'
+      button => button.getAttribute('aria-label') === 'Exit practice',
     ) || null;
   };
 
@@ -306,29 +305,23 @@
 
   const closeSheet = (nav) => nav.querySelector('[data-studyedit-progress-overlay="true"]')?.removeAttribute('data-open');
 
-  const openSheet = (nav) => {
-    closeMenu(nav);
-    nav.querySelector('[data-studyedit-progress-overlay="true"]')?.setAttribute('data-open', 'true');
-  };
-
-  const buildRows = (sheet, current, total) => {
-    const list = sheet.querySelector('[data-studyedit-progress-list="true"]');
+  const buildRows = (nav, current, total) => {
+    const list = nav.querySelector('[data-studyedit-progress-list="true"]');
     if (!(list instanceof HTMLElement)) return;
     const signature = `${current}/${total}`;
     if (list.dataset.signature === signature) return;
     list.dataset.signature = signature;
     list.replaceChildren();
 
-    if (!total) return;
     for (let number = 1; number <= total; number += 1) {
+      const state = number < current ? 'done' : number === current ? 'current' : 'future';
       const row = document.createElement('div');
       row.className = 'studyedit-progress-row';
-      const rowState = number < current ? 'done' : number === current ? 'current' : 'future';
-      row.dataset.state = rowState;
+      row.dataset.state = state;
 
       const dot = document.createElement('div');
       dot.className = 'studyedit-progress-dot';
-      dot.textContent = rowState === 'done' ? '✓' : String(number);
+      dot.textContent = state === 'done' ? '✓' : String(number);
 
       const copy = document.createElement('div');
       const title = document.createElement('div');
@@ -336,12 +329,12 @@
       title.textContent = `Question ${number}`;
       const sub = document.createElement('div');
       sub.className = 'studyedit-progress-row-sub';
-      sub.textContent = rowState === 'done' ? 'Completed' : rowState === 'current' ? 'Current case' : 'Not revealed yet';
+      sub.textContent = state === 'done' ? 'Completed' : state === 'current' ? 'Current case' : 'Not revealed yet';
       copy.append(title, sub);
 
       const stateLabel = document.createElement('div');
       stateLabel.className = 'studyedit-progress-row-state';
-      stateLabel.textContent = rowState === 'done' ? 'Done' : rowState === 'current' ? 'Now' : '';
+      stateLabel.textContent = state === 'done' ? 'Done' : state === 'current' ? 'Now' : '';
 
       row.append(dot, copy, stateLabel);
       list.appendChild(row);
@@ -354,99 +347,105 @@
     const left = nav.querySelector('.studyedit-progress-left');
     const fill = nav.querySelector('.studyedit-progress-fill');
     const meta = nav.querySelector('.studyedit-sheet-meta');
-    const sheet = nav.querySelector('[data-studyedit-progress-sheet="true"]');
 
-    setTextIfChanged(count, total ? `${current} of ${total}` : `Case ${current}`);
-    setTextIfChanged(left, total ? `${Math.max(total - current, 0)} left` : '');
-    if (fill instanceof HTMLElement) {
-      const width = total ? `${Math.min(100, (current / total) * 100)}%` : '0%';
-      if (fill.style.width !== width) fill.style.width = width;
-    }
-    setTextIfChanged(meta, total ? `${Math.max(current - 1, 0)} completed · ${Math.max(total - current, 0)} remaining` : `Case ${current}`);
-    if (sheet instanceof HTMLElement) buildRows(sheet, current, total);
+    if (count) count.textContent = total ? `${current} of ${total}` : `Question ${current}`;
+    if (left) left.textContent = total ? `${Math.max(0, total - current)} left` : '';
+    if (fill instanceof HTMLElement) fill.style.width = total ? `${Math.max(0, Math.min(100, (current / total) * 100))}%` : '0%';
+    if (meta) meta.textContent = total ? `${Math.max(0, current - 1)} completed · ${Math.max(0, total - current + 1)} including this one` : '';
+    buildRows(nav, current, total);
+  };
+
+  const openSheet = (nav, header) => {
+    closeMenu(nav);
+    syncProgress(header, nav);
+    nav.querySelector('[data-studyedit-progress-overlay="true"]')?.setAttribute('data-open', 'true');
+  };
+
+  const createNav = (header) => {
+    const nav = document.createElement('div');
+    nav.setAttribute(NAV_ATTR, 'true');
+
+    const exit = document.createElement('button');
+    exit.type = 'button';
+    exit.setAttribute('data-studyedit-nav-exit', 'true');
+    exit.setAttribute('aria-label', 'Leave session');
+    exit.textContent = '×';
+
+    const progress = document.createElement('button');
+    progress.type = 'button';
+    progress.setAttribute('data-studyedit-progress-trigger', 'true');
+    progress.setAttribute('aria-label', 'Session progress');
+    progress.innerHTML = '<div class="studyedit-progress-copy"><span class="studyedit-progress-count"></span><span class="studyedit-progress-left"></span></div><div class="studyedit-progress-track"><div class="studyedit-progress-fill"></div></div>';
+
+    const more = document.createElement('button');
+    more.type = 'button';
+    more.setAttribute('data-studyedit-nav-more', 'true');
+    more.setAttribute('aria-label', 'Session options');
+    more.setAttribute('aria-expanded', 'false');
+    more.textContent = '•••';
+
+    const menu = document.createElement('div');
+    menu.setAttribute('data-studyedit-nav-menu', 'true');
+    const progressMenu = document.createElement('button');
+    progressMenu.type = 'button';
+    progressMenu.textContent = 'Session progress';
+    const leave = document.createElement('button');
+    leave.type = 'button';
+    leave.textContent = 'Leave session';
+    menu.append(progressMenu, leave);
+
+    const overlay = document.createElement('div');
+    overlay.setAttribute('data-studyedit-progress-overlay', 'true');
+    const sheet = document.createElement('section');
+    sheet.setAttribute('data-studyedit-progress-sheet', 'true');
+    sheet.innerHTML = '<div class="studyedit-sheet-handle"></div><div class="studyedit-sheet-head"><div><div class="studyedit-sheet-title">Session progress</div><div class="studyedit-sheet-meta"></div></div><button type="button" class="studyedit-sheet-close" aria-label="Close progress">×</button></div><div data-studyedit-progress-list="true"></div>';
+    overlay.appendChild(sheet);
+
+    const leaveLesson = () => {
+      const target = findExit(header);
+      if (target instanceof HTMLButtonElement) target.click();
+    };
+
+    exit.addEventListener('click', leaveLesson);
+    progress.addEventListener('click', () => openSheet(nav, header));
+    progressMenu.addEventListener('click', () => openSheet(nav, header));
+    leave.addEventListener('click', leaveLesson);
+    more.addEventListener('click', event => {
+      event.stopPropagation();
+      const opening = menu.getAttribute('data-open') !== 'true';
+      if (opening) menu.setAttribute('data-open', 'true');
+      else menu.removeAttribute('data-open');
+      more.setAttribute('aria-expanded', opening ? 'true' : 'false');
+    });
+    sheet.querySelector('.studyedit-sheet-close')?.addEventListener('click', () => closeSheet(nav));
+    overlay.addEventListener('click', event => {
+      if (event.target === overlay) closeSheet(nav);
+    });
+
+    nav.append(exit, progress, more, menu, overlay);
+    return nav;
   };
 
   const ensureQuietNav = ({ header }) => {
     header.setAttribute('data-studyedit-quiet-nav-host', 'true');
-
-    let nav = header.querySelector(':scope > [data-studyedit-quiet-nav="true"]');
+    let nav = header.querySelector(`[${NAV_ATTR}="true"]`);
     if (!(nav instanceof HTMLElement)) {
-      nav = document.createElement('div');
-      nav.setAttribute('data-studyedit-quiet-nav', 'true');
-
-      const exit = document.createElement('button');
-      exit.type = 'button';
-      exit.textContent = '×';
-      exit.setAttribute('data-studyedit-nav-exit', 'true');
-      exit.setAttribute('aria-label', 'Leave lesson');
-
-      const progress = document.createElement('button');
-      progress.type = 'button';
-      progress.setAttribute('data-studyedit-progress-trigger', 'true');
-      progress.setAttribute('aria-label', 'Session progress');
-      progress.innerHTML = '<div class="studyedit-progress-copy"><span class="studyedit-progress-count"></span><span class="studyedit-progress-left"></span></div><div class="studyedit-progress-track"><div class="studyedit-progress-fill"></div></div>';
-
-      const more = document.createElement('button');
-      more.type = 'button';
-      more.textContent = '•••';
-      more.setAttribute('data-studyedit-nav-more', 'true');
-      more.setAttribute('aria-label', 'Lesson options');
-      more.setAttribute('aria-expanded', 'false');
-
-      const menu = document.createElement('div');
-      menu.setAttribute('data-studyedit-nav-menu', 'true');
-      const progressMenu = document.createElement('button');
-      progressMenu.type = 'button';
-      progressMenu.textContent = 'Session progress';
-      const leave = document.createElement('button');
-      leave.type = 'button';
-      leave.textContent = 'Leave session';
-      menu.append(progressMenu, leave);
-
-      const overlay = document.createElement('div');
-      overlay.setAttribute('data-studyedit-progress-overlay', 'true');
-      const sheet = document.createElement('section');
-      sheet.setAttribute('data-studyedit-progress-sheet', 'true');
-      sheet.innerHTML = '<div class="studyedit-sheet-handle"></div><div class="studyedit-sheet-head"><div><div class="studyedit-sheet-title">Session progress</div><div class="studyedit-sheet-meta"></div></div><button type="button" class="studyedit-sheet-close" aria-label="Close progress">×</button></div><div data-studyedit-progress-list="true"></div>';
-      overlay.appendChild(sheet);
-
-      const leaveLesson = () => {
-        const originalExit = findOriginalExit(header);
-        if (originalExit instanceof HTMLButtonElement) originalExit.click();
-      };
-
-      exit.addEventListener('click', leaveLesson);
-      progress.addEventListener('click', () => openSheet(nav));
-      progressMenu.addEventListener('click', () => openSheet(nav));
-      leave.addEventListener('click', leaveLesson);
-      more.addEventListener('click', (event) => {
-        event.stopPropagation();
-        const opening = menu.getAttribute('data-open') !== 'true';
-        if (opening) menu.setAttribute('data-open', 'true');
-        else menu.removeAttribute('data-open');
-        more.setAttribute('aria-expanded', opening ? 'true' : 'false');
-      });
-      sheet.querySelector('.studyedit-sheet-close')?.addEventListener('click', () => closeSheet(nav));
-      overlay.addEventListener('click', (event) => {
-        if (event.target === overlay) closeSheet(nav);
-      });
-
-      nav.append(exit, progress, more, menu, overlay);
+      nav = createNav(header);
       header.appendChild(nav);
     }
 
-    const originalExit = findOriginalExit(header);
     const exit = nav.querySelector('[data-studyedit-nav-exit="true"]');
-    if (exit instanceof HTMLElement) exit.style.visibility = originalExit ? 'visible' : 'hidden';
+    if (exit instanceof HTMLElement) exit.style.visibility = findExit(header) ? 'visible' : 'hidden';
     syncProgress(header, nav);
   };
 
-  document.addEventListener('click', (event) => {
-    document.querySelectorAll('[data-studyedit-quiet-nav="true"]').forEach((nav) => {
+  document.addEventListener('click', event => {
+    document.querySelectorAll(`[${NAV_ATTR}="true"]`).forEach(nav => {
       if (!(nav instanceof HTMLElement)) return;
       const menu = nav.querySelector('[data-studyedit-nav-menu="true"]');
       if (!(menu instanceof HTMLElement) || menu.getAttribute('data-open') !== 'true') return;
-      if (event.target instanceof Node && (menu.contains(event.target) || nav.querySelector('[data-studyedit-nav-more="true"]')?.contains(event.target))) return;
+      const more = nav.querySelector('[data-studyedit-nav-more="true"]');
+      if (event.target instanceof Node && (menu.contains(event.target) || more?.contains(event.target))) return;
       closeMenu(nav);
     });
   });
@@ -467,10 +466,28 @@
     });
   };
 
+  const mutationMatters = records => {
+    const navExists = Boolean(document.querySelector(`[${NAV_ATTR}="true"]`));
+    if (!navExists) return true;
+
+    return records.some(record => {
+      const target = record.target instanceof Element ? record.target : record.target.parentElement;
+      if (target?.closest(`header[data-studyedit-quiet-nav-host="true"] > :not([${NAV_ATTR}="true"])`)) return true;
+      if (record.type !== 'childList') return false;
+      return Array.from(record.addedNodes).some(node => {
+        if (!(node instanceof Element)) return false;
+        return node.matches('section[aria-label="Question"], section[aria-label="Answer and tutor"]') ||
+          Boolean(node.querySelector?.('section[aria-label="Question"], section[aria-label="Answer and tutor"]'));
+      });
+    });
+  };
+
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', polish, { once: true });
   else polish();
 
-  new MutationObserver(queue).observe(document.documentElement, {
+  new MutationObserver(records => {
+    if (mutationMatters(records)) queue();
+  }).observe(document.documentElement, {
     childList: true,
     subtree: true,
     characterData: true,
