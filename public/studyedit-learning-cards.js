@@ -9,13 +9,24 @@
     const style = document.createElement('style');
     style.id = STYLE_ID;
     style.textContent = `
+      /* Sage has one meaning in StudyEdit: it is the learner's turn to think. */
       [${CARD_MARKER}="true"] {
-        margin-top: 22px;
-        border: 1px solid #E2D6C3;
-        border-radius: 22px;
-        background: #FFFDF8;
-        padding: 18px;
-        box-shadow: 0 10px 28px rgba(31, 20, 12, 0.035);
+        margin-top: 20px;
+        border: 1px solid #B9C5AB;
+        border-radius: 19px;
+        background: #EEF0E2;
+        padding: 16px;
+        box-shadow: none;
+      }
+
+      [${CARD_MARKER}="true"]::before {
+        content: 'QUICK CHECK';
+        display: block;
+        margin-bottom: 9px;
+        color: #76835F;
+        font-size: 10px;
+        font-weight: 800;
+        letter-spacing: .18em;
       }
 
       [${CARD_MARKER}="true"] [data-studyedit-followup-question="true"] {
@@ -29,7 +40,7 @@
       [${CARD_MARKER}="true"] [data-studyedit-followup-options="true"] {
         display: grid;
         gap: 8px;
-        margin-top: 16px;
+        margin-top: 15px;
       }
 
       [${CARD_MARKER}="true"] [data-studyedit-followup-option="true"] {
@@ -38,14 +49,15 @@
         align-items: center;
         gap: 10px;
         width: 100%;
-        border: 1px solid #E7DCCB;
-        border-radius: 16px;
-        background: #FAF5EC;
+        border: 1px solid #C8D2BD;
+        border-radius: 15px;
+        background: #FFFDF8;
         padding: 11px 13px;
         color: #2A1E16;
         text-align: left;
         font: inherit;
         transition: border-color 120ms ease, background-color 120ms ease, transform 120ms ease;
+        -webkit-tap-highlight-color: transparent;
       }
 
       [${CARD_MARKER}="true"] [data-studyedit-followup-option="true"]:active {
@@ -53,12 +65,12 @@
       }
 
       [${CARD_MARKER}="true"] [data-studyedit-followup-option="true"]:not(:disabled):hover {
-        border-color: #CDBBA2;
+        border-color: #9EAF90;
       }
 
       [${CARD_MARKER}="true"] [data-studyedit-followup-option="true"][data-selected="true"] {
-        border-color: #1F140C;
-        background: #F4ECDF;
+        border-color: #62734F;
+        background: #F7F9F3;
       }
 
       [${CARD_MARKER}="true"] [data-studyedit-followup-option="true"]:disabled {
@@ -73,15 +85,15 @@
         align-items: center;
         justify-content: center;
         border-radius: 999px;
-        background: rgba(31, 20, 12, .065);
-        color: #1F140C;
+        background: rgba(98, 115, 79, .10);
+        color: #62734F;
         font-size: 12px;
         font-weight: 800;
       }
 
       [${CARD_MARKER}="true"] [data-studyedit-followup-option="true"][data-selected="true"] [data-studyedit-option-letter="true"] {
-        background: #1F140C;
-        color: #FAF5EC;
+        background: #62734F;
+        color: #FFFDF8;
       }
 
       [${CARD_MARKER}="true"] [data-studyedit-option-text="true"] {
@@ -103,16 +115,13 @@
       }
 
       [${CARD_MARKER}="true"] [data-studyedit-followup-submit="true"]:disabled {
-        background: #D9CCB6;
-        color: #8A7560;
+        background: #CDD5C3;
+        color: #78826D;
       }
 
+      /* The learner-facing delta card was intentionally retired. */
       [data-studyedit-delta-card="true"] {
-        margin-top: 22px;
-        border: 1px solid #E5B9B1;
-        border-radius: 22px;
-        background: #F9E4DF;
-        padding: 18px;
+        display: none !important;
       }
 
       [data-studyedit-comparison-card="true"] {
@@ -128,7 +137,7 @@
           margin-left: -2px;
           margin-right: -2px;
           padding: 15px;
-          border-radius: 20px;
+          border-radius: 18px;
         }
 
         [${CARD_MARKER}="true"] [data-studyedit-followup-question="true"] {
@@ -174,7 +183,8 @@
   };
 
   const setReactInputValue = (input, value) => {
-    const descriptor = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value');
+    const prototype = input instanceof HTMLTextAreaElement ? HTMLTextAreaElement.prototype : HTMLInputElement.prototype;
+    const descriptor = Object.getOwnPropertyDescriptor(prototype, 'value');
     descriptor?.set?.call(input, value);
     input.dispatchEvent(new Event('input', { bubbles: true }));
     input.dispatchEvent(new Event('change', { bubbles: true }));
@@ -182,8 +192,9 @@
 
   const submitTutorAnswer = (section, answer) => {
     const form = section.querySelector('form');
-    const input = form?.querySelector('input');
-    if (!(form instanceof HTMLFormElement) || !(input instanceof HTMLInputElement)) return false;
+    const input = form?.querySelector('input, textarea');
+    if (!(form instanceof HTMLFormElement)) return false;
+    if (!(input instanceof HTMLInputElement || input instanceof HTMLTextAreaElement)) return false;
 
     setReactInputValue(input, answer);
     window.setTimeout(() => form.requestSubmit(), 30);
@@ -198,8 +209,6 @@
     question.setAttribute('data-studyedit-followup-question', 'true');
     question.textContent = parsed.question;
     card.appendChild(question);
-
-    if (!parsed.options.length) return card;
 
     const options = document.createElement('div');
     options.setAttribute('data-studyedit-followup-options', 'true');
@@ -281,8 +290,7 @@
     range.setEndAfter(root.lastChild || root);
     range.deleteContents();
 
-    const trailingBreaks = root.querySelectorAll('p:empty, ul:empty, ol:empty');
-    trailingBreaks.forEach(node => node.remove());
+    root.querySelectorAll('p:empty, ul:empty, ol:empty').forEach(node => node.remove());
   };
 
   const enhanceTutorTurn = (turn, section) => {
@@ -293,7 +301,7 @@
 
     const raw = turn.innerText || turn.textContent || '';
     const parsed = parseFollowup(raw);
-    if (!parsed || !parsed.question) return;
+    if (!parsed || !parsed.question || parsed.options.length === 0) return;
 
     turn.dataset.studyeditFollowupEnhanced = 'true';
     stripQuickCheckFromElement(turn);
@@ -307,11 +315,10 @@
     const raw = card.innerText || card.textContent || '';
     const fake = `Quick check: ${raw.replace(/^Quick check\s*/i, '')}`;
     const parsed = parseFollowup(fake);
-    if (!parsed || !parsed.question) return;
+    if (!parsed || !parsed.question || parsed.options.length === 0) return;
 
     card.dataset.studyeditFollowupEnhanced = 'true';
-    const replacement = buildCard(section, parsed);
-    card.replaceWith(replacement);
+    card.replaceWith(buildCard(section, parsed));
   };
 
   const enhanceSection = (section) => {
@@ -323,7 +330,7 @@
 
     Array.from(thread.children).forEach(turn => enhanceTutorTurn(turn, section));
 
-    section.querySelectorAll('.rounded-\[19px\]').forEach(card => {
+    section.querySelectorAll('.rounded-\\[19px\\]').forEach(card => {
       const content = text(card);
       if (/quick\s*check/i.test(content)) enhanceExistingQuickCheckCard(card, section);
     });
