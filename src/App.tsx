@@ -6,6 +6,7 @@ import { AuthProvider } from '@/contexts/AuthContext';
 import { StorageNotification } from '@/components/StorageNotification';
 import { PWAInstallPrompt } from '@/components/PWAInstallPrompt';
 import { PWAUpdateNotification } from '@/components/PWAUpdateNotification';
+import { LearnerErrorBoundary } from '@/components/LearnerErrorBoundary';
 import '@/styles/font-sizes.css';
 
 const LaunchHomePage = lazy(() => import('@/pages/LaunchHomePage').then(m => ({ default: m.LaunchHomePage })));
@@ -17,22 +18,24 @@ const BlankFallback = () => <div className="h-screen w-screen" style={{ backgrou
 
 function App() {
   return (
-    <AuthProvider>
-      <ThemeProvider>
-        <FontSizeProvider>
-          <StorageNotification />
-          <PWAInstallPrompt />
-          <PWAUpdateNotification />
-          <Routes>
-            <Route path="/" element={<Suspense fallback={<BlankFallback />}><LaunchHomePage /></Suspense>} />
-            <Route path="/recommended-practice" element={<Suspense fallback={<BlankFallback />}><RecommendedPracticePage /></Suspense>} />
-            <Route path="/concept-practice" element={<Suspense fallback={<BlankFallback />}><CustomPracticePage /></Suspense>} />
-            <Route path="/privacy" element={<Suspense fallback={<BlankFallback />}><PrivacyPolicy /></Suspense>} />
-            <Route path="*" element={<Navigate to="/" replace />} />
-          </Routes>
-        </FontSizeProvider>
-      </ThemeProvider>
-    </AuthProvider>
+    <LearnerErrorBoundary>
+      <AuthProvider>
+        <ThemeProvider>
+          <FontSizeProvider>
+            <StorageNotification />
+            <PWAInstallPrompt />
+            <PWAUpdateNotification />
+            <Routes>
+              <Route path="/" element={<Suspense fallback={<BlankFallback />}><LaunchHomePage /></Suspense>} />
+              <Route path="/recommended-practice" element={<Suspense fallback={<BlankFallback />}><RecommendedPracticePage /></Suspense>} />
+              <Route path="/concept-practice" element={<Suspense fallback={<BlankFallback />}><CustomPracticePage /></Suspense>} />
+              <Route path="/privacy" element={<Suspense fallback={<BlankFallback />}><PrivacyPolicy /></Suspense>} />
+              <Route path="*" element={<Navigate to="/" replace />} />
+            </Routes>
+          </FontSizeProvider>
+        </ThemeProvider>
+      </AuthProvider>
+    </LearnerErrorBoundary>
   );
 }
 
