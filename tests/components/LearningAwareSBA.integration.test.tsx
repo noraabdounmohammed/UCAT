@@ -40,6 +40,14 @@ describe('real SBA → confidence → tutor flow', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     sessionStorage.clear();
+    Object.defineProperty(HTMLElement.prototype, 'scrollTo', {
+      configurable: true,
+      value: vi.fn(),
+    });
+    Object.defineProperty(HTMLElement.prototype, 'scrollIntoView', {
+      configurable: true,
+      value: vi.fn(),
+    });
   });
 
   it('lets a learner answer, captures confidence, then produces tutor feedback without advancing immediately', async () => {
