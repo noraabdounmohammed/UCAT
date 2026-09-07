@@ -14,7 +14,16 @@ const RecommendedPracticePage = lazy(() => import('@/pages/RecommendedPracticePa
 const CustomPracticePage = lazy(() => import('@/pages/CustomPracticePage').then(m => ({ default: m.CustomPracticePage })));
 const PrivacyPolicy = lazy(() => import('@/pages/PrivacyPolicy').then(m => ({ default: m.PrivacyPolicy })));
 
-const BlankFallback = () => <div className="h-screen w-screen" style={{ backgroundColor: '#F4EFE8' }} />;
+const RouteFallback = () => (
+  <main className="flex min-h-screen items-center justify-center bg-[#F4ECDF] px-5 text-[#2A1E16]" aria-live="polite">
+    <div className="flex items-center gap-3 text-[14px] font-semibold text-[#8A7560]">
+      <span className="h-2 w-2 animate-pulse rounded-full bg-[#8FA379]" aria-hidden="true" />
+      Opening StudyEdit…
+    </div>
+  </main>
+);
+
+const withFallback = (page: React.ReactNode) => <Suspense fallback={<RouteFallback />}>{page}</Suspense>;
 
 function App() {
   return (
@@ -26,10 +35,10 @@ function App() {
             <PWAInstallPrompt />
             <PWAUpdateNotification />
             <Routes>
-              <Route path="/" element={<Suspense fallback={<BlankFallback />}><LaunchHomePage /></Suspense>} />
-              <Route path="/recommended-practice" element={<Suspense fallback={<BlankFallback />}><RecommendedPracticePage /></Suspense>} />
-              <Route path="/concept-practice" element={<Suspense fallback={<BlankFallback />}><CustomPracticePage /></Suspense>} />
-              <Route path="/privacy" element={<Suspense fallback={<BlankFallback />}><PrivacyPolicy /></Suspense>} />
+              <Route path="/" element={withFallback(<LaunchHomePage />)} />
+              <Route path="/recommended-practice" element={withFallback(<RecommendedPracticePage />)} />
+              <Route path="/concept-practice" element={withFallback(<CustomPracticePage />)} />
+              <Route path="/privacy" element={withFallback(<PrivacyPolicy />)} />
               <Route path="*" element={<Navigate to="/" replace />} />
             </Routes>
           </FontSizeProvider>
