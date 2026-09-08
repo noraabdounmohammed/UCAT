@@ -55,7 +55,11 @@ export function readCloudLearnerEvents(): any[] {
 }
 
 export async function hydrateLearnerMemoryFromCloud(force = false): Promise<void> {
-  if (!force && hydratePromise) return hydratePromise;
+  // Personalisation is useful, but it must never sit on the tutor's critical path.
+  // If a refresh is already running (normally started while the learner reads the
+  // question), later tutor calls use the local snapshot immediately rather than
+  // queueing behind the same network request.
+  if (!force && hydratePromise) return;
   if (!force && lastHydratedAt && Date.now() - lastHydratedAt < HYDRATE_TTL_MS) return;
 
   hydratePromise = (async () => {
