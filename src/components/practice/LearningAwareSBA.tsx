@@ -3,6 +3,7 @@ import { UkmlaSBAQuestion } from './UkmlaSBAQuestion';
 import type { QuestionData } from './questionTypes';
 import type { SessionAnswer } from './SessionProgressDropdown';
 import type { FilterState } from './PracticeFilterModalParchment';
+import { hydrateLearnerMemoryFromCloud } from '@/services/learnerMemory';
 
 interface LearningAwareSBAProps {
   question: QuestionData;
@@ -65,6 +66,9 @@ export const LearningAwareSBA: React.FC<LearningAwareSBAProps> = (props) => {
   useEffect(() => {
     setConfidenceOpen(false);
     setPendingCorrect(null);
+    // Warm longitudinal context while the learner is reading the case so tutor feedback
+    // does not wait on a cloud-memory round trip after they answer.
+    void hydrateLearnerMemoryFromCloud();
   }, [props.question.id, props.currentIndex]);
 
   const saveSignal = (signal: string, value?: string, extra?: Record<string, unknown>) => {
