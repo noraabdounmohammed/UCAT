@@ -31,9 +31,11 @@ test('rapid public navigation never leaves the learner on a blank screen', async
 
   for (const route of ['/privacy', '/', '/concept-practice', '/', '/recommended-practice', '/']) {
     await page.goto(route, { waitUntil: 'domcontentloaded' });
-    await expect(page.locator('main').first()).toBeVisible();
-    const content = (await page.locator('main').first().innerText()).trim();
-    expect(content.length).toBeGreaterThan(20);
+    const main = page.locator('main').first();
+    await expect(main).toBeVisible();
+    await expect.poll(async () => (await main.innerText()).trim().length).toBeGreaterThan(0);
+    const box = await main.boundingBox();
+    expect(box?.height || 0, `usable main content height on ${route}`).toBeGreaterThan(20);
   }
 });
 
