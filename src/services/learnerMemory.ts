@@ -13,7 +13,9 @@ export interface LearnerMemoryEventInput {
 
 const LOCAL_KEY = 'studyedit_cloud_learner_events_v1';
 const MAX_LOCAL_EVENTS = 500;
+const HYDRATE_TTL_MS = 5 * 60 * 1000;
 let hydratePromise: Promise<void> | null = null;
+let lastHydratedAt = 0;
 
 function parseArray(value: string | null): any[] {
   if (!value) return [];
@@ -54,6 +56,7 @@ export function readCloudLearnerEvents(): any[] {
 
 export async function hydrateLearnerMemoryFromCloud(force = false): Promise<void> {
   if (!force && hydratePromise) return hydratePromise;
+  if (!force && lastHydratedAt && Date.now() - lastHydratedAt < HYDRATE_TTL_MS) return;
 
   hydratePromise = (async () => {
     try {
@@ -78,6 +81,7 @@ export async function hydrateLearnerMemoryFromCloud(force = false): Promise<void
   try {
     await hydratePromise;
   } finally {
+    lastHydratedAt = Date.now();
     hydratePromise = null;
   }
 }
