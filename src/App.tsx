@@ -12,6 +12,7 @@ import '@/styles/font-sizes.css';
 const LaunchHomePage = lazy(() => import('@/pages/LaunchHomePage').then(m => ({ default: m.LaunchHomePage })));
 const RecommendedPracticePage = lazy(() => import('@/pages/RecommendedPracticePage').then(m => ({ default: m.RecommendedPracticePage })));
 const CustomPracticePage = lazy(() => import('@/pages/CustomPracticePage').then(m => ({ default: m.CustomPracticePage })));
+const SignInPage = lazy(() => import('@/pages/SignInPage').then(m => ({ default: m.SignInPage })));
 const PrivacyPolicy = lazy(() => import('@/pages/PrivacyPolicy').then(m => ({ default: m.PrivacyPolicy })));
 
 const RouteFallback = () => (
@@ -38,6 +39,7 @@ function App() {
               <Route path="/" element={withFallback(<LaunchHomePage />)} />
               <Route path="/recommended-practice" element={withFallback(<RecommendedPracticePage />)} />
               <Route path="/concept-practice" element={withFallback(<CustomPracticePage />)} />
+              <Route path="/signin" element={withFallback(<SignInPage />)} />
               <Route path="/privacy" element={withFallback(<PrivacyPolicy />)} />
               <Route path="*" element={<Navigate to="/" replace />} />
             </Routes>
