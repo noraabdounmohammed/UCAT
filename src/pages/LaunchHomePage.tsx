@@ -42,12 +42,14 @@ function SessionPlanCard({
   onReset: () => void;
   personalised: boolean;
 }) {
+  const unmatched = Boolean(plan.request && plan.requestMatched === false);
+
   return (
     <section className="mt-7 overflow-hidden rounded-[22px] border" style={{ borderColor: P.line, backgroundColor: P.paper }}>
       <div className="p-5 sm:p-6">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div className="text-[10px] font-bold uppercase tracking-[0.18em]" style={{ color: P.muted }}>
-            {plan.request ? 'Session I understood' : personalised ? 'What I’d do next' : 'If I choose for you'}
+            {unmatched ? 'I couldn’t map that exactly' : plan.request ? 'Session I understood' : personalised ? 'What I’d do next' : 'If I choose for you'}
           </div>
           <div className="text-[12px] font-semibold" style={{ color: P.muted }}>
             {plan.count || 1} case{plan.count === 1 ? '' : 's'} · about {plan.minutes || 3} min
@@ -58,6 +60,12 @@ function SessionPlanCard({
           <div className="mt-3 text-[14px] font-semibold leading-6" style={{ color: P.espresso }}>
             “{plan.request}”
           </div>
+        )}
+
+        {unmatched && (
+          <p className="mt-3 text-[12px] font-medium leading-5" style={{ color: P.muted }}>
+            I couldn’t find a clean curriculum match, so I’ve shown my recommended mix instead. Try an area such as cardiology, a skill such as management, or a time such as 10 minutes.
+          </p>
         )}
 
         <div className="mt-6">
@@ -136,7 +144,7 @@ function HomeContent() {
         <header className="flex items-center justify-between gap-4">
           <div className="text-[19px] font-extrabold tracking-[-0.03em]" style={{ color: P.espresso }}>studyedit.</div>
           {!user ? (
-            <button onClick={() => navigate('/recommended-practice?auth=1')} className="text-[12px] font-semibold" style={{ color: P.muted }}>Sign in</button>
+            <button onClick={() => navigate('/signin?next=/')} className="text-[12px] font-semibold" style={{ color: P.muted }}>Sign in</button>
           ) : (
             <button onClick={() => void signOut()} className="text-[12px] font-semibold" style={{ color: P.muted }}>Sign out</button>
           )}
