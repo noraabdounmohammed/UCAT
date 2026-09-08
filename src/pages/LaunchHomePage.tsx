@@ -1,10 +1,10 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useState } from 'react';
 import { ArrowRight } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { ConceptStoreProvider, useConceptStore } from '@/contexts/ConceptStoreContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { getDaypartGreeting, getLearnerFirstName } from '@/lib/learnerIdentity';
-import { buildSpoilerSafeSessionPlan, rememberPlannedSession } from '@/lib/sessionPlan';
+import { buildSessionPlanFromRequest, rememberPlannedSession } from '@/lib/sessionPlan';
 import { getUserCurriculumId, migrateLegacyCurriculumState } from '@/utils/curriculumScope';
 
 const P = {
@@ -18,73 +18,77 @@ const P = {
   sageDeep: '#667555',
 };
 
+function CountedScope({ items }: { items: Array<{ label: string; count: number }> }) {
+  if (!items.length) return <span>Mixed UKMLA</span>;
+  return (
+    <div className="flex flex-wrap gap-2">
+      {items.map(item => (
+        <span key={item.label} className="rounded-full border px-3 py-1.5 text-[12px] font-bold" style={{ borderColor: '#D8DDC9', backgroundColor: P.sage, color: P.espresso }}>
+          {item.label}{item.count > 1 ? ` ×${item.count}` : ''}
+        </span>
+      ))}
+    </div>
+  );
+}
+
 function SessionPlanCard({
   plan,
   onStart,
-  onChange,
-  firstSession,
+  onReset,
+  personalised,
 }: {
-  plan: ReturnType<typeof buildSpoilerSafeSessionPlan>;
+  plan: ReturnType<typeof buildSessionPlanFromRequest>;
   onStart: () => void;
-  onChange: () => void;
-  firstSession: boolean;
+  onReset: () => void;
+  personalised: boolean;
 }) {
   return (
     <section className="mt-7 overflow-hidden rounded-[22px] border" style={{ borderColor: P.line, backgroundColor: P.paper }}>
       <div className="p-5 sm:p-6">
-        <div className="flex items-center justify-between gap-4">
+        <div className="flex flex-wrap items-center justify-between gap-3">
           <div className="text-[10px] font-bold uppercase tracking-[0.18em]" style={{ color: P.muted }}>
-            {firstSession ? 'If I choose for you' : 'Your next session'}
+            {plan.request ? 'Session I understood' : personalised ? 'What I’d do next' : 'If I choose for you'}
           </div>
           <div className="text-[12px] font-semibold" style={{ color: P.muted }}>
-            {plan.count || (firstSession ? 3 : 5)} cases · about {plan.minutes || (firstSession ? 6 : 10)} min
+            {plan.count || 1} case{plan.count === 1 ? '' : 's'} · about {plan.minutes || 3} min
           </div>
         </div>
 
-        <div className="mt-5 grid gap-5 sm:grid-cols-2">
-          <div>
-            <div className="text-[11px] font-semibold" style={{ color: P.muted }}>Areas</div>
-            <div className="mt-2 text-[16px] font-bold leading-6" style={{ color: P.espresso }}>
-              {plan.systems.length ? plan.systems.join(' · ') : 'Mixed UKMLA'}
-            </div>
-          </div>
-          <div>
-            <div className="text-[11px] font-semibold" style={{ color: P.muted }}>What you’ll practise</div>
-            <div className="mt-2 text-[16px] font-bold leading-6" style={{ color: P.espresso }}>
-              {plan.skills.length ? plan.skills.join(' · ') : 'Clinical reasoning'}
-            </div>
-          </div>
-        </div>
-
-        {plan.cases.length > 0 && (
-          <div className="mt-6 border-t pt-4" style={{ borderColor: P.line }}>
-            <div className="mb-2 text-[11px] font-semibold" style={{ color: P.muted }}>Whole session</div>
-            <div className="divide-y" style={{ borderColor: P.line }}>
-              {plan.cases.map((item, index) => (
-                <div key={`${item.system}-${item.skill}-${index}`} className="grid grid-cols-[28px_1fr] gap-3 py-3 text-[13px] leading-5">
-                  <span className="font-bold" style={{ color: P.sageDeep }}>{index + 1}</span>
-                  <span style={{ color: P.ink }}><strong>{item.system}</strong> · {item.skill}</span>
-                </div>
-              ))}
-            </div>
-            <p className="mt-3 text-[11px] leading-5" style={{ color: P.muted }}>
-              This shows the scope of every case without revealing the condition, decisive clue or correct answer.
-            </p>
+        {plan.request && (
+          <div className="mt-3 text-[14px] font-semibold leading-6" style={{ color: P.espresso }}>
+            “{plan.request}”
           </div>
         )}
+
+        <div className="mt-6">
+          <div className="text-[11px] font-semibold" style={{ color: P.muted }}>Areas in this session</div>
+          <div className="mt-2"><CountedScope items={plan.systemCounts} /></div>
+        </div>
+
+        <div className="mt-5">
+          <div className="text-[11px] font-semibold" style={{ color: P.muted }}>What you’ll practise</div>
+          <div className="mt-2"><CountedScope items={plan.skillCounts} /></div>
+        </div>
+
+        <p className="mt-5 border-t pt-4 text-[11px] leading-5" style={{ borderColor: P.line, color: P.muted }}>
+          You can see the whole session scope here. I keep the order, exact conditions, decisive clues and answers hidden so the preview can’t cue a case.
+        </p>
 
         <div className="mt-5 flex flex-wrap items-center gap-4">
           <button
             type="button"
             onClick={onStart}
-            className="inline-flex items-center gap-2 rounded-[14px] px-5 py-3.5 text-[14px] font-bold"
+            disabled={plan.count === 0}
+            className="inline-flex items-center gap-2 rounded-[14px] px-5 py-3.5 text-[14px] font-bold disabled:opacity-40"
             style={{ backgroundColor: P.espresso, color: P.cream }}
           >
-            Start this session <ArrowRight className="h-4 w-4" />
+            Start session <ArrowRight className="h-4 w-4" />
           </button>
-          <button type="button" onClick={onChange} className="text-[13px] font-semibold underline decoration-[#BBA995] underline-offset-4" style={{ color: P.muted }}>
-            Change what we study
-          </button>
+          {plan.request && (
+            <button type="button" onClick={onReset} className="text-[13px] font-semibold underline decoration-[#BBA995] underline-offset-4" style={{ color: P.muted }}>
+              Let StudyEdit choose instead
+            </button>
+          )}
         </div>
       </div>
     </section>
@@ -95,69 +99,103 @@ function HomeContent() {
   const navigate = useNavigate();
   const { user, signOut } = useAuth();
   const { concepts } = useConceptStore() as any;
+  const [draft, setDraft] = useState('');
+  const [request, setRequest] = useState('');
 
-  const preparation = useMemo(() => {
-    const all = concepts || [];
-    const attempted = all.filter((concept: any) => Number(concept.mastery_data?.attempts || 0) > 0);
-    return { hasEvidence: attempted.length > 0 };
-  }, [concepts]);
-
-  const returning = preparation.hasEvidence;
-  const sessionCount = returning ? 5 : 3;
-  const plan = useMemo(() => buildSpoilerSafeSessionPlan(concepts || [], sessionCount), [concepts, sessionCount]);
+  const hasEvidence = useMemo(
+    () => (concepts || []).some((concept: any) => Number(concept.mastery_data?.attempts || 0) > 0),
+    [concepts],
+  );
+  const defaultCount = hasEvidence ? 5 : 3;
+  const plan = useMemo(
+    () => buildSessionPlanFromRequest(concepts || [], request, defaultCount),
+    [concepts, defaultCount, request],
+  );
   const learnerName = useMemo(() => getLearnerFirstName(user), [user]);
   const greeting = useMemo(() => getDaypartGreeting(), []);
+
+  const applyRequest = (value: string) => {
+    const next = value.trim();
+    setDraft(next);
+    setRequest(next);
+  };
 
   const startSession = () => {
     rememberPlannedSession(plan);
     try {
-      sessionStorage.setItem('studyedit_current_journey_v1', returning ? 'returning' : 'cold');
+      sessionStorage.setItem('studyedit_current_journey_v1', hasEvidence ? 'returning' : 'cold');
     } catch {
       // Starting a session must not depend on storage access.
     }
-    navigate(`/recommended-practice?count=${sessionCount}`);
+    navigate(`/recommended-practice?count=${Math.max(1, plan.count || defaultCount)}`);
   };
-
-  const chooseScope = () => navigate('/concept-practice');
 
   return (
     <main className="min-h-screen" style={{ backgroundColor: P.cream, color: P.ink }}>
       <div className="mx-auto w-full max-w-[760px] px-5 pb-10 pt-5 sm:px-8 sm:pt-8">
         <header className="flex items-center justify-between gap-4">
           <div className="text-[19px] font-extrabold tracking-[-0.03em]" style={{ color: P.espresso }}>studyedit.</div>
-          <div className="flex items-center gap-4">
-            {!user ? (
-              <button onClick={() => navigate('/recommended-practice?auth=1')} className="text-[12px] font-semibold" style={{ color: P.muted }}>Sign in</button>
-            ) : (
-              <button onClick={() => void signOut()} className="text-[12px] font-semibold" style={{ color: P.muted }}>Sign out</button>
-            )}
-          </div>
+          {!user ? (
+            <button onClick={() => navigate('/recommended-practice?auth=1')} className="text-[12px] font-semibold" style={{ color: P.muted }}>Sign in</button>
+          ) : (
+            <button onClick={() => void signOut()} className="text-[12px] font-semibold" style={{ color: P.muted }}>Sign out</button>
+          )}
         </header>
 
-        {!returning ? (
-          <section className="pt-16 sm:pt-24">
-            <div className="text-[12px] font-semibold" style={{ color: P.muted }}>{learnerName ? `${greeting}, ${learnerName}.` : 'UKMLA tutor'}</div>
-            <h1 className="mt-3 max-w-[620px] text-[38px] font-extrabold leading-[1.08] tracking-[-0.045em] sm:text-[50px]" style={{ color: P.espresso }}>
-              What do you want to work on?
-            </h1>
-            <p className="mt-5 max-w-[570px] text-[17px] font-medium leading-7" style={{ color: '#4A392C' }}>
-              You can choose the scope, or let me pick a short session and adjust as I learn how you think.
-            </p>
-            <SessionPlanCard plan={plan} onStart={startSession} onChange={chooseScope} firstSession />
-            {!user && <div className="mt-4 text-[12px] font-medium" style={{ color: P.muted }}>No account needed to start.</div>}
-          </section>
-        ) : (
-          <section className="pt-16 sm:pt-24">
-            <div className="text-[13px] font-semibold" style={{ color: P.muted }}>{learnerName ? `${greeting}, ${learnerName}.` : greeting}</div>
-            <h1 className="mt-3 max-w-[620px] text-[38px] font-extrabold leading-[1.08] tracking-[-0.045em] sm:text-[50px]" style={{ color: P.espresso }}>
-              I’ve got a session ready.
-            </h1>
-            <p className="mt-5 max-w-[590px] text-[17px] font-medium leading-7" style={{ color: '#4A392C' }}>
-              I’ve used what you’ve already shown me to choose the next useful mix. You can see the whole scope before you start without seeing any answer-level hints.
-            </p>
-            <SessionPlanCard plan={plan} onStart={startSession} onChange={chooseScope} firstSession={false} />
-          </section>
-        )}
+        <section className="pt-14 sm:pt-20">
+          <div className="text-[13px] font-semibold" style={{ color: P.muted }}>
+            {learnerName ? `${greeting}, ${learnerName}.` : hasEvidence ? greeting : 'UKMLA tutor'}
+          </div>
+          <h1 className="mt-3 max-w-[650px] text-[38px] font-extrabold leading-[1.08] tracking-[-0.045em] sm:text-[50px]" style={{ color: P.espresso }}>
+            {hasEvidence ? 'What do you need today?' : 'What do you want to work on?'}
+          </h1>
+          <p className="mt-5 max-w-[610px] text-[16px] font-medium leading-7" style={{ color: '#4A392C' }}>
+            {hasEvidence
+              ? 'I’ve already picked what I think is most useful from your learning history. Override me in plain English whenever you want.'
+              : 'Tell me the time, area or kind of thinking you want to practise — or leave it to me.'}
+          </p>
+
+          <form
+            className="mt-7 flex items-center gap-2 rounded-[18px] border p-2 pl-4 shadow-[0_8px_24px_rgba(31,20,12,0.04)]"
+            style={{ borderColor: '#DCCDB8', backgroundColor: P.paper }}
+            onSubmit={event => {
+              event.preventDefault();
+              applyRequest(draft);
+            }}
+          >
+            <input
+              value={draft}
+              onChange={event => setDraft(event.target.value)}
+              placeholder="e.g. 10 minutes of cardio, management, or just start me"
+              className="min-w-0 flex-1 bg-transparent py-2.5 text-[15px] font-medium outline-none placeholder:text-[#A89582]"
+              style={{ color: P.espresso }}
+            />
+            <button
+              type="submit"
+              aria-label="Plan my session"
+              className="flex h-11 shrink-0 items-center justify-center rounded-[13px] px-4 text-[13px] font-bold"
+              style={{ backgroundColor: P.espresso, color: P.cream }}
+            >
+              Plan
+            </button>
+          </form>
+
+          <div className="mt-3 flex flex-wrap gap-x-4 gap-y-2 text-[12px] font-semibold" style={{ color: P.muted }}>
+            <button type="button" onClick={() => applyRequest('')} className="underline decoration-[#C7B7A2] underline-offset-4">Just start me</button>
+            <button type="button" onClick={() => applyRequest('10 minutes')} className="underline decoration-[#C7B7A2] underline-offset-4">10 minutes</button>
+            <button type="button" onClick={() => applyRequest('Cardiology')} className="underline decoration-[#C7B7A2] underline-offset-4">Cardiology</button>
+            <button type="button" onClick={() => applyRequest('Management')} className="underline decoration-[#C7B7A2] underline-offset-4">Management</button>
+          </div>
+
+          <SessionPlanCard
+            plan={plan}
+            onStart={startSession}
+            onReset={() => applyRequest('')}
+            personalised={hasEvidence}
+          />
+
+          {!user && <div className="mt-4 text-[12px] font-medium" style={{ color: P.muted }}>No account needed to start.</div>}
+        </section>
 
         <footer className="mt-14 flex items-center justify-between border-t pt-5 text-[11px]" style={{ borderColor: P.line, color: P.muted }}>
           <button onClick={() => navigate('/privacy')}>Privacy</button>
