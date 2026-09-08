@@ -1,6 +1,16 @@
 (() => {
   const text = (node) => (node?.textContent || '').replace(/\s+/g, ' ').trim();
 
+  const setReactInputValue = (input, value) => {
+    const prototype = input instanceof HTMLTextAreaElement
+      ? HTMLTextAreaElement.prototype
+      : HTMLInputElement.prototype;
+    const descriptor = Object.getOwnPropertyDescriptor(prototype, 'value');
+    descriptor?.set?.call(input, value);
+    input.dispatchEvent(new Event('input', { bubbles: true }));
+    input.dispatchEvent(new Event('change', { bubbles: true }));
+  };
+
   const markCaseSummary = () => {
     document.querySelectorAll('button').forEach((button) => {
       if (!(button instanceof HTMLElement)) return;
@@ -46,6 +56,32 @@
     });
   };
 
+  const captureStuck = (event) => {
+    const target = event.target;
+    if (!(target instanceof Element)) return;
+
+    const button = target.closest('button[data-studyedit-stuck="true"]');
+    if (!(button instanceof HTMLButtonElement) || button.disabled) return;
+
+    const section = button.closest('section[aria-label="Answer and tutor"]');
+    const form = section?.querySelector('form');
+    const input = form?.querySelector('input, textarea');
+    if (!(form instanceof HTMLFormElement)) return;
+    if (!(input instanceof HTMLInputElement || input instanceof HTMLTextAreaElement)) return;
+    if (input.disabled) return;
+
+    // The old button called the generic "explain again" path directly, so the
+    // learner's action never appeared in the conversation and the model often
+    // repeated the teaching it had just given. Treat this exactly like a real
+    // learner turn instead: show it immediately and let the tutor respond to
+    // the current Quick check in the conversation context.
+    event.preventDefault();
+    event.stopImmediatePropagation();
+
+    setReactInputValue(input, "I'm stuck — help me with this check.");
+    window.setTimeout(() => form.requestSubmit(), 0);
+  };
+
   const run = () => {
     markCaseSummary();
     markTutorSections();
@@ -60,6 +96,8 @@
       run();
     });
   };
+
+  document.addEventListener('click', captureStuck, true);
 
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', run, { once: true });
   else run();
