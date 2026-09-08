@@ -5,8 +5,6 @@ import { ModernFlashcard } from './ModernFlashcard';
 import { UkmlaSBAQuestion } from './UkmlaSBAQuestion';
 import { Dialog } from '@/components/ui/dialog';
 import { cn } from '@/lib/utils';
-import { useAuth } from '@/contexts/AuthContext';
-import { getDaypartGreeting, getLearnerFirstName } from '@/lib/learnerIdentity';
 import './apple-question-styles.css';
 import { QuestionData } from './questionTypes';
 import { SessionReviewScreen } from './SessionReviewScreen';
@@ -26,8 +24,6 @@ interface PracticeSessionProps {
   onRestartWithFilters?: (filters?: any) => void;
 }
 
-const tutorTopic = (q?: QuestionData) => String((q as any)?.concept_title || q?.title || q?.topic || '').trim();
-
 export function ApplePracticeSession({
   questions,
   onComplete,
@@ -41,7 +37,6 @@ export function ApplePracticeSession({
   onChangeFormat,
   onRestartWithFilters
 }: PracticeSessionProps) {
-  const { user } = useAuth();
   const [currentIndex, setCurrentIndex] = useState(0);
   const [showExitConfirmation, setShowExitConfirmation] = useState(false);
   const [sessionAnswers, setSessionAnswers] = useState<SessionAnswer[]>([]);
@@ -49,16 +44,12 @@ export function ApplePracticeSession({
   const [activeQuestions, setActiveQuestions] = useState<QuestionData[]>(questions);
   const [sessionKey, setSessionKey] = useState(0);
   const [reviewingQuestionIndex, setReviewingQuestionIndex] = useState<number | null>(null);
-  const [showSessionIntro, setShowSessionIntro] = useState(true);
-  const learnerFirstName = useMemo(() => getLearnerFirstName(user), [user]);
-  const sessionGreeting = useMemo(() => getDaypartGreeting(), []);
 
   const questionsRef = useRef<QuestionData[]>(questions);
   const containerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     setActiveQuestions(questions);
-    setShowSessionIntro(true);
   }, [questions]);
 
   useEffect(() => {
@@ -69,25 +60,6 @@ export function ApplePracticeSession({
     if ('scrollRestoration' in history) history.scrollRestoration = 'manual';
     window.scrollTo(0, 0);
   }, []);
-
-  const introTopics = useMemo(() => {
-    const seen = new Set<string>();
-    const result: string[] = [];
-    activeQuestions.forEach(q => {
-      const topic = tutorTopic(q);
-      if (topic && !seen.has(topic) && result.length < 3) {
-        seen.add(topic);
-        result.push(topic);
-      }
-    });
-    return result;
-  }, [activeQuestions]);
-
-  const introDirection = useMemo(() => {
-    if (introTopics.length === 0) return `I've got ${activeQuestions.length} question${activeQuestions.length === 1 ? '' : 's'} for us. I'll lead the session and slow down wherever your reasoning needs it.`;
-    if (introTopics.length === 1) return `We'll stay around ${introTopics[0]} today. I'll vary the angle and slow down whenever a distinction isn't secure yet.`;
-    return `We'll move through ${introTopics.join(', ')}${activeQuestions.length > introTopics.length ? ' and a little more' : ''}. I'll decide when to move on and when something deserves another look.`;
-  }, [activeQuestions.length, introTopics]);
 
   const handlePreviousQuestion = useCallback(() => {
     if (currentIndex > 0) setCurrentIndex(currentIndex - 1);
@@ -108,7 +80,6 @@ export function ApplePracticeSession({
 
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
-      if (showSessionIntro) return;
       if (event.target instanceof HTMLInputElement || event.target instanceof HTMLTextAreaElement) return;
       const currentQuestion = questionsRef.current[currentIndex];
       const format = currentQuestion?.format || defaultFormat;
@@ -139,7 +110,7 @@ export function ApplePracticeSession({
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [currentIndex, defaultFormat, handlePreviousQuestion, handleNextQuestion, showSessionIntro]);
+  }, [currentIndex, defaultFormat, handlePreviousQuestion, handleNextQuestion]);
 
   const currentQuestion = useMemo(() => questionsRef.current[currentIndex], [currentIndex]);
   const questionId = useMemo(() => currentQuestion?.id || `question-${currentIndex}`, [currentQuestion, currentIndex]);
@@ -191,7 +162,6 @@ export function ApplePracticeSession({
     setSessionAnswers([]);
     setCurrentIndex(0);
     setShowReview(false);
-    setShowSessionIntro(false);
     setSessionKey(k => k + 1);
     window.scrollTo(0, 0);
   };
@@ -225,36 +195,6 @@ export function ApplePracticeSession({
     setReviewingQuestionIndex(null);
     setShowReview(true);
   }, []);
-
-  if (showSessionIntro && activeQuestions.length > 0) {
-    return (
-      <main className="fixed inset-0 overflow-y-auto bg-[#F4ECDF] text-[#2A1E16]">
-        <div className="mx-auto flex min-h-full w-full max-w-[620px] flex-col px-5 pb-10 pt-7 sm:px-8 sm:pt-10">
-          <div className="text-[18px] font-semibold tracking-[-0.02em] text-[#1F140C]">StudyEdit</div>
-          <div className="flex flex-1 flex-col justify-center py-14 sm:py-20">
-            <div className="mb-5 text-[10px] font-bold uppercase tracking-[0.22em] text-[#A9675D]">I'll take it from here</div>
-            <h1 className="max-w-[520px] text-[42px] font-light leading-[1.06] tracking-[-0.04em] text-[#1F140C] sm:text-[52px]" style={{ fontFamily: "'Fraunces', serif" }}>
-              {learnerFirstName ? `${sessionGreeting}, ${learnerFirstName}.` : 'You just need to turn up.'}
-            </h1>
-            <p className="mt-6 max-w-[520px] text-[19px] font-medium leading-[1.65] text-[#3B2A1E] sm:text-[20px]">
-              {introDirection}
-            </p>
-            <p className="mt-5 max-w-[500px] text-[15px] font-medium leading-6 text-[#8A7560]">
-              Answer naturally. Tell me when you guessed. Ask me things. I'll handle the pacing, the follow-ups and what comes next.
-            </p>
-            <button
-              type="button"
-              onClick={() => setShowSessionIntro(false)}
-              className="mt-9 flex w-full items-center justify-center rounded-full bg-[#1F140C] px-6 py-[18px] text-[16px] font-bold text-[#FAF5EC] sm:max-w-[360px]"
-            >
-              Take me through it →
-            </button>
-            <div className="mt-3 text-[12px] font-medium text-[#8A7560]">{activeQuestions.length} question{activeQuestions.length === 1 ? '' : 's'} · I'll decide when to slow down</div>
-          </div>
-        </div>
-      </main>
-    );
-  }
 
   if (showReview) {
     return (
