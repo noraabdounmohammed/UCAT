@@ -12,11 +12,6 @@
     const style = document.createElement('style');
     style.id = STYLE_ID;
     style.textContent = `
-      /* A backdrop-filter creates a containing block for fixed descendants in
-         mobile Chromium. The progress sheet lives inside this header, so the
-         blur caused its "fixed" overlay to be positioned against the tiny
-         header instead of the viewport. Keep the quiet translucent header,
-         but do not let it trap the progress sheet. */
       html body header[data-studyedit-quiet-nav-host="true"] {
         -webkit-backdrop-filter: none !important;
         backdrop-filter: none !important;
@@ -31,9 +26,6 @@
         overscroll-behavior: contain;
       }
 
-      /* Correctness is immediate UI feedback, not something the learner should
-         have to wait for the tutor model to say. The native outcome is hidden
-         by the lesson choreography, so expose one quiet human receipt here. */
       [${RECEIPT_ATTR}="true"] {
         margin: 0 0 20px !important;
         font-size: 20px !important;
@@ -42,12 +34,39 @@
         letter-spacing: -0.015em !important;
       }
 
-      [${RECEIPT_ATTR}="true"][data-studyedit-result="correct"] {
-        color: #62734F !important;
+      [${RECEIPT_ATTR}="true"][data-studyedit-result="correct"] { color: #62734F !important; }
+      [${RECEIPT_ATTR}="true"][data-studyedit-result="incorrect"] { color: #94483D !important; }
+
+      [data-studyedit-session-scope="true"] {
+        margin: 0 0 12px;
+        padding: 13px 14px;
+        border: 1px solid #E2D7C6;
+        border-radius: 15px;
+        background: #FAF7F0;
       }
 
-      [${RECEIPT_ATTR}="true"][data-studyedit-result="incorrect"] {
-        color: #94483D !important;
+      .studyedit-session-scope-title {
+        color: #8A7560;
+        font-size: 10px;
+        font-weight: 800;
+        letter-spacing: .14em;
+        text-transform: uppercase;
+      }
+
+      .studyedit-session-scope-line {
+        margin-top: 7px;
+        color: #2A1E16;
+        font-size: 12px;
+        font-weight: 650;
+        line-height: 1.5;
+      }
+
+      .studyedit-session-scope-line strong { color: #1F140C; }
+      .studyedit-session-scope-note {
+        margin-top: 7px;
+        color: #8A7560;
+        font-size: 10px;
+        line-height: 1.45;
       }
     `;
     document.head.appendChild(style);
@@ -56,10 +75,8 @@
   const cleanMarkdownEdgeMarkers = value => {
     const original = String(value || '');
     if (!original.includes('**')) return original;
-
     const trimmed = original.trim();
     if (trimmed === '**') return original.replace('**', '');
-
     let next = original;
     next = next.replace(/^(\s*)\*\*(?=\s|[A-Za-z0-9])/u, '$1');
     next = next.replace(/\*\*(\s*)$/u, '$1');
@@ -79,11 +96,7 @@
       nodes.forEach(textNode => {
         const parent = textNode.parentElement;
         if (!parent) return;
-
-        // Never rewrite what the learner typed. We only clean raw Markdown
-        // markers that leaked out of tutor rendering around a Quick check.
         if (parent.closest('[data-studyedit-turn="student"], .border-y.py-5')) return;
-
         const before = textNode.nodeValue || '';
         const after = cleanMarkdownEdgeMarkers(before);
         if (after !== before) textNode.nodeValue = after;
@@ -93,17 +106,14 @@
 
   const readNativeResult = section => {
     if (!(section instanceof HTMLElement)) return null;
-
     const outcome = Array.from(section.children).find(child => {
       if (!(child instanceof HTMLElement)) return false;
       const value = normalise(text(child));
       return value === 'correct' || value === 'not quite' || child.hasAttribute('data-studyedit-outcome');
     });
-
     const outcomeText = normalise(text(outcome));
     if (outcomeText === 'correct') return 'correct';
     if (outcomeText === 'not quite') return 'incorrect';
-
     const previous = section.previousElementSibling;
     const summary = text(previous);
     if (/^✓/.test(summary)) return 'correct';
@@ -114,13 +124,11 @@
   const hasExplicitTutorReceipt = (section, result) => {
     const thread = section.querySelector('.space-y-6');
     if (!(thread instanceof HTMLElement)) return false;
-
     const tutorText = Array.from(thread.children)
       .filter(child => child instanceof HTMLElement && !child.matches('[data-studyedit-turn="student"], .border-y.py-5, [role="status"]'))
       .map(child => text(child))
       .filter(Boolean)
       .join(' ');
-
     if (!tutorText) return false;
     if (result === 'correct') return /^(?:yes\b|exactly\b|correct\b)|\byou got (?:that|it) right\b/i.test(tutorText);
     return /^(?:not quite\b|no\b)|\bthat(?:'s| is) not quite right\b/i.test(tutorText);
@@ -131,17 +139,14 @@
       if (!(section instanceof HTMLElement)) return;
       const result = readNativeResult(section);
       const existing = section.querySelector(`[${RECEIPT_ATTR}="true"]`);
-
       if (!result) {
         existing?.remove();
         return;
       }
-
       if (hasExplicitTutorReceipt(section, result)) {
         existing?.remove();
         return;
       }
-
       let receipt = existing;
       if (!(receipt instanceof HTMLElement)) {
         receipt = document.createElement('div');
@@ -149,16 +154,11 @@
         const thread = section.querySelector('.space-y-6');
         section.insertBefore(receipt, thread || section.firstChild);
       }
-
       receipt.dataset.studyeditResult = result;
       receipt.textContent = result === 'correct' ? 'Yes — you got that right.' : 'Not quite.';
     });
   };
 
-  // The old React session still renders a full-screen explanatory intro. The
-  // new agent-first entry already shows the whole spoiler-safe plan before the
-  // learner starts, so this legacy gate is now redundant. Consume it as soon
-  // as it appears and let the first case own the screen.
   const skipLegacySessionIntro = () => {
     const button = Array.from(document.querySelectorAll('button')).find(candidate =>
       /^take me through it\s*→?$/i.test(text(candidate))
@@ -175,23 +175,57 @@
     }
   };
 
-  // Progress should orient rather than spoil. Show every planned case at a
-  // safe abstraction level (system + skill), never the condition or answer.
+  const deriveCounts = (cases, key) => {
+    const counts = new Map();
+    (cases || []).forEach(item => {
+      const value = item?.[key] || (key === 'system' ? 'General medicine' : 'Clinical reasoning');
+      counts.set(value, (counts.get(value) || 0) + 1);
+    });
+    return Array.from(counts.entries()).map(([label, count]) => ({ label, count }));
+  };
+
+  const formatCounts = items => (items || [])
+    .map(item => `${item.label}${Number(item.count) > 1 ? ` ×${item.count}` : ''}`)
+    .join(' · ');
+
   const annotateProgressWithBlueprint = () => {
     const blueprint = readBlueprint();
     if (!blueprint) return;
-    document.querySelectorAll('.studyedit-progress-row').forEach((row, index) => {
+
+    const systemCounts = Array.isArray(blueprint.systemCounts) && blueprint.systemCounts.length
+      ? blueprint.systemCounts
+      : deriveCounts(blueprint.cases, 'system');
+    const skillCounts = Array.isArray(blueprint.skillCounts) && blueprint.skillCounts.length
+      ? blueprint.skillCounts
+      : deriveCounts(blueprint.cases, 'skill');
+
+    document.querySelectorAll('[data-studyedit-progress-sheet="true"]').forEach(sheet => {
+      if (!(sheet instanceof HTMLElement)) return;
+      let scope = sheet.querySelector('[data-studyedit-session-scope="true"]');
+      if (!(scope instanceof HTMLElement)) {
+        scope = document.createElement('div');
+        scope.setAttribute('data-studyedit-session-scope', 'true');
+        const head = sheet.querySelector('.studyedit-sheet-head');
+        if (head?.nextSibling) sheet.insertBefore(scope, head.nextSibling);
+        else sheet.appendChild(scope);
+      }
+      scope.innerHTML = `
+        <div class="studyedit-session-scope-title">Whole session</div>
+        <div class="studyedit-session-scope-line"><strong>Areas</strong> · ${formatCounts(systemCounts) || 'Mixed UKMLA'}</div>
+        <div class="studyedit-session-scope-line"><strong>Skills</strong> · ${formatCounts(skillCounts) || 'Clinical reasoning'}</div>
+        <div class="studyedit-session-scope-note">The order is deliberately hidden so this overview can’t cue the current or next case.</div>
+      `;
+    });
+
+    document.querySelectorAll('.studyedit-progress-row').forEach(row => {
       if (!(row instanceof HTMLElement)) return;
-      const item = blueprint.cases[index];
       const sub = row.querySelector('.studyedit-progress-row-sub');
-      if (!item || !(sub instanceof HTMLElement)) return;
-      sub.textContent = `${item.system || 'General medicine'} · ${item.skill || 'Clinical reasoning'}`;
+      if (!(sub instanceof HTMLElement)) return;
+      const state = row.dataset.state;
+      sub.textContent = state === 'done' ? 'Completed' : state === 'current' ? 'Current case' : 'Not revealed yet';
     });
   };
 
-  // The native exit actions already do different things, but the old wording
-  // made them sound like two flavours of staying. Make the consequence explicit:
-  // one button ends the session and returns to StudyEdit; the other dismisses.
   const clarifyExitDialog = () => {
     document.querySelectorAll('[role="dialog"]').forEach(dialog => {
       if (!(dialog instanceof HTMLElement)) return;
@@ -233,9 +267,7 @@
   };
 
   const mutationNeedsRun = records => records.some(record => {
-    if (record.type === 'characterData') {
-      return String(record.target?.nodeValue || '').includes('**');
-    }
+    if (record.type === 'characterData') return String(record.target?.nodeValue || '').includes('**');
     if (record.type !== 'childList') return false;
 
     return Array.from(record.addedNodes).some(node => {
@@ -243,22 +275,16 @@
       if (String(node.textContent || '').includes('**')) return true;
       if (/take me through it|pause here\?|stop for now/i.test(text(node))) return true;
       return node.matches(
-        'section[aria-label="Answer and tutor"], [data-studyedit-wrap-panel="true"], [data-studyedit-outcome="true"], [role="status"], [role="dialog"], .studyedit-progress-row, [data-studyedit-progress-overlay="true"]'
+        'section[aria-label="Answer and tutor"], [data-studyedit-wrap-panel="true"], [data-studyedit-outcome="true"], [role="status"], [role="dialog"], .studyedit-progress-row, [data-studyedit-progress-overlay="true"], [data-studyedit-progress-sheet="true"]'
       ) || Boolean(node.querySelector?.(
-        'section[aria-label="Answer and tutor"], [data-studyedit-wrap-panel="true"], [data-studyedit-outcome="true"], [role="status"], [role="dialog"], .studyedit-progress-row, [data-studyedit-progress-overlay="true"]'
+        'section[aria-label="Answer and tutor"], [data-studyedit-wrap-panel="true"], [data-studyedit-outcome="true"], [role="status"], [role="dialog"], .studyedit-progress-row, [data-studyedit-progress-overlay="true"], [data-studyedit-progress-sheet="true"]'
       ));
     });
   });
 
-  if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', run, { once: true });
-  } else {
-    run();
-  }
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', run, { once: true });
+  else run();
 
-  // Normal tutor streaming should do almost no work here. We wake on answer
-  // state / wrap-up structure changes, the progress sheet, the legacy intro,
-  // exit dialog, and on the rare Markdown leak marker.
   new MutationObserver(records => {
     if (mutationNeedsRun(records)) queueRun();
   }).observe(document.documentElement, {
