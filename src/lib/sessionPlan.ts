@@ -9,7 +9,11 @@ export type SpoilerSafeSessionPlan = {
   minutes: number;
   systems: string[];
   skills: string[];
+  systemCounts: Array<{ label: string; count: number }>;
+  skillCounts: Array<{ label: string; count: number }>;
   cases: SessionBlueprintCase[];
+  request?: string;
+  requestMatched?: boolean;
 };
 
 export const PLANNED_SESSION_IDS_KEY = 'studyedit_planned_concept_ids_v1';
@@ -62,6 +66,38 @@ const skillLabels: Record<string, string> = {
   etiology: 'Causes & risk',
   aetiology: 'Causes & risk',
   'risk-factors': 'Causes & risk',
+};
+
+const systemIntentTerms: Record<string, string[]> = {
+  Cardiology: ['cardiology', 'cardio', 'heart', 'cardiac'],
+  Respiratory: ['respiratory', 'resp', 'lung', 'lungs'],
+  Endocrinology: ['endocrinology', 'endo', 'endocrine', 'diabetes'],
+  Gastroenterology: ['gastroenterology', 'gastro', 'gi', 'bowel', 'liver'],
+  Neurology: ['neurology', 'neuro', 'neurological'],
+  Psychiatry: ['psychiatry', 'psych', 'mental health'],
+  Renal: ['renal', 'nephrology', 'kidney', 'kidneys'],
+  Dermatology: ['dermatology', 'derm', 'skin'],
+  Ophthalmology: ['ophthalmology', 'ophthal', 'eye', 'eyes'],
+  Haematology: ['haematology', 'hematology', 'haem', 'blood'],
+  Rheumatology: ['rheumatology', 'rheum'],
+  Oncology: ['oncology', 'cancer'],
+  Paediatrics: ['paediatrics', 'pediatrics', 'paeds', 'peds', 'children'],
+  'Obstetrics & gynaecology': ['obstetrics', 'gynaecology', 'gynecology', 'obgyn', 'obs and gynae'],
+  Surgery: ['surgery', 'surgical'],
+  'Infectious disease': ['infectious disease', 'infection', 'infections'],
+};
+
+const skillIntentTerms: Record<string, string[]> = {
+  Diagnosis: ['diagnosis', 'diagnose', 'diagnostic'],
+  Investigations: ['investigations', 'investigation', 'tests', 'workup'],
+  'Clinical assessment': ['clinical assessment', 'signs', 'symptoms', 'presentation'],
+  Management: ['management', 'treatment', 'treat', 'therapy', 'medications', 'drugs'],
+  'Risk decisions': ['risk', 'risk stratification', 'escalation'],
+  Interpretation: ['interpretation', 'interpret', 'ecg', 'x-ray', 'xray', 'imaging'],
+  Mechanisms: ['mechanism', 'mechanisms', 'pathophysiology', 'physiology'],
+  Classification: ['classification', 'classify', 'staging'],
+  Prognosis: ['prognosis', 'outcomes'],
+  'Causes & risk': ['causes', 'aetiology', 'etiology', 'risk factors'],
 };
 
 function deterministicJitter(id: string) {
@@ -121,20 +157,89 @@ function skillFor(concept: any) {
   return 'Clinical reasoning';
 }
 
-function unique(values: string[], limit = 4) {
-  return Array.from(new Set(values)).slice(0, limit);
+function unique(values: string[]) {
+  return Array.from(new Set(values));
+}
+
+function counts(values: string[]) {
+  const map = new Map<string, number>();
+  values.forEach(value => map.set(value, (map.get(value) || 0) + 1));
+  return Array.from(map.entries()).map(([label, count]) => ({ label, count }));
+}
+
+function includesTerm(value: string, term: string) {
+  const haystack = ` ${value.toLowerCase()} `;
+  const needle = term.toLowerCase().trim();
+  if (!needle) return false;
+  if (needle.length <= 3) return new RegExp(`(?:^|\\s|[/,+-])${needle.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}(?:$|\\s|[/,+-])`, 'i').test(value);
+  return haystack.includes(needle);
+}
+
+function requestedMinutes(request: string) {
+  const match = request.match(/\b(\d{1,2})\s*(?:min|mins|minute|minutes)\b/i);
+  if (!match) return null;
+  const value = Number(match[1]);
+  return Number.isFinite(value) ? Math.max(2, Math.min(40, value)) : null;
+}
+
+function requestedLabels(request: string, dictionary: Record<string, string[]>) {
+  const clean = request.toLowerCase();
+  return Object.entries(dictionary)
+    .filter(([, terms]) => terms.some(term => includesTerm(clean, term)))
+    .map(([label]) => label);
+}
+
+function conceptMatchesRequest(concept: any, systems: string[], skills: string[], request: string) {
+  const systemMatch = systems.length === 0 || systems.includes(systemFor(concept));
+  const skillMatch = skills.length === 0 || skills.includes(skillFor(concept));
+  if (systems.length || skills.length) return systemMatch && skillMatch;
+
+  const generic = request
+    .toLowerCase()
+    .replace(/\b(?:just|start|me|please|study|practice|practise|test|questions?|case|cases|minutes?|mins?|minute|min|for|some|a|an|the|of|on|about|today|now)\b/g, ' ')
+    .replace(/\d+/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+  if (generic.length < 3) return true;
+
+  const searchable = [concept?.title, concept?.content, ...tagsFor(concept)].join(' ').toLowerCase();
+  return generic.split(' ').some(word => word.length >= 3 && searchable.includes(word));
 }
 
 export function buildSpoilerSafeSessionPlan(concepts: any[], count: number): SpoilerSafeSessionPlan {
   const selected = chooseRecommendedConcepts(concepts, count);
   const cases = selected.map(concept => ({ system: systemFor(concept), skill: skillFor(concept) }));
+  const systems = cases.map(item => item.system);
+  const skills = cases.map(item => item.skill);
   return {
     selected,
     count: selected.length,
     minutes: Math.max(3, Math.round(selected.length * 2)),
-    systems: unique(cases.map(item => item.system)),
-    skills: unique(cases.map(item => item.skill)),
+    systems: unique(systems),
+    skills: unique(skills),
+    systemCounts: counts(systems),
+    skillCounts: counts(skills),
     cases,
+  };
+}
+
+export function buildSessionPlanFromRequest(concepts: any[], request: string, fallbackCount: number): SpoilerSafeSessionPlan {
+  const clean = String(request || '').trim();
+  if (!clean) return buildSpoilerSafeSessionPlan(concepts, fallbackCount);
+
+  const minutes = requestedMinutes(clean);
+  const desiredCount = minutes ? Math.max(1, Math.min(12, Math.round(minutes / 2))) : fallbackCount;
+  const systems = requestedLabels(clean, systemIntentTerms);
+  const skills = requestedLabels(clean, skillIntentTerms);
+  const matchedPool = (concepts || []).filter(concept => conceptMatchesRequest(concept, systems, skills, clean));
+  const useMatched = matchedPool.length > 0;
+  const plan = buildSpoilerSafeSessionPlan(useMatched ? matchedPool : concepts, desiredCount);
+
+  return {
+    ...plan,
+    minutes: minutes || plan.minutes,
+    request: clean,
+    requestMatched: useMatched,
   };
 }
 
@@ -147,7 +252,10 @@ export function rememberPlannedSession(plan: SpoilerSafeSessionPlan) {
       minutes: plan.minutes,
       systems: plan.systems,
       skills: plan.skills,
+      systemCounts: plan.systemCounts,
+      skillCounts: plan.skillCounts,
       cases: plan.cases,
+      request: plan.request || '',
     }));
   } catch {
     // A blocked sessionStorage should never stop a learner from starting.
@@ -158,10 +266,10 @@ export function resolvePlannedConcepts(concepts: any[], count: number) {
   if (typeof window !== 'undefined') {
     try {
       const ids = JSON.parse(window.sessionStorage.getItem(PLANNED_SESSION_IDS_KEY) || '[]');
-      if (Array.isArray(ids) && ids.length >= count) {
+      if (Array.isArray(ids) && ids.length) {
         const byId = new Map((concepts || []).map(concept => [concept.concept_id, concept]));
-        const planned = ids.slice(0, count).map(id => byId.get(id)).filter(Boolean);
-        if (planned.length === count) return planned;
+        const planned = ids.map(id => byId.get(id)).filter(Boolean).slice(0, count);
+        if (planned.length === Math.min(count, ids.length)) return planned;
       }
     } catch {
       // Fall through to a fresh deterministic recommendation.
