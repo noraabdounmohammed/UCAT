@@ -1,6 +1,7 @@
 (() => {
   const STYLE_ID = 'studyedit-session-hotfix-styles';
   const RECEIPT_ATTR = 'data-studyedit-answer-receipt';
+  const BLUEPRINT_KEY = 'studyedit_session_blueprint_v1';
 
   const text = node => (node?.textContent || '').replace(/\s+/g, ' ').trim();
   const normalise = value => String(value || '').replace(/\s+/g, ' ').trim().toLowerCase();
@@ -52,7 +53,7 @@
     document.head.appendChild(style);
   };
 
-  const cleanMarkdownEdgeMarkers = (value) => {
+  const cleanMarkdownEdgeMarkers = value => {
     const original = String(value || '');
     if (!original.includes('**')) return original;
 
@@ -103,8 +104,6 @@
     if (outcomeText === 'correct') return 'correct';
     if (outcomeText === 'not quite') return 'incorrect';
 
-    // Fallback for the older case-summary rendering if the stability marker
-    // has not been applied yet.
     const previous = section.previousElementSibling;
     const summary = text(previous);
     if (/^✓/.test(summary)) return 'correct';
@@ -138,8 +137,6 @@
         return;
       }
 
-      // If the tutor itself has already given a clear human confirmation, do
-      // not duplicate it. Otherwise keep the instantaneous UI receipt visible.
       if (hasExplicitTutorReceipt(section, result)) {
         existing?.remove();
         return;
@@ -158,10 +155,46 @@
     });
   };
 
+  // The old React session still renders a full-screen explanatory intro. The
+  // new agent-first entry already shows the whole spoiler-safe plan before the
+  // learner starts, so this legacy gate is now redundant. Consume it as soon
+  // as it appears and let the first case own the screen.
+  const skipLegacySessionIntro = () => {
+    const button = Array.from(document.querySelectorAll('button')).find(candidate =>
+      /^take me through it\s*→?$/i.test(text(candidate))
+    );
+    if (button instanceof HTMLButtonElement && !button.disabled) button.click();
+  };
+
+  const readBlueprint = () => {
+    try {
+      const parsed = JSON.parse(sessionStorage.getItem(BLUEPRINT_KEY) || 'null');
+      return parsed && Array.isArray(parsed.cases) ? parsed : null;
+    } catch {
+      return null;
+    }
+  };
+
+  // Progress should orient rather than spoil. Show every planned case at a
+  // safe abstraction level (system + skill), never the condition or answer.
+  const annotateProgressWithBlueprint = () => {
+    const blueprint = readBlueprint();
+    if (!blueprint) return;
+    document.querySelectorAll('.studyedit-progress-row').forEach((row, index) => {
+      if (!(row instanceof HTMLElement)) return;
+      const item = blueprint.cases[index];
+      const sub = row.querySelector('.studyedit-progress-row-sub');
+      if (!item || !(sub instanceof HTMLElement)) return;
+      sub.textContent = `${item.system || 'General medicine'} · ${item.skill || 'Clinical reasoning'}`;
+    });
+  };
+
   const run = () => {
     ensureStyles();
+    skipLegacySessionIntro();
     scrubTutorMarkdownLeaks();
     syncAnswerReceipts();
+    annotateProgressWithBlueprint();
   };
 
   let queued = false;
@@ -183,10 +216,11 @@
     return Array.from(record.addedNodes).some(node => {
       if (!(node instanceof HTMLElement)) return String(node.textContent || '').includes('**');
       if (String(node.textContent || '').includes('**')) return true;
+      if (/take me through it/i.test(text(node))) return true;
       return node.matches(
-        'section[aria-label="Answer and tutor"], [data-studyedit-wrap-panel="true"], [data-studyedit-outcome="true"], [role="status"]'
+        'section[aria-label="Answer and tutor"], [data-studyedit-wrap-panel="true"], [data-studyedit-outcome="true"], [role="status"], .studyedit-progress-row, [data-studyedit-progress-overlay="true"]'
       ) || Boolean(node.querySelector?.(
-        'section[aria-label="Answer and tutor"], [data-studyedit-wrap-panel="true"], [data-studyedit-outcome="true"], [role="status"]'
+        'section[aria-label="Answer and tutor"], [data-studyedit-wrap-panel="true"], [data-studyedit-outcome="true"], [role="status"], .studyedit-progress-row, [data-studyedit-progress-overlay="true"]'
       ));
     });
   });
@@ -198,7 +232,8 @@
   }
 
   // Normal tutor streaming should do almost no work here. We wake on answer
-  // state / wrap-up structure changes, and on the rare Markdown leak marker.
+  // state / wrap-up structure changes, the progress sheet, the legacy intro,
+  // and on the rare Markdown leak marker.
   new MutationObserver(records => {
     if (mutationNeedsRun(records)) queueRun();
   }).observe(document.documentElement, {
