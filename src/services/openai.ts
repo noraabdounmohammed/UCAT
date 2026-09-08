@@ -67,6 +67,7 @@ const LEARNER_EVENTS_KEY = 'studyedit_learner_events_v1';
 const MAX_PERSISTED_EVENTS = 500;
 const responseCache: Record<string, CacheEntry> = {};
 const cloudSyncedEventIds = new Set<string>();
+const TUTOR_ASSESSMENT_PATTERN = /Return exactly ONE label[\s\S]*PASS, PARTIAL, FAIL, or CLARIFY/i;
 
 function stableHash(value: string): string {
   let hash = 2166136261;
@@ -470,6 +471,40 @@ try {
   console.error('Error initializing DeepSeek API client:', error);
 }
 
+function buildFastAssessmentPrompt(userQuery: string, context: QuestionContext): string {
+  return `CURRENT QUESTION:\n${context.question}\n\nOPTIONS:\n${context.options.join('\n') || 'Not supplied'}\n\nSTUDENT SELECTED:\n${context.selectedAnswer || 'Not supplied'}\n\nCORRECT ANSWER:\n${context.correctAnswer}\n\nGROUNDING EXPLANATION:\n${context.explanation || 'Not supplied'}\n\nASSESSMENT TASK:\n${userQuery}`;
+}
+
+async function generateFastTutorAssessment(userQuery: string, context: QuestionContext): Promise<string> {
+  if (!openai) return 'PARTIAL';
+  try {
+    const response = await openai.chat.completions.create({
+      model: 'deepseek-chat',
+      messages: [
+        {
+          role: 'system',
+          content: 'You are a fast hidden medical tutoring classifier. Return exactly one label: PASS, PARTIAL, FAIL, or CLARIFY. Use only the supplied current-question context. Do not explain your answer.',
+        },
+        { role: 'user', content: buildFastAssessmentPrompt(userQuery, context) },
+      ],
+      temperature: 0,
+      max_tokens: 8,
+      top_p: 1,
+      stream: false,
+    });
+
+    const raw = response.choices[0]?.message?.content?.trim().toUpperCase() || '';
+    if (raw.includes('CLARIFY')) return 'CLARIFY';
+    if (raw.includes('PASS')) return 'PASS';
+    if (raw.includes('FAIL')) return 'FAIL';
+    if (raw.includes('PARTIAL')) return 'PARTIAL';
+    return 'PARTIAL';
+  } catch (error) {
+    console.error('Fast tutor assessment failed:', error);
+    return 'PARTIAL';
+  }
+}
+
 export async function generateAIResponseStream(
   userQuery: string,
   context: QuestionContext,
@@ -505,7 +540,7 @@ export async function generateAIResponseStream(
         { role: 'user', content: buildUserPrompt(userQuery, context, learnerName) },
       ],
       temperature: 0.25,
-      max_tokens: 500,
+      max_tokens: 240,
       top_p: 0.8,
       presence_penalty: 0,
       frequency_penalty: 0.1,
@@ -533,6 +568,14 @@ export async function generateAIResponseStream(
 }
 
 export async function generateAIResponse(userQuery: string, context: QuestionContext): Promise<string> {
+  // Learner free-response checks previously paid for the full personalisation path
+  // before the visible tutor could answer. These controller requests only need one
+  // label, so classify them with a tiny current-question prompt and no memory/auth
+  // round trip. This removes a serial latency step from every Quick Check reply.
+  if (TUTOR_ASSESSMENT_PATTERN.test(userQuery)) {
+    return generateFastTutorAssessment(userQuery, context);
+  }
+
   await hydrateLearnerMemoryFromCloud();
   const learnerName = await currentLearnerFirstName();
 
