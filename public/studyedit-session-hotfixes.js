@@ -189,12 +189,37 @@
     });
   };
 
+  // The native exit actions already do different things, but the old wording
+  // made them sound like two flavours of staying. Make the consequence explicit:
+  // one button ends the session and returns to StudyEdit; the other dismisses.
+  const clarifyExitDialog = () => {
+    document.querySelectorAll('[role="dialog"]').forEach(dialog => {
+      if (!(dialog instanceof HTMLElement)) return;
+      const value = text(dialog);
+      if (!/pause here\?|we can stop here\.|stop for now/i.test(value)) return;
+
+      const eyebrow = Array.from(dialog.querySelectorAll('div')).find(node => /^pause here\?$/i.test(text(node)));
+      const heading = dialog.querySelector('#exit-practice-title');
+      const paragraph = Array.from(dialog.querySelectorAll('p')).find(node => /already kept what we learned|won't lose/i.test(text(node)));
+      const buttons = Array.from(dialog.querySelectorAll('button'));
+      const endButton = buttons.find(button => /stop for now|end session/i.test(text(button)));
+      const continueButton = buttons.find(button => /keep going|continue studying/i.test(text(button)));
+
+      if (eyebrow) eyebrow.textContent = 'Leave this session?';
+      if (heading) heading.textContent = 'End the session?';
+      if (paragraph) paragraph.textContent = 'Your answered questions are already saved. You can leave now and pick up from your updated learning history later.';
+      if (endButton) endButton.textContent = 'End session';
+      if (continueButton) continueButton.textContent = 'Continue studying';
+    });
+  };
+
   const run = () => {
     ensureStyles();
     skipLegacySessionIntro();
     scrubTutorMarkdownLeaks();
     syncAnswerReceipts();
     annotateProgressWithBlueprint();
+    clarifyExitDialog();
   };
 
   let queued = false;
@@ -216,11 +241,11 @@
     return Array.from(record.addedNodes).some(node => {
       if (!(node instanceof HTMLElement)) return String(node.textContent || '').includes('**');
       if (String(node.textContent || '').includes('**')) return true;
-      if (/take me through it/i.test(text(node))) return true;
+      if (/take me through it|pause here\?|stop for now/i.test(text(node))) return true;
       return node.matches(
-        'section[aria-label="Answer and tutor"], [data-studyedit-wrap-panel="true"], [data-studyedit-outcome="true"], [role="status"], .studyedit-progress-row, [data-studyedit-progress-overlay="true"]'
+        'section[aria-label="Answer and tutor"], [data-studyedit-wrap-panel="true"], [data-studyedit-outcome="true"], [role="status"], [role="dialog"], .studyedit-progress-row, [data-studyedit-progress-overlay="true"]'
       ) || Boolean(node.querySelector?.(
-        'section[aria-label="Answer and tutor"], [data-studyedit-wrap-panel="true"], [data-studyedit-outcome="true"], [role="status"], .studyedit-progress-row, [data-studyedit-progress-overlay="true"]'
+        'section[aria-label="Answer and tutor"], [data-studyedit-wrap-panel="true"], [data-studyedit-outcome="true"], [role="status"], [role="dialog"], .studyedit-progress-row, [data-studyedit-progress-overlay="true"]'
       ));
     });
   });
@@ -233,7 +258,7 @@
 
   // Normal tutor streaming should do almost no work here. We wake on answer
   // state / wrap-up structure changes, the progress sheet, the legacy intro,
-  // and on the rare Markdown leak marker.
+  // exit dialog, and on the rare Markdown leak marker.
   new MutationObserver(records => {
     if (mutationNeedsRun(records)) queueRun();
   }).observe(document.documentElement, {
