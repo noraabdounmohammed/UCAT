@@ -1,8 +1,7 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useMemo } from 'react';
 import { ArrowRight, Home, RotateCcw } from 'lucide-react';
-import { AuthForm } from '@/components/auth/AuthForm';
+import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
-import { migrateLegacyCurriculumState } from '@/utils/curriculumScope';
 import { SessionAnswer } from './SessionProgressDropdown';
 
 interface SessionReviewScreenProps {
@@ -43,14 +42,10 @@ export const SessionReviewScreen: React.FC<SessionReviewScreenProps> = ({
   onViewQuestion,
   sessionDuration,
 }) => {
+  const navigate = useNavigate();
   const { user } = useAuth();
-  const [showAuth, setShowAuth] = useState(false);
   const total = questions.length;
   const correct = answers.filter(answer => answer.isCorrect).length;
-
-  useEffect(() => {
-    if (user?.id) migrateLegacyCurriculumState(user.id);
-  }, [user?.id]);
 
   const cases = useMemo(() => questions.map((question, index) => {
     const answer = answers.find(item => item.questionIndex === index);
@@ -122,34 +117,18 @@ export const SessionReviewScreen: React.FC<SessionReviewScreenProps> = ({
             {total} case{total === 1 ? '' : 's'} · {correct} retrieved first time{sessionDuration ? ` · ${formatDuration(sessionDuration)}` : ''}
           </div>
 
-          {!user && !showAuth && (
+          {!user && (
             <section className="mt-8 rounded-[20px] border p-5" style={{ borderColor: T.line, backgroundColor: T.paper }}>
               <div className="text-[17px] font-bold" style={{ color: T.espresso }}>Want me to remember this?</div>
               <p className="mt-2 text-[13px] font-medium leading-6" style={{ color: T.muted }}>
                 Save the session and I can use what you just showed me to decide where to pick up next time.
               </p>
-              <button onClick={() => setShowAuth(true)} className="mt-4 rounded-[13px] px-4 py-3 text-[13px] font-bold" style={{ backgroundColor: T.espresso, color: T.cream }}>
+              <button onClick={() => navigate('/signin?reason=save&next=/')} className="mt-4 rounded-[13px] px-4 py-3 text-[13px] font-bold" style={{ backgroundColor: T.espresso, color: T.cream }}>
                 Save my progress
               </button>
               <button onClick={onDone} className="ml-4 text-[12px] font-semibold underline decoration-[#BBA995] underline-offset-4" style={{ color: T.muted }}>
                 Not now
               </button>
-            </section>
-          )}
-
-          {!user && showAuth && (
-            <section className="mt-8 rounded-[20px] border p-5" style={{ borderColor: T.line, backgroundColor: T.paper }}>
-              <div className="text-[17px] font-bold" style={{ color: T.espresso }}>Keep your tutor’s memory.</div>
-              <p className="mt-2 text-[13px] font-medium leading-6" style={{ color: T.muted }}>
-                Sign in and this session becomes the starting point for what StudyEdit does next.
-              </p>
-              <div className="mt-5"><AuthForm /></div>
-            </section>
-          )}
-
-          {user && showAuth && (
-            <section className="mt-8 rounded-[18px] border p-4" style={{ borderColor: '#D7DEC8', backgroundColor: T.sageSoft }}>
-              <div className="text-[14px] font-bold" style={{ color: T.espresso }}>Got it — I’ll remember where we left off.</div>
             </section>
           )}
 
