@@ -357,9 +357,10 @@
     polish();
   }
 
+  // Quick-check enhancement happens after a tutor turn is structurally complete.
+  // Do not rescan the lesson on every streamed character.
   new MutationObserver(queue).observe(document.documentElement, {
     childList: true,
     subtree: true,
-    characterData: true,
   });
 })();
