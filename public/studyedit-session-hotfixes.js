@@ -82,13 +82,25 @@
     });
   };
 
+  const mutationCouldContainMarkdownLeak = records => records.some(record => {
+    if (record.type === 'characterData') {
+      return String(record.target?.nodeValue || '').includes('**');
+    }
+    if (record.type !== 'childList') return false;
+    return Array.from(record.addedNodes).some(node => String(node.textContent || '').includes('**'));
+  });
+
   if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', run, { once: true });
   } else {
     run();
   }
 
-  new MutationObserver(queueRun).observe(document.documentElement, {
+  // Normal tutor streaming should do zero markdown-cleanup work. Only wake the
+  // scrubber when a mutation actually contains the marker we are repairing.
+  new MutationObserver(records => {
+    if (mutationCouldContainMarkdownLeak(records)) queueRun();
+  }).observe(document.documentElement, {
     childList: true,
     subtree: true,
     characterData: true,
