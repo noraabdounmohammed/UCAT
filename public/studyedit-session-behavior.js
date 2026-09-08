@@ -401,9 +401,10 @@
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', run, { once: true });
   else run();
 
+  // The tutor's text streams via character mutations. Wrap-up and optimistic-message
+  // choreography only needs structural state changes, so do not rerun it per token.
   new MutationObserver(queueRun).observe(document.documentElement, {
     childList: true,
     subtree: true,
-    characterData: true,
   });
 })();
