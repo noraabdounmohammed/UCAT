@@ -64,9 +64,12 @@
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', run, { once: true });
   else run();
 
+  // Tutor replies stream token-by-token. Watching characterData caused a full document
+  // rescan on every token, which made mobile feedback feel slower and less fluid.
+  // Structural UI state changes (new turn, form, case summary, wrap-up) are childList
+  // mutations, so character changes can safely be ignored here.
   new MutationObserver(queue).observe(document.documentElement, {
     childList: true,
     subtree: true,
-    characterData: true,
   });
 })();
