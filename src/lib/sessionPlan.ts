@@ -158,10 +158,10 @@ export function resolvePlannedConcepts(concepts: any[], count: number) {
   if (typeof window !== 'undefined') {
     try {
       const ids = JSON.parse(window.sessionStorage.getItem(PLANNED_SESSION_IDS_KEY) || '[]');
-      if (Array.isArray(ids) && ids.length) {
+      if (Array.isArray(ids) && ids.length >= count) {
         const byId = new Map((concepts || []).map(concept => [concept.concept_id, concept]));
-        const planned = ids.map(id => byId.get(id)).filter(Boolean).slice(0, count);
-        if (planned.length === Math.min(count, ids.length)) return planned;
+        const planned = ids.slice(0, count).map(id => byId.get(id)).filter(Boolean);
+        if (planned.length === count) return planned;
       }
     } catch {
       // Fall through to a fresh deterministic recommendation.
