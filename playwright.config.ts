@@ -25,7 +25,9 @@ export default defineConfig({
         timeout: 120_000,
       },
   projects: [
-    { name: 'chromium', use: { ...devices['Desktop Chrome'] } },
+    // Mobile is the launch gate: this is where most learner-facing regressions
+    // have surfaced and it best matches the first external beta cohort.
     { name: 'mobile-chrome', use: { ...devices['Pixel 5'] } },
+    { name: 'desktop-chromium', use: { ...devices['Desktop Chrome'] } },
   ],
 });
