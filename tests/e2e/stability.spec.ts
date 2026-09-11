@@ -1,6 +1,7 @@
 import { test, expect } from '@playwright/test';
 
 const PUBLIC_ROUTES = ['/', '/privacy', '/concept-practice', '/recommended-practice'];
+const FIRST_PARTY_HOSTS = new Set(['studyedit.com', 'www.studyedit.com', '127.0.0.1', 'localhost']);
 
 for (const route of PUBLIC_ROUTES) {
   test(`${route} has no uncaught browser errors or broken first-party assets`, async ({ page }) => {
@@ -10,7 +11,7 @@ for (const route of PUBLIC_ROUTES) {
     page.on('pageerror', error => pageErrors.push(error.message));
     page.on('response', response => {
       const url = new URL(response.url());
-      const sameOrigin = url.hostname === 'studyedit.com' || url.hostname === 'www.studyedit.com';
+      const sameOrigin = FIRST_PARTY_HOSTS.has(url.hostname);
       const asset = /\.(?:js|css|woff2?|png|jpe?g|svg|ico)(?:\?|$)/i.test(url.pathname);
       if (sameOrigin && asset && response.status() >= 400) {
         brokenAssets.push(`${response.status()} ${url.pathname}`);
@@ -39,10 +40,11 @@ test('rapid public navigation never leaves the learner on a blank screen', async
   }
 });
 
-test('reloading the app repeatedly preserves a usable page', async ({ page }) => {
+test('reloading the app repeatedly preserves a usable agent home', async ({ page }) => {
   await page.goto('/');
   for (let i = 0; i < 3; i += 1) {
     await page.reload({ waitUntil: 'domcontentloaded' });
-    await expect(page.getByRole('heading', { name: /know what to practise next/i })).toBeVisible();
+    await expect(page.getByRole('heading', { name: /tell me what you need|i know where i.d start/i })).toBeVisible();
+    await expect(page.getByRole('button', { name: /just start me/i })).toBeVisible();
   }
 });
