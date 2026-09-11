@@ -45,6 +45,6 @@ test('reloading the app repeatedly preserves a usable agent home', async ({ page
   for (let i = 0; i < 3; i += 1) {
     await page.reload({ waitUntil: 'domcontentloaded' });
     await expect(page.getByRole('heading', { name: /tell me what you need|i know where i.d start/i })).toBeVisible();
-    await expect(page.getByRole('button', { name: /just start me/i })).toBeVisible();
+    await expect(page.getByRole('button', { name: /let studyedit choose/i })).toBeVisible();
   }
 });
