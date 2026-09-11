@@ -1,53 +1,87 @@
 import { test, expect } from '@playwright/test';
 
-test.describe('public learner journey', () => {
+const currentHomeHeading = /what do you want to work on\?|what do you need today\?/i;
+const intentPlaceholder = /10 minutes of cardio/i;
+
+async function planCardiologyManagement(page: any) {
+  const input = page.getByPlaceholder(intentPlaceholder);
+  await input.fill('10 minutes of cardiology management');
+  await page.getByRole('button', { name: /plan my session/i }).click();
+
+  await expect(page.getByText(/10 minutes of cardiology management/i)).toBeVisible();
+  await expect(page.getByText(/cardio/i).first()).toBeVisible();
+  await expect(page.getByText(/management/i).first()).toBeVisible();
+  await expect(page.getByText(/order hidden/i)).toBeVisible();
+  await expect(page.getByText(/exact conditions.*hidden/i)).toBeVisible();
+}
+
+test.describe('StudyEdit launch flow', () => {
   test.beforeEach(async ({ context }) => {
     await context.clearCookies();
   });
 
-  test('home lets a new learner express intent or let StudyEdit choose', async ({ page }) => {
+  test('cold learner sees the current launch surface', async ({ page }) => {
     await page.goto('/');
 
-    await expect(page.getByRole('heading', { name: /tell me what you need|i know where i.d start/i })).toBeVisible();
-    await expect(page.getByPlaceholder(/10 minutes of cardio|want something different/i)).toBeVisible();
-    await expect(page.getByRole('button', { name: /let studyedit choose/i })).toBeVisible();
-    await expect(page.getByText(/your whole session/i).first()).toBeVisible();
-    await expect(page.getByText(/complete scope|exact conditions/i).first()).toBeVisible();
+    await expect(page.getByRole('heading', { name: currentHomeHeading })).toBeVisible();
+    await expect(page.getByPlaceholder(intentPlaceholder)).toBeVisible();
+    await expect(page.getByText('Whole session')).toBeVisible();
+    await expect(page.getByText(/order hidden/i)).toBeVisible();
+    await expect(page.getByRole('button', { name: /start session/i })).toBeVisible();
+    await expect(page.getByText(/no account needed to start/i)).toBeVisible();
   });
 
-  test('a signed-out learner can begin without an authentication gate', async ({ page }) => {
+  test('plain-English intent becomes a spoiler-safe session plan', async ({ page }) => {
     await page.goto('/');
-
-    const start = page.getByRole('button', { name: /^start$/i });
-    await expect(start).toBeEnabled({ timeout: 15_000 });
-    await start.click();
-
-    await expect(page).toHaveURL(/\/recommended-practice/);
-    await expect(page.locator('main').first()).toBeVisible();
-    await expect(page.getByText(/sign in, then start/i)).toHaveCount(0);
-  });
-
-  test('plain-language session requests change the visible plan before starting', async ({ page }) => {
-    await page.goto('/');
-
-    const input = page.getByPlaceholder(/10 minutes of cardio|want something different/i);
-    await input.fill('10 minutes of cardiology management');
-    await page.getByRole('button', { name: /plan my session/i }).click();
-
-    await expect(page.getByText('Cardiology', { exact: true }).first()).toBeVisible();
-    await expect(page.getByText('Management', { exact: true }).first()).toBeVisible();
+    await planCardiologyManagement(page);
     await expect(page.getByText(/about 10 min/i)).toBeVisible();
   });
 
-  test('privacy remains reachable from the home page', async ({ page }) => {
+  test('golden path reaches a safe first case and gives immediate correctness', async ({ page }, testInfo) => {
+    test.setTimeout(60_000);
     await page.goto('/');
-    await page.getByRole('button', { name: /^privacy$/i }).click();
-    await expect(page).toHaveURL(/\/privacy/);
+    await planCardiologyManagement(page);
+
+    const startedAt = Date.now();
+    await page.getByRole('button', { name: /start session/i }).click();
+
+    await expect(page).toHaveURL(/\/recommended-practice/);
+    const question = page.locator('section[aria-label="Question"]');
+    await expect(question).toBeVisible({ timeout: 20_000 });
+    const startToFirstCaseMs = Date.now() - startedAt;
+
+    console.log(`[studyedit-metric] start_to_first_case_ms=${startToFirstCaseMs}`);
+    expect(startToFirstCaseMs, 'Start session → first usable case').toBeLessThan(20_000);
+
+    // Generation failures must never degrade into the old generic placeholder.
+    await expect(page.getByText(/^What do you know about /i)).toHaveCount(0);
+    await expect(page.getByRole('button', { name: /Option A:/i })).toBeVisible();
+
+    await page.getByRole('button', { name: /Option A:/i }).click();
+    const checkAnswer = page.getByRole('button', { name: /check answer/i });
+    await expect(checkAnswer).toBeEnabled();
+
+    const answeredAt = Date.now();
+    await checkAnswer.click();
+    await expect(page.locator('section[aria-label="Answer and tutor"]')).toBeVisible();
+    await expect(page.getByRole('heading', { name: /^(Correct|Not quite)$/i })).toBeVisible();
+    const answerToFeedbackMs = Date.now() - answeredAt;
+
+    console.log(`[studyedit-metric] answer_to_feedback_ms=${answerToFeedbackMs}`);
+    expect(answerToFeedbackMs, 'Answer → visible correctness feedback').toBeLessThan(1_000);
+
+    await testInfo.attach('launch-latency.json', {
+      body: JSON.stringify({ startToFirstCaseMs, answerToFeedbackMs }, null, 2),
+      contentType: 'application/json',
+    });
   });
 
-  test('home has no horizontal overflow on a phone-sized viewport', async ({ page }) => {
+  test('privacy remains reachable and the phone layout does not overflow', async ({ page }) => {
     await page.goto('/');
     const overflow = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
     expect(overflow).toBeLessThanOrEqual(1);
+
+    await page.getByRole('button', { name: /^privacy$/i }).click();
+    await expect(page).toHaveURL(/\/privacy/);
   });
 });
