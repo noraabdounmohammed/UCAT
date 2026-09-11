@@ -2,6 +2,7 @@ import { test, expect } from '@playwright/test';
 
 const PUBLIC_ROUTES = ['/', '/privacy', '/concept-practice', '/recommended-practice'];
 const FIRST_PARTY_HOSTS = new Set(['studyedit.com', 'www.studyedit.com', '127.0.0.1', 'localhost']);
+const currentHomeHeading = /what do you want to work on\?|what do you need today\?/i;
 
 for (const route of PUBLIC_ROUTES) {
   test(`${route} has no uncaught browser errors or broken first-party assets`, async ({ page }) => {
@@ -40,11 +41,33 @@ test('rapid public navigation never leaves the learner on a blank screen', async
   }
 });
 
-test('reloading the app repeatedly preserves a usable agent home', async ({ page }) => {
+test('reloading the app repeatedly preserves the current learner home', async ({ page }) => {
   await page.goto('/');
   for (let i = 0; i < 3; i += 1) {
     await page.reload({ waitUntil: 'domcontentloaded' });
-    await expect(page.getByRole('heading', { name: /tell me what you need|i know where i.d start/i })).toBeVisible();
-    await expect(page.getByRole('button', { name: /let studyedit choose/i })).toBeVisible();
+    await expect(page.getByRole('heading', { name: currentHomeHeading })).toBeVisible();
+    await expect(page.getByRole('button', { name: /start session/i })).toBeVisible();
   }
+});
+
+test('production-style launch reaches a real safe case', async ({ page }, testInfo) => {
+  test.setTimeout(60_000);
+  await page.goto('/');
+
+  const input = page.getByPlaceholder(/10 minutes of cardio/i);
+  await input.fill('10 minutes of cardiology management');
+  await page.getByRole('button', { name: /plan my session/i }).click();
+  await expect(page.getByText(/order hidden/i)).toBeVisible();
+
+  const startedAt = Date.now();
+  await page.getByRole('button', { name: /start session/i }).click();
+  await expect(page.locator('section[aria-label="Question"]')).toBeVisible({ timeout: 20_000 });
+  const startToFirstCaseMs = Date.now() - startedAt;
+
+  await expect(page.getByText(/^What do you know about /i)).toHaveCount(0);
+  console.log(`[studyedit-production-metric] start_to_first_case_ms=${startToFirstCaseMs}`);
+  await testInfo.attach('production-launch-latency.json', {
+    body: JSON.stringify({ startToFirstCaseMs }, null, 2),
+    contentType: 'application/json',
+  });
 });
