@@ -1,6 +1,7 @@
 (() => {
   const STYLE_ID = 'studyedit-quiet-navbar-styles';
   const NAV_ATTR = 'data-studyedit-quiet-nav';
+  const BLUEPRINT_KEY = 'studyedit_session_blueprint_v1';
 
   const text = (node) => (node?.textContent || '').replace(/\s+/g, ' ').trim();
 
@@ -162,7 +163,7 @@
 
       [data-studyedit-progress-sheet="true"] {
         width: min(700px, 100%);
-        max-height: min(72vh, 680px);
+        max-height: min(78vh, 720px);
         overflow: auto;
         border-radius: 24px 24px 0 0;
         background: #FFFDF8;
@@ -209,6 +210,67 @@
         color: #8A7560;
         font: inherit;
         font-size: 22px;
+      }
+
+      .studyedit-session-scope {
+        margin: 0 0 14px;
+        padding: 14px 0 17px;
+        border-bottom: 1px solid #EFE6D8;
+      }
+
+      .studyedit-scope-head {
+        display: flex;
+        align-items: baseline;
+        justify-content: space-between;
+        gap: 10px;
+        margin-bottom: 12px;
+      }
+
+      .studyedit-scope-title {
+        color: #2A1E16;
+        font-size: 12px;
+        font-weight: 800;
+      }
+
+      .studyedit-scope-note {
+        color: #9A8977;
+        font-size: 10px;
+        font-weight: 650;
+      }
+
+      .studyedit-scope-row {
+        display: grid;
+        grid-template-columns: 86px minmax(0, 1fr);
+        gap: 10px;
+        margin-top: 9px;
+      }
+
+      .studyedit-scope-label {
+        padding-top: 5px;
+        color: #8A7560;
+        font-size: 10px;
+        font-weight: 650;
+      }
+
+      .studyedit-scope-chips {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 6px;
+      }
+
+      .studyedit-scope-chip {
+        border: 1px solid #D8DDC9;
+        border-radius: 999px;
+        background: #E8EDD9;
+        padding: 5px 8px;
+        color: #3D332A;
+        font-size: 10px;
+        font-weight: 750;
+      }
+
+      .studyedit-scope-row[data-kind="skills"] .studyedit-scope-chip {
+        border-color: #E5D9C7;
+        background: #FBF7F0;
       }
 
       .studyedit-progress-row {
@@ -262,6 +324,7 @@
       @media (max-width: 600px) {
         [${NAV_ATTR}="true"] { padding-left: 14px; padding-right: 14px; }
         [data-studyedit-nav-menu="true"] { right: 14px; }
+        .studyedit-scope-row { grid-template-columns: 76px minmax(0, 1fr); }
       }
     `;
     document.head.appendChild(style);
@@ -288,6 +351,16 @@
     return { current: 1, total: 0 };
   };
 
+  const readBlueprint = () => {
+    try {
+      const parsed = JSON.parse(window.sessionStorage.getItem(BLUEPRINT_KEY) || 'null');
+      if (!parsed || typeof parsed !== 'object') return null;
+      return parsed;
+    } catch {
+      return null;
+    }
+  };
+
   const findExit = (header) => {
     const native = document.querySelector('[data-studyedit-native-exit="true"]');
     if (native instanceof HTMLButtonElement) return native;
@@ -304,6 +377,63 @@
   };
 
   const closeSheet = (nav) => nav.querySelector('[data-studyedit-progress-overlay="true"]')?.removeAttribute('data-open');
+
+  const appendScopeChips = (container, items) => {
+    if (!(container instanceof HTMLElement) || !Array.isArray(items)) return;
+    items.forEach(item => {
+      if (!item?.label) return;
+      const chip = document.createElement('span');
+      chip.className = 'studyedit-scope-chip';
+      const count = Number(item.count || 0);
+      chip.textContent = `${item.label}${count > 1 ? ` ×${count}` : ''}`;
+      container.appendChild(chip);
+    });
+  };
+
+  const renderSessionScope = (nav) => {
+    const scope = nav.querySelector('[data-studyedit-session-scope="true"]');
+    if (!(scope instanceof HTMLElement)) return;
+    const blueprint = readBlueprint();
+    const systems = blueprint?.systemCounts;
+    const skills = blueprint?.skillCounts;
+    if (!Array.isArray(systems) || !systems.length || !Array.isArray(skills) || !skills.length) {
+      scope.style.display = 'none';
+      scope.replaceChildren();
+      return;
+    }
+
+    const signature = JSON.stringify([systems, skills]);
+    if (scope.dataset.signature === signature) return;
+    scope.dataset.signature = signature;
+    scope.style.display = '';
+    scope.replaceChildren();
+
+    const head = document.createElement('div');
+    head.className = 'studyedit-scope-head';
+    const title = document.createElement('div');
+    title.className = 'studyedit-scope-title';
+    title.textContent = 'Whole session';
+    const note = document.createElement('div');
+    note.className = 'studyedit-scope-note';
+    note.textContent = 'order hidden';
+    head.append(title, note);
+
+    const makeRow = (label, items, kind) => {
+      const row = document.createElement('div');
+      row.className = 'studyedit-scope-row';
+      row.dataset.kind = kind;
+      const rowLabel = document.createElement('div');
+      rowLabel.className = 'studyedit-scope-label';
+      rowLabel.textContent = label;
+      const chips = document.createElement('div');
+      chips.className = 'studyedit-scope-chips';
+      appendScopeChips(chips, items);
+      row.append(rowLabel, chips);
+      return row;
+    };
+
+    scope.append(head, makeRow('Areas', systems, 'systems'), makeRow('Skills', skills, 'skills'));
+  };
 
   const buildRows = (nav, current, total) => {
     const list = nav.querySelector('[data-studyedit-progress-list="true"]');
@@ -351,7 +481,8 @@
     if (count) count.textContent = total ? `${current} of ${total}` : `Question ${current}`;
     if (left) left.textContent = total ? `${Math.max(0, total - current)} left` : '';
     if (fill instanceof HTMLElement) fill.style.width = total ? `${Math.max(0, Math.min(100, (current / total) * 100))}%` : '0%';
-    if (meta) meta.textContent = total ? `${Math.max(0, current - 1)} completed · ${Math.max(0, total - current + 1)} including this one` : '';
+    if (meta) meta.textContent = total ? `Question ${current} of ${total}` : '';
+    renderSessionScope(nav);
     buildRows(nav, current, total);
   };
 
@@ -398,7 +529,7 @@
     overlay.setAttribute('data-studyedit-progress-overlay', 'true');
     const sheet = document.createElement('section');
     sheet.setAttribute('data-studyedit-progress-sheet', 'true');
-    sheet.innerHTML = '<div class="studyedit-sheet-handle"></div><div class="studyedit-sheet-head"><div><div class="studyedit-sheet-title">Session progress</div><div class="studyedit-sheet-meta"></div></div><button type="button" class="studyedit-sheet-close" aria-label="Close progress">×</button></div><div data-studyedit-progress-list="true"></div>';
+    sheet.innerHTML = '<div class="studyedit-sheet-handle"></div><div class="studyedit-sheet-head"><div><div class="studyedit-sheet-title">Session progress</div><div class="studyedit-sheet-meta"></div></div><button type="button" class="studyedit-sheet-close" aria-label="Close progress">×</button></div><div data-studyedit-session-scope="true" class="studyedit-session-scope"></div><div data-studyedit-progress-list="true"></div>';
     overlay.appendChild(sheet);
 
     const leaveLesson = () => {
