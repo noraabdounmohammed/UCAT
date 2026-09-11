@@ -1,5 +1,5 @@
 import React, { createContext, useContext, ReactNode, useMemo, useEffect } from 'react';
-import { createConceptStore } from '@/store/conceptStore';
+import { createConceptStore } from '@/store/progressiveConceptStore';
 
 // Create context for the concept store
 const ConceptStoreContext = createContext<ReturnType<typeof createConceptStore> | null>(null);
