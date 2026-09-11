@@ -1,11 +1,9 @@
 (() => {
   const STYLE_ID = 'studyedit-session-behavior-styles';
-  const PENDING_ATTR = 'data-studyedit-pending-message';
   const WRAP_ATTR = 'data-studyedit-wrap-panel';
   const ACTION_ATTR = 'data-studyedit-wrap-action';
 
   const state = {
-    pending: [],
     wrapActive: false,
     wrapFinal: false,
     wrapSection: null,
@@ -55,10 +53,6 @@
         font-weight: 600 !important;
         line-height: 1.42 !important;
         letter-spacing: -0.005em !important;
-      }
-
-      [${PENDING_ATTR}="true"] {
-        animation: studyedit-optimistic-message-in 130ms ease-out both !important;
       }
 
       section[aria-label="Answer and tutor"] form {
@@ -127,11 +121,6 @@
         display: none !important;
       }
 
-      @keyframes studyedit-optimistic-message-in {
-        from { opacity: 0; transform: translateY(3px); }
-        to { opacity: 1; transform: translateY(0); }
-      }
-
       @media (max-width: 600px) {
         section[aria-label="Answer and tutor"] .space-y-6 > [data-studyedit-turn="student"],
         section[aria-label="Answer and tutor"] .space-y-6 > .border-y.py-5 {
@@ -144,20 +133,12 @@
 
   const getThread = (section) => section?.querySelector('.space-y-6');
 
-  const studentMessage = (node) => {
-    if (!(node instanceof HTMLElement)) return '';
-    const children = Array.from(node.children);
-    if (children.length >= 2) return text(children[children.length - 1]);
-    return text(node);
-  };
-
   const latestTutorMessage = (section) => {
     const thread = getThread(section);
     if (!(thread instanceof HTMLElement)) return '';
     const turns = Array.from(thread.children).filter((child) => {
       if (!(child instanceof HTMLElement)) return false;
       if (child.matches('[role="status"]')) return false;
-      if (child.hasAttribute(PENDING_ATTR)) return false;
       if (child.hasAttribute('data-studyedit-turn')) return child.getAttribute('data-studyedit-turn') === 'tutor';
       return !child.matches('.border-y.py-5');
     });
@@ -176,81 +157,6 @@
     const clean = normalise(value);
     if (!clean || /quick\s*check\s*:/i.test(value) || /\?\s*$/.test(value.trim())) return false;
     return /(?:you(?:'ve| have) (?:now )?got .{0,90} locked in|you(?:'re| are) ready to move on|ready to move on|answered .{0,90} correctly twice(?: in a row)?|seen enough(?: evidence)?(?: here)?|have seen enough|that's enough(?: here| for (?:this|the) session)?|that is enough(?: here| for (?:this|the) session)?|we can move on|ready for the next question)/i.test(value);
-  };
-
-  const addOptimisticMessage = (section, value) => {
-    const thread = getThread(section);
-    if (!(thread instanceof HTMLElement)) return;
-
-    const id = `pending-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
-    const node = document.createElement('div');
-    node.className = 'border-y py-5';
-    node.setAttribute(PENDING_ATTR, 'true');
-    node.dataset.studyeditPendingId = id;
-    node.setAttribute('data-studyedit-turn', 'student');
-
-    const message = document.createElement('div');
-    message.textContent = value;
-    node.appendChild(message);
-    thread.appendChild(node);
-
-    state.pending.push({ id, value: normalise(value), section, node });
-  };
-
-  const syncPendingMessages = () => {
-    if (!state.pending.length) return;
-
-    state.pending = state.pending.filter((item) => {
-      const section = item.section?.isConnected
-        ? item.section
-        : document.querySelector('section[aria-label="Answer and tutor"]');
-      const thread = getThread(section);
-      if (!(thread instanceof HTMLElement)) return false;
-
-      const realMatch = Array.from(thread.children).find((child) => {
-        if (!(child instanceof HTMLElement)) return false;
-        if (child.hasAttribute(PENDING_ATTR)) return false;
-        if (!(child.hasAttribute('data-studyedit-turn') || child.matches('.border-y.py-5'))) return false;
-        return normalise(studentMessage(child)) === item.value;
-      });
-
-      if (realMatch) {
-        item.node?.remove();
-        return false;
-      }
-
-      if (!item.node?.isConnected) {
-        const replacement = document.createElement('div');
-        replacement.className = 'border-y py-5';
-        replacement.setAttribute(PENDING_ATTR, 'true');
-        replacement.dataset.studyeditPendingId = item.id;
-        replacement.setAttribute('data-studyedit-turn', 'student');
-        const message = document.createElement('div');
-        message.textContent = item.value;
-        replacement.appendChild(message);
-        thread.appendChild(replacement);
-        item.node = replacement;
-        item.section = section;
-      }
-
-      return true;
-    });
-  };
-
-  const captureLearnerSubmit = (event) => {
-    const form = event.target;
-    if (!(form instanceof HTMLFormElement)) return;
-    const section = form.closest('section[aria-label="Answer and tutor"]');
-    if (!(section instanceof HTMLElement)) return;
-
-    const input = form.querySelector('input, textarea');
-    if (!(input instanceof HTMLInputElement || input instanceof HTMLTextAreaElement)) return;
-    if (input.disabled) return;
-    const value = input.value.trim();
-    if (!value) return;
-
-    const alreadyPending = state.pending.some((item) => item.section === section && item.value === normalise(value));
-    if (!alreadyPending) addOptimisticMessage(section, value);
   };
 
   const findNativeNext = (section) => {
@@ -382,11 +288,8 @@
     ensureStyles();
     detectAndHoldWrap();
     renderWrapPanel();
-    syncPendingMessages();
     resetForNewQuestion();
   };
-
-  document.addEventListener('submit', captureLearnerSubmit, true);
 
   let queued = false;
   const queueRun = () => {
@@ -401,8 +304,8 @@
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', run, { once: true });
   else run();
 
-  // The tutor's text streams via character mutations. Wrap-up and optimistic-message
-  // choreography only needs structural state changes, so do not rerun it per token.
+  // React owns learner turns synchronously. This layer only choreographs the
+  // wrap-up and fresh-page transition, so it never creates duplicate messages.
   new MutationObserver(queueRun).observe(document.documentElement, {
     childList: true,
     subtree: true,
