@@ -35,9 +35,9 @@ const isRecommendedLaunchPath = () =>
  *
  * The legacy startPractice implementation waits for every question in a batch
  * before publishing the session. For the learner-facing recommended path we:
- *  1. ask the existing engine for one valid question,
- *  2. publish it immediately,
- *  3. prepare the remaining questions in an isolated store, and
+ *  1. prepare one question in an isolated store,
+ *  2. publish it only after it passes the fallback safety check,
+ *  3. prepare the remaining questions in another isolated store, and
  *  4. append only valid questions when they are ready.
  *
  * Every other practice surface delegates straight to the original store.
@@ -48,6 +48,18 @@ export const createConceptStore = (curriculumId: string = 'default') => {
   const baseEndPractice = store.getState().endPractice;
   let runId = 0;
 
+  const createGenerationStore = (snapshot: any, selection: string[]) => {
+    const generationStore = createBaseConceptStore(curriculumId);
+    generationStore.setState({
+      concepts: snapshot.concepts,
+      filteredConcepts: snapshot.filteredConcepts,
+      filterOptions: snapshot.filterOptions,
+      filterState: snapshot.filterState,
+      practiceSelection: selection,
+    } as any);
+    return generationStore;
+  };
+
   const progressiveStartPractice = async (practiceConfig?: PracticeConfig) => {
     const thisRun = ++runId;
     const requestedCount = Math.max(1, practiceConfig?.question_count || 10);
@@ -56,40 +68,45 @@ export const createConceptStore = (curriculumId: string = 'default') => {
       return baseStartPractice(practiceConfig);
     }
 
-    // Non-question formats retain their existing all-at-once behaviour.
-    if (practiceConfig?.target_formats?.[0] === 'mindmap' || requestedCount === 1) {
-      await baseStartPractice(practiceConfig);
-      const current = store.getState() as any;
-      if (current.practiceQuestions?.some(isUnsafeFallback)) {
-        store.setState({
-          practiceQuestions: current.practiceQuestions.filter((question: any) => !isUnsafeFallback(question)),
-          practiceError: 'I could not prepare a reliable case just now. Please try again.',
-          isLoading: false,
-          isPracticing: false,
-        } as any);
-      }
-      return;
+    // Mind maps are a different interaction and retain their existing behaviour.
+    if (practiceConfig?.target_formats?.[0] === 'mindmap') {
+      return baseStartPractice(practiceConfig);
     }
 
     const initial = store.getState() as any;
     const originalSelection = Array.isArray(initial.practiceSelection)
       ? [...initial.practiceSelection]
       : null;
-
-    // Try a small number of planned concepts until the first question is safe.
-    // A generation failure therefore stays invisible instead of degrading into
-    // the old “A lot / Some / A little / Nothing” placeholder.
     const candidates = originalSelection?.length
       ? originalSelection
       : initial.concepts.map((concept: any) => concept.concept_id);
-    const firstAttemptIds = candidates.slice(0, Math.min(3, candidates.length));
 
+    if (!candidates.length) {
+      return baseStartPractice(practiceConfig);
+    }
+
+    // Keep the live learner store on its loading shell until a checked Q1 exists.
+    store.setState({
+      isLoading: true,
+      isPracticing: true,
+      practiceQuestions: [],
+      currentSessionAnswers: [],
+      sessionStartTime: Date.now(),
+      generatingQuestionCount: requestedCount,
+      practiceConfig: practiceConfig || initial.practiceConfig,
+      practiceError: null,
+    } as any);
+
+    const firstAttemptIds = candidates.slice(0, Math.min(3, candidates.length));
     let firstQuestion: any = null;
+
     for (const conceptId of firstAttemptIds) {
       if (thisRun !== runId) return;
-      store.setState({ practiceSelection: [conceptId] } as any);
-      await baseStartPractice({ ...practiceConfig, question_count: 1 });
-      const candidate = (store.getState() as any).practiceQuestions?.[0];
+
+      const foregroundStore = createGenerationStore(initial, [conceptId]);
+      await foregroundStore.getState().startPractice({ ...practiceConfig, question_count: 1 });
+      const candidate = (foregroundStore.getState() as any).practiceQuestions?.[0];
+
       if (candidate && !isUnsafeFallback(candidate)) {
         firstQuestion = candidate;
         break;
@@ -105,38 +122,40 @@ export const createConceptStore = (curriculumId: string = 'default') => {
         practiceError: 'I could not prepare a reliable case just now. Please try again.',
         isLoading: false,
         isPracticing: false,
+        generatingQuestionCount: 0,
       } as any);
       return;
     }
 
-    // The first good question is now visible. Restore the planned selection and
-    // prepare the rest independently so the learner is never blocked by Q2–Q5.
+    // Q1 becomes visible immediately; everything else can now happen off-screen.
     store.setState({
       practiceSelection: originalSelection,
       practiceQuestions: [firstQuestion],
-      practiceConfig: practiceConfig || (store.getState() as any).practiceConfig,
       practiceError: null,
       isLoading: false,
       isPracticing: true,
       generatingQuestionCount: Math.max(0, requestedCount - 1),
     } as any);
 
+    if (requestedCount === 1) {
+      store.setState({ generatingQuestionCount: 0 } as any);
+      return;
+    }
+
     const remainingIds = candidates.filter((id: string) => id !== firstQuestion.concept_id);
-    if (remainingIds.length === 0 || requestedCount <= 1) return;
+    if (!remainingIds.length) {
+      store.setState({ generatingQuestionCount: 0 } as any);
+      return;
+    }
 
-    const backgroundStore = createBaseConceptStore(curriculumId);
-    const snapshot = store.getState() as any;
-    backgroundStore.setState({
-      concepts: snapshot.concepts,
-      filteredConcepts: snapshot.filteredConcepts,
-      filterOptions: snapshot.filterOptions,
-      filterState: snapshot.filterState,
-      practiceSelection: remainingIds,
-    } as any);
+    const backgroundStore = createGenerationStore(initial, remainingIds);
 
-    const backgroundStart = backgroundStore.getState().startPractice;
     try {
-      await backgroundStart({ ...practiceConfig, question_count: Math.min(requestedCount - 1, remainingIds.length) });
+      await backgroundStore.getState().startPractice({
+        ...practiceConfig,
+        question_count: Math.min(requestedCount - 1, remainingIds.length),
+      });
+
       if (thisRun !== runId || !(store.getState() as any).isPracticing) return;
 
       const backgroundQuestions = ((backgroundStore.getState() as any).practiceQuestions || [])
@@ -148,7 +167,7 @@ export const createConceptStore = (curriculumId: string = 'default') => {
         generatingQuestionCount: 0,
       } as any);
     } catch (error) {
-      // The active first question remains usable even if prefetch fails.
+      // Q1 remains fully usable even if the invisible prefetch fails.
       console.error('Background question prefetch failed:', error);
       if (thisRun === runId) {
         store.setState({ generatingQuestionCount: 0 } as any);
