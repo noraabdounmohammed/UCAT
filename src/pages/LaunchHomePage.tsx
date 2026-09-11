@@ -18,12 +18,20 @@ const P = {
   sageDeep: '#667555',
 };
 
-function CountedScope({ items }: { items: Array<{ label: string; count: number }> }) {
-  if (!items.length) return <span>Mixed UKMLA</span>;
+function CountedScope({ items, subtle = false }: { items: Array<{ label: string; count: number }>; subtle?: boolean }) {
+  if (!items.length) return <span className="text-[12px] font-semibold" style={{ color: P.muted }}>Mixed UKMLA</span>;
   return (
     <div className="flex flex-wrap gap-2">
       {items.map(item => (
-        <span key={item.label} className="rounded-full border px-3 py-1.5 text-[12px] font-bold" style={{ borderColor: '#D8DDC9', backgroundColor: P.sage, color: P.espresso }}>
+        <span
+          key={item.label}
+          className="rounded-full border px-3 py-1.5 text-[12px] font-bold"
+          style={{
+            borderColor: subtle ? P.line : '#D8DDC9',
+            backgroundColor: subtle ? '#FBF7F0' : P.sage,
+            color: P.espresso,
+          }}
+        >
           {item.label}{item.count > 1 ? ` ×${item.count}` : ''}
         </span>
       ))}
@@ -31,13 +39,13 @@ function CountedScope({ items }: { items: Array<{ label: string; count: number }
   );
 }
 
-function sessionMix(cases: Array<{ system: string; skill: string }>) {
-  const counts = new Map<string, number>();
-  cases.forEach(item => {
-    const label = `${item.system} · ${item.skill}`;
-    counts.set(label, (counts.get(label) || 0) + 1);
-  });
-  return Array.from(counts.entries()).map(([label, count]) => ({ label, count }));
+function ScopeRow({ label, children }: { label: string; children: React.ReactNode }) {
+  return (
+    <div className="grid gap-2 sm:grid-cols-[118px_1fr] sm:items-start">
+      <div className="pt-1 text-[11px] font-semibold" style={{ color: P.muted }}>{label}</div>
+      <div>{children}</div>
+    </div>
+  );
 }
 
 function SessionPlanCard({
@@ -52,42 +60,52 @@ function SessionPlanCard({
   personalised: boolean;
 }) {
   const unmatched = Boolean(plan.request && plan.requestMatched === false);
-  const mix = sessionMix(plan.cases || []);
 
   return (
     <section className="mt-7 overflow-hidden rounded-[22px] border" style={{ borderColor: P.line, backgroundColor: P.paper }}>
       <div className="p-5 sm:p-6">
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          <div className="text-[10px] font-bold uppercase tracking-[0.18em]" style={{ color: P.muted }}>
-            {unmatched ? 'I couldn’t map that exactly' : plan.request ? 'Session I understood' : personalised ? 'What I’d do next' : 'If I choose for you'}
+        <div className="flex flex-wrap items-start justify-between gap-3">
+          <div>
+            <div className="text-[10px] font-bold uppercase tracking-[0.18em]" style={{ color: P.muted }}>
+              {unmatched ? 'I couldn’t map that exactly' : plan.request ? 'Here’s what I understood' : personalised ? 'What I’d do next' : 'If I choose for you'}
+            </div>
+            <div className="mt-2 text-[18px] font-extrabold tracking-[-0.02em]" style={{ color: P.espresso }}>
+              Your whole session
+            </div>
           </div>
-          <div className="text-[12px] font-semibold" style={{ color: P.muted }}>
+          <div className="pt-0.5 text-[12px] font-semibold" style={{ color: P.muted }}>
             {plan.count || 1} case{plan.count === 1 ? '' : 's'} · about {plan.minutes || 3} min
           </div>
         </div>
 
         {plan.request && (
-          <div className="mt-3 text-[14px] font-semibold leading-6" style={{ color: P.espresso }}>
+          <div className="mt-4 text-[14px] font-semibold leading-6" style={{ color: P.espresso }}>
             “{plan.request}”
           </div>
         )}
 
         {unmatched && (
           <p className="mt-3 text-[12px] font-medium leading-5" style={{ color: P.muted }}>
-            I couldn’t find a clean curriculum match, so I’ve shown my recommended mix instead. Try an area such as cardiology, a skill such as management, or a time such as 10 minutes.
+            I couldn’t find a clean curriculum match, so this is my recommended mix instead. You can ask for an area such as cardiology, a skill such as management, or a time such as 10 minutes.
           </p>
         )}
 
-        <div className="mt-6">
-          <div className="flex items-baseline justify-between gap-3">
-            <div className="text-[11px] font-semibold" style={{ color: P.muted }}>Whole session</div>
-            <div className="text-[10px] font-semibold" style={{ color: P.muted }}>order hidden</div>
-          </div>
-          <div className="mt-2"><CountedScope items={mix} /></div>
+        <div className="mt-6 space-y-5">
+          <ScopeRow label="Clinical areas">
+            <CountedScope items={plan.systemCounts || []} />
+          </ScopeRow>
+          <ScopeRow label="You’ll practise">
+            <CountedScope items={plan.skillCounts || []} subtle />
+          </ScopeRow>
+          {personalised && (plan.reasonCounts || []).length > 0 && (
+            <ScopeRow label="Why these">
+              <CountedScope items={plan.reasonCounts || []} subtle />
+            </ScopeRow>
+          )}
         </div>
 
-        <p className="mt-5 border-t pt-4 text-[11px] leading-5" style={{ borderColor: P.line, color: P.muted }}>
-          That is the complete mix for this session. I hide the case order, exact conditions, decisive clues and answers so knowing the plan can’t give a case away.
+        <p className="mt-6 border-t pt-4 text-[11px] leading-5" style={{ borderColor: P.line, color: P.muted }}>
+          This is the complete scope, not just the first topic. I keep the order, exact conditions, decisive clues and answers hidden so the plan cannot give away a case.
         </p>
 
         <div className="mt-5 flex flex-wrap items-center gap-4">
@@ -98,7 +116,7 @@ function SessionPlanCard({
             className="inline-flex items-center gap-2 rounded-[14px] px-5 py-3.5 text-[14px] font-bold disabled:opacity-40"
             style={{ backgroundColor: P.espresso, color: P.cream }}
           >
-            Start session <ArrowRight className="h-4 w-4" />
+            Start <ArrowRight className="h-4 w-4" />
           </button>
           {plan.request && (
             <button type="button" onClick={onReset} className="text-[13px] font-semibold underline decoration-[#BBA995] underline-offset-4" style={{ color: P.muted }}>
