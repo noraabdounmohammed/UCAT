@@ -5,12 +5,12 @@ test.describe('public learner journey', () => {
     await context.clearCookies();
   });
 
-  test('home lets a new learner express intent or simply start', async ({ page }) => {
+  test('home lets a new learner express intent or let StudyEdit choose', async ({ page }) => {
     await page.goto('/');
 
     await expect(page.getByRole('heading', { name: /tell me what you need|i know where i.d start/i })).toBeVisible();
     await expect(page.getByPlaceholder(/10 minutes of cardio|want something different/i)).toBeVisible();
-    await expect(page.getByRole('button', { name: /just start me/i })).toBeVisible();
+    await expect(page.getByRole('button', { name: /let studyedit choose/i })).toBeVisible();
     await expect(page.getByText(/your whole session/i).first()).toBeVisible();
     await expect(page.getByText(/complete scope|exact conditions/i).first()).toBeVisible();
   });
