@@ -196,6 +196,13 @@ function requestedMinutes(request: string) {
   return Number.isFinite(value) ? Math.max(2, Math.min(40, value)) : null;
 }
 
+function requestedCaseCount(request: string) {
+  const match = request.match(/\b(\d{1,2})\s*(?:q|qs|question|questions|case|cases)\b/i);
+  if (!match) return null;
+  const value = Number(match[1]);
+  return Number.isFinite(value) ? Math.max(1, Math.min(20, value)) : null;
+}
+
 function requestedLabels(request: string, dictionary: Record<string, string[]>) {
   const clean = request.toLowerCase();
   return Object.entries(dictionary)
@@ -210,7 +217,7 @@ function conceptMatchesRequest(concept: any, systems: string[], skills: string[]
 
   const generic = request
     .toLowerCase()
-    .replace(/\b(?:just|start|me|please|study|practice|practise|test|questions?|case|cases|minutes?|mins?|minute|min|for|some|a|an|the|of|on|about|today|now)\b/g, ' ')
+    .replace(/\b(?:just|start|me|please|study|practice|practise|test|questions?|qs?|case|cases|minutes?|mins?|minute|min|for|some|a|an|the|of|on|about|today|now)\b/g, ' ')
     .replace(/\d+/g, ' ')
     .replace(/\s+/g, ' ')
     .trim();
@@ -244,7 +251,8 @@ export function buildSessionPlanFromRequest(concepts: any[], request: string, fa
   if (!clean) return buildSpoilerSafeSessionPlan(concepts, fallbackCount);
 
   const minutes = requestedMinutes(clean);
-  const desiredCount = minutes ? Math.max(1, Math.min(12, Math.round(minutes / 2))) : fallbackCount;
+  const explicitCount = requestedCaseCount(clean);
+  const desiredCount = explicitCount || (minutes ? Math.max(1, Math.min(12, Math.round(minutes / 2))) : fallbackCount);
   const systems = requestedLabels(clean, systemIntentTerms);
   const skills = requestedLabels(clean, skillIntentTerms);
   const matchedPool = (concepts || []).filter(concept => conceptMatchesRequest(concept, systems, skills, clean));
