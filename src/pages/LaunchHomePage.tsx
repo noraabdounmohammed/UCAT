@@ -48,6 +48,17 @@ function ScopeRow({ label, children }: { label: string; children: React.ReactNod
   );
 }
 
+function caseMix(cases: Array<{ system: string; skill: string }> = []) {
+  const counts = new Map<string, number>();
+  cases.forEach(item => {
+    const label = `${item.system} · ${item.skill}`;
+    counts.set(label, (counts.get(label) || 0) + 1);
+  });
+  return Array.from(counts.entries())
+    .map(([label, count]) => ({ label, count }))
+    .sort((a, b) => a.label.localeCompare(b.label));
+}
+
 function SessionPlanCard({
   plan,
   onStart,
@@ -60,6 +71,7 @@ function SessionPlanCard({
   personalised: boolean;
 }) {
   const unmatched = Boolean(plan.request && plan.requestMatched === false);
+  const mix = caseMix(plan.cases || []);
 
   if (plan.count === 0) {
     return (
@@ -119,6 +131,11 @@ function SessionPlanCard({
           <ScopeRow label="You’ll practise">
             <CountedScope items={plan.skillCounts || []} subtle />
           </ScopeRow>
+          {mix.length > 0 && (
+            <ScopeRow label="Case mix">
+              <CountedScope items={mix} subtle />
+            </ScopeRow>
+          )}
           {personalised && (plan.reasonCounts || []).length > 0 && (
             <ScopeRow label="Why these">
               <CountedScope items={plan.reasonCounts || []} subtle />
@@ -127,7 +144,7 @@ function SessionPlanCard({
         </div>
 
         <p className="mt-6 border-t pt-4 text-[11px] leading-5" style={{ borderColor: P.line, color: P.muted }}>
-          This is the complete scope, not just the first topic. I keep the order, exact conditions, decisive clues and answers hidden so the plan cannot give away a case.
+          This is the complete scope. The case mix is deliberately unordered; I keep exact conditions, decisive clues and answers hidden so seeing the plan cannot give away a case.
         </p>
 
         <div className="mt-5 flex flex-wrap items-center gap-4">
