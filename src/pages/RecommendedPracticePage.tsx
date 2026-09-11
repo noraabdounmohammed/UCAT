@@ -4,7 +4,7 @@ import { ConceptStoreProvider, useConceptStore } from '@/contexts/ConceptStoreCo
 import { useAuth } from '@/contexts/AuthContext';
 import { AuthForm } from '@/components/auth/AuthForm';
 import { ApplePracticeSession } from '@/components/practice/ApplePracticeSession';
-import { resolvePlannedConcepts } from '@/lib/sessionPlan';
+import { buildSpoilerSafeSessionPlan, rememberPlannedSession, resolvePlannedConcepts } from '@/lib/sessionPlan';
 import { getUserCurriculumId, migrateLegacyCurriculumState } from '@/utils/curriculumScope';
 
 function QuestionShell({ count }: { count: number }) {
@@ -38,12 +38,24 @@ function RecommendedPracticeContent() {
   }, [searchParams, user]);
   const authOnly = searchParams.get('auth') === '1';
 
+  const launchSelection = useCallback((selected: any[], count: number) => {
+    if (!selected.length) return;
+    setPracticeSelection(selected.map((concept: any) => concept.concept_id));
+    startPractice({ study_mode: 'smart', target_formats: ['ukmla_sba'], question_count: count });
+  }, [setPracticeSelection, startPractice]);
+
   const startRecommended = useCallback((count: number) => {
     if (!concepts?.length) return;
     const selected = resolvePlannedConcepts(concepts, count);
-    setPracticeSelection(selected.map((concept: any) => concept.concept_id));
-    startPractice({ study_mode: 'smart', target_formats: ['ukmla_sba'], question_count: count });
-  }, [concepts, setPracticeSelection, startPractice]);
+    launchSelection(selected, count);
+  }, [concepts, launchSelection]);
+
+  const startFreshRecommended = useCallback((count: number) => {
+    if (!concepts?.length) return;
+    const plan = buildSpoilerSafeSessionPlan(concepts, count);
+    rememberPlannedSession(plan);
+    launchSelection(plan.selected, Math.max(1, plan.count || count));
+  }, [concepts, launchSelection]);
 
   useEffect(() => {
     if (startedRef.current || !concepts?.length) return;
@@ -97,7 +109,7 @@ function RecommendedPracticeContent() {
         availableFilters={(filterOptions?.custom_filters as string[] | undefined) ?? []}
         section="UKMLA AKT"
         currentFormat="ukmla_sba"
-        onAnotherFive={() => startRecommended(user ? 5 : 3)}
+        onAnotherFive={() => startFreshRecommended(user ? 5 : 3)}
       />
     );
   }
