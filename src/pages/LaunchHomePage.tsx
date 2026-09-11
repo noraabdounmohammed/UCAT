@@ -61,8 +61,30 @@ function SessionPlanCard({
 }) {
   const unmatched = Boolean(plan.request && plan.requestMatched === false);
 
+  if (plan.count === 0) {
+    return (
+      <section
+        className="mt-7 rounded-[22px] border p-5 sm:p-6"
+        style={{ borderColor: P.line, backgroundColor: P.paper }}
+        aria-live="polite"
+      >
+        <div className="flex items-center gap-3 text-[13px] font-semibold" style={{ color: P.muted }}>
+          <span className="h-2 w-2 animate-pulse rounded-full" style={{ backgroundColor: P.sageDeep }} aria-hidden="true" />
+          Looking across the UKMLA curriculum…
+        </div>
+        <p className="mt-2 text-[12px] leading-5" style={{ color: P.muted }}>
+          I’ll show you the whole session scope before you start — without revealing future diagnoses or answers.
+        </p>
+      </section>
+    );
+  }
+
   return (
-    <section className="mt-7 overflow-hidden rounded-[22px] border" style={{ borderColor: P.line, backgroundColor: P.paper }}>
+    <section
+      className="mt-7 overflow-hidden rounded-[22px] border"
+      style={{ borderColor: P.line, backgroundColor: P.paper }}
+      aria-live="polite"
+    >
       <div className="p-5 sm:p-6">
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div>
@@ -74,7 +96,7 @@ function SessionPlanCard({
             </div>
           </div>
           <div className="pt-0.5 text-[12px] font-semibold" style={{ color: P.muted }}>
-            {plan.count || 1} case{plan.count === 1 ? '' : 's'} · about {plan.minutes || 3} min
+            {plan.count} case{plan.count === 1 ? '' : 's'} · about {plan.minutes} min
           </div>
         </div>
 
@@ -112,8 +134,7 @@ function SessionPlanCard({
           <button
             type="button"
             onClick={onStart}
-            disabled={plan.count === 0}
-            className="inline-flex items-center gap-2 rounded-[14px] px-5 py-3.5 text-[14px] font-bold disabled:opacity-40"
+            className="inline-flex items-center gap-2 rounded-[14px] px-5 py-3.5 text-[14px] font-bold"
             style={{ backgroundColor: P.espresso, color: P.cream }}
           >
             Start <ArrowRight className="h-4 w-4" />
@@ -155,6 +176,7 @@ function HomeContent() {
   };
 
   const startSession = () => {
+    if (plan.count === 0) return;
     rememberPlannedSession(plan);
     try {
       sessionStorage.setItem('studyedit_current_journey_v1', hasEvidence ? 'returning' : 'cold');
@@ -177,7 +199,7 @@ function HomeContent() {
         <input
           value={draft}
           onChange={event => setDraft(event.target.value)}
-          placeholder={hasEvidence ? 'Want something different? Tell me…' : 'e.g. 10 minutes of cardio, 5 management cases, or just start me'}
+          placeholder={hasEvidence ? 'Want something different? Tell me…' : 'e.g. 10 minutes of cardio, 5 management cases, or let me choose'}
           className="min-w-0 flex-1 bg-transparent py-2.5 text-[15px] font-medium outline-none placeholder:text-[#A89582]"
           style={{ color: P.espresso }}
         />
@@ -192,7 +214,7 @@ function HomeContent() {
       </form>
 
       <div className="mt-3 flex flex-wrap gap-x-4 gap-y-2 text-[12px] font-semibold" style={{ color: P.muted }}>
-        <button type="button" onClick={() => applyRequest('')} className="underline decoration-[#C7B7A2] underline-offset-4">Just start me</button>
+        <button type="button" onClick={() => applyRequest('')} className="underline decoration-[#C7B7A2] underline-offset-4">Let StudyEdit choose</button>
         <button type="button" onClick={() => applyRequest('10 minutes')} className="underline decoration-[#C7B7A2] underline-offset-4">10 minutes</button>
         <button type="button" onClick={() => applyRequest('Cardiology')} className="underline decoration-[#C7B7A2] underline-offset-4">Cardiology</button>
         <button type="button" onClick={() => applyRequest('Management')} className="underline decoration-[#C7B7A2] underline-offset-4">Management</button>
