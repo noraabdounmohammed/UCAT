@@ -86,7 +86,7 @@ function SessionPlanCard({
 
         {unmatched && (
           <p className="mt-3 text-[12px] font-medium leading-5" style={{ color: P.muted }}>
-            I couldn’t find a clean curriculum match, so this is my recommended mix instead. You can ask for an area such as cardiology, a skill such as management, or a time such as 10 minutes.
+            I couldn’t find a clean curriculum match, so this is my recommended mix instead. You can ask for an area such as cardiology, a skill such as management, a number of cases, or a time such as 10 minutes.
           </p>
         )}
 
@@ -164,6 +164,42 @@ function HomeContent() {
     navigate(`/recommended-practice?count=${Math.max(1, plan.count || defaultCount)}`);
   };
 
+  const requestForm = (
+    <>
+      <form
+        className={`${hasEvidence ? 'mt-5' : 'mt-7'} flex items-center gap-2 rounded-[18px] border p-2 pl-4 shadow-[0_8px_24px_rgba(31,20,12,0.04)]`}
+        style={{ borderColor: '#DCCDB8', backgroundColor: P.paper }}
+        onSubmit={event => {
+          event.preventDefault();
+          applyRequest(draft);
+        }}
+      >
+        <input
+          value={draft}
+          onChange={event => setDraft(event.target.value)}
+          placeholder={hasEvidence ? 'Want something different? Tell me…' : 'e.g. 10 minutes of cardio, 5 management cases, or just start me'}
+          className="min-w-0 flex-1 bg-transparent py-2.5 text-[15px] font-medium outline-none placeholder:text-[#A89582]"
+          style={{ color: P.espresso }}
+        />
+        <button
+          type="submit"
+          aria-label="Plan my session"
+          className="flex h-11 shrink-0 items-center justify-center rounded-[13px] px-4 text-[13px] font-bold"
+          style={{ backgroundColor: P.espresso, color: P.cream }}
+        >
+          Plan
+        </button>
+      </form>
+
+      <div className="mt-3 flex flex-wrap gap-x-4 gap-y-2 text-[12px] font-semibold" style={{ color: P.muted }}>
+        <button type="button" onClick={() => applyRequest('')} className="underline decoration-[#C7B7A2] underline-offset-4">Just start me</button>
+        <button type="button" onClick={() => applyRequest('10 minutes')} className="underline decoration-[#C7B7A2] underline-offset-4">10 minutes</button>
+        <button type="button" onClick={() => applyRequest('Cardiology')} className="underline decoration-[#C7B7A2] underline-offset-4">Cardiology</button>
+        <button type="button" onClick={() => applyRequest('Management')} className="underline decoration-[#C7B7A2] underline-offset-4">Management</button>
+      </div>
+    </>
+  );
+
   return (
     <main className="min-h-screen" style={{ backgroundColor: P.cream, color: P.ink }}>
       <div className="mx-auto w-full max-w-[760px] px-5 pb-10 pt-5 sm:px-8 sm:pt-8">
@@ -181,52 +217,35 @@ function HomeContent() {
             {learnerName ? `${greeting}, ${learnerName}.` : hasEvidence ? greeting : 'UKMLA tutor'}
           </div>
           <h1 className="mt-3 max-w-[650px] text-[38px] font-extrabold leading-[1.08] tracking-[-0.045em] sm:text-[50px]" style={{ color: P.espresso }}>
-            {hasEvidence ? 'What do you need today?' : 'What do you want to work on?'}
+            {hasEvidence ? 'I know where I’d start.' : 'Tell me what you need — or let me choose.'}
           </h1>
           <p className="mt-5 max-w-[610px] text-[16px] font-medium leading-7" style={{ color: '#4A392C' }}>
             {hasEvidence
-              ? 'I’ve already picked what I think is most useful from your learning history. Override me in plain English whenever you want.'
-              : 'Tell me the time, area or kind of thinking you want to practise — or leave it to me.'}
+              ? 'I’ve planned the next useful session from what you’ve already shown me. You can see the whole scope below, or tell me you want something different.'
+              : 'Give me a time, clinical area, skill or number of cases. If you don’t care, I’ll choose a short starting session for you.'}
           </p>
 
-          <form
-            className="mt-7 flex items-center gap-2 rounded-[18px] border p-2 pl-4 shadow-[0_8px_24px_rgba(31,20,12,0.04)]"
-            style={{ borderColor: '#DCCDB8', backgroundColor: P.paper }}
-            onSubmit={event => {
-              event.preventDefault();
-              applyRequest(draft);
-            }}
-          >
-            <input
-              value={draft}
-              onChange={event => setDraft(event.target.value)}
-              placeholder="e.g. 10 minutes of cardio, management, or just start me"
-              className="min-w-0 flex-1 bg-transparent py-2.5 text-[15px] font-medium outline-none placeholder:text-[#A89582]"
-              style={{ color: P.espresso }}
-            />
-            <button
-              type="submit"
-              aria-label="Plan my session"
-              className="flex h-11 shrink-0 items-center justify-center rounded-[13px] px-4 text-[13px] font-bold"
-              style={{ backgroundColor: P.espresso, color: P.cream }}
-            >
-              Plan
-            </button>
-          </form>
-
-          <div className="mt-3 flex flex-wrap gap-x-4 gap-y-2 text-[12px] font-semibold" style={{ color: P.muted }}>
-            <button type="button" onClick={() => applyRequest('')} className="underline decoration-[#C7B7A2] underline-offset-4">Just start me</button>
-            <button type="button" onClick={() => applyRequest('10 minutes')} className="underline decoration-[#C7B7A2] underline-offset-4">10 minutes</button>
-            <button type="button" onClick={() => applyRequest('Cardiology')} className="underline decoration-[#C7B7A2] underline-offset-4">Cardiology</button>
-            <button type="button" onClick={() => applyRequest('Management')} className="underline decoration-[#C7B7A2] underline-offset-4">Management</button>
-          </div>
-
-          <SessionPlanCard
-            plan={plan}
-            onStart={startSession}
-            onReset={() => applyRequest('')}
-            personalised={hasEvidence}
-          />
+          {hasEvidence ? (
+            <>
+              <SessionPlanCard
+                plan={plan}
+                onStart={startSession}
+                onReset={() => applyRequest('')}
+                personalised
+              />
+              {requestForm}
+            </>
+          ) : (
+            <>
+              {requestForm}
+              <SessionPlanCard
+                plan={plan}
+                onStart={startSession}
+                onReset={() => applyRequest('')}
+                personalised={false}
+              />
+            </>
+          )}
 
           {!user && <div className="mt-4 text-[12px] font-medium" style={{ color: P.muted }}>No account needed to start.</div>}
         </section>
