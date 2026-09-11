@@ -5,19 +5,38 @@ test.describe('public learner journey', () => {
     await context.clearCookies();
   });
 
-  test('home explains the product and exposes the two ways to start', async ({ page }) => {
+  test('home lets a new learner express intent or simply start', async ({ page }) => {
     await page.goto('/');
-    await expect(page.getByRole('heading', { name: /know what to practise next/i })).toBeVisible();
-    await expect(page.getByRole('button', { name: /start 5 recommended questions/i })).toBeVisible();
-    await expect(page.getByRole('button', { name: /practise your way/i })).toBeVisible();
+
+    await expect(page.getByRole('heading', { name: /tell me what you need|i know where i.d start/i })).toBeVisible();
+    await expect(page.getByPlaceholder(/10 minutes of cardio|want something different/i)).toBeVisible();
+    await expect(page.getByRole('button', { name: /just start me/i })).toBeVisible();
+    await expect(page.getByText(/your whole session/i).first()).toBeVisible();
+    await expect(page.getByText(/complete scope|exact conditions/i).first()).toBeVisible();
   });
 
-  test('recommended practice takes a signed-out learner to a clear sign-in gate', async ({ page }) => {
+  test('a signed-out learner can begin without an authentication gate', async ({ page }) => {
     await page.goto('/');
-    await page.getByRole('button', { name: /start 5 recommended questions/i }).click();
+
+    const start = page.getByRole('button', { name: /^start$/i });
+    await expect(start).toBeEnabled({ timeout: 15_000 });
+    await start.click();
+
     await expect(page).toHaveURL(/\/recommended-practice/);
-    await expect(page.getByRole('heading', { name: /sign in, then start/i })).toBeVisible();
-    await expect(page.getByRole('button', { name: /back home/i })).toBeVisible();
+    await expect(page.locator('main').first()).toBeVisible();
+    await expect(page.getByText(/sign in, then start/i)).toHaveCount(0);
+  });
+
+  test('plain-language session requests change the visible plan before starting', async ({ page }) => {
+    await page.goto('/');
+
+    const input = page.getByPlaceholder(/10 minutes of cardio|want something different/i);
+    await input.fill('10 minutes of cardiology management');
+    await page.getByRole('button', { name: /plan my session/i }).click();
+
+    await expect(page.getByText('Cardiology', { exact: true }).first()).toBeVisible();
+    await expect(page.getByText('Management', { exact: true }).first()).toBeVisible();
+    await expect(page.getByText(/about 10 min/i)).toBeVisible();
   });
 
   test('privacy remains reachable from the home page', async ({ page }) => {
