@@ -11,6 +11,7 @@ export type SpoilerSafeSessionPlan = {
   skills: string[];
   systemCounts: Array<{ label: string; count: number }>;
   skillCounts: Array<{ label: string; count: number }>;
+  reasonCounts: Array<{ label: string; count: number }>;
   cases: SessionBlueprintCase[];
   request?: string;
   requestMatched?: boolean;
@@ -157,6 +158,19 @@ function skillFor(concept: any) {
   return 'Clinical reasoning';
 }
 
+function reasonFor(concept: any, now = Date.now()) {
+  const md = concept?.mastery_data || {};
+  const attempts = Number(md.attempts || 0);
+  const correct = Number(md.correct || 0);
+  const incorrect = Number(md.incorrect || 0);
+  const masteryLevel = Number(md.mastery_level || 0);
+  const dueAt = md.fsrs_due_at ? new Date(md.fsrs_due_at).getTime() : null;
+  if (dueAt !== null && Number.isFinite(dueAt) && dueAt <= now) return 'Due to revisit';
+  if (attempts === 0) return 'Not tested yet';
+  if (masteryLevel === 1 || incorrect > correct) return 'Needs another look';
+  return 'Reinforcement';
+}
+
 function unique(values: string[]) {
   return Array.from(new Set(values));
 }
@@ -211,6 +225,7 @@ export function buildSpoilerSafeSessionPlan(concepts: any[], count: number): Spo
   const cases = selected.map(concept => ({ system: systemFor(concept), skill: skillFor(concept) }));
   const systems = cases.map(item => item.system);
   const skills = cases.map(item => item.skill);
+  const reasons = selected.map(concept => reasonFor(concept));
   return {
     selected,
     count: selected.length,
@@ -219,6 +234,7 @@ export function buildSpoilerSafeSessionPlan(concepts: any[], count: number): Spo
     skills: unique(skills),
     systemCounts: counts(systems),
     skillCounts: counts(skills),
+    reasonCounts: counts(reasons),
     cases,
   };
 }
@@ -254,6 +270,7 @@ export function rememberPlannedSession(plan: SpoilerSafeSessionPlan) {
       skills: plan.skills,
       systemCounts: plan.systemCounts,
       skillCounts: plan.skillCounts,
+      reasonCounts: plan.reasonCounts,
       cases: plan.cases,
       request: plan.request || '',
     }));
