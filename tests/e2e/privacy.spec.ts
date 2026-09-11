@@ -11,10 +11,10 @@ test.describe('privacy page', () => {
     await expect(contact).toHaveAttribute('href', 'mailto:nora@studyedit.com');
   });
 
-  test('home link returns the learner to StudyEdit', async ({ page }) => {
+  test('home link returns the learner to the agent-first start', async ({ page }) => {
     await page.goto('/privacy');
     await page.getByRole('link', { name: /home/i }).click();
     await expect(page).toHaveURL(/\/$/);
-    await expect(page.getByRole('heading', { name: /know what to practise next/i })).toBeVisible();
+    await expect(page.getByRole('heading', { name: /tell me what you need|i know where i.d start/i })).toBeVisible();
   });
 });
