@@ -27,18 +27,20 @@ const uniqueById = (questions: any[]) => {
   });
 };
 
+const isRecommendedLaunchPath = () =>
+  typeof window !== 'undefined' && window.location.pathname === '/recommended-practice';
+
 /**
  * Thin launch wrapper around the existing concept store.
  *
  * The legacy startPractice implementation waits for every question in a batch
- * before publishing the session. For the learner-facing launch path we instead:
+ * before publishing the session. For the learner-facing recommended path we:
  *  1. ask the existing engine for one valid question,
  *  2. publish it immediately,
  *  3. prepare the remaining questions in an isolated store, and
  *  4. append only valid questions when they are ready.
  *
- * This deliberately leaves the underlying generation/cache logic alone so
- * custom practice and the rest of the app keep their existing behaviour.
+ * Every other practice surface delegates straight to the original store.
  */
 export const createConceptStore = (curriculumId: string = 'default') => {
   const store = createBaseConceptStore(curriculumId);
@@ -49,6 +51,10 @@ export const createConceptStore = (curriculumId: string = 'default') => {
   const progressiveStartPractice = async (practiceConfig?: PracticeConfig) => {
     const thisRun = ++runId;
     const requestedCount = Math.max(1, practiceConfig?.question_count || 10);
+
+    if (!isRecommendedLaunchPath()) {
+      return baseStartPractice(practiceConfig);
+    }
 
     // Non-question formats retain their existing all-at-once behaviour.
     if (practiceConfig?.target_formats?.[0] === 'mindmap' || requestedCount === 1) {
