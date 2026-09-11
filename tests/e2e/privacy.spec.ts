@@ -1,5 +1,7 @@
 import { test, expect } from '@playwright/test';
 
+const currentHomeHeading = /what do you want to work on\?|what do you need today\?/i;
+
 test.describe('privacy page', () => {
   test('renders the current privacy copy and a working contact path', async ({ page }) => {
     await page.goto('/privacy');
@@ -11,10 +13,10 @@ test.describe('privacy page', () => {
     await expect(contact).toHaveAttribute('href', 'mailto:nora@studyedit.com');
   });
 
-  test('home link returns the learner to the agent-first start', async ({ page }) => {
+  test('home link returns the learner to the current start', async ({ page }) => {
     await page.goto('/privacy');
     await page.getByRole('link', { name: /home/i }).click();
     await expect(page).toHaveURL(/\/$/);
-    await expect(page.getByRole('heading', { name: /tell me what you need|i know where i.d start/i })).toBeVisible();
+    await expect(page.getByRole('heading', { name: currentHomeHeading })).toBeVisible();
   });
 });
