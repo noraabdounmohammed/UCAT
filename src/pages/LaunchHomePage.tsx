@@ -31,6 +31,15 @@ function CountedScope({ items }: { items: Array<{ label: string; count: number }
   );
 }
 
+function sessionMix(cases: Array<{ system: string; skill: string }>) {
+  const counts = new Map<string, number>();
+  cases.forEach(item => {
+    const label = `${item.system} · ${item.skill}`;
+    counts.set(label, (counts.get(label) || 0) + 1);
+  });
+  return Array.from(counts.entries()).map(([label, count]) => ({ label, count }));
+}
+
 function SessionPlanCard({
   plan,
   onStart,
@@ -43,6 +52,7 @@ function SessionPlanCard({
   personalised: boolean;
 }) {
   const unmatched = Boolean(plan.request && plan.requestMatched === false);
+  const mix = sessionMix(plan.cases || []);
 
   return (
     <section className="mt-7 overflow-hidden rounded-[22px] border" style={{ borderColor: P.line, backgroundColor: P.paper }}>
@@ -69,17 +79,15 @@ function SessionPlanCard({
         )}
 
         <div className="mt-6">
-          <div className="text-[11px] font-semibold" style={{ color: P.muted }}>Areas in this session</div>
-          <div className="mt-2"><CountedScope items={plan.systemCounts} /></div>
-        </div>
-
-        <div className="mt-5">
-          <div className="text-[11px] font-semibold" style={{ color: P.muted }}>What you’ll practise</div>
-          <div className="mt-2"><CountedScope items={plan.skillCounts} /></div>
+          <div className="flex items-baseline justify-between gap-3">
+            <div className="text-[11px] font-semibold" style={{ color: P.muted }}>Whole session</div>
+            <div className="text-[10px] font-semibold" style={{ color: P.muted }}>order hidden</div>
+          </div>
+          <div className="mt-2"><CountedScope items={mix} /></div>
         </div>
 
         <p className="mt-5 border-t pt-4 text-[11px] leading-5" style={{ borderColor: P.line, color: P.muted }}>
-          You can see the whole session scope here. I keep the order, exact conditions, decisive clues and answers hidden so the preview can’t cue a case.
+          That is the complete mix for this session. I hide the case order, exact conditions, decisive clues and answers so knowing the plan can’t give a case away.
         </p>
 
         <div className="mt-5 flex flex-wrap items-center gap-4">
