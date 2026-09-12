@@ -36,8 +36,14 @@ test('rapid public navigation never leaves the learner on a blank screen', async
     const main = page.locator('main').first();
     await expect(main).toBeVisible();
     await expect.poll(async () => (await main.innerText()).trim().length).toBeGreaterThan(0);
-    const box = await main.boundingBox();
-    expect(box?.height || 0, `usable main content height on ${route}`).toBeGreaterThan(20);
+
+    // React can replace the route tree between the visibility assertion and a
+    // one-shot boundingBox() call. Poll the actual rendered height so this check
+    // detects a genuinely blank page rather than a transient navigation frame.
+    await expect.poll(
+      async () => (await main.boundingBox())?.height || 0,
+      { message: `usable main content height on ${route}` },
+    ).toBeGreaterThan(20);
   }
 });
 
