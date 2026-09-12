@@ -1,10 +1,12 @@
 import { test, expect } from '@playwright/test';
 
+const currentHomeHeading = /what do you want to work on\?|what do you need today\?/i;
+
 test.describe('supported routes', () => {
   test('unknown routes recover to the home page instead of dead-ending', async ({ page }) => {
     await page.goto('/definitely-not-a-real-route');
     await expect(page).toHaveURL(/\/$/);
-    await expect(page.getByRole('heading', { name: /tell me what you need|i know where i.d start/i })).toBeVisible();
+    await expect(page.getByRole('heading', { name: currentHomeHeading })).toBeVisible();
   });
 
   test('custom practice route renders without a blank screen', async ({ page }) => {
