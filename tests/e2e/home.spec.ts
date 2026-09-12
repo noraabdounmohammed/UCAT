@@ -106,8 +106,9 @@ test.describe('StudyEdit launch flow', () => {
     await expect(page.getByRole('dialog', { name: /how sure were you/i })).toBeVisible();
     await page.getByRole('button', { name: /knew it/i }).click();
 
-    await expect(page.locator('section[aria-label="Answer and tutor"]')).toBeVisible();
-    await expect(page.getByText(/^(Correct|Not quite)$/i)).toBeVisible();
+    const answerPanel = page.locator('section[aria-label="Answer and tutor"]:visible');
+    await expect(answerPanel).toBeVisible();
+    await expect(answerPanel.getByText(/^(Correct|Not quite)$/i)).toBeVisible();
     const answerToFeedbackMs = Date.now() - answeredAt;
 
     console.log(`[studyedit-metric] answer_to_feedback_ms=${answerToFeedbackMs}`);
