@@ -3,6 +3,25 @@ import { test, expect } from '@playwright/test';
 const currentHomeHeading = /what do you want to work on\?|what do you need today\?/i;
 const intentPlaceholder = /10 minutes of cardio/i;
 
+async function dismissCookieConsent(page: any) {
+  const dialog = page.getByRole('dialog', { name: /cookie consent/i });
+  const appeared = await dialog.isVisible({ timeout: 2_000 }).catch(() => false);
+  if (!appeared) return;
+
+  const buttons = dialog.getByRole('button');
+  const preferred = buttons.filter({ hasText: /accept|allow|agree|continue|ok/i }).first();
+  if (await preferred.count()) {
+    await preferred.click();
+  } else {
+    // Some consent implementations use neutral labels such as "Essential only".
+    // Exercising any visible consent action is preferable to bypassing the overlay
+    // with a forced click, because this test is meant to model a real cold learner.
+    await buttons.last().click();
+  }
+
+  await expect(dialog).toBeHidden();
+}
+
 async function planCardiologyManagement(page: any) {
   const input = page.getByPlaceholder(intentPlaceholder);
   await input.fill('10 minutes of cardiology management');
@@ -54,6 +73,7 @@ test.describe('StudyEdit launch flow', () => {
   test('golden path reaches a safe first case and gives immediate correctness feedback', async ({ page }, testInfo) => {
     test.setTimeout(60_000);
     await page.goto('/');
+    await dismissCookieConsent(page);
     await planCardiologyManagement(page);
 
     const startedAt = Date.now();
