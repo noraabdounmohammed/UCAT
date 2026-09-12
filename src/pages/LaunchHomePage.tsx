@@ -104,11 +104,16 @@ function SessionPlanCard({
               {unmatched ? 'I couldn’t map that exactly' : plan.request ? 'Here’s what I understood' : personalised ? 'What I’d do next' : 'If I choose for you'}
             </div>
             <div className="mt-2 text-[18px] font-extrabold tracking-[-0.02em]" style={{ color: P.espresso }}>
-              Your whole session
+              Whole session
             </div>
           </div>
-          <div className="pt-0.5 text-[12px] font-semibold" style={{ color: P.muted }}>
-            {plan.count} case{plan.count === 1 ? '' : 's'} · about {plan.minutes} min
+          <div className="text-right">
+            <div className="pt-0.5 text-[12px] font-semibold" style={{ color: P.muted }}>
+              {plan.count} case{plan.count === 1 ? '' : 's'} · about {plan.minutes} min
+            </div>
+            <div className="mt-1 text-[10px] font-bold uppercase tracking-[0.13em]" style={{ color: '#9A8977' }}>
+              Order hidden
+            </div>
           </div>
         </div>
 
@@ -151,10 +156,11 @@ function SessionPlanCard({
           <button
             type="button"
             onClick={onStart}
+            aria-label="Start session"
             className="inline-flex items-center gap-2 rounded-[14px] px-5 py-3.5 text-[14px] font-bold"
             style={{ backgroundColor: P.espresso, color: P.cream }}
           >
-            Start <ArrowRight className="h-4 w-4" />
+            Start session <ArrowRight className="h-4 w-4" />
           </button>
           {plan.request && (
             <button type="button" onClick={onReset} className="text-[13px] font-semibold underline decoration-[#BBA995] underline-offset-4" style={{ color: P.muted }}>
@@ -256,12 +262,12 @@ function HomeContent() {
             {learnerName ? `${greeting}, ${learnerName}.` : hasEvidence ? greeting : 'UKMLA tutor'}
           </div>
           <h1 className="mt-3 max-w-[650px] text-[38px] font-extrabold leading-[1.08] tracking-[-0.045em] sm:text-[50px]" style={{ color: P.espresso }}>
-            {hasEvidence ? 'I know where I’d start.' : 'Tell me what you need — or let me choose.'}
+            {hasEvidence ? 'What do you need today?' : 'What do you want to work on?'}
           </h1>
           <p className="mt-5 max-w-[610px] text-[16px] font-medium leading-7" style={{ color: '#4A392C' }}>
             {hasEvidence
-              ? 'I’ve planned the next useful session from what you’ve already shown me. You can see the whole scope below, or tell me you want something different.'
-              : 'Give me a time, clinical area, skill or number of cases. If you don’t care, I’ll choose a short starting session for you.'}
+              ? 'I know where I’d start from what you’ve already shown me. You can see the whole session below, or tell me you want something different.'
+              : 'Tell me a time, clinical area, skill or number of cases. Or say nothing and I’ll choose a short starting session for you.'}
           </p>
 
           {hasEvidence ? (
