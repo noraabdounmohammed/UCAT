@@ -25,10 +25,24 @@ test.describe('StudyEdit launch flow', () => {
 
     await expect(page.getByRole('heading', { name: currentHomeHeading })).toBeVisible();
     await expect(page.getByPlaceholder(intentPlaceholder)).toBeVisible();
+    await expect(page.getByRole('button', { name: /choose filters/i })).toBeVisible();
     await expect(page.getByText('Whole session')).toBeVisible();
     await expect(page.getByText(/order hidden/i)).toBeVisible();
     await expect(page.getByRole('button', { name: /start session/i })).toBeVisible();
     await expect(page.getByText(/no account needed to start/i)).toBeVisible();
+  });
+
+  test('learner can browse the existing filter chooser without losing the clean home', async ({ page }) => {
+    await page.goto('/');
+    await page.getByRole('button', { name: /choose filters/i }).click();
+
+    await expect(page.getByRole('heading', { name: /practise your way/i })).toBeVisible();
+    await expect(page.getByText(/build a focused session in seconds/i)).toBeVisible();
+    await expect(page.getByRole('button', { name: /close practice builder/i })).toBeVisible();
+
+    await page.getByRole('button', { name: /close practice builder/i }).click();
+    await expect(page.getByRole('heading', { name: currentHomeHeading })).toBeVisible();
+    await expect(page.getByRole('button', { name: /choose filters/i })).toBeVisible();
   });
 
   test('plain-English intent becomes a spoiler-safe session plan', async ({ page }) => {
