@@ -1,0 +1,66 @@
+{
+  "runId": 32639150817,
+  "completedAt": "2026-08-23T12:51:15Z",
+  "evaluation": {
+    "requested": 100,
+    "generated": 100,
+    "passed": 82,
+    "failed": 18,
+    "passRate": 82,
+    "failedSafetyCount": 0,
+    "replicatePassRates": [85, 80, 80, 85, 80],
+    "byFamily": {
+      "acute-cardiovascular": {"passed": 15, "failed": 0, "passRate": 100},
+      "anticoagulation": {"passed": 8, "failed": 7, "passRate": 53.3},
+      "pregnancy-safety": {"passed": 25, "failed": 0, "passRate": 100},
+      "paediatrics": {"passed": 13, "failed": 2, "passRate": 86.7},
+      "cancer-referral": {"passed": 14, "failed": 1, "passRate": 93.3},
+      "sepsis-infection": {"passed": 7, "failed": 8, "passRate": 46.7}
+    }
+  },
+  "manualAdversarialAudit": {
+    "acceptedSample": {
+      "n": 6,
+      "stratification": "one automated PASS from each clinical family, prioritising replicate 5",
+      "criticalClinicalSafetyAmbiguityErrors": 0,
+      "items": [
+        {"conceptId": "ukmla-636", "family": "acute-cardiovascular", "verdict": "publishable", "note": "NIV is supported for cardiogenic pulmonary oedema with severe dyspnoea and acidaemia despite initial medical treatment."},
+        {"conceptId": "ukmla-184", "family": "anticoagulation", "verdict": "publishable", "note": "NICE NG196 recommendation 1.8.8 supports heparin at initial presentation in new-onset AF without therapeutic anticoagulation when not contraindicated."},
+        {"conceptId": "ukmla-4957", "family": "pregnancy-safety", "verdict": "publishable", "note": "Pregnancy of unknown location is correctly managed with repeat hCG near 48 hours and symptom-led follow-up; a single hCG must not determine location."},
+        {"conceptId": "ukmla-5666", "family": "paediatrics", "verdict": "publishable", "note": "Current BSPED DKA guidance supports 10 mL/kg 0.9% saline over 30 minutes for a non-shocked child requiring IV fluids."},
+        {"conceptId": "ukmla-5146", "family": "cancer-referral", "verdict": "publishable", "note": "NICE NG12 2026 threshold for age 60-69 is CA125 >=24 IU/mL; 26 IU/mL with persistent suggestive symptoms warrants urgent direct-access ultrasound."},
+        {"conceptId": "ukmla-4347", "family": "sepsis-infection", "verdict": "publishable", "note": "NICE NG253 uses NEWS2 together with clinical judgement in non-pregnant adults in acute hospital settings."}
+      ]
+    },
+    "failureSample": {
+      "n": 6,
+      "items": [
+        {"conceptId": "ukmla-176", "defect": "precomputed-score conflict", "note": "Generator stated a named score despite deterministic policy requiring raw independently reproducible components."},
+        {"conceptId": "ukmla-414", "defect": "precomputed-score conflict", "note": "Concrete competing risk factors were sufficient; adding a precomputed CHA2DS2-VASc value created an avoidable deterministic failure."},
+        {"conceptId": "ukmla-4348", "defect": "evidence-boundary incompleteness", "note": "Packet required a risk category without carrying exact NEWS2 category rules and 250 mL reassessed bolus details, leading to unsupported distinctions and avoidable score assertions."},
+        {"conceptId": "ukmla-4362", "defect": "single-best-answer overlap", "note": "Low-risk category 0-1 was paired with an exact low-risk score 0 option, creating parent/subset overlap."},
+        {"conceptId": "ukmla-2113", "defect": "single-best-answer overlap", "note": "Two options both started oxygen and differed only by target saturation, which the evidence packet does not support as the tested distinction."},
+        {"conceptId": "ukmla-4965", "defect": "missing decision-critical context", "note": "HRT-related bleeding context was insufficient to safely distinguish suspected-cancer referral from alternative pathways."}
+      ]
+    }
+  },
+  "failureTaxonomy": {
+    "precomputed_score_guard": 8,
+    "option_overlap_or_nested_answers": 4,
+    "other_evidence_boundary_or_context": 4,
+    "reviewer_unavailable": 1,
+    "endometrial_HRT_context": 1
+  },
+  "highestLeverageDefect": "Evidence-packet/prompt mismatch around named clinical scores and numerical risk categories: packets sometimes asked for a stated score/risk category while the safety layer correctly rejects precomputed named scores. This disproportionately affected anticoagulation and sepsis and also amplified reviewer uncertainty.",
+  "fixApplied": {
+    "scope": "temporary eval workflow only; no production merge or deployment",
+    "commit": "78b99b3c4a12ffe0caaf214ba2b129321f746ec8",
+    "changes": [
+      "Require raw CHA2DS2-VASc component history rather than a precomputed score for long-term AF anticoagulation items.",
+      "Require concrete thrombotic and bleeding risk factors rather than named precomputed scores for ACS-plus-anticoagulation items.",
+      "Carry exact NICE NG253 NEWS2 risk-category rules, 250 mL reassessed fluid-bolus strategy and hypercapnia oxygen target into the sepsis evidence boundary; require raw NEWS2 observations.",
+      "Require all five raw CURB-65 components and explicitly forbid category-plus-subset answer overlap.",
+      "Preserve all existing safety, ambiguity, source-support, numerical, fallback-template and single-best-answer gates."
+    ]
+  }
+}

@@ -1,0 +1,62 @@
+{
+  "source_run_id": 32789602110,
+  "source_artifact": "launch-eval-100-report",
+  "requested": 100,
+  "generated": 100,
+  "passed": 71,
+  "failed": 29,
+  "pass_rate": 71.0,
+  "by_family": {
+    "acute-cardiovascular": {"passed": 14, "requested": 15},
+    "anticoagulation": {"passed": 11, "requested": 15},
+    "pregnancy-safety": {"passed": 21, "requested": 25},
+    "paediatrics": {"passed": 8, "requested": 15},
+    "cancer-referral": {"passed": 12, "requested": 15},
+    "sepsis-infection": {"passed": 5, "requested": 15}
+  },
+  "manual_audit": {
+    "accepted_sample": [
+      {"family":"acute-cardiovascular","concept":"ST-elevation myocardial infarction – diagnosis and urgent reperfusion","publishable":true,"critical_error":false,"note":"Diagnostic STEMI presentation and immediate reperfusion decision remain single-best; normal initial troponin does not delay reperfusion."},
+      {"family":"acute-cardiovascular","concept":"Cardiogenic pulmonary oedema – non-invasive ventilation","publishable":true,"critical_error":false,"note":"Severe dyspnoea with acidaemia despite initial therapy supplies the discriminator for NIV without forcing immediate intubation."},
+      {"family":"anticoagulation","concept":"Atrial fibrillation – Long-term stroke prevention anticoagulants","publishable":true,"critical_error":false,"note":"Accepted variant avoids generated named-score arithmetic and supports DOAC use from explicit raw risk factors and stated suitability."},
+      {"family":"anticoagulation","concept":"Atrial fibrillation – Initial anticoagulation in new-onset AF","publishable":true,"critical_error":false,"note":"Full risk assessment is explicitly pending and no heparin contraindication is present, supporting the verified immediate step."},
+      {"family":"pregnancy-safety","concept":"Warfarin – pregnancy and breastfeeding","publishable":true,"critical_error":false,"note":"Mechanical-valve pregnancy is explicitly specialist-managed and the item avoids an absolute pregnancy contraindication claim; breastfeeding compatibility is correctly separated."},
+      {"family":"pregnancy-safety","concept":"Hyperthyroidism in pregnancy – antithyroid drug choice","publishable":true,"critical_error":false,"note":"First-trimester context and need for treatment make PTU the single best class choice; alternatives are meaningfully distinct."},
+      {"family":"paediatrics","concept":"Paediatric DKA – suspected cerebral oedema","publishable":true,"critical_error":false,"note":"Clinical deterioration during DKA supports immediate osmotic therapy; CT is not allowed to delay treatment and no competing mannitol option is present."},
+      {"family":"paediatrics","concept":"Bronchiolitis – oxygen supplementation","publishable":true,"critical_error":false,"note":"Persistent room-air saturation below the age-applicable threshold is explicit and the infant is otherwise clinically stable, making oxygen single-best."},
+      {"family":"cancer-referral","concept":"Dysphagia – suspected upper gastrointestinal cancer referral","publishable":true,"critical_error":false,"note":"Unexplained dysphagia directly supports urgent suspected-cancer-pathway referral without requiring added age or weight-loss criteria."},
+      {"family":"cancer-referral","concept":"Ovarian cancer – CA125 is interpreted with age-specific thresholds","publishable":true,"critical_error":false,"note":"The age band, symptoms and CA125 value support the verified age-specific urgent-ultrasound threshold."},
+      {"family":"sepsis-infection","concept":"Sepsis – adult hospital risk stratification","publishable":true,"critical_error":false,"note":"Variant with qSOFA/single-vital-sign/paediatric-pathway/delay distractors cleanly keys NEWS2 plus clinical judgement."},
+      {"family":"sepsis-infection","concept":"Sepsis – adult hospital risk stratification","publishable":true,"critical_error":false,"note":"Variant using qSOFA, single vital sign, SIRS and CURB-65 as distractors has one clear NICE risk-stratification approach."}
+    ],
+    "false_positive_passes": [
+      {"family":"sepsis-infection","concept":"Sepsis – adult hospital risk stratification","automated_score":92,"publishable":false,"critical_error":false,"defect":"Distractor 'Apply the same NEWS2-based pathway as for non-pregnant adults' is a true-but-incomplete partial restatement of the keyed 'NEWS2 together with clinical judgement' approach, creating semantic overlap rather than a clean near-miss."},
+      {"family":"sepsis-infection","concept":"Sepsis – adult hospital risk stratification","automated_score":90,"publishable":false,"critical_error":false,"defect":"Distractor 'Apply the adult NEWS2 pathway because she is not pregnant' partially endorses the same NEWS2 approach as the key. It is less complete, but still true enough to weaken single-best-answer integrity and cue the fuller option."}
+    ],
+    "rejected_sample": [
+      {"family":"acute-cardiovascular","concept":"STEMI – reperfusion strategy","genuine_defect":"Reperfusion/angiography alternatives remain defensible when timing and downstream strategy are not fully isolated."},
+      {"family":"anticoagulation","concept":"ACS with a separate indication for anticoagulation – antiplatelet strategy","genuine_defect":"Fixed concrete regimens can themselves be defensible individualised choices; distractors must stay at the principle-error level."},
+      {"family":"pregnancy-safety","concept":"Varicella exposure in pregnancy – post-exposure prophylaxis","genuine_defect":"First-day-of-exposure timing is repeatedly omitted or replaced by rash timing; one generated explanation also self-contradicted its own day-7 rule."},
+      {"family":"paediatrics","concept":"Paediatric DKA – initial fluid resuscitation","genuine_defect":"Repeated items either omit literal shock status, use borderline shock-like findings despite 'not shocked', or reduce the item to 15-vs-30-minute recall with overlapping strategies."},
+      {"family":"cancer-referral","concept":"Endometrial cancer – current NICE referral criteria","genuine_defect":"Generation continues to introduce forbidden/decision-changing modifiers or overlapping pathways instead of staying inside the modifier-free referral contract."},
+      {"family":"sepsis-infection","concept":"Sepsis – early management is risk- and population-specific","genuine_defect":"Generation repeatedly narrates NEWS2 arithmetic despite the raw-component contract; the hardened numerical gate correctly rejects these variants."},
+      {"family":"sepsis-infection","concept":"Pneumonia – CURB-65 score interpretation","genuine_defect":"Generation repeatedly counts CURB-65 criteria or states a named score total in the explanation; the numerical gate correctly rejects these variants."}
+    ]
+  },
+  "failure_taxonomy": {
+    "named_score_numeric_guard_hits": 19,
+    "option_length_cue_hits": 2,
+    "recurrent_concept_failures": {
+      "ukmla-4348": 5,
+      "ukmla-4362": 5,
+      "ukmla-5666": 5,
+      "ukmla-4965": 3,
+      "ukmla-176": 3,
+      "ukmla-4379": 3
+    },
+    "other_model_reviewer_or_provider_failures": 5
+  },
+  "highest_leverage_defect": "Upstream generation remains non-compliant with already-hardened evidence contracts: named-score arithmetic is repeatedly regenerated, state/timing anchors are omitted, and partial-truth distractors can still overlap the key. The numerical gate is now correctly fail-closed, so the next leverage is generation precision rather than relaxing rejection.",
+  "fix_applied": "Run-41 eval-only generation/evidence repair: added a general partial-truth distractor prohibition; a literal named-score arithmetic self-check; stricter first-exposure and shock-state anchoring; a no-overlap rule for NEWS2 sepsis risk distractors; a safer CURB-65 interpretation blueprint; preference for score-free sepsis fluid targets when appropriate; and a complete-strategy rather than timing-only paediatric DKA fluid blueprint. No safety, source, ambiguity, numerical or SBA gate was weakened.",
+  "next_eval": "Triggered from launch-eval-100 after the run-41 repair commits."
+}

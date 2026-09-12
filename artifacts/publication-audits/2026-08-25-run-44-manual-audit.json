@@ -1,0 +1,36 @@
+{
+  "run": 44,
+  "date": "2026-08-25",
+  "automated": {
+    "generated": 100,
+    "passed": 69,
+    "failed": 31,
+    "passRate": 69,
+    "failedSafetyCount": 6,
+    "launchGatePassed": false
+  },
+  "stratifiedPassAudit": {
+    "sampleSize": 12,
+    "families": ["acute-cardiovascular", "anticoagulation", "pregnancy-safety", "paediatrics", "cancer-referral", "sepsis-infection"],
+    "criticalClinicalSafetyErrors": 0,
+    "falseAutomatedPasses": 0,
+    "notes": [
+      "Fresh sample included cardiogenic pulmonary oedema NIV, STEMI reperfusion timing, ACS plus anticoagulation individualisation, acute AF heparin, malaria in pregnancy, pregnancy-of-unknown-location follow-up, bronchiolitis oxygen, ovarian CA125 age thresholds, and adult sepsis NEWS2 plus clinical judgement.",
+      "Current NICE checks confirmed the acute AF heparin recommendation (NG196 1.8.8), bronchiolitis oxygen threshold under NG9, and April-2026 NG12 age-specific CA125 thresholds.",
+      "No sampled automated PASS contained a critical clinical, ambiguity, or source-support defect."
+    ]
+  },
+  "failureAudit": {
+    "sampleSize": 12,
+    "dominantPatterns": [
+      {"pattern": "endometrial-HRT contract contradiction", "observed": 5, "severity": "systematic"},
+      {"pattern": "sepsis fluid target without explicit haemodynamic need / overlapping fluid options", "observed": 6, "severity": "recurrent"},
+      {"pattern": "named-score arithmetic in CHA2DS2-VASc/CURB-65", "observed": 6, "severity": "recurrent"},
+      {"pattern": "paediatric DKA near-synonym fluid options or ambiguous shock cues", "observed": 5, "severity": "recurrent"},
+      {"pattern": "varicella exposure timing anchor missing", "observed": 1, "severity": "recurrent"},
+      {"pattern": "provider fallback generation failure", "observed": 3, "severity": "transient"}
+    ],
+    "highestLeverageDefect": "The eval pipeline had become internally contradictory for ukmla-4965: the evidence packet required HRT context, while run-26/run-30 forced HRT to be omitted and the deterministic reviewer rejected any literal HRT mention. This caused all five sampled endometrial-cancer variants to fail despite NICE NG12 2026 allowing the referral rule when bleeding cannot be attributed to HRT.",
+    "fix": "Align the evidence contract, generator instruction, and deterministic guard with NICE NG12: HRT may be omitted, explicitly absent, or explicitly resolved as not accounting for the bleeding; unresolved HRT context still fails closed. No clinical or launch gate was weakened."
+  }
+}

@@ -1,0 +1,128 @@
+{
+  "workflowRunId": 32642021441,
+  "auditedAt": "2026-08-23",
+  "summary": {
+    "requested": 100,
+    "generated": 100,
+    "passed": 80,
+    "failed": 20,
+    "passRate": 80,
+    "failedSafetyCount": 5,
+    "launchGatePassed": false,
+    "byFamily": {
+      "acute-cardiovascular": {"passed": 15, "requested": 15, "passRate": 100},
+      "anticoagulation": {"passed": 8, "requested": 15, "passRate": 53.3},
+      "pregnancy-safety": {"passed": 23, "requested": 25, "passRate": 92},
+      "paediatrics": {"passed": 12, "requested": 15, "passRate": 80},
+      "cancer-referral": {"passed": 13, "requested": 15, "passRate": 86.7},
+      "sepsis-infection": {"passed": 9, "requested": 15, "passRate": 60}
+    }
+  },
+  "manualPassAudit": {
+    "sampleSize": 6,
+    "stratification": "one fresh automated PASS sampled from each clinical family",
+    "publishable": 5,
+    "criticalClinicalSafetyAmbiguityErrors": 1,
+    "items": [
+      {
+        "family": "acute-cardiovascular",
+        "conceptId": "ukmla-20",
+        "verdict": "publishable",
+        "note": "STEMI urgent reperfusion item remained clinically coherent and single-best-answer."
+      },
+      {
+        "family": "anticoagulation",
+        "conceptId": "ukmla-176",
+        "verdict": "critical-false-pass",
+        "note": "Explanation asserted CHA2DS2-VASc score 3 but described age 74 as +2 and then listed +2 +1 +1 while still totalling 3. Correct age 65-74 weighting is +1. The treatment answer was reasonable, but the explanation contained unsafe/internally inconsistent score arithmetic and should not have passed."
+      },
+      {
+        "family": "pregnancy-safety",
+        "conceptId": "ukmla-1237",
+        "verdict": "publishable",
+        "note": "Warfarin during breastfeeding with a mechanical valve was supported and unambiguous."
+      },
+      {
+        "family": "paediatrics",
+        "conceptId": "ukmla-1423",
+        "verdict": "publishable",
+        "note": "Paediatric DKA with suspected cerebral oedema had an appropriate immediate hypertonic-saline management decision."
+      },
+      {
+        "family": "cancer-referral",
+        "conceptId": "ukmla-1882",
+        "verdict": "publishable",
+        "note": "Dysphagia urgent suspected-cancer referral item was supported and single-best-answer."
+      },
+      {
+        "family": "sepsis-infection",
+        "conceptId": "ukmla-4347",
+        "verdict": "publishable",
+        "note": "NEWS2 plus clinical judgement risk-stratification item was supported and fair."
+      }
+    ]
+  },
+  "manualFailureAudit": {
+    "sampleSize": 6,
+    "stratification": "one fresh automated FAIL sampled from each clinical family",
+    "appropriateRejections": 6,
+    "items": [
+      {
+        "family": "acute-cardiovascular",
+        "conceptId": "ukmla-636",
+        "verdict": "appropriate-rejection",
+        "taxonomy": "decision-boundary-underspecified",
+        "note": "Immediate CPAP timing was more specific than the verified packet boundary, which only supported considering NIV in the stated setting."
+      },
+      {
+        "family": "anticoagulation",
+        "conceptId": "ukmla-176",
+        "verdict": "appropriate-rejection",
+        "taxonomy": "context-or-option-integrity",
+        "note": "Fresh failed variant did not clear the strict anticoagulation boundary; no gate weakening indicated."
+      },
+      {
+        "family": "pregnancy-safety",
+        "conceptId": "ukmla-4379",
+        "verdict": "appropriate-rejection",
+        "taxonomy": "missing-decision-context",
+        "note": "Varicella post-exposure prophylaxis item omitted confirmed susceptibility and sufficiently precise exposure timing."
+      },
+      {
+        "family": "paediatrics",
+        "conceptId": "ukmla-2113",
+        "verdict": "appropriate-rejection",
+        "taxonomy": "single-best-answer-overlap",
+        "note": "Bronchiolitis oxygen-threshold options overlapped; multiple formulations could justify oxygen at the stated saturation."
+      },
+      {
+        "family": "cancer-referral",
+        "conceptId": "ukmla-4965",
+        "verdict": "appropriate-rejection",
+        "taxonomy": "unsupported-exception-state",
+        "note": "Postmenopausal bleeding while on combined HRT required HRT-specific decision context that the packet did not resolve; explanation improperly tried to dismiss that modifier."
+      },
+      {
+        "family": "sepsis-infection",
+        "conceptId": "ukmla-4347",
+        "verdict": "appropriate-rejection",
+        "taxonomy": "precomputed-score-assertion",
+        "note": "The vignette stated NEWS2 7 rather than supplying independently reproducible raw observations; deterministic numerical guard correctly rejected it."
+      }
+    ]
+  },
+  "highestLeverageDefect": {
+    "name": "named-clinical-score arithmetic can survive inside explanations",
+    "why": "A fresh automated PASS contained internally inconsistent and clinically incorrect CHA2DS2-VASc arithmetic. This directly falsifies the desired invariant that automated PASS means publishable and occurred in the lowest-performing family.",
+    "fix": "Extend the strict named-score rule from vignette to explanation: generator must reason from raw components and verified thresholds without asserting a numeric named-score total, and a deterministic validator rejects numeric named-score assertions in explanations before reviewer acceptance.",
+    "gateImpact": "strictness increased; no safety, ambiguity, source-support, numerical, fallback-template, or SBA gate weakened"
+  },
+  "failureTaxonomy": [
+    "critical-false-pass-numerical-explanation",
+    "single-best-answer-overlap",
+    "missing-decision-context",
+    "unsupported-exception-state",
+    "decision-boundary-underspecified",
+    "precomputed-score-assertion"
+  ]
+}

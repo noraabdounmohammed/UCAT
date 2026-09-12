@@ -1,0 +1,148 @@
+import { LAUNCH_EVIDENCE_PACKETS, type EvidencePacket } from './evidencePackets';
+
+const packet = (
+  conceptId: string,
+  claim: string,
+  requiredContext: string[],
+  allowedTargets: string[],
+  forbiddenInferences: string[],
+  distractorIntents: string[],
+  source: string,
+  risk: EvidencePacket['risk'] = 'critical',
+): EvidencePacket => ({ conceptId, claim, requiredContext, allowedTargets, forbiddenInferences, distractorIntents, source, risk });
+
+/**
+ * Second-wave launch evidence packets derived from canonical concepts that were
+ * already source-truth audited. Kept on the 100-eval branch until the broader
+ * gate shows they improve reliability without relaxing the reviewer.
+ */
+const EXPANDED_PILOT_PACKETS: Record<string, EvidencePacket> = {
+  'ukmla-146': packet(
+    'ukmla-146',
+    'For suspected TIA, give aspirin 300 mg immediately unless contraindicated and arrange immediate specialist assessment/investigation to be seen within 24 hours of symptom onset.',
+    ['suspected TIA', 'no aspirin contraindication', 'time from symptom onset'],
+    ['combined immediate first step: aspirin now plus urgent specialist referral within 24 hours'],
+    ['Do not create separate options that both correctly give aspirin immediately but differ only by whether referral wording is repeated.', 'Do not delay aspirin until specialist review.', 'Do not ask for long-term secondary prevention from this packet.'],
+    ['delay aspirin pending imaging', 'routine non-urgent referral', 'anticoagulation as immediate treatment without a separate indication'],
+    'NICE stroke/TIA guidance',
+  ),
+  'ukmla-159': packet(
+    'ukmla-159',
+    'Successful cardioversion of AF beginning less than 48 hours ago does not by itself remove the need for oral anticoagulation; ongoing anticoagulation depends on stable sinus rhythm, recurrence risk and formal stroke/bleeding risk assessment.',
+    ['AF duration less than 48 hours', 'whether stable sinus rhythm is restored and maintained', 'recurrence-risk context', 'formal stroke and bleeding risk assessment when a long-term decision is tested'],
+    ['recognise that cardioversion success alone does not determine long-term anticoagulation', 'whether further risk assessment is required before deciding ongoing anticoagulation'],
+    ['Do not invent a CHA2DS2-VASc threshold or a fixed post-cardioversion duration not stated in this packet.', 'Do not make successful cardioversion an automatic reason to stop anticoagulation.', 'Do not ask for a named anticoagulant.'],
+    ['automatic cessation after successful cardioversion', 'automatic lifelong anticoagulation without risk assessment', 'aspirin substitution'],
+    'NICE AF guidance',
+  ),
+  'ukmla-111': packet(
+    'ukmla-111',
+    'For STEMI not treated with PCI, or UA/NSTEMI when PCI is not indicated, ticagrelor plus aspirin is generally offered unless bleeding risk is high; higher bleeding risk may justify clopidogrel plus aspirin or aspirin alone depending on context.',
+    ['ACS subtype', 'explicit statement that PCI is not being performed/indicated', 'bleeding-risk level', 'absence of a separate anticoagulation indication when relevant'],
+    ['broad antiplatelet strategy for non-PCI ACS when bleeding risk is clearly specified'],
+    ['Do not use a thrombolysis-specific scenario unless the packet explicitly supports that distinction.', 'Do not ask for an exact DAPT duration unless the source supplies the necessary context.', 'Do not claim clopidogrel is never appropriate outside high bleeding risk.'],
+    ['single antiplatelet despite low bleeding risk and no contraindication', 'prasugrel despite no PCI plan', 'withhold antiplatelet therapy without contraindication'],
+    'NICE NG185',
+  ),
+  'ukmla-112': packet(
+    'ukmla-112',
+    'After MI, when aspirin cannot be used because of hypersensitivity, clopidogrel monotherapy should be considered as an alternative; early post-ACS antiplatelet decisions still depend on PCI status, bleeding risk and any separate indication for anticoagulation.',
+    ['post-MI setting', 'true aspirin hypersensitivity', 'whether PCI occurred', 'time since ACS', 'bleeding risk', 'separate anticoagulation indication'],
+    ['recognise clopidogrel monotherapy as an aspirin-hypersensitivity alternative only when the vignette is compatible with that source boundary'],
+    ['Do not place the patient immediately after DES PCI unless the packet also supplies a complete post-PCI antiplatelet pathway.', 'Do not compare unsupported P2Y12-monotherapy strategies.', 'Do not invent aspirin-desensitisation requirements from this packet.'],
+    ['continue aspirin despite true hypersensitivity', 'no antiplatelet therapy without another reason', 'dual P2Y12 therapy'],
+    'NICE NG185',
+  ),
+  'ukmla-113': packet(
+    'ukmla-113',
+    'For ACS PCI without a separate oral-anticoagulation indication, prasugrel/ticagrelor choice depends on ACS context and bleeding factors; if ongoing oral anticoagulation is required, clopidogrel is preferred with aspirin rather than prasugrel or ticagrelor.',
+    ['ACS subtype', 'PCI/angiography plan', 'whether coronary anatomy is already defined when prasugrel is considered', 'explicit presence or absence of an ongoing oral-anticoagulation indication', 'major bleeding-risk modifiers if choosing among alternatives'],
+    ['P2Y12 class choice when the anticoagulation boundary is explicit', 'recognise clopidogrel preference when ongoing oral anticoagulation is required'],
+    ['Do not ask for a full triple-therapy regimen or duration.', 'Do not introduce agent-specific contraindications unless supplied.', 'Do not make prasugrel a pre-angiography choice in UA/NSTEMI.'],
+    ['prasugrel despite ongoing oral anticoagulation', 'ticagrelor despite ongoing oral anticoagulation', 'prasugrel before anatomy is defined in UA/NSTEMI'],
+    'NICE NG185',
+  ),
+  'ukmla-1219': packet(
+    'ukmla-1219',
+    'In stable monomorphic VT, seek expert help and assess structural heart disease. Synchronised cardioversion is recommended when structural heart disease is present or myocardial damage is unclear; procainamide is an alternative when sedation/anaesthesia risk is too high, and amiodarone when procainamide is unavailable or contraindicated.',
+    ['stable monomorphic VT with no adverse signs', 'structural heart disease or myocardial damage status', 'sedation/anaesthesia risk', 'procainamide availability/contraindication if drug therapy is being compared'],
+    ['choose cardioversion versus procainamide only when the decisive context is explicit'],
+    ['Do not leave sedation risk or structural-heart-disease status unstated when comparing cardioversion with procainamide.', 'Do not make amiodarone equivalent unless procainamide is unavailable or contraindicated.', 'Do not apply the unstable-tachycardia pathway without adverse signs.'],
+    ['procainamide despite clearly low sedation risk and structural heart disease', 'amiodarone despite available suitable procainamide', 'observation alone'],
+    'Resuscitation Council UK tachyarrhythmia guidance',
+  ),
+  'ukmla-1220': packet(
+    'ukmla-1220',
+    'In stable monomorphic VT, seek expert help and assess structural heart disease. Synchronised cardioversion is recommended when structural heart disease is present or myocardial damage is unclear; procainamide is an alternative when sedation/anaesthesia risk is too high, and amiodarone when procainamide is unavailable or contraindicated.',
+    ['stable monomorphic VT with no adverse signs', 'structural heart disease or myocardial damage status', 'sedation/anaesthesia risk', 'procainamide availability/contraindication if drug therapy is being compared'],
+    ['choose cardioversion versus procainamide only when the decisive context is explicit'],
+    ['Do not dismiss procainamide when the stem explicitly states high sedation/anaesthesia risk.', 'Do not make amiodarone equivalent unless procainamide is unavailable or contraindicated.', 'Do not apply the unstable-tachycardia pathway without adverse signs.'],
+    ['cardioversion despite explicitly prohibitive sedation risk', 'amiodarone despite available suitable procainamide', 'observation alone'],
+    'Resuscitation Council UK tachyarrhythmia guidance',
+  ),
+  'ukmla-1298': packet(
+    'ukmla-1298',
+    'Suspected adrenal crisis in adults requires immediate IV or IM hydrocortisone and rapid 0.9% saline resuscitation; treatment should not wait for confirmatory testing.',
+    ['age 16 or over', 'clinical suspicion of adrenal crisis', 'haemodynamic state', 'ability to give IV/IM medication', 'volume status'],
+    ['immediate first treatment', 'recognise that confirmatory testing must not delay steroids'],
+    ['Do not force a choice between IV and IM hydrocortisone when both are feasible.', 'Do not ask for later steroid-transition details unless stability and oral absorption are supplied.', 'Do not delay hydrocortisone for cortisol testing.'],
+    ['wait for cortisol result', 'oral steroids only in an unstable patient', 'dextrose alone without treating adrenal crisis'],
+    'NICE NG243',
+  ),
+  'ukmla-1419': packet(
+    'ukmla-1419',
+    'Adult DKA needs urgent inpatient treatment with 0.9% saline, fixed-rate IV insulin and close biochemical monitoring; fluid rate is individualised to blood pressure, volume status, age, cardiac/renal status and response.',
+    ['adult DKA', 'blood pressure and volume status', 'age', 'cardiac/renal status', 'treatment response'],
+    ['recognise the core treatment components', 'recognise why a fixed memorised multi-litre schedule is unsafe'],
+    ['Do not ask for a precise multi-litre timetable.', 'Do not invent a universal fluid rate.', 'Do not ask for potassium replacement specifics without potassium results and protocol context.'],
+    ['fixed memorised fluid schedule', 'subcutaneous insulin as sole acute treatment', 'withhold monitoring'],
+    'JBDS adult DKA principles',
+  ),
+  'ukmla-1420': packet(
+    'ukmla-1420',
+    'Adult DKA needs urgent inpatient treatment with 0.9% saline, fixed-rate IV insulin and close biochemical monitoring; fluid rate is individualised to blood pressure, volume status, age, cardiac/renal status and response.',
+    ['adult DKA', 'blood pressure and volume status', 'age', 'cardiac/renal status', 'treatment response'],
+    ['recognise the core treatment components', 'recognise why a fixed memorised multi-litre schedule is unsafe'],
+    ['Do not ask for a precise multi-litre timetable.', 'Do not invent a universal fluid rate.', 'Do not ask for potassium replacement specifics without potassium results and protocol context.'],
+    ['fixed memorised fluid schedule', 'subcutaneous insulin as sole acute treatment', 'withhold monitoring'],
+    'JBDS adult DKA principles',
+  ),
+  'ukmla-1421': packet(
+    'ukmla-1421',
+    'DKA resolution is based on recovery from ketonaemia/acidosis plus clinical improvement; transition to subcutaneous insulin occurs when clinically appropriate and the patient can eat and drink, with exact operational thresholds following the current inpatient protocol.',
+    ['evidence of improving ketonaemia/acidosis', 'clinical improvement', 'ability to eat and drink', 'current IV insulin status'],
+    ['recognise multidimensional resolution rather than one isolated number', 'recognise readiness for protocol-led transition in principle'],
+    ['Do not test an exact biochemical threshold or exact overlap duration from this packet.', 'Do not define resolution from glucose alone.', 'Do not stop IV insulin solely because glucose normalises.'],
+    ['normal glucose alone means resolved', 'stop insulin before acidosis/ketonaemia resolve', 'transition despite inability to eat/drink'],
+    'JBDS adult DKA principles',
+  ),
+  'ukmla-1422': packet(
+    'ukmla-1422',
+    'DKA resolution is based on recovery from ketonaemia/acidosis plus clinical improvement; transition to subcutaneous insulin occurs when clinically appropriate and the patient can eat and drink, with exact operational thresholds following the current inpatient protocol.',
+    ['evidence of improving ketonaemia/acidosis', 'clinical improvement', 'ability to eat and drink', 'current IV insulin status'],
+    ['recognise multidimensional resolution rather than one isolated number', 'recognise readiness for protocol-led transition in principle'],
+    ['Do not test an exact biochemical threshold or exact overlap duration from this packet.', 'Do not define resolution from glucose alone.', 'Do not stop IV insulin solely because glucose normalises.'],
+    ['normal glucose alone means resolved', 'stop insulin before acidosis/ketonaemia resolve', 'transition despite inability to eat/drink'],
+    'JBDS adult DKA principles',
+  ),
+  'ukmla-4398': packet(
+    'ukmla-4398',
+    'Lower UTI in pregnancy should be cultured before antibiotics and treated immediately; nitrofurantoin for 7 days is a usual first choice when renal function is suitable, but avoid it at term; amoxicillin requires confirmed susceptibility and cefalexin is an alternative.',
+    ['pregnancy gestation including whether at term', 'lower UTI rather than pyelonephritis', 'renal function suitability', 'urine culture obtained', 'culture susceptibility when amoxicillin is considered'],
+    ['initial antibiotic choice for uncomplicated lower UTI in pregnancy when the decisive context is explicit'],
+    ['Do not use nitrofurantoin at term.', 'Do not choose amoxicillin empirically without susceptibility.', 'Do not apply this lower-UTI packet to pyelonephritis or systemic illness.', 'Do not ask for a named dose.'],
+    ['amoxicillin without susceptibility', 'nitrofurantoin at term', 'delay all treatment pending culture'],
+    'NICE NG109',
+  ),
+  'ukmla-4400': packet(
+    'ukmla-4400',
+    'Asymptomatic bacteriuria in pregnancy should be treated; antibiotic choice depends on culture/susceptibility, gestation and patient factors rather than one universal drug.',
+    ['pregnancy', 'confirmed asymptomatic bacteriuria', 'culture and susceptibility result or explicit statement that a listed agent is suitable', 'gestation', 'relevant patient factors'],
+    ['whether treatment is indicated', 'choose among antibiotics only when susceptibility and gestation make one option uniquely suitable'],
+    ['Do not ask for one universal first-line drug without susceptibility/gestation context.', 'Do not withhold treatment because the patient has no urinary symptoms.', 'Do not treat this as symptomatic UTI or pyelonephritis.'],
+    ['no treatment because asymptomatic', 'delay indefinitely without acting on culture', 'choose an agent contradicted by susceptibility/gestation'],
+    'NICE NG109',
+  ),
+};
+
+Object.assign(LAUNCH_EVIDENCE_PACKETS, EXPANDED_PILOT_PACKETS);
