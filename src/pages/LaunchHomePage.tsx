@@ -1,10 +1,12 @@
 import React, { useMemo, useState } from 'react';
-import { ArrowRight } from 'lucide-react';
+import { ArrowRight, SlidersHorizontal } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { ConceptStoreProvider, useConceptStore } from '@/contexts/ConceptStoreContext';
 import { useAuth } from '@/contexts/AuthContext';
+import { PracticeFilterModalParchment, type FilterState } from '@/components/practice/PracticeFilterModalParchment';
 import { getDaypartGreeting, getLearnerFirstName } from '@/lib/learnerIdentity';
-import { buildSessionPlanFromRequest, rememberPlannedSession } from '@/lib/sessionPlan';
+import { buildSessionPlanFromRequest, buildSpoilerSafeSessionPlan, rememberPlannedSession } from '@/lib/sessionPlan';
+import { isEssentialConcept } from '@/utils/essentialCurriculum';
 import { getUserCurriculumId, migrateLegacyCurriculumState } from '@/utils/curriculumScope';
 
 const P = {
@@ -173,12 +175,34 @@ function SessionPlanCard({
   );
 }
 
+const selectedFilterValues = (values: string[] | undefined) => (values || []).filter(value => value && value !== 'any');
+
+function conceptMatchesFilterTags(concept: any, values: string[] | undefined) {
+  const selected = selectedFilterValues(values);
+  if (!selected.length) return true;
+  const tags = concept?.custom_filters || [];
+  return selected.some(value => tags.includes(value));
+}
+
+function conceptMatchesLearningStatus(concept: any, statuses: string[] | undefined) {
+  const selected = selectedFilterValues(statuses);
+  if (!selected.length) return true;
+  const md = concept?.mastery_data || {};
+  return selected.some(status =>
+    (status === 'mastered' && Number(md.mastery_level || 0) === 2) ||
+    (status === 'weak' && Number(md.mastery_level || 0) === 1) ||
+    (status === 'cold' && !Number(md.attempts || 0) && !Number(md.mastery_level || 0)) ||
+    (status === 'drifting' && Number(md.attempts || 0) > 0 && !Number(md.mastery_level || 0))
+  );
+}
+
 function HomeContent() {
   const navigate = useNavigate();
   const { user, signOut } = useAuth();
   const { concepts } = useConceptStore() as any;
   const [draft, setDraft] = useState('');
   const [request, setRequest] = useState('');
+  const [showFilters, setShowFilters] = useState(false);
 
   const hasEvidence = useMemo(
     () => (concepts || []).some((concept: any) => Number(concept.mastery_data?.attempts || 0) > 0),
@@ -198,15 +222,31 @@ function HomeContent() {
     setRequest(next);
   };
 
-  const startSession = () => {
-    if (plan.count === 0) return;
-    rememberPlannedSession(plan);
+  const launchPlan = (nextPlan: ReturnType<typeof buildSessionPlanFromRequest>) => {
+    if (nextPlan.count === 0) return;
+    rememberPlannedSession(nextPlan);
     try {
       sessionStorage.setItem('studyedit_current_journey_v1', hasEvidence ? 'returning' : 'cold');
     } catch {
       // Starting a session must not depend on storage access.
     }
-    navigate(`/recommended-practice?count=${Math.max(1, plan.count || defaultCount)}`);
+    navigate(`/recommended-practice?count=${Math.max(1, nextPlan.count || defaultCount)}`);
+  };
+
+  const startSession = () => launchPlan(plan);
+
+  const startFilteredSession = (filters: FilterState) => {
+    const matchingConcepts = (concepts || []).filter((concept: any) => {
+      if (filters.essentialsOnly && !isEssentialConcept(concept)) return false;
+      if (!conceptMatchesLearningStatus(concept, filters.statuses)) return false;
+      if (!conceptMatchesFilterTags(concept, filters.areas)) return false;
+      if (!conceptMatchesFilterTags(concept, filters.conditions)) return false;
+      if (!conceptMatchesFilterTags(concept, filters.presentations)) return false;
+      if (!conceptMatchesFilterTags(concept, filters.facets)) return false;
+      return true;
+    });
+    const filteredPlan = buildSpoilerSafeSessionPlan(matchingConcepts, Math.max(1, filters.size || defaultCount));
+    launchPlan(filteredPlan);
   };
 
   const requestForm = (
@@ -236,7 +276,16 @@ function HomeContent() {
         </button>
       </form>
 
-      <div className="mt-3 flex flex-wrap gap-x-4 gap-y-2 text-[12px] font-semibold" style={{ color: P.muted }}>
+      <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-2 text-[12px] font-semibold" style={{ color: P.muted }}>
+        <button
+          type="button"
+          onClick={() => setShowFilters(true)}
+          className="inline-flex items-center gap-1.5 rounded-full border px-3 py-2 font-bold"
+          style={{ borderColor: '#DCCDB8', backgroundColor: 'rgba(255,253,248,.72)', color: P.espresso }}
+        >
+          <SlidersHorizontal className="h-3.5 w-3.5" aria-hidden="true" />
+          Choose filters
+        </button>
         <button type="button" onClick={() => applyRequest('')} className="underline decoration-[#C7B7A2] underline-offset-4">Let StudyEdit choose</button>
         <button type="button" onClick={() => applyRequest('10 minutes')} className="underline decoration-[#C7B7A2] underline-offset-4">10 minutes</button>
         <button type="button" onClick={() => applyRequest('Cardiology')} className="underline decoration-[#C7B7A2] underline-offset-4">Cardiology</button>
@@ -267,7 +316,7 @@ function HomeContent() {
           <p className="mt-5 max-w-[610px] text-[16px] font-medium leading-7" style={{ color: '#4A392C' }}>
             {hasEvidence
               ? 'I know where I’d start from what you’ve already shown me. You can see the whole session below, or tell me you want something different.'
-              : 'Tell me a time, clinical area, skill or number of cases. Or say nothing and I’ll choose a short starting session for you.'}
+              : 'Tell me a time, clinical area, skill or number of cases. Or browse the filters if you want to see the options.'}
           </p>
 
           {hasEvidence ? (
@@ -300,6 +349,12 @@ function HomeContent() {
           <span>UKMLA AKT</span>
         </footer>
       </div>
+
+      <PracticeFilterModalParchment
+        isOpen={showFilters}
+        onClose={() => setShowFilters(false)}
+        onApplyFilters={startFilteredSession}
+      />
     </main>
   );
 }
