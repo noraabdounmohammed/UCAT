@@ -1,4 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { useNavigate } from 'react-router-dom';
 import { ConceptStoreProvider, useConceptStore } from '@/contexts/ConceptStoreContext';
 import { useAuth } from '@/contexts/AuthContext';
@@ -8,9 +9,10 @@ import { getDaypartGreeting, getLearnerFirstName } from '@/lib/learnerIdentity';
 import { buildSpoilerSafeSessionPlan, rememberPlannedSession } from '@/lib/sessionPlan';
 import { isEssentialConcept } from '@/utils/essentialCurriculum';
 import { getUserCurriculumId, migrateLegacyCurriculumState } from '@/utils/curriculumScope';
+import './launch-home-embed.css';
 
 const P = {
-  cream: '#FAF5EC',
+  cream: '#F4ECDF',
   espresso: '#1F140C',
   ink: '#2A1E16',
   muted: '#8A7560',
@@ -54,8 +56,11 @@ function HomeContent() {
     filterOptions,
     setPracticeSelection,
   } = useConceptStore() as any;
+
   const launchedRef = useRef(false);
+  const inlineSessionRef = useRef<HTMLDivElement | null>(null);
   const [showFilters, setShowFilters] = useState(false);
+  const [adjustPortalTarget, setAdjustPortalTarget] = useState<HTMLElement | null>(null);
 
   const hasEvidence = useMemo(
     () => (concepts || []).some((concept: any) => Number(concept.mastery_data?.attempts || 0) > 0),
@@ -75,6 +80,7 @@ function HomeContent() {
     if (!concepts?.length) return;
     const plan = buildSpoilerSafeSessionPlan(concepts, sessionCount);
     if (!plan.count) return;
+
     rememberPlannedSession(plan);
     try {
       sessionStorage.setItem('studyedit_current_journey_v1', hasEvidence ? 'returning' : 'cold');
@@ -119,6 +125,7 @@ function HomeContent() {
   const handleComplete = () => {
     endPractice();
     launchedRef.current = false;
+    setAdjustPortalTarget(null);
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
@@ -126,31 +133,74 @@ function HomeContent() {
   const tutorOpening = hasEvidence ? 'Let’s pick up where you need it.' : 'I’ll work out what you need as we go.';
   const hasQuestion = isPracticing && practiceQuestions?.length > 0;
 
+  // The existing tutor owns the answer cards. Add the steering control directly
+  // after those cards so it matches the approved continuous-flow spec without
+  // creating a second question implementation.
+  useEffect(() => {
+    if (!hasQuestion || !inlineSessionRef.current) {
+      setAdjustPortalTarget(null);
+      return;
+    }
+
+    const root = inlineSessionRef.current;
+    let slot: HTMLDivElement | null = null;
+
+    const mountSlot = () => {
+      const questionSection = root.querySelector('section[aria-label="Question"]');
+      const optionList = questionSection?.querySelector(':scope > div.mt-6.flex.flex-col.gap-3');
+      if (!optionList) return;
+
+      const existing = root.querySelector('[data-studyedit-adjust-slot]') as HTMLDivElement | null;
+      if (existing) {
+        slot = existing;
+        setAdjustPortalTarget(existing);
+        return;
+      }
+
+      slot = document.createElement('div');
+      slot.setAttribute('data-studyedit-adjust-slot', 'true');
+      optionList.insertAdjacentElement('afterend', slot);
+      setAdjustPortalTarget(slot);
+    };
+
+    mountSlot();
+    const observer = new MutationObserver(mountSlot);
+    observer.observe(root, { childList: true, subtree: true });
+
+    return () => {
+      observer.disconnect();
+      slot?.remove();
+      setAdjustPortalTarget(null);
+    };
+  }, [hasQuestion, practiceQuestions?.[0]?.id]);
+
   return (
     <main className="min-h-screen" style={{ backgroundColor: P.cream, color: P.ink }}>
       <div className="mx-auto w-full max-w-[760px] px-5 pb-10 pt-5 sm:px-8 sm:pt-8">
-        <header className="flex items-center justify-between gap-4">
-          <div className="text-[19px] font-extrabold tracking-[-0.03em]" style={{ color: P.espresso }}>studyedit.</div>
-          {!user ? (
-            <button onClick={() => navigate('/signin?next=/')} className="text-[12px] font-semibold" style={{ color: P.muted }}>Sign in</button>
-          ) : (
-            <button onClick={() => void signOut()} className="text-[12px] font-semibold" style={{ color: P.muted }}>Sign out</button>
-          )}
-        </header>
+        <section>
+          <div className="flex items-center justify-between gap-4">
+            <div className="text-[19px] font-extrabold tracking-[-0.03em]" style={{ color: P.espresso }}>studyedit.</div>
+            {!user ? (
+              <button onClick={() => navigate('/signin?next=/')} className="text-[12px] font-semibold" style={{ color: P.muted }}>Sign in</button>
+            ) : (
+              <button onClick={() => void signOut()} className="text-[12px] font-semibold" style={{ color: P.muted }}>Sign out</button>
+            )}
+          </div>
 
-        <section className="pt-14 sm:pt-20">
-          <h1
-            className="max-w-[650px] text-[42px] font-light leading-[1.04] tracking-[-0.04em] sm:text-[52px]"
-            style={{ color: P.espresso, fontFamily: "'Fraunces', Georgia, 'Times New Roman', serif" }}
-          >
-            {personalGreeting}
-          </h1>
-          <p
-            className="mt-3 max-w-[610px] text-[20px] font-medium leading-8"
-            style={{ color: '#49382B', fontFamily: "'Fraunces', Georgia, 'Times New Roman', serif" }}
-          >
-            {tutorOpening}
-          </p>
+          <div className="pt-14 sm:pt-20">
+            <h1
+              className="max-w-[650px] text-[42px] font-light leading-[1.04] tracking-[-0.04em] sm:text-[52px]"
+              style={{ color: P.espresso, fontFamily: "'Fraunces', Georgia, 'Times New Roman', serif" }}
+            >
+              {personalGreeting}
+            </h1>
+            <p
+              className="mt-3 max-w-[610px] text-[20px] font-medium leading-8"
+              style={{ color: '#49382B', fontFamily: "'Fraunces', Georgia, 'Times New Roman', serif" }}
+            >
+              {tutorOpening}
+            </p>
+          </div>
 
           <div className="mt-8 border-t pt-5" style={{ borderColor: P.line }}>
             {!hasQuestion && !practiceError && (
@@ -169,29 +219,17 @@ function HomeContent() {
             )}
 
             {hasQuestion && (
-              <div>
-                <div className="mb-3 flex justify-end">
-                  <button
-                    type="button"
-                    onClick={() => setShowFilters(true)}
-                    className="text-[11px] font-semibold underline decoration-[#DCCDB8] underline-offset-4 transition hover:text-[#1F140C]"
-                    style={{ color: P.muted }}
-                  >
-                    Change what we’re working on
-                  </button>
-                </div>
-                <div className="-mx-5 sm:-mx-8">
-                  <ApplePracticeSession
-                    questions={practiceQuestions}
-                    onComplete={handleComplete}
-                    onAnswerSubmit={handleAnswerSubmit}
-                    availableFilters={(filterOptions?.custom_filters as string[] | undefined) ?? []}
-                    section="UKMLA AKT"
-                    currentFormat="ukmla_sba"
-                    onAnotherFive={startRecommended}
-                    onRestartWithFilters={() => setShowFilters(true)}
-                  />
-                </div>
+              <div ref={inlineSessionRef} className="studyedit-inline-session">
+                <ApplePracticeSession
+                  questions={practiceQuestions}
+                  onComplete={handleComplete}
+                  onAnswerSubmit={handleAnswerSubmit}
+                  availableFilters={(filterOptions?.custom_filters as string[] | undefined) ?? []}
+                  section="UKMLA AKT"
+                  currentFormat="ukmla_sba"
+                  onAnotherFive={startRecommended}
+                  onRestartWithFilters={() => setShowFilters(true)}
+                />
               </div>
             )}
           </div>
@@ -204,6 +242,17 @@ function HomeContent() {
           </footer>
         )}
       </div>
+
+      {adjustPortalTarget && createPortal(
+        <button
+          type="button"
+          className="studyedit-adjust-session"
+          onClick={() => setShowFilters(true)}
+        >
+          Adjust session
+        </button>,
+        adjustPortalTarget,
+      )}
 
       <PracticeFilterModalParchment
         isOpen={showFilters}
