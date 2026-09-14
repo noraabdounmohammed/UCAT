@@ -27,14 +27,16 @@ const uniqueById = (questions: any[]) => {
   });
 };
 
-const isRecommendedLaunchPath = () =>
-  typeof window !== 'undefined' && window.location.pathname === '/recommended-practice';
+const isTutorLaunchPath = () => {
+  if (typeof window === 'undefined') return false;
+  return window.location.pathname === '/' || window.location.pathname === '/recommended-practice';
+};
 
 /**
  * Thin launch wrapper around the existing concept store.
  *
  * The legacy startPractice implementation waits for every question in a batch
- * before publishing the session. For the learner-facing recommended path we:
+ * before publishing the session. For the learner-facing tutor paths we:
  *  1. prepare one question in an isolated store,
  *  2. publish it only after it passes the fallback safety check,
  *  3. prepare the remaining questions in another isolated store, and
@@ -64,11 +66,10 @@ export const createConceptStore = (curriculumId: string = 'default') => {
     const thisRun = ++runId;
     const requestedCount = Math.max(1, practiceConfig?.question_count || 10);
 
-    if (!isRecommendedLaunchPath()) {
+    if (!isTutorLaunchPath()) {
       return baseStartPractice(practiceConfig);
     }
 
-    // Mind maps are a different interaction and retain their existing behaviour.
     if (practiceConfig?.target_formats?.[0] === 'mindmap') {
       return baseStartPractice(practiceConfig);
     }
@@ -85,7 +86,6 @@ export const createConceptStore = (curriculumId: string = 'default') => {
       return baseStartPractice(practiceConfig);
     }
 
-    // Keep the live learner store on its loading shell until a checked Q1 exists.
     store.setState({
       isLoading: true,
       isPracticing: true,
@@ -127,7 +127,6 @@ export const createConceptStore = (curriculumId: string = 'default') => {
       return;
     }
 
-    // Q1 becomes visible immediately; everything else can now happen off-screen.
     store.setState({
       practiceSelection: originalSelection,
       practiceQuestions: [firstQuestion],
@@ -167,7 +166,6 @@ export const createConceptStore = (curriculumId: string = 'default') => {
         generatingQuestionCount: 0,
       } as any);
     } catch (error) {
-      // Q1 remains fully usable even if the invisible prefetch fails.
       console.error('Background question prefetch failed:', error);
       if (thisRun === runId) {
         store.setState({ generatingQuestionCount: 0 } as any);
