@@ -61,6 +61,14 @@
   padding: 0 1.25rem !important;
 }
 
+/* Keep the homepage tutor deliberately sparse for now. The composer is the
+ * single conversational action; secondary explain/stuck and report utilities
+ * can be reintroduced later in a quieter location. */
+.studyedit-inline-session section[aria-label="Answer and tutor"] form + button,
+.studyedit-inline-session [data-studyedit-question-shell="true"] > .mt-3.flex.justify-end.px-1 {
+  display: none !important;
+}
+
 /* Once the learner is in the tutor conversation, dock the composer in the
  * mobile thumb zone. A fixed composer is deliberate here: sticky-bottom only
  * activates after the element reaches the viewport edge and therefore leaves
@@ -77,10 +85,9 @@
     box-shadow: 0 10px 32px rgba(31, 20, 12, 0.16) !important;
   }
 
-  /* Reserve enough room that the final tutor content and secondary actions can
-   * still scroll above the docked composer rather than being hidden behind it. */
+  /* Reserve room for the docked composer without leaving a large dead zone. */
   .studyedit-inline-session section[aria-label="Answer and tutor"] {
-    padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 9rem);
+    padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 6.5rem);
   }
 }
 
