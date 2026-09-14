@@ -89,26 +89,13 @@ const savePrefetchedCase = (curriculumId: string, question: any) => {
   }
 };
 
-/**
- * Thin launch wrapper around the existing concept store.
- *
- * On the homepage, Q1 is available synchronously before curriculum loading or
- * AI generation finishes. We consume a previously generated case when one is
- * available; otherwise we use a vetted bundled starter case. While the learner
- * works, the store generates the rest of the session and reserves one unseen
- * generated case for the next visit.
- *
- * The legacy recommended-practice route keeps the progressive-Q1 behaviour.
- * Every other practice surface delegates straight to the original store.
- */
+/** Thin launch wrapper around the existing concept store. */
 export const createConceptStore = (curriculumId: string = 'default') => {
   const store = createBaseConceptStore(curriculumId);
   const baseStartPractice = store.getState().startPractice;
   const baseEndPractice = store.getState().endPractice;
   let runId = 0;
 
-  // Make the homepage useful on first paint. There is deliberately no loading
-  // state here: the learner should arrive already looking at a real case.
   if (isHomepage()) {
     const readyCase = takePrefetchedCase(curriculumId) || makeInstantStarter();
     store.setState({
@@ -137,34 +124,26 @@ export const createConceptStore = (curriculumId: string = 'default') => {
   const progressiveStartPractice = async (practiceConfig?: PracticeConfig) => {
     const thisRun = ++runId;
     const requestedCount = Math.max(1, practiceConfig?.question_count || 10);
+    const replaceCurrent = Boolean((practiceConfig as any)?.replace_current);
 
-    if (!isTutorLaunchPath()) {
-      return baseStartPractice(practiceConfig);
-    }
-
-    if (practiceConfig?.target_formats?.[0] === 'mindmap') {
-      return baseStartPractice(practiceConfig);
-    }
+    if (!isTutorLaunchPath()) return baseStartPractice(practiceConfig);
+    if (practiceConfig?.target_formats?.[0] === 'mindmap') return baseStartPractice(practiceConfig);
 
     const initial = store.getState() as any;
-    const originalSelection = Array.isArray(initial.practiceSelection)
-      ? [...initial.practiceSelection]
-      : null;
+    const originalSelection = Array.isArray(initial.practiceSelection) ? [...initial.practiceSelection] : null;
     const candidates = originalSelection?.length
       ? originalSelection
       : initial.concepts.map((concept: any) => concept.concept_id);
 
-    if (!candidates.length) {
-      return baseStartPractice(practiceConfig);
-    }
+    if (!candidates.length) return baseStartPractice(practiceConfig);
 
-    // The homepage already has a real case on screen. Preserve it while the
-    // personalized questions are prepared invisibly in the background.
     const existingHomepageCase = isHomepage() && initial.practiceQuestions?.[0]
       ? initial.practiceQuestions[0]
       : null;
 
-    if (existingHomepageCase) {
+    // Normal launch keeps the instant case. An explicit Adjust session request must
+    // replace it, otherwise changing specialty/direction appears to do nothing.
+    if (existingHomepageCase && !replaceCurrent) {
       store.setState({
         isLoading: false,
         isPracticing: true,
@@ -184,19 +163,12 @@ export const createConceptStore = (curriculumId: string = 'default') => {
 
       const backgroundStore = createGenerationStore(initial, remainingIds);
       try {
-        // Generate one extra unseen question when possible: it becomes the
-        // instant personalized first case on the learner's next visit.
         const generationCount = Math.min(requestedCount, remainingIds.length);
-        await backgroundStore.getState().startPractice({
-          ...practiceConfig,
-          question_count: generationCount,
-        });
-
+        await backgroundStore.getState().startPractice({ ...practiceConfig, question_count: generationCount });
         if (thisRun !== runId || !(store.getState() as any).isPracticing) return;
 
         const generated = ((backgroundStore.getState() as any).practiceQuestions || [])
           .filter((question: any) => !isUnsafeFallback(question));
-
         const sessionSlots = Math.max(0, requestedCount - 1);
         const sessionQuestions = generated.slice(0, sessionSlots);
         const reservedForNextVisit = generated[sessionSlots];
@@ -214,7 +186,9 @@ export const createConceptStore = (curriculumId: string = 'default') => {
       return;
     }
 
-    // Legacy progressive first-question path for /recommended-practice.
+    // For a direction change, keep the previous case available as a recovery state
+    // while trying the full selected pool, rather than only three arbitrary concepts.
+    const previousQuestions = existingHomepageCase ? [...(initial.practiceQuestions || [])] : [];
     store.setState({
       isLoading: true,
       isPracticing: true,
@@ -226,16 +200,14 @@ export const createConceptStore = (curriculumId: string = 'default') => {
       practiceError: null,
     } as any);
 
-    const firstAttemptIds = candidates.slice(0, Math.min(3, candidates.length));
+    const firstAttemptIds = replaceCurrent ? candidates : candidates.slice(0, Math.min(3, candidates.length));
     let firstQuestion: any = null;
 
     for (const conceptId of firstAttemptIds) {
       if (thisRun !== runId) return;
-
       const foregroundStore = createGenerationStore(initial, [conceptId]);
       await foregroundStore.getState().startPractice({ ...practiceConfig, question_count: 1 });
       const candidate = (foregroundStore.getState() as any).practiceQuestions?.[0];
-
       if (candidate && !isUnsafeFallback(candidate)) {
         firstQuestion = candidate;
         break;
@@ -245,14 +217,27 @@ export const createConceptStore = (curriculumId: string = 'default') => {
     if (thisRun !== runId) return;
 
     if (!firstQuestion) {
-      store.setState({
-        practiceSelection: originalSelection,
-        practiceQuestions: [],
-        practiceError: 'I could not prepare a reliable case just now. Please try again.',
-        isLoading: false,
-        isPracticing: false,
-        generatingQuestionCount: 0,
-      } as any);
+      // Do not dump the learner out of the tutor because one generation run failed.
+      // Restore the case they were on and let them adjust/retry again.
+      if (replaceCurrent && previousQuestions.length) {
+        store.setState({
+          practiceSelection: originalSelection,
+          practiceQuestions: previousQuestions,
+          practiceError: null,
+          isLoading: false,
+          isPracticing: true,
+          generatingQuestionCount: 0,
+        } as any);
+      } else {
+        store.setState({
+          practiceSelection: originalSelection,
+          practiceQuestions: [],
+          practiceError: 'I could not prepare a reliable case just now. Please try again.',
+          isLoading: false,
+          isPracticing: false,
+          generatingQuestionCount: 0,
+        } as any);
+      }
       return;
     }
 
@@ -277,28 +262,23 @@ export const createConceptStore = (curriculumId: string = 'default') => {
     }
 
     const backgroundStore = createGenerationStore(initial, remainingIds);
-
     try {
       await backgroundStore.getState().startPractice({
         ...practiceConfig,
         question_count: Math.min(requestedCount - 1, remainingIds.length),
       });
-
       if (thisRun !== runId || !(store.getState() as any).isPracticing) return;
 
       const backgroundQuestions = ((backgroundStore.getState() as any).practiceQuestions || [])
         .filter((question: any) => !isUnsafeFallback(question));
       const currentQuestions = (store.getState() as any).practiceQuestions || [];
-
       store.setState({
         practiceQuestions: uniqueById([...currentQuestions, ...backgroundQuestions]),
         generatingQuestionCount: 0,
       } as any);
     } catch (error) {
       console.error('Background question prefetch failed:', error);
-      if (thisRun === runId) {
-        store.setState({ generatingQuestionCount: 0 } as any);
-      }
+      if (thisRun === runId) store.setState({ generatingQuestionCount: 0 } as any);
     }
   };
 
@@ -307,10 +287,6 @@ export const createConceptStore = (curriculumId: string = 'default') => {
     return baseEndPractice();
   };
 
-  store.setState({
-    startPractice: progressiveStartPractice,
-    endPractice: progressiveEndPractice,
-  } as any);
-
+  store.setState({ startPractice: progressiveStartPractice, endPractice: progressiveEndPractice } as any);
   return store;
 };
