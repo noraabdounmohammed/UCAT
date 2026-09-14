@@ -42,6 +42,19 @@ function conceptMatchesLearningStatus(concept: any, statuses: string[] | undefin
   );
 }
 
+function clearSavedQuestionAnswers() {
+  try {
+    const keys: string[] = [];
+    for (let i = 0; i < sessionStorage.length; i += 1) {
+      const key = sessionStorage.key(i);
+      if (key?.startsWith('sba_answer_')) keys.push(key);
+    }
+    keys.forEach(key => sessionStorage.removeItem(key));
+  } catch {
+    // A fresh learner session must not depend on storage access.
+  }
+}
+
 function HomeContent() {
   const navigate = useNavigate();
   const { user, signOut } = useAuth();
@@ -72,6 +85,7 @@ function HomeContent() {
 
   const launchSelection = useCallback((selected: any[], count: number) => {
     if (!selected.length) return;
+    clearSavedQuestionAnswers();
     setPracticeSelection(selected.map((concept: any) => concept.concept_id));
     startPractice({ study_mode: 'smart', target_formats: ['ukmla_sba'], question_count: count });
   }, [setPracticeSelection, startPractice]);
@@ -133,9 +147,6 @@ function HomeContent() {
   const tutorOpening = hasEvidence ? 'Let’s pick up where you need it.' : 'I’ll work out what you need as we go.';
   const hasQuestion = isPracticing && practiceQuestions?.length > 0;
 
-  // The existing tutor owns the answer cards. Add the steering control directly
-  // after those cards so it matches the approved continuous-flow spec without
-  // creating a second question implementation.
   useEffect(() => {
     if (!hasQuestion || !inlineSessionRef.current) {
       setAdjustPortalTarget(null);
@@ -178,7 +189,7 @@ function HomeContent() {
     <main className="min-h-screen" style={{ backgroundColor: P.cream, color: P.ink }}>
       <div className="mx-auto w-full max-w-[760px] px-5 pb-10 pt-5 sm:px-8 sm:pt-8">
         <section>
-          <div className="flex items-center justify-between gap-4">
+          <div className={`flex items-center justify-between gap-4 ${hasQuestion ? 'invisible' : ''}`} aria-hidden={hasQuestion ? true : undefined}>
             <div className="text-[19px] font-extrabold tracking-[-0.03em]" style={{ color: P.espresso }}>studyedit.</div>
             {!user ? (
               <button onClick={() => navigate('/signin?next=/')} className="text-[12px] font-semibold" style={{ color: P.muted }}>Sign in</button>
@@ -187,7 +198,7 @@ function HomeContent() {
             )}
           </div>
 
-          <div className="pt-14 sm:pt-20">
+          <div className={hasQuestion ? 'pt-9 sm:pt-12' : 'pt-14 sm:pt-20'}>
             <h1
               className="max-w-[650px] text-[42px] font-light leading-[1.04] tracking-[-0.04em] sm:text-[52px]"
               style={{ color: P.espresso, fontFamily: "'Fraunces', Georgia, 'Times New Roman', serif" }}
