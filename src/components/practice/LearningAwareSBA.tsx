@@ -113,7 +113,7 @@ export const LearningAwareSBA: React.FC<LearningAwareSBAProps> = (props) => {
 
       {confidenceOpen && (
         <div
-          className="fixed inset-x-0 bottom-0 top-[62px] z-[95] flex items-center justify-center px-5"
+          className="fixed inset-0 z-[95] flex items-center justify-center px-5"
           style={{ backgroundColor: C.parchment, color: C.espresso, fontFamily: learningFont }}
           role="dialog"
           aria-modal="true"
