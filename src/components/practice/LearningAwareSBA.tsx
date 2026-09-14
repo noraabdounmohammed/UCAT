@@ -37,10 +37,11 @@ type EvidenceClass =
   | 'uninformative_negative';
 
 const C = {
-  parchment: '#F4ECDF',
   paper: '#FFFDF8',
   espresso: '#1F140C',
+  muted: '#8A7560',
   line: '#E8DCC4',
+  sageSoft: '#EEF0E2',
 };
 
 const learningFont = "Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif";
@@ -66,8 +67,6 @@ export const LearningAwareSBA: React.FC<LearningAwareSBAProps> = (props) => {
   useEffect(() => {
     setConfidenceOpen(false);
     setPendingCorrect(null);
-    // Warm longitudinal context while the learner is reading the case so tutor feedback
-    // does not wait on a cloud-memory round trip after they answer.
     void hydrateLearnerMemoryFromCloud();
   }, [props.question.id, props.currentIndex]);
 
@@ -89,6 +88,9 @@ export const LearningAwareSBA: React.FC<LearningAwareSBAProps> = (props) => {
   const handleChildAnswer = (isCorrect: boolean) => {
     setPendingCorrect(isCorrect);
     setConfidenceOpen(true);
+    // The answer itself is committed now. This lets the parent surface immediately
+    // collapse first-visit onboarding while confidence is collected inline.
+    props.onAnswer(isCorrect);
   };
 
   const commitConfidence = (confidence: ConfidenceLevel) => {
@@ -102,32 +104,31 @@ export const LearningAwareSBA: React.FC<LearningAwareSBAProps> = (props) => {
       evidence_class: evidenceClass,
     });
 
-    props.onAnswer(pendingCorrect);
     setConfidenceOpen(false);
     setPendingCorrect(null);
   };
 
   return (
-    <>
+    <div style={{ fontFamily: learningFont }}>
       <UkmlaSBAQuestion {...props} onAnswer={handleChildAnswer} />
 
       {confidenceOpen && (
-        <div
-          className="fixed inset-x-0 bottom-0 top-[62px] z-[95] flex items-center justify-center px-5"
-          style={{ backgroundColor: C.parchment, color: C.espresso, fontFamily: learningFont }}
-          role="dialog"
-          aria-modal="true"
+        <section
+          className="mx-auto mt-4 w-full max-w-[700px] px-5 sm:px-8"
           aria-labelledby="studyedit-confidence-title"
         >
-          <div className="w-full max-w-[520px]">
-            <div id="studyedit-confidence-title" className="text-center text-[18px] font-bold tracking-[-0.01em]">
+          <div
+            className="rounded-[18px] border px-4 py-4 sm:px-5"
+            style={{ borderColor: '#D6D9BE', backgroundColor: C.sageSoft, color: C.espresso }}
+          >
+            <div id="studyedit-confidence-title" className="text-[15px] font-semibold tracking-[-0.01em]">
               How sure were you?
             </div>
-            <div className="mt-4 grid grid-cols-3 gap-2">
+            <div className="mt-3 grid grid-cols-3 gap-2">
               <button
                 type="button"
                 onClick={() => commitConfidence('know')}
-                className="min-h-[48px] rounded-full border px-3 text-[14px] font-semibold active:scale-[0.99]"
+                className="min-h-[44px] rounded-full border px-2 text-[13px] font-semibold active:scale-[0.99]"
                 style={{ borderColor: C.line, backgroundColor: C.paper, color: C.espresso }}
               >
                 Knew it
@@ -135,7 +136,7 @@ export const LearningAwareSBA: React.FC<LearningAwareSBAProps> = (props) => {
               <button
                 type="button"
                 onClick={() => commitConfidence('unsure')}
-                className="min-h-[48px] rounded-full border px-3 text-[14px] font-semibold active:scale-[0.99]"
+                className="min-h-[44px] rounded-full border px-2 text-[13px] font-semibold active:scale-[0.99]"
                 style={{ borderColor: C.line, backgroundColor: C.paper, color: C.espresso }}
               >
                 Unsure
@@ -143,15 +144,16 @@ export const LearningAwareSBA: React.FC<LearningAwareSBAProps> = (props) => {
               <button
                 type="button"
                 onClick={() => commitConfidence('guess')}
-                className="min-h-[48px] rounded-full border px-3 text-[14px] font-semibold active:scale-[0.99]"
+                className="min-h-[44px] rounded-full border px-2 text-[13px] font-semibold active:scale-[0.99]"
                 style={{ borderColor: C.line, backgroundColor: C.paper, color: C.espresso }}
               >
                 Guessed
               </button>
             </div>
+            <p className="mt-2 text-[11px] font-medium" style={{ color: C.muted }}>This helps me decide what to do next.</p>
           </div>
-        </div>
+        </section>
       )}
-    </>
+    </div>
   );
 };
