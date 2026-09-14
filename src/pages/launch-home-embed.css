@@ -50,6 +50,17 @@
   padding-top: 0 !important;
 }
 
+/* Confidence is a conversational follow-up, not a new screen. The component
+ * remains a small bottom sheet on legacy practice routes, but on the homepage
+ * it sits directly under the answered case in the same document flow. */
+.studyedit-inline-session .studyedit-confidence-prompt {
+  position: relative !important;
+  inset: auto !important;
+  z-index: auto !important;
+  margin-top: .75rem;
+  padding: 0 1.25rem !important;
+}
+
 .studyedit-inline-session [data-studyedit-adjust-slot] {
   display: flex;
   justify-content: flex-end;
@@ -77,5 +88,9 @@
   .studyedit-inline-session {
     margin-left: -2rem;
     margin-right: -2rem;
+  }
+
+  .studyedit-inline-session .studyedit-confidence-prompt {
+    padding: 0 2rem !important;
   }
 }
