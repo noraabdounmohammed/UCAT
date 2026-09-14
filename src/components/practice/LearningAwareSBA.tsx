@@ -37,6 +37,7 @@ type EvidenceClass =
   | 'uninformative_negative';
 
 const C = {
+  parchment: '#F4ECDF',
   paper: '#FFFDF8',
   espresso: '#1F140C',
   muted: '#8A7560',
@@ -88,8 +89,8 @@ export const LearningAwareSBA: React.FC<LearningAwareSBAProps> = (props) => {
   const handleChildAnswer = (isCorrect: boolean) => {
     setPendingCorrect(isCorrect);
     setConfidenceOpen(true);
-    // The answer itself is committed now. This lets the parent surface immediately
-    // collapse first-visit onboarding while confidence is collected inline.
+    // Commit the answer immediately so first-visit onboarding disappears as soon as
+    // the learner answers. Confidence remains a lightweight follow-up signal.
     props.onAnswer(isCorrect);
   };
 
@@ -114,12 +115,13 @@ export const LearningAwareSBA: React.FC<LearningAwareSBAProps> = (props) => {
 
       {confidenceOpen && (
         <section
-          className="mx-auto mt-4 w-full max-w-[700px] px-5 sm:px-8"
+          className="studyedit-confidence-prompt fixed inset-x-0 bottom-0 z-[95] px-5 pb-5 sm:px-8"
+          style={{ color: C.espresso, fontFamily: learningFont }}
           aria-labelledby="studyedit-confidence-title"
         >
           <div
-            className="rounded-[18px] border px-4 py-4 sm:px-5"
-            style={{ borderColor: '#D6D9BE', backgroundColor: C.sageSoft, color: C.espresso }}
+            className="mx-auto w-full max-w-[700px] rounded-[18px] border px-4 py-4 shadow-[0_10px_30px_rgba(31,20,12,0.08)] sm:px-5"
+            style={{ borderColor: '#D6D9BE', backgroundColor: C.sageSoft }}
           >
             <div id="studyedit-confidence-title" className="text-[15px] font-semibold tracking-[-0.01em]">
               How sure were you?
