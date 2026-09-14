@@ -73,6 +73,7 @@ function HomeContent() {
   const inlineSessionRef = useRef<HTMLDivElement | null>(null);
   const [showFilters, setShowFilters] = useState(false);
   const [adjustPortalTarget, setAdjustPortalTarget] = useState<HTMLElement | null>(null);
+  const [hasAnsweredThisSession, setHasAnsweredThisSession] = useState(false);
 
   const hasEvidence = useMemo(
     () => (concepts || []).some((concept: any) => Number(concept.mastery_data?.attempts || 0) > 0),
@@ -85,6 +86,7 @@ function HomeContent() {
   const launchSelection = useCallback((selected: any[], count: number) => {
     if (!selected.length) return;
     clearSavedQuestionAnswers();
+    setHasAnsweredThisSession(false);
     setPracticeSelection(selected.map((concept: any) => concept.concept_id));
     startPractice({ study_mode: 'smart', target_formats: ['ukmla_sba'], question_count: count });
   }, [setPracticeSelection, startPractice]);
@@ -131,6 +133,7 @@ function HomeContent() {
   }, [concepts, endPractice, launchSelection, sessionCount]);
 
   const handleAnswerSubmit = (questionId: string, isCorrect: boolean) => {
+    setHasAnsweredThisSession(true);
     const question = practiceQuestions.find((item: any) => item.id === questionId);
     if (question?.concept_id) updateMastery(question.concept_id, isCorrect);
   };
@@ -139,12 +142,14 @@ function HomeContent() {
     endPractice();
     launchedRef.current = false;
     setAdjustPortalTarget(null);
+    setHasAnsweredThisSession(false);
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
-  const personalGreeting = learnerName ? `${greeting}, ${learnerName}.` : hasEvidence ? `${greeting}.` : 'Let’s start.';
-  const tutorOpening = hasEvidence ? 'Let’s pick up where you need it.' : 'I’ll work out what you need as we go.';
+  const personalGreeting = learnerName ? `${greeting}, ${learnerName}.` : hasEvidence ? `${greeting}.` : 'I’m your UKMLA tutor.';
+  const tutorOpening = hasEvidence ? 'Let’s pick up where you need it.' : 'I’ll learn what you know as we go and focus your revision where it matters most.';
   const hasQuestion = isPracticing && practiceQuestions?.length > 0;
+  const showTutorIntro = !hasAnsweredThisSession;
 
   useEffect(() => {
     if (!hasQuestion || !inlineSessionRef.current) {
@@ -199,21 +204,28 @@ function HomeContent() {
             </div>
           )}
 
-          <div className={hasQuestion ? 'pt-2 sm:pt-3' : 'pt-12 sm:pt-16'}>
-            <div
-              className="rounded-[18px] px-5 py-5 sm:px-6"
-              style={{ backgroundColor: '#E9E9DF' }}
-            >
-              <p className="text-[20px] font-medium leading-8 tracking-[-0.015em] sm:text-[22px]" style={{ color: P.espresso }}>
-                {personalGreeting}
-              </p>
-              <p className="text-[20px] font-normal leading-8 tracking-[-0.015em] sm:text-[22px]" style={{ color: P.ink }}>
-                {tutorOpening}
-              </p>
+          {showTutorIntro && (
+            <div className={hasQuestion ? 'pt-2 sm:pt-3' : 'pt-12 sm:pt-16'}>
+              <div
+                className="rounded-[18px] px-5 py-5 sm:px-6"
+                style={{ backgroundColor: '#E9E9DF' }}
+              >
+                <p className="text-[20px] font-medium leading-8 tracking-[-0.015em] sm:text-[22px]" style={{ color: P.espresso }}>
+                  {personalGreeting}
+                </p>
+                <p className="text-[20px] font-normal leading-8 tracking-[-0.015em] sm:text-[22px]" style={{ color: P.ink }}>
+                  {tutorOpening}
+                </p>
+                {!hasEvidence && (
+                  <p className="mt-2 text-[20px] font-medium leading-8 tracking-[-0.015em] sm:text-[22px]" style={{ color: P.espresso }}>
+                    Here’s your first case.
+                  </p>
+                )}
+              </div>
             </div>
-          </div>
+          )}
 
-          <div className="mt-5">
+          <div className={showTutorIntro ? 'mt-5' : 'mt-0'}>
             {!hasQuestion && !practiceError && (
               <div className="flex items-center gap-2 text-[12px] font-semibold" style={{ color: P.muted }} aria-live="polite">
                 <span className="h-2 w-2 animate-pulse rounded-full" style={{ backgroundColor: P.sage }} aria-hidden="true" />
