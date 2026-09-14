@@ -1,24 +1,60 @@
-import { useCallback, useEffect, useMemo, useRef } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { ConceptStoreProvider, useConceptStore } from '@/contexts/ConceptStoreContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { AuthForm } from '@/components/auth/AuthForm';
 import { ApplePracticeSession } from '@/components/practice/ApplePracticeSession';
+import { PracticeFilterModalParchment, type FilterState } from '@/components/practice/PracticeFilterModalParchment';
 import { buildSpoilerSafeSessionPlan, rememberPlannedSession, resolvePlannedConcepts } from '@/lib/sessionPlan';
+import { isEssentialConcept } from '@/utils/essentialCurriculum';
 import { getUserCurriculumId, migrateLegacyCurriculumState } from '@/utils/curriculumScope';
 
-function QuestionShell({ count }: { count: number }) {
+const selectedFilterValues = (values: string[] | undefined) => (values || []).filter(value => value && value !== 'any');
+
+function conceptMatchesFilterTags(concept: any, values: string[] | undefined) {
+  const selected = selectedFilterValues(values);
+  if (!selected.length) return true;
+  const tags = concept?.custom_filters || [];
+  return selected.some(value => tags.includes(value));
+}
+
+function conceptMatchesLearningStatus(concept: any, statuses: string[] | undefined) {
+  const selected = selectedFilterValues(statuses);
+  if (!selected.length) return true;
+  const md = concept?.mastery_data || {};
+  return selected.some(status =>
+    (status === 'mastered' && Number(md.mastery_level || 0) === 2) ||
+    (status === 'weak' && Number(md.mastery_level || 0) === 1) ||
+    (status === 'cold' && !Number(md.attempts || 0) && !Number(md.mastery_level || 0)) ||
+    (status === 'drifting' && Number(md.attempts || 0) > 0 && !Number(md.mastery_level || 0))
+  );
+}
+
+function QuestionShell() {
   return (
-    <main className="min-h-screen bg-[#F4ECDF] px-5 py-10 text-[#2A1E16]">
-      <div className="mx-auto max-w-xl pt-16 sm:pt-24">
-        <div className="text-[18px] font-extrabold tracking-[-0.03em] text-[#1F140C]">studyedit.</div>
-        <div className="mt-8 flex items-center gap-3 text-[14px] font-semibold text-[#8A7560]" aria-live="polite">
-          <span className="h-2 w-2 animate-pulse rounded-full bg-[#8FA379]" aria-hidden="true" />
-          Getting {count} useful case{count === 1 ? '' : 's'} ready…
+    <main className="min-h-screen bg-[#FAF5EC] px-5 py-5 text-[#2A1E16] sm:px-8 sm:py-8">
+      <div className="mx-auto max-w-[720px]">
+        <div className="text-[19px] font-extrabold tracking-[-0.03em] text-[#1F140C]">studyedit.</div>
+        <div className="pt-14 sm:pt-20">
+          <h1
+            className="text-[42px] font-light leading-[1.04] tracking-[-0.04em] text-[#1F140C] sm:text-[52px]"
+            style={{ fontFamily: "'Fraunces', Georgia, 'Times New Roman', serif" }}
+          >
+            Let’s start.
+          </h1>
+          <p
+            className="mt-3 text-[20px] font-medium leading-8 text-[#49382B]"
+            style={{ fontFamily: "'Fraunces', Georgia, 'Times New Roman', serif" }}
+          >
+            I’ll work out what you need as we go.
+          </p>
+          <div className="mt-8 border-t border-[#E8DCC4] pt-5">
+            <div className="flex items-center gap-2 text-[12px] font-semibold text-[#8A7560]" aria-live="polite">
+              <span className="h-2 w-2 animate-pulse rounded-full bg-[#8FA379]" aria-hidden="true" />
+              Choosing your first useful case…
+            </div>
+          </div>
         </div>
-        <p className="mt-3 max-w-md text-[13px] leading-6 text-[#8A7560]">
-          The session will follow the spoiler-safe plan you just saw. Exact conditions stay hidden until each case begins.
-        </p>
       </div>
     </main>
   );
@@ -30,6 +66,7 @@ function RecommendedPracticeContent() {
   const { user } = useAuth();
   const { concepts, isPracticing, practiceQuestions, startPractice, endPractice, updateMastery, practiceError, filterOptions, setPracticeSelection } = useConceptStore() as any;
   const startedRef = useRef(false);
+  const [showFilters, setShowFilters] = useState(false);
 
   const requestedCount = useMemo(() => {
     const raw = Number(searchParams.get('count') || (user ? 5 : 3));
@@ -56,6 +93,27 @@ function RecommendedPracticeContent() {
     rememberPlannedSession(plan);
     launchSelection(plan.selected, Math.max(1, plan.count || count));
   }, [concepts, launchSelection]);
+
+  const startFilteredSession = useCallback((filters: FilterState) => {
+    const matchingConcepts = (concepts || []).filter((concept: any) => {
+      if (filters.essentialsOnly && !isEssentialConcept(concept)) return false;
+      if (!conceptMatchesLearningStatus(concept, filters.statuses)) return false;
+      if (!conceptMatchesFilterTags(concept, filters.areas)) return false;
+      if (!conceptMatchesFilterTags(concept, filters.conditions)) return false;
+      if (!conceptMatchesFilterTags(concept, filters.presentations)) return false;
+      if (!conceptMatchesFilterTags(concept, filters.facets)) return false;
+      return true;
+    });
+
+    const count = Math.max(1, filters.size || requestedCount);
+    const plan = buildSpoilerSafeSessionPlan(matchingConcepts, count);
+    if (!plan.count) return;
+
+    rememberPlannedSession(plan);
+    setShowFilters(false);
+    endPractice();
+    launchSelection(plan.selected, Math.max(1, plan.count));
+  }, [concepts, endPractice, launchSelection, requestedCount]);
 
   useEffect(() => {
     if (startedRef.current || !concepts?.length) return;
@@ -102,19 +160,36 @@ function RecommendedPracticeContent() {
 
   if (isPracticing && practiceQuestions?.length > 0) {
     return (
-      <ApplePracticeSession
-        questions={practiceQuestions}
-        onComplete={handleComplete}
-        onAnswerSubmit={handleAnswerSubmit}
-        availableFilters={(filterOptions?.custom_filters as string[] | undefined) ?? []}
-        section="UKMLA AKT"
-        currentFormat="ukmla_sba"
-        onAnotherFive={() => startFreshRecommended(user ? 5 : 3)}
-      />
+      <>
+        <ApplePracticeSession
+          questions={practiceQuestions}
+          onComplete={handleComplete}
+          onAnswerSubmit={handleAnswerSubmit}
+          availableFilters={(filterOptions?.custom_filters as string[] | undefined) ?? []}
+          section="UKMLA AKT"
+          currentFormat="ukmla_sba"
+          onAnotherFive={() => startFreshRecommended(user ? 5 : 3)}
+          onRestartWithFilters={() => setShowFilters(true)}
+        />
+
+        <button
+          type="button"
+          onClick={() => setShowFilters(true)}
+          className="fixed bottom-5 right-5 z-40 rounded-full border border-[#DCCDB8] bg-[#FAF5EC]/95 px-4 py-2.5 text-[11px] font-semibold text-[#8A7560] shadow-[0_8px_28px_rgba(31,20,12,0.08)] backdrop-blur-md transition hover:text-[#1F140C] sm:bottom-7 sm:right-7"
+        >
+          Change what we’re working on
+        </button>
+
+        <PracticeFilterModalParchment
+          isOpen={showFilters}
+          onClose={() => setShowFilters(false)}
+          onApplyFilters={startFilteredSession}
+        />
+      </>
     );
   }
 
-  return <QuestionShell count={requestedCount} />;
+  return <QuestionShell />;
 }
 
 export function RecommendedPracticePage() {
