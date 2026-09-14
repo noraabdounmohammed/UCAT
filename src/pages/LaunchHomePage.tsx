@@ -97,8 +97,6 @@ function HomeContent() {
     if (!plan.count) return;
     rememberPlannedSession(plan);
     setShowFilters(false);
-    // Do not end the tutor first. The progressive store keeps the current case as a
-    // recovery state until a valid case from the newly selected direction is ready.
     launchSelection(plan.selected, Math.max(1, plan.count), true);
   }, [concepts, launchSelection, sessionCount]);
 
@@ -122,7 +120,14 @@ function HomeContent() {
     if (!hasQuestion || !inlineSessionRef.current) { setAdjustPortalTarget(null); return; }
     const root = inlineSessionRef.current;
     let slot: HTMLDivElement | null = null;
-    const mountSlot = () => {
+    const syncInlineState = () => {
+      // UkmlaSBAQuestion enters its tutor state immediately when the SBA is submitted,
+      // before LearningAwareSBA later commits confidence to the parent. Use that visible
+      // state as the source of truth so the first-visit intro disappears at answer time.
+      if (root.querySelector('section[aria-label="Answer and tutor"]')) {
+        setHasAnsweredThisSession(true);
+      }
+
       const questionSection = root.querySelector('section[aria-label="Question"]');
       const optionList = questionSection?.querySelector(':scope > div.mt-6.flex.flex-col.gap-3');
       if (!optionList) return;
@@ -131,8 +136,8 @@ function HomeContent() {
       slot = document.createElement('div'); slot.setAttribute('data-studyedit-adjust-slot', 'true');
       optionList.insertAdjacentElement('afterend', slot); setAdjustPortalTarget(slot);
     };
-    mountSlot();
-    const observer = new MutationObserver(mountSlot); observer.observe(root, { childList: true, subtree: true });
+    syncInlineState();
+    const observer = new MutationObserver(syncInlineState); observer.observe(root, { childList: true, subtree: true });
     return () => { observer.disconnect(); slot?.remove(); setAdjustPortalTarget(null); };
   }, [hasQuestion, practiceQuestions?.[0]?.id]);
 
