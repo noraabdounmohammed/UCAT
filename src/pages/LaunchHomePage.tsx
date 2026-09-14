@@ -188,16 +188,18 @@ function HomeContent() {
     <main className="min-h-screen" style={{ backgroundColor: P.cream, color: P.ink }}>
       <div className="mx-auto w-full max-w-[760px] px-5 pb-10 pt-5 sm:px-8 sm:pt-8">
         <section>
-          <div className={`flex items-center justify-between gap-4 ${hasQuestion ? 'invisible' : ''}`} aria-hidden={hasQuestion ? true : undefined}>
-            <div className="text-[19px] font-extrabold tracking-[-0.03em]" style={{ color: P.espresso }}>studyedit.</div>
-            {!user ? (
-              <button onClick={() => navigate('/signin?next=/')} className="text-[12px] font-semibold" style={{ color: P.muted }}>Sign in</button>
-            ) : (
-              <button onClick={() => void signOut()} className="text-[12px] font-semibold" style={{ color: P.muted }}>Sign out</button>
-            )}
-          </div>
+          {!hasQuestion && (
+            <div className="flex items-center justify-between gap-4">
+              <div className="text-[19px] font-extrabold tracking-[-0.03em]" style={{ color: P.espresso }}>studyedit.</div>
+              {!user ? (
+                <button onClick={() => navigate('/signin?next=/')} className="text-[12px] font-semibold" style={{ color: P.muted }}>Sign in</button>
+              ) : (
+                <button onClick={() => void signOut()} className="text-[12px] font-semibold" style={{ color: P.muted }}>Sign out</button>
+              )}
+            </div>
+          )}
 
-          <div className={hasQuestion ? 'pt-7 sm:pt-9' : 'pt-12 sm:pt-16'}>
+          <div className={hasQuestion ? 'pt-2 sm:pt-3' : 'pt-12 sm:pt-16'}>
             <div
               className="rounded-[18px] px-5 py-5 sm:px-6"
               style={{ backgroundColor: '#E9E9DF' }}
