@@ -17,7 +17,6 @@ const P = {
   ink: '#2A1E16',
   muted: '#8A7560',
   line: '#E8DCC4',
-  blush: '#E5A89D',
   sage: '#8FA379',
 };
 
@@ -198,22 +197,21 @@ function HomeContent() {
             )}
           </div>
 
-          <div className={hasQuestion ? 'pt-9 sm:pt-12' : 'pt-14 sm:pt-20'}>
-            <h1
-              className="max-w-[650px] text-[42px] font-light leading-[1.04] tracking-[-0.04em] sm:text-[52px]"
-              style={{ color: P.espresso, fontFamily: "'Fraunces', Georgia, 'Times New Roman', serif" }}
+          <div className={hasQuestion ? 'pt-7 sm:pt-9' : 'pt-12 sm:pt-16'}>
+            <div
+              className="rounded-[18px] px-5 py-5 sm:px-6"
+              style={{ backgroundColor: '#E9E9DF' }}
             >
-              {personalGreeting}
-            </h1>
-            <p
-              className="mt-3 max-w-[610px] text-[20px] font-medium leading-8"
-              style={{ color: '#49382B', fontFamily: "'Fraunces', Georgia, 'Times New Roman', serif" }}
-            >
-              {tutorOpening}
-            </p>
+              <p className="text-[20px] font-medium leading-8 tracking-[-0.015em] sm:text-[22px]" style={{ color: P.espresso }}>
+                {personalGreeting}
+              </p>
+              <p className="text-[20px] font-normal leading-8 tracking-[-0.015em] sm:text-[22px]" style={{ color: P.ink }}>
+                {tutorOpening}
+              </p>
+            </div>
           </div>
 
-          <div className="mt-8 border-t pt-5" style={{ borderColor: P.line }}>
+          <div className="mt-5">
             {!hasQuestion && !practiceError && (
               <div className="flex items-center gap-2 text-[12px] font-semibold" style={{ color: P.muted }} aria-live="polite">
                 <span className="h-2 w-2 animate-pulse rounded-full" style={{ backgroundColor: P.sage }} aria-hidden="true" />
