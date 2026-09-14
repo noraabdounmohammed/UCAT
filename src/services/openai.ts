@@ -438,7 +438,7 @@ function buildCacheKey(userQuery: string, context: QuestionContext, learnerName:
 function buildUserPrompt(userQuery: string, context: QuestionContext, learnerName: string | null): string {
   syncPersistentLearnerMemory(context);
   const learnerContext = compactLearnerContext(buildLearnerSnapshot());
-  return `LEARNER IDENTITY\nFirst name: ${learnerName || 'Not supplied'}\n\nCURRENT QUESTION CONTEXT\n\nQUESTION / VIGNETTE:\n${context.question}\n\nOPTIONS:\n${context.options.join('\n') || 'Not supplied'}\n\nSTUDENT SELECTED:\n${context.selectedAnswer || 'Not supplied'}\n\nCORRECT ANSWER:\n${context.correctAnswer}\n\nGROUNDING EXPLANATION:\n${context.explanation || 'Not supplied'}\n\nLONGITUDINAL LEARNER MEMORY\n${learnerContext}\n\nUSER REQUEST:\n${userQuery}\n\nTEACHING POLICY\n- The current question and grounding explanation are the clinical source of truth. Learner memory is for personalisation, not for inventing medical facts.\n- If a first name is supplied, use it sparingly and naturally. Good moments are a session opening, a meaningful redirect, after resolving a misconception, or at closure. Do not address the learner by name in every reply.\n- Make personalisation visible through teaching choices, not flattery: adapt depth, questioning and examples to the supplied history and current confidence.\n- Treat history as longitudinal evidence, not as a licence to overclaim. Only mention a repeated pattern when multiple supplied observations support it.\n- If the learner repeatedly misses a related concept or discriminator, make that pattern explicit and focus on it.\n- If the learner has repeatedly retrieved prerequisite material successfully, skip basic reteaching and teach the missing layer.\n- A correct low-confidence response is weaker evidence than confident retrieval. A confident incorrect response can indicate a misconception.\n- The selected wrong option is diagnostic information. Explain why it was tempting and the clue or principle that should have shifted the decision when the supplied context supports that.\n- Prefer the shortest explanation that changes this learner's future decision-making.\n- Never expose internal scores, mastery levels, storage fields, event IDs, fingerprints or system terminology to the learner.\n- Keep the answer concise and action-oriented.`;
+  return `LEARNER IDENTITY\nFirst name: ${learnerName || 'Not supplied'}\n\nCURRENT QUESTION CONTEXT\n\nQUESTION / VIGNETTE:\n${context.question}\n\nOPTIONS:\n${context.options.join('\n') || 'Not supplied'}\n\nSTUDENT SELECTED:\n${context.selectedAnswer || 'Not supplied'}\n\nCORRECT ANSWER:\n${context.correctAnswer}\n\nGROUNDING EXPLANATION:\n${context.explanation || 'Not supplied'}\n\nLONGITUDINAL LEARNER MEMORY\n${learnerContext}\n\nUSER REQUEST:\n${userQuery}\n\nTEACHING POLICY\n- The current question and grounding explanation are the clinical source of truth. Learner memory is for personalisation, not for inventing medical facts.\n- If a first name is supplied, use it sparingly and naturally. Good moments are a session opening, a meaningful redirect, after resolving a misconception, or at closure. Do not address the learner by name in every reply.\n- Make personalisation visible through teaching choices, not flattery: adapt depth, questioning and examples to the supplied history and current confidence.\n- Treat history as longitudinal evidence, not as a licence to overclaim. Only mention a repeated pattern when multiple supplied observations support it.\n- If the learner repeatedly misses a related concept or discriminator, make that pattern explicit and focus on it.\n- If the learner has repeatedly retrieved prerequisite material successfully, skip basic reteaching and teach the missing layer.\n- A correct low-confidence response is weaker evidence than confident retrieval. A confident incorrect response can indicate a misconception.\n- The selected wrong option is diagnostic information. Explain why it was tempting and the clue or principle that should have shifted the decision when the supplied context supports that.\n- Prefer the shortest explanation that changes this learner's future decision-making.\n- Never expose internal scores, mastery levels, storage fields, event IDs, fingerprints or system terminology to the learner.\n- For visible tutor replies, make exactly ONE teaching move. Usually use 1-3 short sentences. Never give an unsolicited option-by-option review.\n- If you ask a Quick check, it must be ONE free-text question. Do not create A/B/C/D/E options or partial answer lists inside a tutor reply.\n- Never say the learner has made this mistake before, has a recurring pattern, or has a history of an error unless multiple explicit memory observations in LONGITUDINAL LEARNER MEMORY support that exact claim. Prefer not to mention history at all unless it materially improves the teaching move.\n- Finish every visible reply cleanly. Never end on a heading, colon, conjunction, option label, or unfinished sentence.\n- Keep the answer concise and action-oriented.`;
 }
 
 const systemPrompt = `You are StudyEdit, an expert medical education assistant for UKMLA AKT students.
@@ -453,10 +453,68 @@ const systemPrompt = `You are StudyEdit, an expert medical education assistant f
 - Prefer teaching the learner's exact misconception, discriminator or uncertainty over repeating a generic textbook explanation.
 - If prior evidence suggests the learner already knows prerequisite material, skip it and teach the missing layer.
 - Use light markdown only when it improves skimming.
-- Do not use motivational filler, emojis or generic AI preambles.
+- Visible tutor replies are conversational turns, not mini-essays: make one teaching move, normally 1-3 short sentences.
+- Never produce an unsolicited option-by-option explanation.
+- A Quick check must be one free-text question only; never invent A/B/C/D/E choices in tutor conversation.
+- Never claim the learner has made an error before or has a recurring pattern unless multiple explicit memory observations supplied in this request prove that exact claim.
+- Always finish the reply cleanly; never end mid-heading, mid-list or mid-sentence.
+- Do not use motivational filler, emojis, dramatic language or generic AI preambles.
 - If the supplied information is insufficient, say so briefly.`;
 
 let openai: OpenAI | null = null;
+
+function isInvalidTutorOutput(text: string): boolean {
+  const clean = String(text || '').trim();
+  if (!clean) return true;
+  if (clean.length > 750) return true;
+  if (/your history|same .*error.*before|you(?:'ve| have) (?:made|chosen|missed|confused).*before/i.test(clean)) return true;
+  if (/(?:^|\n)\s*(?:[-*•]\s*)?[A-E][.)]\s*$/m.test(clean)) return true;
+  if (/Quick check[\s\S]*(?:\n|^)\s*(?:[-*•]\s*)?[A-E][.)]\s+/i.test(clean)) return true;
+  if (/\b(?:Why|Because|And|But|So|Then|Which|What|How)\s*$/i.test(clean)) return true;
+  if (!/[.!?][\s\"'”’)*_]*$/.test(clean)) return true;
+  return false;
+}
+
+function conciseTutorFallback(context: QuestionContext): string {
+  const grounding = String(context.explanation || '').replace(/\s+/g, ' ').trim();
+  const firstTwo = grounding.match(/[^.!?]+[.!?]+/g)?.slice(0, 2).join(' ').trim() || grounding;
+  const correct = context.correctAnswer ? `The correct answer is **${context.correctAnswer}**. ` : '';
+  const teaching = firstTwo || 'Use the decisive clinical clue in the case to choose the management step.';
+  return `${correct}${teaching}`.trim();
+}
+
+async function repairTutorOutput(
+  userQuery: string,
+  context: QuestionContext,
+  learnerName: string | null,
+  draft: string,
+): Promise<string> {
+  if (!openai) return conciseTutorFallback(context);
+  try {
+    const response = await openai.chat.completions.create({
+      model: 'deepseek-chat',
+      messages: [
+        {
+          role: 'system',
+          content: 'You are repairing a StudyEdit tutor turn before it is shown to a medical student. Return ONLY the repaired learner-facing turn. Use the supplied clinical context as ground truth. Make exactly one pedagogical move in 1-3 short sentences. If a check is useful, ask exactly one free-text question prefixed "Quick check:". Never create multiple-choice options. Never claim prior mistakes or recurring history. Never review every option unless the learner explicitly asked. End with a complete sentence or question.',
+        },
+        {
+          role: 'user',
+          content: `${buildUserPrompt(userQuery, context, learnerName)}\n\nDRAFT TO REPAIR:\n${draft}`,
+        },
+      ],
+      temperature: 0.1,
+      max_tokens: 160,
+      top_p: 0.7,
+      stream: false,
+    });
+    const repaired = response.choices[0]?.message?.content?.trim() || '';
+    return repaired && !isInvalidTutorOutput(repaired) ? repaired : conciseTutorFallback(context);
+  } catch (error) {
+    console.error('Tutor repair failed:', error);
+    return conciseTutorFallback(context);
+  }
+}
 
 try {
   const apiKey = import.meta.env.VITE_OPENAI_API_KEY;
@@ -516,7 +574,7 @@ export async function generateAIResponseStream(
   const learnerName = await currentLearnerFirstName();
 
   if (!openai) {
-    const fallback = generateFallbackResponse(userQuery, context);
+    const fallback = conciseTutorFallback(context);
     onStart?.();
     onToken(fallback);
     return fallback;
@@ -524,7 +582,7 @@ export async function generateAIResponseStream(
 
   const cacheKey = buildCacheKey(userQuery, context, learnerName);
   const cached = responseCache[cacheKey];
-  if (cached && Date.now() - cached.timestamp < CACHE_EXPIRY_MS) {
+  if (cached && Date.now() - cached.timestamp < CACHE_EXPIRY_MS && !isInvalidTutorOutput(cached.response)) {
     onStart?.();
     onToken(cached.response);
     return cached.response;
@@ -539,9 +597,9 @@ export async function generateAIResponseStream(
         { role: 'system', content: systemPrompt },
         { role: 'user', content: buildUserPrompt(userQuery, context, learnerName) },
       ],
-      temperature: 0.25,
-      max_tokens: 240,
-      top_p: 0.8,
+      temperature: 0.2,
+      max_tokens: 180,
+      top_p: 0.75,
       presence_penalty: 0,
       frequency_penalty: 0.1,
       response_format: { type: 'text' },
@@ -553,15 +611,21 @@ export async function generateAIResponseStream(
       const delta = chunk?.choices?.[0]?.delta?.content ?? '';
       if (!delta) continue;
       fullResponse += delta;
-      onToken(delta);
     }
 
-    if (fullResponse) responseCache[cacheKey] = { response: fullResponse, timestamp: Date.now() };
-    return fullResponse;
+    const safeResponse = isInvalidTutorOutput(fullResponse)
+      ? await repairTutorOutput(userQuery, context, learnerName, fullResponse)
+      : fullResponse.trim();
+
+    if (safeResponse) {
+      onToken(safeResponse);
+      responseCache[cacheKey] = { response: safeResponse, timestamp: Date.now() };
+    }
+    return safeResponse;
   } catch (error) {
     if (abortSignal?.aborted) throw error;
     console.error('Error generating AI response stream:', error);
-    const fallback = generateFallbackResponse(userQuery, context);
+    const fallback = conciseTutorFallback(context);
     onToken(fallback);
     return fallback;
   }
