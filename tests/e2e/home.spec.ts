@@ -1,7 +1,6 @@
 import { test, expect } from '@playwright/test';
 
-const currentHomeHeading = /what do you want to work on\?|what do you need today\?/i;
-const intentPlaceholder = /10 minutes of cardio/i;
+const currentHomeHeading = /what do you want to work on\?/i;
 
 async function dismissCookieConsent(page: any) {
   const dialog = page.getByRole('dialog', { name: /cookie consent/i });
@@ -13,25 +12,16 @@ async function dismissCookieConsent(page: any) {
   if (await preferred.count()) {
     await preferred.click();
   } else {
-    // Some consent implementations use neutral labels such as "Essential only".
-    // Exercising any visible consent action is preferable to bypassing the overlay
-    // with a forced click, because this test is meant to model a real cold learner.
     await buttons.last().click();
   }
 
   await expect(dialog).toBeHidden();
 }
 
-async function planCardiologyManagement(page: any) {
-  const input = page.getByPlaceholder(intentPlaceholder);
-  await input.fill('10 minutes of cardiology management');
-  await page.getByRole('button', { name: /plan my session/i }).click();
-
-  await expect(page.getByText(/10 minutes of cardiology management/i)).toBeVisible();
-  await expect(page.getByText(/cardio/i).first()).toBeVisible();
-  await expect(page.getByText(/management/i).first()).toBeVisible();
-  await expect(page.getByText(/order hidden/i)).toBeVisible();
-  await expect(page.getByText(/exact conditions.*hidden/i)).toBeVisible();
+async function openUsableFilterBuilder(page: any) {
+  await page.getByRole('button', { name: /choose what to practise/i }).click();
+  await expect(page.getByRole('heading', { name: /practise your way/i })).toBeVisible();
+  await expect(page.getByRole('button', { name: /begin session/i })).toBeEnabled({ timeout: 15_000 });
 }
 
 test.describe('StudyEdit launch flow', () => {
@@ -39,21 +29,19 @@ test.describe('StudyEdit launch flow', () => {
     await context.clearCookies();
   });
 
-  test('cold learner sees the current launch surface', async ({ page }) => {
+  test('cold learner sees one clear filter-first launch path', async ({ page }) => {
     await page.goto('/');
 
     await expect(page.getByRole('heading', { name: currentHomeHeading })).toBeVisible();
-    await expect(page.getByPlaceholder(intentPlaceholder)).toBeVisible();
-    await expect(page.getByRole('button', { name: /choose filters/i })).toBeVisible();
-    await expect(page.getByText('Whole session')).toBeVisible();
-    await expect(page.getByText(/order hidden/i)).toBeVisible();
-    await expect(page.getByRole('button', { name: /start session/i })).toBeVisible();
+    await expect(page.getByRole('button', { name: /choose what to practise/i })).toBeVisible();
+    await expect(page.getByText(/choose your clinical area, learning status, focus and session size/i)).toBeVisible();
+    await expect(page.locator('input')).toHaveCount(0);
     await expect(page.getByText(/no account needed to start/i)).toBeVisible();
   });
 
-  test('learner can browse the existing filter chooser without losing the clean home', async ({ page }) => {
+  test('learner can browse the filter chooser without losing the clean home', async ({ page }) => {
     await page.goto('/');
-    await page.getByRole('button', { name: /choose filters/i }).click();
+    await page.getByRole('button', { name: /choose what to practise/i }).click();
 
     await expect(page.getByRole('heading', { name: /practise your way/i })).toBeVisible();
     await expect(page.getByText(/build a focused session in seconds/i)).toBeVisible();
@@ -61,38 +49,29 @@ test.describe('StudyEdit launch flow', () => {
 
     await page.getByRole('button', { name: /close practice builder/i }).click();
     await expect(page.getByRole('heading', { name: currentHomeHeading })).toBeVisible();
-    await expect(page.getByRole('button', { name: /choose filters/i })).toBeVisible();
+    await expect(page.getByRole('button', { name: /choose what to practise/i })).toBeVisible();
   });
 
   test('fresh learner filter chooser waits for the catalogue then becomes usable', async ({ page }) => {
     test.setTimeout(30_000);
     await page.addInitScript(() => localStorage.clear());
     await page.goto('/');
-    await page.getByRole('button', { name: /choose filters/i }).click();
+    await page.getByRole('button', { name: /choose what to practise/i }).click();
 
     await expect(page.getByRole('heading', { name: /practise your way/i })).toBeVisible();
-
-    // A fresh browser may briefly be loading the curriculum, but it must never be
-    // stranded on a fake 0/0 filter state. The real options should hydrate in-place.
     await expect(page.getByText(/in specialty/i)).toBeVisible({ timeout: 15_000 });
     await expect(page.getByRole('button', { name: /begin session/i })).toBeEnabled({ timeout: 15_000 });
     await expect(page.getByText(/nothing matches this combination yet/i)).toHaveCount(0);
-  });
-
-  test('plain-English intent becomes a spoiler-safe session plan', async ({ page }) => {
-    await page.goto('/');
-    await planCardiologyManagement(page);
-    await expect(page.getByText(/about 10 min/i)).toBeVisible();
   });
 
   test('golden path reaches a safe first case and gives immediate correctness feedback', async ({ page }, testInfo) => {
     test.setTimeout(60_000);
     await page.goto('/');
     await dismissCookieConsent(page);
-    await planCardiologyManagement(page);
+    await openUsableFilterBuilder(page);
 
     const startedAt = Date.now();
-    await page.getByRole('button', { name: /start session/i }).click();
+    await page.getByRole('button', { name: /begin session/i }).click();
 
     await expect(page).toHaveURL(/\/recommended-practice/);
     const question = page.locator('section[aria-label="Question"]');
@@ -100,13 +79,9 @@ test.describe('StudyEdit launch flow', () => {
     const startToFirstCaseMs = Date.now() - startedAt;
 
     console.log(`[studyedit-metric] start_to_first_case_ms=${startToFirstCaseMs}`);
-    expect(startToFirstCaseMs, 'Start session → first usable case').toBeLessThan(20_000);
-
-    // Generation failures must never degrade into the old generic placeholder.
+    expect(startToFirstCaseMs, 'Begin session → first usable case').toBeLessThan(20_000);
     await expect(page.getByText(/^What do you know about /i)).toHaveCount(0);
 
-    // Select the first genuine answer option. The current UI labels options with
-    // a visible A/B/C... badge rather than an "Option A" accessible-name prefix.
     const answerOptions = question.locator('button').filter({ hasNotText: /check answer|hide case/i });
     await expect(answerOptions.first()).toBeVisible();
     await answerOptions.first().click();
@@ -116,14 +91,9 @@ test.describe('StudyEdit launch flow', () => {
 
     const answeredAt = Date.now();
     await checkAnswer.click();
-
-    // StudyEdit now asks for confidence before committing the learning signal.
     await expect(page.getByRole('dialog', { name: /how sure were you/i })).toBeVisible();
     await page.getByRole('button', { name: /knew it/i }).click();
 
-    // The result panel itself is the learner-visible correctness state. Assert its
-    // rendered text rather than targeting an implementation-level child that can
-    // be duplicated transiently during the question→tutor transition.
     const answerPanel = page.locator('section[aria-label="Answer and tutor"]:visible');
     await expect(answerPanel).toBeVisible();
     await expect(answerPanel).toContainText(/Correct|Not quite/i);
