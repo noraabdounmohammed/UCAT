@@ -84,9 +84,16 @@ export default defineConfig({
     })
   ],
   resolve: {
-    alias: {
-      '@': path.resolve(__dirname, './src'),
-    },
+    alias: [
+      {
+        find: '@/services/openai',
+        replacement: path.resolve(__dirname, './src/services/fastTutor.ts'),
+      },
+      {
+        find: '@',
+        replacement: path.resolve(__dirname, './src'),
+      },
+    ],
   },
   optimizeDeps: {
     exclude: ['lucide-react'],
