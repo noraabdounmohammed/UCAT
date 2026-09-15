@@ -620,8 +620,19 @@ export const UkmlaSBAQuestion: React.FC<UkmlaSBAQuestionProps> = ({
       <div ref={scrollRef} className="flex-1 overflow-y-auto">
         <main className="mx-auto w-full max-w-[700px] px-5 pb-16 pt-8 sm:px-8 sm:pt-10">
           {!hasSubmitted || questionExpanded ? (
-            <section aria-label="Question" className="animate-[fadeIn_.25s_ease]">
-              <div className="mb-5 text-[10px] font-bold uppercase tracking-[0.18em]" style={{ color: C.muted }}>{conceptTitle}</div>
+            <section aria-label="Question" className={`animate-[fadeIn_.25s_ease] ${hasSubmitted && questionExpanded ? 'studyedit-case-expanded' : ''}`}>
+    {hasSubmitted && questionExpanded ? (
+      <button type="button" onClick={() => setQuestionExpanded(false)} className="studyedit-case-collapse-head flex w-full items-center gap-3 text-left" aria-label="Collapse case">
+        <span className={`studyedit-case-status ${isCorrect ? 'is-correct' : 'is-wrong'}`} aria-hidden="true">{isCorrect ? '✓' : '×'}</span>
+        <span className="studyedit-case-copy min-w-0 flex-1">
+          <span className="studyedit-case-topic block truncate">{conceptTitle}</span>
+          <span className="studyedit-case-answer block truncate">{displayedSelectedText}</span>
+        </span>
+        <ChevronDown className="studyedit-case-chevron h-5 w-5 shrink-0 rotate-180" aria-hidden="true" />
+      </button>
+    ) : (
+      <div className="mb-5 text-[10px] font-bold uppercase tracking-[0.18em]" style={{ color: C.muted }}>{conceptTitle}</div>
+    )}
 
               <div className="text-[20px] font-medium leading-[1.65] tracking-[-0.01em] sm:text-[21px]" style={{ color: C.espresso }}>
                 {vignetteParagraphs.map((paragraph, index) => (
@@ -668,12 +679,6 @@ export const UkmlaSBAQuestion: React.FC<UkmlaSBAQuestionProps> = ({
               {!hasSubmitted && (
                 <button type="button" onClick={handleCheckAnswer} disabled={!selectedOption} className="mt-6 flex w-full items-center justify-center rounded-full px-6 py-[18px] text-[16px] font-bold disabled:cursor-not-allowed" style={{ backgroundColor: selectedOption ? C.espresso : '#D9CCB6', color: selectedOption ? C.cream : C.muted }}>
                   Check answer
-                </button>
-              )}
-
-              {hasSubmitted && questionExpanded && (
-                <button type="button" onClick={() => setQuestionExpanded(false)} className="mt-5 text-[12px] font-semibold underline underline-offset-4" style={{ color: C.muted }}>
-                  Hide case
                 </button>
               )}
             </section>
