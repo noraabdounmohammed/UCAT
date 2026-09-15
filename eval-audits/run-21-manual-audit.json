@@ -1,0 +1,55 @@
+{
+  "source_run_id": 32654430793,
+  "completed_at": "2026-08-24T14:48:37.905Z",
+  "requested": 100,
+  "generated": 100,
+  "passed": 73,
+  "failed": 27,
+  "pass_rate": 73.0,
+  "failed_safety_count": 8,
+  "by_family": {
+    "acute-cardiovascular": {"passed": 14, "requested": 15, "pass_rate": 93.3},
+    "anticoagulation": {"passed": 8, "requested": 15, "pass_rate": 53.3},
+    "pregnancy-safety": {"passed": 20, "requested": 25, "pass_rate": 80.0},
+    "paediatrics": {"passed": 12, "requested": 15, "pass_rate": 80.0},
+    "cancer-referral": {"passed": 14, "requested": 15, "pass_rate": 93.3},
+    "sepsis-infection": {"passed": 5, "requested": 15, "pass_rate": 33.3}
+  },
+  "manual_audit": {
+    "accepted_sample": [
+      {"family":"acute-cardiovascular","concept":"ST-elevation myocardial infarction – diagnosis and urgent reperfusion","publishable":true,"critical_error":false,"note":"Diagnostic STEMI with negative initial troponin; urgent reperfusion assessment is uniquely best and no unsupported modality/timing assumption is introduced."},
+      {"family":"anticoagulation","concept":"Atrial fibrillation – Initial anticoagulation in new-onset AF","publishable":true,"critical_error":false,"note":"No/subtherapeutic prior anticoagulation, no heparin contraindication, and full stroke/bleeding assessment still pending are all explicit; heparin is uniquely best."},
+      {"family":"pregnancy-safety","concept":"Warfarin – pregnancy and breastfeeding","publishable":true,"critical_error":false,"note":"Mechanical-valve pregnancy scenario correctly requires specialist risk-benefit assessment rather than abrupt cessation; alternatives are clearly unsafe/inferior."},
+      {"family":"paediatrics","concept":"Paediatric DKA – suspected cerebral oedema","publishable":true,"critical_error":false,"note":"Acute neurological deterioration during DKA supports immediate osmotherapy without CT delay; one accepted osmotherapy option is presented."},
+      {"family":"cancer-referral","concept":"Dysphagia – suspected upper gastrointestinal cancer referral","publishable":true,"critical_error":false,"note":"Unexplained dysphagia directly supports suspected-cancer referral; distractors add inappropriate delay."},
+      {"family":"sepsis-infection","concept":"Sepsis – adult hospital risk stratification","publishable":true,"critical_error":false,"note":"Tests the NICE risk-stratification approach (NEWS2 plus clinical judgement) rather than a precomputed score; qSOFA/SIRS/single-sign alternatives are clearly inferior."}
+    ],
+    "accepted_sample_summary": {"audited":6,"publishable":6,"critical_clinical_safety_ambiguity_errors":0},
+    "rejected_sample": [
+      {"family":"acute-cardiovascular","concept":"STEMI – reperfusion strategy","genuine_defect":"Stem supplied transport time rather than complete PCI delay, so whether the 120-minute decision boundary was crossed could not be reproduced."},
+      {"family":"anticoagulation","concept":"ACS with a separate indication for anticoagulation – antiplatelet strategy","genuine_defect":"Specific fixed-regimen distractors could themselves be defensible individualised strategies; some variants also introduced mechanical-valve exception context."},
+      {"family":"pregnancy-safety","concept":"Varicella exposure in pregnancy – post-exposure prophylaxis","genuine_defect":"Repeated variants invented quantitative antibody cutoffs, under-specified significant exposure/timing, or misapplied the day-7 prophylaxis timing; one generation/reviewer JSON failure also occurred."},
+      {"family":"paediatrics","concept":"Paediatric DKA – initial fluid resuscitation","genuine_defect":"Shock status was not unambiguously established while 15- versus 30-minute bolus timing distinguished options, leaving both pathways defensible."},
+      {"family":"cancer-referral","concept":"Endometrial cancer – current NICE referral criteria","genuine_defect":"HRT attribution was unresolved and referral versus urgent-ultrasound pathways overlapped as competing answers."},
+      {"family":"sepsis-infection","concept":"Pneumonia – CURB-65 score interpretation / sepsis early management","genuine_defect":"CURB-65 variants omitted urea or asserted forbidden score totals; sepsis-management variants used incomplete NEWS2 inputs and COPD/hypercapnia exception states that changed oxygen/risk interpretation."}
+    ]
+  },
+  "failure_concentration": {
+    "sepsis_infection_failures": 10,
+    "anticoagulation_failures": 7,
+    "pregnancy_safety_failures": 5,
+    "paediatrics_failures": 3,
+    "acute_cardiovascular_failures": 1,
+    "cancer_referral_failures": 1,
+    "repeated_concept_failures": {
+      "Sepsis – early management is risk- and population-specific": 5,
+      "Pneumonia – CURB-65 score interpretation": 5,
+      "Varicella exposure in pregnancy – post-exposure prophylaxis": 5,
+      "ACS with a separate indication for anticoagulation – antiplatelet strategy": 4,
+      "Atrial fibrillation – Long-term stroke prevention anticoagulants": 3
+    }
+  },
+  "interpretation": "Run 21 was a genuine funded rerun after the provider-balance interruption. Acceptance was 73%, essentially flat versus run 18's 72%, while the fresh accepted sample remained 6/6 publishable with zero critical errors. The run-18 named-score hygiene prompt alone did not materially raise yield because the model continued to violate score-output rules and several evidence packets still allowed under-specified or overlapping generation paths.",
+  "highest_leverage_defect": "The generation contract is still too permissive at recurrent decision boundaries: required-context labels such as 'NEWS2/risk category', 'CURB-65 components or stated score', 'significant exposure', 'shock status', and broad distractor intents allow the model to emit incomplete raw inputs, invented numerical thresholds, overlapping pathways, or plausible fixed regimens. These are upstream compiler/evidence-boundary problems, not reasons to weaken the reviewer.",
+  "next_fix": "Tighten the eval-only evidence compiler for the recurrent clusters: require all raw CURB-65/NEWS2 inputs and ban named totals; isolate sepsis antibiotic/fluid/oxygen decisions; require explicit significant VZV exposure and qualitative susceptibility with unambiguous timing; ban specific regimen distractors for ACS+anticoagulation; require complete PCI delay and explicit DKA shock status; isolate endometrial referral versus ultrasound pathways. Keep all downstream gates unchanged or stricter."
+}

@@ -1,0 +1,53 @@
+{
+  "workflowRunId": 32629262722,
+  "headBeforeFix": "6b2031ad3d5ce8c00463480842222a27df705fbe",
+  "combined": {
+    "requested": 100,
+    "passed": 83,
+    "failed": 17,
+    "passRate": 83,
+    "failedSafetyCount": 7,
+    "families": {
+      "acute-cardiovascular": "14/15",
+      "anticoagulation": "10/15",
+      "pregnancy-safety": "23/25",
+      "paediatrics": "13/15",
+      "cancer-referral": "10/15",
+      "sepsis-infection": "13/15"
+    }
+  },
+  "manualAudit": {
+    "priority": "fresh stratified accepted/failure sample with emphasis on false PASS",
+    "criticalFalsePasses": [
+      {
+        "conceptId": "ukmla-4362",
+        "family": "sepsis-infection",
+        "automatedScore": 95,
+        "taxonomy": ["numerical-verification", "derived-score", "false-pass"],
+        "finding": "Accepted CURB-65 item asserted a score inconsistent with raw vignette data. Example: respiratory rate below 30 was nevertheless credited as the respiratory-rate component; another accepted variant stated CURB-65 4 while raw supplied components supported only 3 without a urea value. Automated PASS is therefore not yet equivalent to publishable."
+      },
+      {
+        "conceptId": "ukmla-636",
+        "family": "acute-cardiovascular",
+        "automatedScore": 92,
+        "taxonomy": ["single-best-answer", "parent-subtype-overlap", "false-pass"],
+        "finding": "Accepted cardiogenic pulmonary oedema item offered CPAP immediately versus NIV without delay as competing answer choices. CPAP is a form of NIV, creating a nested/overlapping answer set rather than one cleanly exclusive best answer."
+      }
+    ],
+    "harnessFinding": {
+      "taxonomy": ["evaluation-harness", "guard-not-applied"],
+      "finding": "The newest runtime score/overlap safeguards existed in the distinct-100 CI lane but were not invoked by the standalone repeated-variant Launch Eval 100 workflow that produced this artifact. The next run must align the standalone workflow with the audited guards before its metric is interpretable as validation of those fixes."
+    }
+  },
+  "fix": {
+    "commit": "e1834792a3ac90618e822c23c450ed2d50b48505",
+    "scope": [
+      "generator prohibition on precomputed named clinical scores",
+      "deterministic rejection of precomputed CHA2DS2-VASc/HAS-BLED/NEWS2/CURB-65 score assertions in vignette",
+      "generator same-specificity/mutual-exclusivity constraint",
+      "reviewer mandatory parent-subtype/synonym overlap rejection",
+      "independent numerical recomputation instruction"
+    ],
+    "safetyPosture": "fail-closed; no gate weakened"
+  }
+}

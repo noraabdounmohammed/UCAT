@@ -1,0 +1,40 @@
+{
+  "run": 28,
+  "workflow_run_id": 32756324989,
+  "requested": 100,
+  "generated": 100,
+  "accepted": 66,
+  "acceptance_rate": 66,
+  "safety_gate_failures": 3,
+  "manual_pass_audit": {
+    "sampling": "fresh stratified sample: one automated PASS from each of six clinical families",
+    "n": 6,
+    "publishable": 6,
+    "critical_clinical_safety_or_ambiguity_errors": 0,
+    "families": ["acute-cardiovascular", "anticoagulation", "pregnancy-safety", "paediatrics", "cancer-referral", "sepsis-infection"]
+  },
+  "failure_taxonomy": {
+    "dominant_class": "generator non-adherence to explicit evidence contracts",
+    "recurrent_examples": [
+      "named clinical-score numeric assertions leaked into explanations/output despite raw-component rule",
+      "varicella PEP omitted explicit first-day-of-exposure timing anchor",
+      "endometrial referral vignettes added forbidden HRT modifier",
+      "DKA timing items omitted or undermined explicit shock state",
+      "bronchiolitis options duplicated the same oxygen action with competing target thresholds",
+      "antithrombotic individualisation items used multiple concrete regimens that could be defensible"
+    ],
+    "interpretation": "The strict gates are catching these defects. The next intervention must improve upstream instruction adherence rather than weaken acceptance criteria."
+  },
+  "intervention": {
+    "type": "eval-only scalable generator repair",
+    "changes": [
+      "lower UKMLA generation stochasticity from 0.7 to 0.35 in the temporary eval harness",
+      "add a mandatory hard evidence-contract compliance pass before JSON emission",
+      "explicitly prioritise omission of nonessential exception-state modifiers",
+      "require literal explicit states/reference points when decision rules depend on them",
+      "reinforce named-score, option-overlap and individualised-regimen constraints"
+    ],
+    "gates_weakened": false,
+    "production_deployed": false
+  }
+}
