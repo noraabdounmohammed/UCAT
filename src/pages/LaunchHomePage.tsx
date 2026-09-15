@@ -5,6 +5,7 @@ import { ConceptStoreProvider, useConceptStore } from '@/contexts/ConceptStoreCo
 import { useAuth } from '@/contexts/AuthContext';
 import { ApplePracticeSession } from '@/components/practice/ApplePracticeSession';
 import { PracticeFilterModalParchment, type FilterState } from '@/components/practice/PracticeFilterModalParchment';
+import { TutorVoiceControls } from '@/components/practice/TutorVoiceControls';
 import { getDaypartGreeting, getLearnerFirstName } from '@/lib/learnerIdentity';
 import { buildSpoilerSafeSessionPlan, rememberPlannedSession } from '@/lib/sessionPlan';
 import { isEssentialConcept } from '@/utils/essentialCurriculum';
@@ -52,6 +53,8 @@ function HomeContent() {
   const inlineSessionRef = useRef<HTMLDivElement | null>(null);
   const [showFilters, setShowFilters] = useState(false);
   const [adjustPortalTarget, setAdjustPortalTarget] = useState<HTMLElement | null>(null);
+  const [voicePortalTarget, setVoicePortalTarget] = useState<HTMLElement | null>(null);
+  const [voiceInput, setVoiceInput] = useState<HTMLInputElement | null>(null);
   const [hasAnsweredThisSession, setHasAnsweredThisSession] = useState(false);
 
   const hasEvidence = useMemo(() => (concepts || []).some((concept: any) => Number(concept.mastery_data?.attempts || 0) > 0), [concepts]);
@@ -107,7 +110,7 @@ function HomeContent() {
   };
 
   const handleComplete = () => {
-    endPractice(); launchedRef.current = false; setAdjustPortalTarget(null); setHasAnsweredThisSession(false);
+    endPractice(); launchedRef.current = false; setAdjustPortalTarget(null); setVoicePortalTarget(null); setVoiceInput(null); setHasAnsweredThisSession(false);
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
@@ -117,28 +120,42 @@ function HomeContent() {
   const showTutorIntro = !hasAnsweredThisSession;
 
   useEffect(() => {
-    if (!hasQuestion || !inlineSessionRef.current) { setAdjustPortalTarget(null); return; }
+    if (!hasQuestion || !inlineSessionRef.current) { setAdjustPortalTarget(null); setVoicePortalTarget(null); setVoiceInput(null); return; }
     const root = inlineSessionRef.current;
-    let slot: HTMLDivElement | null = null;
+    let adjustSlot: HTMLDivElement | null = null;
+    let voiceSlot: HTMLDivElement | null = null;
     const syncInlineState = () => {
-      // UkmlaSBAQuestion enters its tutor state immediately when the SBA is submitted,
-      // before LearningAwareSBA later commits confidence to the parent. Use that visible
-      // state as the source of truth so the first-visit intro disappears at answer time.
-      if (root.querySelector('section[aria-label="Answer and tutor"]')) {
-        setHasAnsweredThisSession(true);
-      }
+      if (root.querySelector('section[aria-label="Answer and tutor"]')) setHasAnsweredThisSession(true);
 
       const questionSection = root.querySelector('section[aria-label="Question"]');
       const optionList = questionSection?.querySelector(':scope > div.mt-6.flex.flex-col.gap-3');
-      if (!optionList) return;
-      const existing = root.querySelector('[data-studyedit-adjust-slot]') as HTMLDivElement | null;
-      if (existing) { slot = existing; setAdjustPortalTarget(existing); return; }
-      slot = document.createElement('div'); slot.setAttribute('data-studyedit-adjust-slot', 'true');
-      optionList.insertAdjacentElement('afterend', slot); setAdjustPortalTarget(slot);
+      if (optionList) {
+        const existing = root.querySelector('[data-studyedit-adjust-slot]') as HTMLDivElement | null;
+        if (existing) { adjustSlot = existing; setAdjustPortalTarget(existing); }
+        else {
+          adjustSlot = document.createElement('div'); adjustSlot.setAttribute('data-studyedit-adjust-slot', 'true');
+          optionList.insertAdjacentElement('afterend', adjustSlot); setAdjustPortalTarget(adjustSlot);
+        }
+      }
+
+      const tutorInput = root.querySelector('section[aria-label="Answer and tutor"] form input') as HTMLInputElement | null;
+      const tutorForm = tutorInput?.closest('form');
+      if (tutorInput && tutorForm) {
+        const existingVoice = tutorForm.querySelector('[data-studyedit-voice-slot]') as HTMLDivElement | null;
+        if (existingVoice) voiceSlot = existingVoice;
+        else {
+          voiceSlot = document.createElement('div');
+          voiceSlot.setAttribute('data-studyedit-voice-slot', 'true');
+          const submit = tutorForm.querySelector('button[type="submit"]');
+          if (submit) tutorForm.insertBefore(voiceSlot, submit); else tutorForm.appendChild(voiceSlot);
+        }
+        setVoiceInput(tutorInput);
+        setVoicePortalTarget(voiceSlot);
+      }
     };
     syncInlineState();
     const observer = new MutationObserver(syncInlineState); observer.observe(root, { childList: true, subtree: true });
-    return () => { observer.disconnect(); slot?.remove(); setAdjustPortalTarget(null); };
+    return () => { observer.disconnect(); adjustSlot?.remove(); voiceSlot?.remove(); setAdjustPortalTarget(null); setVoicePortalTarget(null); setVoiceInput(null); };
   }, [hasQuestion, practiceQuestions?.[0]?.id]);
 
   return (
@@ -155,6 +172,7 @@ function HomeContent() {
       {!hasQuestion && <footer className="mt-16 flex items-center justify-between border-t pt-5 text-[11px]" style={{ borderColor: P.line, color: P.muted }}><button onClick={() => navigate('/privacy')}>Privacy</button><span>UKMLA AKT</span></footer>}
       </div>
       {adjustPortalTarget && createPortal(<button type="button" className="studyedit-adjust-session" onClick={() => setShowFilters(true)}>Adjust session</button>, adjustPortalTarget)}
+      {voicePortalTarget && voiceInput && inlineSessionRef.current && createPortal(<TutorVoiceControls input={voiceInput} tutorRoot={inlineSessionRef.current} />, voicePortalTarget)}
       <PracticeFilterModalParchment isOpen={showFilters} onClose={() => setShowFilters(false)} onApplyFilters={startFilteredSession} />
     </main>
   );
