@@ -21,7 +21,6 @@
   overflow: visible !important;
 }
 
-/* UkmlaSBAQuestion currently owns a fixed viewport. Inline it only here. */
 .studyedit-inline-session .fixed.inset-0.flex.flex-col.overflow-hidden {
   position: relative !important;
   inset: auto !important;
@@ -32,9 +31,6 @@
   background: transparent !important;
 }
 
-/* The tutor is the product on the homepage. Hide the practice-route navbar,
- * progress bar and duplicated controls so the learner sees one continuous
- * agent surface rather than a website wrapped around a tutor. */
 .studyedit-inline-session .fixed.inset-0.flex.flex-col.overflow-hidden > header {
   display: none !important;
 }
@@ -44,15 +40,10 @@
   overflow: visible !important;
 }
 
-/* With the practice navbar removed, the case can follow the agent opening
- * directly without compensating top spacing. */
 .studyedit-inline-session .fixed.inset-0.flex.flex-col.overflow-hidden > .flex-1 > main {
   padding-top: 0 !important;
 }
 
-/* Confidence is a conversational follow-up, not a new screen. The component
- * remains a small bottom sheet on legacy practice routes, but on the homepage
- * it sits directly under the answered case in the same document flow. */
 .studyedit-inline-session .studyedit-confidence-prompt {
   position: relative !important;
   inset: auto !important;
@@ -61,18 +52,43 @@
   padding: 0 1.25rem !important;
 }
 
-/* Keep the homepage tutor deliberately sparse for now. The composer is the
- * single conversational action; secondary explain/stuck and report utilities
- * can be reintroduced later in a quieter location. */
 .studyedit-inline-session section[aria-label="Answer and tutor"] form + button,
 .studyedit-inline-session [data-studyedit-question-shell="true"] > .mt-3.flex.justify-end.px-1 {
   display: none !important;
 }
 
-/* Once the learner is in the tutor conversation, dock the composer in the
- * mobile thumb zone. A fixed composer is deliberate here: sticky-bottom only
- * activates after the element reaches the viewport edge and therefore leaves
- * short tutor turns stranded halfway up the screen. */
+/* ChatGPT-like dictation: one tap immediately turns the whole composer into a
+ * live recording strip instead of making the mic behave like an upload button. */
+.studyedit-inline-session section[aria-label="Answer and tutor"] form {
+  position: relative;
+}
+
+.studyedit-inline-session section[aria-label="Answer and tutor"] form[data-studyedit-dictating="true"] {
+  min-height: 58px;
+}
+
+.studyedit-inline-session section[aria-label="Answer and tutor"] form[data-studyedit-dictating="true"] > :not(.studyedit-dictation-bar) {
+  visibility: hidden;
+}
+
+.studyedit-dictation-bar {
+  visibility: visible !important;
+}
+
+.studyedit-voice-wave {
+  animation: studyeditVoicePulse .8s ease-in-out infinite alternate;
+  transform-origin: center;
+}
+
+@keyframes studyeditVoicePulse {
+  from { transform: scaleY(.42); opacity: .52; }
+  to { transform: scaleY(1); opacity: 1; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .studyedit-voice-wave { animation: none; }
+}
+
 @media (max-width: 639px) {
   .studyedit-inline-session section[aria-label="Answer and tutor"] form {
     position: fixed !important;
@@ -85,7 +101,6 @@
     box-shadow: 0 10px 32px rgba(31, 20, 12, 0.16) !important;
   }
 
-  /* Reserve room for the docked composer without leaving a large dead zone. */
   .studyedit-inline-session section[aria-label="Answer and tutor"] {
     padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 6.5rem);
   }
