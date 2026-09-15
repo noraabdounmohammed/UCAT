@@ -31,7 +31,7 @@ jobs:
                     <span className="studyedit-case-topic block truncate">{conceptTitle}</span>
                     <span className="studyedit-case-answer block truncate">{displayedSelectedText}</span>
                   </span>
-                  <ChevronUp className="studyedit-case-chevron h-5 w-5 shrink-0" aria-hidden="true" />
+                  <ChevronDown className="studyedit-case-chevron h-5 w-5 shrink-0 rotate-180" aria-hidden="true" />
                 </button>
               ) : (
                 <div className="mb-5 text-[10px] font-bold uppercase tracking-[0.18em]" style={{ color: C.muted }}>{conceptTitle}</div>
