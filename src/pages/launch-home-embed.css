@@ -1,6 +1,6 @@
 /*
- * Embedded UKMLA tutor: keep the legacy practice engine in normal document
- * flow, but make the learner experience feel like one continuous surface.
+ * Embedded UKMLA tutor — editorial mode.
+ * The page should feel typeset and calm rather than layered, glassy or app-like.
  */
 .studyedit-inline-session { position:relative; margin-left:-1.25rem; margin-right:-1.25rem; }
 .studyedit-inline-session > .flex.h-screen.flex-col.overflow-hidden { height:auto!important; min-height:0!important; overflow:visible!important; background:transparent!important; }
@@ -9,35 +9,64 @@
 .studyedit-inline-session .fixed.inset-0.flex.flex-col.overflow-hidden > header { display:none!important; }
 .studyedit-inline-session .fixed.inset-0.flex.flex-col.overflow-hidden > .flex-1 { flex:none!important; overflow:visible!important; }
 .studyedit-inline-session .fixed.inset-0.flex.flex-col.overflow-hidden > .flex-1 > main { padding-top:0!important; }
-.studyedit-inline-session .studyedit-confidence-prompt { position:relative!important; inset:auto!important; z-index:auto!important; margin-top:.75rem; padding:0 1.25rem!important; }
-.studyedit-inline-session section[aria-label="Answer and tutor"] form + button,.studyedit-inline-session [data-studyedit-question-shell="true"] > .mt-3.flex.justify-end.px-1 { display:none!important; }
-.studyedit-session-spine { position:sticky; top:0; z-index:70; margin:0 -1.25rem .7rem; padding:.62rem 1.25rem .7rem; background:linear-gradient(to bottom,rgba(244,236,223,.98),rgba(244,236,223,.92)); -webkit-backdrop-filter:blur(14px); backdrop-filter:blur(14px); }
-.studyedit-session-spine-row { display:flex; align-items:center; justify-content:space-between; gap:1rem; color:#746354; font-size:11px; line-height:1.25; font-weight:700; letter-spacing:.01em; white-space:nowrap; }
-.studyedit-session-progress { height:2px; margin-top:.48rem; overflow:hidden; border-radius:999px; background:rgba(117,98,80,.13); }
-.studyedit-session-progress > span { display:block; height:100%; border-radius:inherit; background:#7D9270; transition:width .42s cubic-bezier(.2,.8,.2,1); }
-.studyedit-inline-session section[aria-label="Answer and tutor"] form { position:relative; border-color:rgba(255,255,255,.72)!important; background:linear-gradient(135deg,rgba(255,255,255,.72),rgba(255,253,248,.48))!important; box-shadow:inset 0 1px 0 rgba(255,255,255,.9),0 12px 34px rgba(70,52,35,.10)!important; -webkit-backdrop-filter:blur(22px) saturate(145%); backdrop-filter:blur(22px) saturate(145%); }
-.studyedit-inline-session section[aria-label="Question"],.studyedit-inline-session section[aria-label="Answer and tutor"] { scroll-margin-top:3.5rem; }
-.studyedit-inline-session section[aria-label="Answer and tutor"] { animation:studyeditTutorArrive .24s cubic-bezier(.2,.8,.2,1); }
-@keyframes studyeditTutorArrive { from{opacity:.35;transform:translateY(5px)} to{opacity:1;transform:none} }
-.studyedit-inline-session .studyedit-case-summary { position:relative; overflow:hidden; gap:.75rem; min-height:70px; padding:.82rem .9rem .82rem .82rem; border:1px solid rgba(255,255,255,.62); border-radius:18px; background:linear-gradient(135deg,rgba(255,255,255,.52),rgba(255,255,255,.18)); box-shadow:inset 0 1px 0 rgba(255,255,255,.82),0 7px 22px rgba(75,55,35,.055); -webkit-backdrop-filter:blur(20px) saturate(140%); backdrop-filter:blur(20px) saturate(140%); transform-origin:top center; animation:studyeditCaseSettle .22s cubic-bezier(.2,.8,.2,1); transition:transform .18s ease,box-shadow .18s ease,background .18s ease; }
-@keyframes studyeditCaseSettle { from{opacity:.55;transform:scale(.992)} to{opacity:1;transform:scale(1)} }
-.studyedit-inline-session .studyedit-case-summary:active { transform:scale(.994); box-shadow:inset 0 1px 0 rgba(255,255,255,.78),0 4px 14px rgba(75,55,35,.05); }
-.studyedit-inline-session .studyedit-case-status { display:grid; place-items:center; width:26px; height:26px; flex:none; border-radius:50%; font-size:14px; font-weight:800; background:rgba(101,125,89,.12); color:#657D59; }
-.studyedit-inline-session .studyedit-case-status.is-wrong { background:rgba(155,81,70,.10); color:#94483D; }
+.studyedit-inline-session .studyedit-confidence-prompt { position:relative!important; inset:auto!important; z-index:auto!important; margin-top:.9rem; padding:0 1.25rem!important; }
+.studyedit-inline-session section[aria-label="Answer and tutor"] form + button,
+.studyedit-inline-session [data-studyedit-question-shell="true"] > .mt-3.flex.justify-end.px-1 { display:none!important; }
+
+/* Quiet orientation: paper, type and a rule. No floating material. */
+.studyedit-session-spine { position:sticky; top:0; z-index:70; margin:0 -1.25rem .9rem; padding:.72rem 1.25rem .68rem; background:#F4ECDF; border-bottom:1px solid #DED2C1; }
+.studyedit-session-spine-row { display:flex; align-items:center; justify-content:space-between; gap:1rem; color:#746354; font-size:11px; line-height:1.25; font-weight:650; letter-spacing:.015em; white-space:nowrap; }
+.studyedit-session-progress { height:1px; margin-top:.55rem; overflow:hidden; background:#D9CDBD; }
+.studyedit-session-progress > span { display:block; height:100%; background:#6F8265; transition:width .32s ease; }
+
+.studyedit-inline-session section[aria-label="Question"],
+.studyedit-inline-session section[aria-label="Answer and tutor"] { scroll-margin-top:3.75rem; }
+.studyedit-inline-session section[aria-label="Answer and tutor"] { animation:studyeditTutorArrive .18s ease-out; }
+@keyframes studyeditTutorArrive { from{opacity:.55;transform:translateY(3px)} to{opacity:1;transform:none} }
+
+/* Answered case becomes a compact editorial record, not a glass card. */
+.studyedit-inline-session .studyedit-case-summary { position:relative; gap:.8rem; min-height:62px; padding:.78rem .2rem .82rem; border:0; border-top:1px solid #D8CCBC; border-bottom:1px solid #D8CCBC; border-radius:0; background:transparent; box-shadow:none; transform-origin:top center; animation:studyeditCaseSettle .18s ease-out; transition:opacity .15s ease,background-color .15s ease; }
+@keyframes studyeditCaseSettle { from{opacity:.55} to{opacity:1} }
+.studyedit-inline-session .studyedit-case-summary:active { transform:none; opacity:.68; box-shadow:none; }
+.studyedit-inline-session .studyedit-case-status { display:grid; place-items:center; width:22px; height:22px; flex:none; border-radius:50%; font-size:12px; font-weight:800; background:#E4E8DD; color:#5F7356; }
+.studyedit-inline-session .studyedit-case-status.is-wrong { background:#EFE0DC; color:#8C473D; }
 .studyedit-inline-session .studyedit-case-copy { display:flex; flex-direction:column; justify-content:center; }
-.studyedit-inline-session .studyedit-case-topic { color:#8B7C6E; font-size:11px; line-height:1.2; font-weight:700; letter-spacing:.075em; text-transform:uppercase; }
-.studyedit-inline-session .studyedit-case-answer { margin-top:.32rem; color:#332A23; font-size:16px; line-height:1.32; font-weight:720; letter-spacing:-.012em; }
-.studyedit-inline-session .studyedit-case-chevron { margin-left:auto; color:#8B7C6E; opacity:.72; transition:transform .2s ease; }
-.studyedit-inline-session section[aria-label="Question"].studyedit-case-expanded { margin-top:.2rem; padding:1.05rem!important; border:1px solid rgba(255,255,255,.62); border-radius:18px; background:linear-gradient(135deg,rgba(255,255,255,.52),rgba(255,255,255,.18)); box-shadow:inset 0 1px 0 rgba(255,255,255,.82),0 7px 22px rgba(75,55,35,.055); -webkit-backdrop-filter:blur(20px) saturate(140%); backdrop-filter:blur(20px) saturate(140%); transform-origin:top center; animation:studyeditCaseOpen .24s cubic-bezier(.2,.8,.2,1); }
-.studyedit-inline-session .studyedit-case-collapse-head { min-height:58px; margin:-.35rem 0 1rem; padding:.35rem 0 .9rem; border-bottom:1px solid rgba(100,80,60,.09); }
-.studyedit-inline-session .studyedit-case-collapse-head:active { opacity:.72; }
-@keyframes studyeditCaseOpen { from{opacity:.72;transform:scale(.99) translateY(-2px)} to{opacity:1;transform:scale(1) translateY(0)} }
+.studyedit-inline-session .studyedit-case-topic { color:#887869; font-size:10px; line-height:1.2; font-weight:700; letter-spacing:.095em; text-transform:uppercase; }
+.studyedit-inline-session .studyedit-case-answer { margin-top:.3rem; color:#2B211A; font-size:15px; line-height:1.38; font-weight:650; letter-spacing:-.008em; }
+.studyedit-inline-session .studyedit-case-chevron { margin-left:auto; color:#8B7C6E; opacity:.62; transition:transform .18s ease; }
+
+/* Expanded answered case is simply the page opening back up. */
+.studyedit-inline-session section[aria-label="Question"].studyedit-case-expanded { margin-top:.15rem; padding:.9rem .15rem 1.15rem!important; border:0; border-top:1px solid #D8CCBC; border-bottom:1px solid #D8CCBC; border-radius:0; background:transparent; box-shadow:none; transform-origin:top center; animation:studyeditCaseOpen .18s ease-out; }
+.studyedit-inline-session .studyedit-case-collapse-head { min-height:52px; margin:-.1rem 0 1rem; padding:.2rem 0 .8rem; border-bottom:1px solid #E0D5C6; }
+.studyedit-inline-session .studyedit-case-collapse-head:active { opacity:.62; }
+@keyframes studyeditCaseOpen { from{opacity:.58;transform:translateY(-2px)} to{opacity:1;transform:none} }
+
+/* The composer is the one persistent control: solid paper, crisp border, no glow. */
+.studyedit-inline-session section[aria-label="Answer and tutor"] form { position:relative; border:1px solid #CFC2B1!important; border-radius:14px!important; background:#FFFDF8!important; box-shadow:none!important; -webkit-backdrop-filter:none!important; backdrop-filter:none!important; }
 .studyedit-inline-session [data-studyedit-adjust-slot] { display:none!important; }
+
+/* Dictation remains expressive but contained within the same composer. */
 .studyedit-inline-session section[aria-label="Answer and tutor"] form[data-studyedit-dictating="true"] { min-height:58px; }
 .studyedit-inline-session section[aria-label="Answer and tutor"] form[data-studyedit-dictating="true"] > :not(.studyedit-dictation-bar) { visibility:hidden; }
 .studyedit-dictation-bar { visibility:visible!important; }
 .studyedit-voice-wave { animation:studyeditVoicePulse .8s ease-in-out infinite alternate; transform-origin:center; }
 @keyframes studyeditVoicePulse { from{transform:scaleY(.42);opacity:.52} to{transform:scaleY(1);opacity:1} }
-@media(prefers-reduced-motion:reduce){.studyedit-voice-wave,.studyedit-inline-session section[aria-label="Question"].studyedit-case-expanded,.studyedit-inline-session .studyedit-case-summary,.studyedit-inline-session section[aria-label="Answer and tutor"]{animation:none}}
-@media(max-width:639px){.studyedit-session-spine-row{font-size:10px;gap:.55rem}.studyedit-inline-session section[aria-label="Answer and tutor"] form{position:fixed!important;left:1.25rem;right:1.25rem;bottom:calc(env(safe-area-inset-bottom,0px) + 12px);z-index:90;width:auto;margin:0!important;box-shadow:inset 0 1px 0 rgba(255,255,255,.9),0 14px 38px rgba(31,20,12,.14)!important}.studyedit-inline-session section[aria-label="Answer and tutor"]{padding-bottom:calc(env(safe-area-inset-bottom,0px) + 6.5rem)}}
-@media(min-width:640px){.studyedit-inline-session{margin-left:-2rem;margin-right:-2rem}.studyedit-inline-session .studyedit-confidence-prompt{padding:0 2rem!important}.studyedit-session-spine{margin-left:-2rem;margin-right:-2rem;padding-left:2rem;padding-right:2rem}}
+
+@media(prefers-reduced-motion:reduce){
+  .studyedit-voice-wave,
+  .studyedit-inline-session section[aria-label="Question"].studyedit-case-expanded,
+  .studyedit-inline-session .studyedit-case-summary,
+  .studyedit-inline-session section[aria-label="Answer and tutor"] { animation:none; }
+}
+
+@media(max-width:639px){
+  .studyedit-session-spine-row { font-size:10px; gap:.55rem; }
+  .studyedit-inline-session section[aria-label="Answer and tutor"] form { position:fixed!important; left:1.25rem; right:1.25rem; bottom:calc(env(safe-area-inset-bottom,0px) + 12px); z-index:90; width:auto; margin:0!important; box-shadow:0 1px 0 rgba(31,20,12,.05)!important; }
+  .studyedit-inline-session section[aria-label="Answer and tutor"] { padding-bottom:calc(env(safe-area-inset-bottom,0px) + 6.5rem); }
+}
+
+@media(min-width:640px){
+  .studyedit-inline-session { margin-left:-2rem; margin-right:-2rem; }
+  .studyedit-inline-session .studyedit-confidence-prompt { padding:0 2rem!important; }
+  .studyedit-session-spine { margin-left:-2rem; margin-right:-2rem; padding-left:2rem; padding-right:2rem; }
+}
