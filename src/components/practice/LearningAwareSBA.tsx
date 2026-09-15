@@ -1,4 +1,5 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { UkmlaSBAQuestion } from './UkmlaSBAQuestion';
 import type { QuestionData } from './questionTypes';
 import type { SessionAnswer } from './SessionProgressDropdown';
@@ -37,13 +38,11 @@ type EvidenceClass =
   | 'uninformative_negative';
 
 const C = {
-  parchment: '#F4ECDF',
   paper: '#FFFDF8',
   espresso: '#1F140C',
+  muted: '#8A7560',
   line: '#E8DCC4',
 };
-
-const learningFont = "Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif";
 
 function classifyEvidence(correct: boolean, confidence: ConfidenceLevel): EvidenceClass {
   if (correct && confidence === 'know') return 'strong_positive';
@@ -55,102 +54,106 @@ function classifyEvidence(correct: boolean, confidence: ConfidenceLevel): Eviden
 }
 
 export const LearningAwareSBA: React.FC<LearningAwareSBAProps> = (props) => {
-  const [confidenceOpen, setConfidenceOpen] = useState(false);
-  const [pendingCorrect, setPendingCorrect] = useState<boolean | null>(null);
+  const [confidenceSlot, setConfidenceSlot] = useState<HTMLElement | null>(null);
+  const [answerReady, setAnswerReady] = useState(false);
+  const checkButtonRef = useRef<HTMLButtonElement | null>(null);
+  const pendingConfidenceRef = useRef<ConfidenceLevel | null>(null);
 
   const conceptTitle = useMemo(
     () => String((props.question as any).concept_title || props.question.title || (props.question as any).topic || 'this concept'),
     [props.question],
   );
 
-  useEffect(() => {
-    setConfidenceOpen(false);
-    setPendingCorrect(null);
-    // Warm longitudinal context while the learner is reading the case so tutor feedback
-    // does not wait on a cloud-memory round trip after they answer.
-    void hydrateLearnerMemoryFromCloud();
-  }, [props.question.id, props.currentIndex]);
-
-  const saveSignal = (signal: string, value?: string, extra?: Record<string, unknown>) => {
+  const saveSignal = (correct: boolean, confidence: ConfidenceLevel) => {
     try {
-      const key = `learning_frontier_${props.question.id || props.question.concept_id || props.currentIndex || 0}_${signal}_${value || ''}`;
+      const key = `learning_frontier_${props.question.id || props.question.concept_id || props.currentIndex || 0}_answer_confidence_${confidence}`;
       sessionStorage.setItem(key, JSON.stringify({
-        signal,
-        value,
+        signal: 'answer_confidence',
+        value: confidence,
         concept: conceptTitle,
         at: new Date().toISOString(),
-        ...extra,
+        correct,
+        confidence_rank: confidence === 'know' ? 2 : confidence === 'unsure' ? 1 : 0,
+        evidence_class: classifyEvidence(correct, confidence),
       }));
     } catch {
       // Learning signals must never interrupt practice.
     }
   };
 
+  useEffect(() => {
+    void hydrateLearnerMemoryFromCloud();
+    pendingConfidenceRef.current = null;
+    setAnswerReady(false);
+
+    let slot: HTMLDivElement | null = null;
+    const sync = () => {
+      const check = Array.from(document.querySelectorAll<HTMLButtonElement>('button'))
+        .find(button => button.textContent?.trim() === 'Check answer') || null;
+
+      if (!check) {
+        checkButtonRef.current = null;
+        setAnswerReady(false);
+        if (slot?.isConnected) slot.remove();
+        slot = null;
+        setConfidenceSlot(null);
+        return;
+      }
+
+      checkButtonRef.current = check;
+      check.style.display = 'none';
+      setAnswerReady(!check.disabled);
+
+      if (!slot?.isConnected) {
+        slot = document.createElement('div');
+        slot.dataset.studyeditConfidenceSlot = 'true';
+        check.insertAdjacentElement('afterend', slot);
+        setConfidenceSlot(slot);
+      }
+    };
+
+    const observer = new MutationObserver(sync);
+    observer.observe(document.body, { childList: true, subtree: true, attributes: true, attributeFilter: ['disabled', 'style'] });
+    sync();
+
+    return () => {
+      observer.disconnect();
+      if (slot?.isConnected) slot.remove();
+      checkButtonRef.current = null;
+      setConfidenceSlot(null);
+    };
+  }, [props.question.id, props.currentIndex]);
+
   const handleChildAnswer = (isCorrect: boolean) => {
-    setPendingCorrect(isCorrect);
-    setConfidenceOpen(true);
+    const confidence = pendingConfidenceRef.current;
+    if (!confidence) return;
+    saveSignal(isCorrect, confidence);
+    props.onAnswer(isCorrect);
+    pendingConfidenceRef.current = null;
   };
 
-  const commitConfidence = (confidence: ConfidenceLevel) => {
-    if (pendingCorrect === null) return;
-    const evidenceClass = classifyEvidence(pendingCorrect, confidence);
-    const confidenceRank = confidence === 'know' ? 2 : confidence === 'unsure' ? 1 : 0;
-
-    saveSignal('answer_confidence', confidence, {
-      correct: pendingCorrect,
-      confidence_rank: confidenceRank,
-      evidence_class: evidenceClass,
-    });
-
-    props.onAnswer(pendingCorrect);
-    setConfidenceOpen(false);
-    setPendingCorrect(null);
+  const submitWithConfidence = (confidence: ConfidenceLevel) => {
+    const check = checkButtonRef.current;
+    if (!check || check.disabled) return;
+    pendingConfidenceRef.current = confidence;
+    check.click();
   };
 
   return (
     <>
       <UkmlaSBAQuestion {...props} onAnswer={handleChildAnswer} />
 
-      {confidenceOpen && (
-        <div
-          className="fixed inset-0 z-[95] flex items-center justify-center px-5"
-          style={{ backgroundColor: C.parchment, color: C.espresso, fontFamily: learningFont }}
-          role="dialog"
-          aria-modal="true"
-          aria-labelledby="studyedit-confidence-title"
-        >
-          <div className="w-full max-w-[520px]">
-            <div id="studyedit-confidence-title" className="text-center text-[18px] font-bold tracking-[-0.01em]">
-              How sure were you?
-            </div>
-            <div className="mt-4 grid grid-cols-3 gap-2">
-              <button
-                type="button"
-                onClick={() => commitConfidence('know')}
-                className="min-h-[48px] rounded-full border px-3 text-[14px] font-semibold active:scale-[0.99]"
-                style={{ borderColor: C.line, backgroundColor: C.paper, color: C.espresso }}
-              >
-                Knew it
-              </button>
-              <button
-                type="button"
-                onClick={() => commitConfidence('unsure')}
-                className="min-h-[48px] rounded-full border px-3 text-[14px] font-semibold active:scale-[0.99]"
-                style={{ borderColor: C.line, backgroundColor: C.paper, color: C.espresso }}
-              >
-                Unsure
-              </button>
-              <button
-                type="button"
-                onClick={() => commitConfidence('guess')}
-                className="min-h-[48px] rounded-full border px-3 text-[14px] font-semibold active:scale-[0.99]"
-                style={{ borderColor: C.line, backgroundColor: C.paper, color: C.espresso }}
-              >
-                Guessed
-              </button>
-            </div>
+      {confidenceSlot && createPortal(
+        <div className={`mt-6 transition-opacity ${answerReady ? 'opacity-100' : 'pointer-events-none opacity-0'}`} aria-label="Answer confidence" aria-hidden={!answerReady}>
+          <div className="mb-3 text-center text-[15px] font-semibold" style={{ color: C.espresso }}>How sure were you?</div>
+          <div className="grid grid-cols-3 gap-2">
+            <button type="button" onClick={() => submitWithConfidence('know')} disabled={!answerReady} className="min-h-[48px] rounded-full border px-3 text-[14px] font-semibold active:scale-[0.99] disabled:cursor-default" style={{ borderColor: C.line, backgroundColor: C.paper, color: C.espresso }}>Knew it</button>
+            <button type="button" onClick={() => submitWithConfidence('unsure')} disabled={!answerReady} className="min-h-[48px] rounded-full border px-3 text-[14px] font-semibold active:scale-[0.99] disabled:cursor-default" style={{ borderColor: C.line, backgroundColor: C.paper, color: C.espresso }}>Unsure</button>
+            <button type="button" onClick={() => submitWithConfidence('guess')} disabled={!answerReady} className="min-h-[48px] rounded-full border px-3 text-[14px] font-semibold active:scale-[0.99] disabled:cursor-default" style={{ borderColor: C.line, backgroundColor: C.paper, color: C.espresso }}>Guessed</button>
           </div>
-        </div>
+          <div className="mt-2 text-center text-[11px]" style={{ color: C.muted }}>Choose one to submit your answer.</div>
+        </div>,
+        confidenceSlot,
       )}
     </>
   );
