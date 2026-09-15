@@ -1,0 +1,22 @@
+name: Repair UKMLA tutor source
+on:
+  push:
+    paths:
+      - '.github/workflows/repair-ukmla.yml'
+permissions:
+  contents: write
+jobs:
+  repair:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Restore tutor source
+        run: |
+          git show 81ae054d6d47da3e3d726be0b567f31be5ae541e:src/components/practice/UkmlaSBAQuestion.tsx > src/components/practice/UkmlaSBAQuestion.tsx
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git add src/components/practice/UkmlaSBAQuestion.tsx
+          git commit -m "Restore UKMLA tutor source" || exit 0
+          git push
