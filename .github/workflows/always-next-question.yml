@@ -1,0 +1,46 @@
+name: Always available next question
+
+on:
+  push:
+    branches: [master]
+    paths:
+      - '.github/workflows/always-next-question.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: master
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Add permanent learner-controlled next action
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          p = Path('src/components/practice/UkmlaSBAQuestion.tsx')
+          s = p.read_text()
+          needle = '''              {!preSubmitted && !advancePending && (\n                <>\n                  <form className="mt-7 flex items-end gap-2 rounded-[18px] border bg-[#FFFDF8] p-2 pl-4 shadow-[0_8px_24px_rgba(31,20,12,0.04)]"'''
+          replacement = '''              {!preSubmitted && !advancePending && (\n                <>\n                  <div className="mt-7 flex justify-end border-t pt-4" style={{ borderColor: C.line }}>\n                    <button\n                      type="button"\n                      onClick={handleNext}\n                      className="text-[14px] font-bold underline decoration-[#BBA995] underline-offset-4 transition-opacity active:opacity-60"\n                      style={{ color: C.espresso }}\n                    >\n                      {isFinalQuestion ? (nextButtonText || 'Finish session →') : (nextButtonText || 'Next question →')}\n                    </button>\n                  </div>\n                  <form className="mt-5 flex items-end gap-2 rounded-[18px] border bg-[#FFFDF8] p-2 pl-4 shadow-[0_8px_24px_rgba(31,20,12,0.04)]"'''
+          if needle not in s:
+              raise SystemExit('Expected tutor composer anchor not found; refusing unsafe patch')
+          s = s.replace(needle, replacement, 1)
+          p.write_text(s)
+          PY
+      - name: Verify source and build
+        run: |
+          grep -q "Next question →" src/components/practice/UkmlaSBAQuestion.tsx
+          npm ci
+          npm run build
+      - name: Commit patch
+        run: |
+          git config user.name "studyedit-bot"
+          git config user.email "actions@users.noreply.github.com"
+          git add src/components/practice/UkmlaSBAQuestion.tsx
+          git commit -m "Keep next question available after every answer"
+          git push origin HEAD:master
