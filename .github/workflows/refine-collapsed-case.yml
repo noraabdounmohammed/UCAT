@@ -1,0 +1,46 @@
+name: Refine collapsed case
+on:
+  push:
+    paths:
+      - '.github/workflows/refine-collapsed-case.yml'
+permissions:
+  contents: write
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Patch collapsed case markup
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          p = Path('src/components/practice/UkmlaSBAQuestion.tsx')
+          s = p.read_text()
+          old = '''            <button type="button" onClick={() => setQuestionExpanded(true)} className="flex w-full items-center justify-between border-y py-4 text-left" style={{ borderColor: C.line }}>
+              <span className="min-w-0 pr-4">
+                <span className="block truncate text-[15px] font-bold" style={{ color: C.espresso }}>{isCorrect ? '✓' : '×'} {conceptTitle}</span>
+                <span className="mt-0.5 block truncate text-[12px] font-medium" style={{ color: C.muted }}>
+                  {isCorrect ? `You chose ${displayedSelectedText}` : `You chose ${displayedSelectedText} · Correct: ${correctOptionText}`}
+                </span>
+              </span>
+              <span className="shrink-0 text-[12px] font-semibold" style={{ color: C.muted }}>Show case</span>
+            </button>'''
+          new = '''            <button type="button" onClick={() => setQuestionExpanded(true)} className="studyedit-case-summary flex w-full items-center text-left" aria-label="Expand full case">
+              <span className={`studyedit-case-status ${isCorrect ? 'is-correct' : 'is-wrong'}`} aria-hidden="true">{isCorrect ? '✓' : '×'}</span>
+              <span className="studyedit-case-copy min-w-0 flex-1">
+                <span className="studyedit-case-topic block truncate">{conceptTitle}</span>
+                <span className="studyedit-case-answer block truncate">
+                  {displayedSelectedText}
+                </span>
+              </span>
+              <ChevronDown className="studyedit-case-chevron h-5 w-5 shrink-0" aria-hidden="true" />
+            </button>'''
+          if old not in s:
+              raise SystemExit('Expected collapsed case block not found; refusing to patch')
+          p.write_text(s.replace(old, new, 1))
+          PY
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git add src/components/practice/UkmlaSBAQuestion.tsx
+          git commit -m "Refine collapsed case interaction"
+          git push
