@@ -678,15 +678,14 @@ export const UkmlaSBAQuestion: React.FC<UkmlaSBAQuestionProps> = ({
               )}
             </section>
           ) : (
-            <button type="button" onClick={() => setQuestionExpanded(true)} className="flex w-full items-center justify-between border-y py-4 text-left" style={{ borderColor: C.line }}>
-              <span className="min-w-0 pr-4">
-                <span className="block truncate text-[15px] font-bold" style={{ color: C.espresso }}>{isCorrect ? '✓' : '×'} {conceptTitle}</span>
-                <span className="mt-0.5 block truncate text-[12px] font-medium" style={{ color: C.muted }}>
-                  {isCorrect ? `You chose ${displayedSelectedText}` : `You chose ${displayedSelectedText} · Correct: ${correctOptionText}`}
-                </span>
-              </span>
-              <span className="shrink-0 text-[12px] font-semibold" style={{ color: C.muted }}>Show case</span>
-            </button>
+            <button type="button" onClick={() => setQuestionExpanded(true)} className="studyedit-case-summary flex w-full items-center text-left" aria-label="Expand full case">
+    <span className={`studyedit-case-status ${isCorrect ? 'is-correct' : 'is-wrong'}`} aria-hidden="true">{isCorrect ? '✓' : '×'}</span>
+    <span className="studyedit-case-copy min-w-0 flex-1">
+      <span className="studyedit-case-topic block truncate">{conceptTitle}</span>
+      <span className="studyedit-case-answer block truncate">{displayedSelectedText}</span>
+    </span>
+    <ChevronDown className="studyedit-case-chevron h-5 w-5 shrink-0" aria-hidden="true" />
+  </button>
           )}
 
           {hasSubmitted && !questionExpanded && (
