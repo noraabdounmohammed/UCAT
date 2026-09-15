@@ -14,18 +14,13 @@ jobs:
         run: |
           python - <<'PY'
           from pathlib import Path
+          import re
           p=Path('src/components/practice/UkmlaSBAQuestion.tsx')
           s=p.read_text()
-          old='''            <section aria-label="Question" className="animate-[fadeIn_.25s_ease]">
-              <div className="mb-5 text-[10px] font-bold uppercase tracking-[0.18em]" style={{ color: C.muted }}>{conceptTitle}</div>'''
-          new='''            <section aria-label="Question" className={`animate-[fadeIn_.25s_ease] ${hasSubmitted && questionExpanded ? 'studyedit-case-expanded' : ''}`}>
+          pattern=r'<section aria-label="Question" className="animate-\[fadeIn_\.25s_ease\]">\s*<div className="mb-5 text-\[10px\] font-bold uppercase tracking-\[0\.18em\]" style=\{\{ color: C\.muted \}\}>\{conceptTitle\}</div>'
+          replacement='''<section aria-label="Question" className={`animate-[fadeIn_.25s_ease] ${hasSubmitted && questionExpanded ? 'studyedit-case-expanded' : ''}`}>
               {hasSubmitted && questionExpanded ? (
-                <button
-                  type="button"
-                  onClick={() => setQuestionExpanded(false)}
-                  className="studyedit-case-collapse-head flex w-full items-center gap-3 text-left"
-                  aria-label="Collapse case"
-                >
+                <button type="button" onClick={() => setQuestionExpanded(false)} className="studyedit-case-collapse-head flex w-full items-center gap-3 text-left" aria-label="Collapse case">
                   <span className={`studyedit-case-status ${isCorrect ? 'is-correct' : 'is-wrong'}`} aria-hidden="true">{isCorrect ? '✓' : '×'}</span>
                   <span className="studyedit-case-copy min-w-0 flex-1">
                     <span className="studyedit-case-topic block truncate">{conceptTitle}</span>
@@ -36,15 +31,11 @@ jobs:
               ) : (
                 <div className="mb-5 text-[10px] font-bold uppercase tracking-[0.18em]" style={{ color: C.muted }}>{conceptTitle}</div>
               )}'''
-          if old not in s: raise SystemExit('question heading anchor missing')
-          s=s.replace(old,new,1)
-          old2='''              {hasSubmitted && questionExpanded && (
-                <button type="button" onClick={() => setQuestionExpanded(false)} className="mt-5 text-[12px] font-semibold underline underline-offset-4" style={{ color: C.muted }}>
-                  Hide case
-                </button>
-              )}'''
-          if old2 not in s: raise SystemExit('hide button anchor missing')
-          s=s.replace(old2,'',1)
+          s,n=re.subn(pattern,replacement,s,count=1)
+          if n != 1: raise SystemExit(f'question heading replacements={n}')
+          hide=r'\s*\{hasSubmitted && questionExpanded && \(\s*<button type="button" onClick=\{\(\) => setQuestionExpanded\(false\)\} className="mt-5 text-\[12px\] font-semibold underline underline-offset-4" style=\{\{ color: C\.muted \}\}>\s*Hide case\s*</button>\s*\)\}'
+          s,n=re.subn(hide,'',s,count=1)
+          if n != 1: raise SystemExit(f'hide button replacements={n}')
           p.write_text(s)
           PY
           git config user.name github-actions[bot]
