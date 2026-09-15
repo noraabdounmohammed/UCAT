@@ -1,4 +1,5 @@
 import React, { useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { Mic, Square, Volume2, Loader2 } from 'lucide-react';
 
 interface Props {
@@ -20,17 +21,23 @@ function appendTranscript(input: HTMLInputElement, transcript: string) {
   setReactInputValue(input, [existing, text].filter(Boolean).join(existing ? ' ' : ''));
 }
 
-function latestTutorText(root: HTMLElement): string {
+function latestTutorBlock(root: HTMLElement): HTMLElement | null {
   const section = root.querySelector('section[aria-label="Answer and tutor"]');
   const conversation = section?.querySelector('.space-y-6');
-  if (!conversation) return '';
+  if (!conversation) return null;
   const blocks = Array.from(conversation.children) as HTMLElement[];
   for (let i = blocks.length - 1; i >= 0; i -= 1) {
     const text = (blocks[i].innerText || '').trim();
     if (!text || text === 'StudyEdit is thinking' || /^You\b/i.test(text)) continue;
-    return text.replace(/^QUICK CHECK\s*/i, 'Quick check. ');
+    return blocks[i];
   }
-  return '';
+  return null;
+}
+
+function latestTutorText(root: HTMLElement): string {
+  const block = latestTutorBlock(root);
+  const text = (block?.innerText || '').trim();
+  return text.replace(/^QUICK CHECK\s*/i, 'Quick check. ');
 }
 
 function browserRecognition(input: HTMLInputElement, onStart: () => void, onStop: () => void): boolean {
@@ -40,6 +47,7 @@ function browserRecognition(input: HTMLInputElement, onStart: () => void, onStop
   recognition.lang = 'en-GB';
   recognition.continuous = false;
   recognition.interimResults = true;
+  const existing = input.value.trim();
   let finalText = '';
   recognition.onstart = onStart;
   recognition.onresult = (event: any) => {
@@ -49,8 +57,8 @@ function browserRecognition(input: HTMLInputElement, onStart: () => void, onStop
       if (event.results[i].isFinal) finalText += transcript;
       else interim += transcript;
     }
-    const heard = (finalText || interim).trim();
-    if (heard) setReactInputValue(input, heard);
+    const heard = `${finalText}${interim}`.trim();
+    if (heard) setReactInputValue(input, [existing, heard].filter(Boolean).join(' '));
   };
   recognition.onerror = onStop;
   recognition.onend = onStop;
@@ -104,9 +112,6 @@ export function TutorVoiceControls({ input, tutorRoot }: Props) {
           const data = await response.json();
           appendTranscript(input, String(data.text || ''));
         } catch {
-          // Until OPENAI_AUDIO_KEY is configured, fall back to the browser/OS
-          // speech recogniser. On supported Chrome/Android devices this is free
-          // and gives live dictation rather than leaving the mic apparently broken.
           browserRecognition(input, () => setRecording(true), () => setRecording(false));
         } finally {
           setTranscribing(false);
@@ -115,8 +120,6 @@ export function TutorVoiceControls({ input, tutorRoot }: Props) {
       recorder.start(250);
       setRecording(true);
     } catch {
-      // Some browsers expose SpeechRecognition even when MediaRecorder/getUserMedia
-      // is unavailable. Try it before giving up.
       browserRecognition(input, () => setRecording(true), () => setRecording(false));
     }
   };
@@ -143,20 +146,30 @@ export function TutorVoiceControls({ input, tutorRoot }: Props) {
       audio.onerror = () => { URL.revokeObjectURL(url); audioRef.current = null; browserSpeak(text, () => setPlaying(false)); };
       await audio.play();
     } catch {
-      // Free zero-key fallback: use the best English voice installed by the OS/browser.
       browserSpeak(text, () => setPlaying(false));
     }
   };
 
-  const buttonClass = 'flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-[#8A7560] transition active:scale-95 disabled:opacity-40';
+  const listenTarget = latestTutorBlock(tutorRoot);
+  const micClass = 'flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-[#8A7560] transition active:scale-95 disabled:opacity-40';
+  const listenClass = 'mt-2 inline-flex items-center gap-1.5 rounded-full px-2 py-1 text-[11px] font-semibold text-[#8A7560] transition hover:text-[#1F140C] active:scale-95';
+
   return (
-    <div className="flex shrink-0 items-center gap-0.5" aria-label="StudyEdit voice controls">
-      <button type="button" className={buttonClass} onClick={startRecording} disabled={transcribing} aria-label={recording ? 'Stop recording' : 'Speak to StudyEdit'} title={recording ? 'Stop recording' : 'Speak to StudyEdit'}>
-        {transcribing ? <Loader2 className="h-[18px] w-[18px] animate-spin" /> : recording ? <Square className="h-[16px] w-[16px] fill-current" /> : <Mic className="h-[19px] w-[19px]" />}
-      </button>
-      <button type="button" className={buttonClass} onClick={playTutor} aria-label={playing ? 'Stop audio' : 'Listen to StudyEdit'} title={playing ? 'Stop audio' : 'Listen to StudyEdit'}>
-        {playing ? <Square className="h-[16px] w-[16px] fill-current" /> : <Volume2 className="h-[19px] w-[19px]" />}
-      </button>
-    </div>
+    <>
+      <div className="flex shrink-0 items-center" aria-label="StudyEdit voice input">
+        <button type="button" className={micClass} onClick={startRecording} disabled={transcribing} aria-label={recording ? 'Stop recording' : 'Speak to StudyEdit'} title={recording ? 'Stop recording' : 'Speak to StudyEdit'}>
+          {transcribing ? <Loader2 className="h-[18px] w-[18px] animate-spin" /> : recording ? <Square className="h-[16px] w-[16px] fill-current" /> : <Mic className="h-[19px] w-[19px]" />}
+        </button>
+      </div>
+      {listenTarget && createPortal(
+        <div className="flex justify-end" data-studyedit-listen-control="true">
+          <button type="button" className={listenClass} onClick={playTutor} aria-label={playing ? 'Stop audio' : 'Listen to this StudyEdit response'} title={playing ? 'Stop audio' : 'Listen to this response'}>
+            {playing ? <Square className="h-3.5 w-3.5 fill-current" /> : <Volume2 className="h-3.5 w-3.5" />}
+            <span>{playing ? 'Stop' : 'Listen'}</span>
+          </button>
+        </div>,
+        listenTarget,
+      )}
+    </>
   );
 }
