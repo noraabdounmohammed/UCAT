@@ -57,12 +57,76 @@
   display: none !important;
 }
 
-/* ChatGPT-like dictation: one tap immediately turns the whole composer into a
- * live recording strip instead of making the mic behave like an upload button. */
+/* Liquid-glass language is deliberately reserved for controls and compressed
+ * context. The teaching content stays quiet and paper-like. */
 .studyedit-inline-session section[aria-label="Answer and tutor"] form {
   position: relative;
+  border-color: rgba(255,255,255,.72) !important;
+  background: linear-gradient(135deg, rgba(255,255,255,.72), rgba(255,253,248,.48)) !important;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.9), 0 12px 34px rgba(70,52,35,.10) !important;
+  -webkit-backdrop-filter: blur(22px) saturate(145%);
+  backdrop-filter: blur(22px) saturate(145%);
 }
 
+/* The collapsed answered case becomes a translucent context layer. Keep the
+ * existing tap-to-expand behaviour and full question/options unchanged. */
+.studyedit-inline-session main > button.flex.w-full.items-center.justify-between.border-y {
+  position: relative;
+  overflow: hidden;
+  margin-top: .2rem;
+  padding: 1rem 1.05rem !important;
+  border: 1px solid rgba(255,255,255,.68) !important;
+  border-radius: 22px;
+  background: linear-gradient(135deg, rgba(255,255,255,.58), rgba(255,255,255,.22));
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.88), 0 10px 30px rgba(75,55,35,.07);
+  -webkit-backdrop-filter: blur(22px) saturate(145%);
+  backdrop-filter: blur(22px) saturate(145%);
+  transition: transform .18s ease, box-shadow .18s ease;
+}
+
+.studyedit-inline-session main > button.flex.w-full.items-center.justify-between.border-y:active {
+  transform: scale(.992);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.82), 0 6px 18px rgba(75,55,35,.06);
+}
+
+.studyedit-inline-session main > button.flex.w-full.items-center.justify-between.border-y > span:first-child {
+  display: flex;
+  min-width: 0;
+  flex: 1;
+  flex-direction: column;
+}
+
+.studyedit-inline-session main > button.flex.w-full.items-center.justify-between.border-y > span:first-child > span:first-child {
+  font-size: 12px !important;
+  line-height: 1.25 !important;
+  letter-spacing: .055em;
+  text-transform: uppercase;
+  color: #756A5E !important;
+}
+
+.studyedit-inline-session main > button.flex.w-full.items-center.justify-between.border-y > span:first-child > span:nth-child(2) {
+  margin-top: .4rem !important;
+  font-size: 16px !important;
+  line-height: 1.35 !important;
+  font-weight: 700 !important;
+  color: #332A23 !important;
+}
+
+.studyedit-inline-session main > button.flex.w-full.items-center.justify-between.border-y > span:last-child {
+  margin-left: .65rem;
+  padding: .48rem .68rem;
+  border: 1px solid rgba(255,255,255,.56);
+  border-radius: 999px;
+  background: rgba(255,255,255,.30);
+  font-size: 11px !important;
+  line-height: 1;
+  white-space: nowrap;
+  color: #756A5E !important;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.55);
+}
+
+/* ChatGPT-like dictation: one tap immediately turns the whole composer into a
+ * live recording strip instead of making the mic behave like an upload button. */
 .studyedit-inline-session section[aria-label="Answer and tutor"] form[data-studyedit-dictating="true"] {
   min-height: 58px;
 }
@@ -98,7 +162,7 @@
     z-index: 90;
     width: auto;
     margin: 0 !important;
-    box-shadow: 0 10px 32px rgba(31, 20, 12, 0.16) !important;
+    box-shadow: inset 0 1px 0 rgba(255,255,255,.9), 0 14px 38px rgba(31,20,12,.14) !important;
   }
 
   .studyedit-inline-session section[aria-label="Answer and tutor"] {
