@@ -730,7 +730,17 @@ export const UkmlaSBAQuestion: React.FC<UkmlaSBAQuestionProps> = ({
 
               {!preSubmitted && !advancePending && (
                 <>
-                  <form className="mt-7 flex items-end gap-2 rounded-[18px] border bg-[#FFFDF8] p-2 pl-4 shadow-[0_8px_24px_rgba(31,20,12,0.04)]" style={{ borderColor: '#DCCDB8' }} onSubmit={event => {
+                  <div className="mt-7 flex justify-end border-t pt-4" style={{ borderColor: C.line }}>
+                    <button
+                      type="button"
+                      onClick={handleNext}
+                      className="text-[14px] font-bold underline decoration-[#BBA995] underline-offset-4 transition-opacity active:opacity-60"
+                      style={{ color: C.espresso }}
+                    >
+                      {isFinalQuestion ? (nextButtonText || 'Finish session →') : (nextButtonText || 'Next question →')}
+                    </button>
+                  </div>
+                  <form className="mt-5 flex items-end gap-2 rounded-[18px] border bg-[#FFFDF8] p-2 pl-4 shadow-[0_8px_24px_rgba(31,20,12,0.04)]" style={{ borderColor: '#DCCDB8' }} onSubmit={event => {
                     event.preventDefault();
                     const query = aiQuestion.trim();
                     if (query) void handleStudentReply(query);
