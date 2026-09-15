@@ -302,7 +302,7 @@ export const UkmlaSBAQuestion: React.FC<UkmlaSBAQuestionProps> = ({
   const advanceTimerRef = useRef<number | null>(null);
   const scrollRef = useRef<HTMLDivElement | null>(null);
   const tutorRef = useRef<HTMLDivElement | null>(null);
-  const inputRef = useRef<HTMLInputElement | null>(null);
+  const inputRef = useRef<HTMLTextAreaElement | null>(null);
   const getStorageKey = () => `sba_answer_${question.id || question.question?.substring(0, 50)}`;
 
   const clearAdvanceTimer = () => {
@@ -726,19 +726,32 @@ export const UkmlaSBAQuestion: React.FC<UkmlaSBAQuestionProps> = ({
 
               {!preSubmitted && !advancePending && (
                 <>
-                  <form className="mt-7 flex items-center gap-2 rounded-[18px] border bg-[#FFFDF8] p-2 pl-4 shadow-[0_8px_24px_rgba(31,20,12,0.04)]" style={{ borderColor: '#DCCDB8' }} onSubmit={event => {
+                  <form className="mt-7 flex items-end gap-2 rounded-[18px] border bg-[#FFFDF8] p-2 pl-4 shadow-[0_8px_24px_rgba(31,20,12,0.04)]" style={{ borderColor: '#DCCDB8' }} onSubmit={event => {
                     event.preventDefault();
                     const query = aiQuestion.trim();
                     if (query) void handleStudentReply(query);
                   }}>
-                    <input
+                    <textarea
                       ref={inputRef}
+                      rows={1}
                       value={aiQuestion}
-                      onChange={event => setAiQuestion(event.target.value)}
+                      onChange={event => {
+                        setAiQuestion(event.target.value);
+                        event.currentTarget.style.height = 'auto';
+                        event.currentTarget.style.height = `${Math.min(event.currentTarget.scrollHeight, 180)}px`;
+                        event.currentTarget.style.overflowY = event.currentTarget.scrollHeight > 180 ? 'auto' : 'hidden';
+                      }}
+                      onKeyDown={event => {
+                        if (event.key === 'Enter' && !event.shiftKey && !event.nativeEvent.isComposing) {
+                          event.preventDefault();
+                          const query = aiQuestion.trim();
+                          if (query && !tutorBusy) void handleStudentReply(query);
+                        }
+                      }}
                       disabled={tutorBusy}
                       placeholder={tutorBusy ? 'StudyEdit is thinking…' : 'Reply or ask anything…'}
-                      className="min-w-0 flex-1 bg-transparent py-2.5 text-[16px] font-medium outline-none placeholder:text-[#A89582] disabled:cursor-wait"
-                      style={{ color: C.espresso }}
+                      className="min-h-[44px] max-h-[180px] min-w-0 flex-1 resize-none bg-transparent py-2.5 text-[16px] font-medium leading-6 outline-none placeholder:text-[#A89582] disabled:cursor-wait"
+                      style={{ color: C.espresso, overflowY: 'hidden' }}
                     />
                     <button
                       type="submit"
