@@ -1,0 +1,77 @@
+name: Evidence-aware tutor patch
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - 'src/lib/learningEvidence.ts'
+permissions:
+  contents: write
+jobs:
+  patch:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: master
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci
+      - name: Patch evidence capture and conversational session ending
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+
+          p=Path('src/components/practice/UkmlaSBAQuestion.tsx')
+          s=p.read_text()
+          imp="import { recordEvidence } from '@/lib/learningEvidence';\n"
+          anchor="import type { SessionAnswer } from './SessionProgressDropdown';\n"
+          if imp not in s:
+              assert anchor in s
+              s=s.replace(anchor, anchor+imp)
+
+          # Capture the independent SBA before tutoring can contaminate the evidence.
+          old="""    onAnswer(correct);\n    void runTutor(undefined, false, selectedOption, startedAt);"""
+          new="""    recordEvidence({\n      kind: 'answer',\n      questionId: String(question.id || ''),\n      conceptId: String((question as any).concept_id || ''),\n      conceptTitle,\n      correct,\n      confidence: confidenceLevel,\n      assistance: 'independent',\n      source: 'sba',\n    });\n    onAnswer(correct);\n    void runTutor(undefined, false, selectedOption, startedAt);"""
+          assert old in s, 'answer capture anchor changed'
+          s=s.replace(old,new,1)
+
+          # Capture learner reasoning verbatim before hidden assessment.
+          old="""      const recentTranscript = [\n        ...tutorTurns.slice(-8),\n        { role: 'student' as const, text: query },\n      ]"""
+          new="""      recordEvidence({\n        kind: 'learner_reasoning',\n        questionId: String(question.id || ''),\n        conceptId: String((question as any).concept_id || ''),\n        conceptTitle,\n        confidence,\n        assistance: 'prompted',\n        learnerText: query,\n        tutorPrompt: tutorTurns.filter(turn => turn.role === 'tutor').at(-1)?.text,\n        source: 'tutor',\n      });\n      const recentTranscript = [\n        ...tutorTurns.slice(-8),\n        { role: 'student' as const, text: query },\n      ]"""
+          assert old in s, 'reasoning anchor changed'
+          s=s.replace(old,new,1)
+
+          # Persist controller judgement, but explicitly as prompted/assisted evidence.
+          old="""      if (assessment === 'clarify') {"""
+          new="""      recordEvidence({\n        kind: 'tutor_assessment',\n        questionId: String(question.id || ''),\n        conceptId: String((question as any).concept_id || ''),\n        conceptTitle,\n        confidence,\n        assistance: 'prompted',\n        assessment,\n        learnerText: query,\n        source: 'tutor',\n      });\n\n      if (assessment === 'clarify') {"""
+          assert old in s, 'assessment anchor changed'
+          s=s.replace(old,new,1)
+          p.write_text(s)
+
+          # Make the end of a session feel like the tutor continuing the same conversation,
+          # and expose only claims supported by this session's evidence.
+          p=Path('src/components/practice/SessionReviewScreen.tsx')
+          s=p.read_text()
+          s=s.replace("import { ArrowRight, Home, RotateCcw } from 'lucide-react';", "import { ArrowRight, RotateCcw } from 'lucide-react';")
+          s=s.replace("import { useAuth } from '@/contexts/AuthContext';", "import { useAuth } from '@/contexts/AuthContext';\nimport { learnerEvidenceSummary } from '@/lib/learningEvidence';")
+          s=s.replace("  const correct = answers.filter(answer => answer.isCorrect).length;", "  const correct = answers.filter(answer => answer.isCorrect).length;\n  const evidence = useMemo(() => learnerEvidenceSummary(), [answers]);")
+          start=s.index('  return (\n    <main className="fixed inset-0 overflow-y-auto"')
+          end=s.rindex('\n  );\n};')
+          replacement='''  return (\n    <main className="min-h-full" style={{ backgroundColor: T.cream, color: T.ink }}>\n      <div className="mx-auto w-full max-w-[700px] px-5 pb-14 pt-8 sm:px-8">\n        <section aria-label="Tutor session reflection" className="border-t pt-8" style={{ borderColor: T.line }}>\n          <div className="mb-3 text-[10px] font-extrabold uppercase tracking-[0.18em]" style={{ color: T.muted }}>StudyEdit</div>\n          <p className="text-[20px] font-semibold leading-[1.65] tracking-[-0.01em] sm:text-[21px]" style={{ color: T.espresso }}>\n            {observation}\n          </p>\n          <p className="mt-5 text-[16px] font-medium leading-7" style={{ color: T.muted }}>{nextStep}</p>\n\n          <div className="mt-7 border-y py-5" style={{ borderColor: T.line }}>\n            <div className="text-[10px] font-extrabold uppercase tracking-[0.18em]" style={{ color: T.muted }}>What changed in your map</div>\n            <p className="mt-2 text-[14px] font-semibold leading-6" style={{ color: T.espresso }}>\n              {total} case{total === 1 ? '' : 's'} today · {correct} correct without tutor help.\n              {evidence.evidencedConcepts > 0 ? ` Across your saved history, I now have evidence on ${evidence.evidencedConcepts} concept${evidence.evidencedConcepts === 1 ? '' : 's'}; ${evidence.demonstrated} demonstrated independently and ${evidence.developing} still developing.` : ''}\n            </p>\n            {evidence.dueForRetrieval > 0 && <p className="mt-2 text-[13px] font-medium" style={{ color: T.muted }}>{evidence.dueForRetrieval} previously demonstrated concept{evidence.dueForRetrieval === 1 ? ' is' : 's are'} due to be retrieved again.</p>}\n          </div>\n\n          <div className="mt-7 flex flex-wrap items-center gap-5">\n            {onAnotherFive && <button onClick={() => onAnotherFive()} className="text-[14px] font-bold underline decoration-[#BBA995] underline-offset-4" style={{ color: T.espresso }}>Keep going →</button>}\n            {misses.length > 0 && <button onClick={onRetryIncorrect} className="inline-flex items-center gap-2 text-[13px] font-semibold underline decoration-[#BBA995] underline-offset-4" style={{ color: T.muted }}><RotateCcw className="h-3.5 w-3.5" /> Revisit a miss</button>}\n            <button onClick={onDone} className="text-[13px] font-semibold" style={{ color: T.muted }}>Done for now</button>\n          </div>\n\n          {!user && <p className="mt-7 text-[12px] font-medium leading-5" style={{ color: T.muted }}>Sign in to carry this evidence into future sessions.</p>}\n\n          <div className="mt-9 border-t pt-5" style={{ borderColor: T.line }}>\n            <div className="text-[11px] font-bold uppercase tracking-[0.16em]" style={{ color: T.muted }}>This conversation is your review</div>\n            <div className="mt-4 space-y-2">\n              {cases.map(item => <button key={`${item.index}-${item.title}`} type="button" onClick={() => onViewQuestion?.(item.index)} disabled={!onViewQuestion} className="flex w-full items-center gap-3 py-2 text-left disabled:cursor-default"><span style={{ color: item.isCorrect ? '#667555' : '#9C655D' }}>{item.isCorrect ? '✓' : '×'}</span><span className="min-w-0 flex-1 truncate text-[13px] font-semibold" style={{ color: T.espresso }}>{item.title}</span>{onViewQuestion && <ArrowRight className="h-3.5 w-3.5" style={{ color: T.muted }} />}</button>)}\n            </div>\n          </div>\n        </section>\n      </div>\n    </main>\n  );'''
+          s=s[:start]+replacement+s[end+len('\n  );'):]
+          p.write_text(s)
+          PY
+      - run: npm run build
+      - run: npm test -- --run
+      - name: Commit patch
+        run: |
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git add src/components/practice/UkmlaSBAQuestion.tsx src/components/practice/SessionReviewScreen.tsx
+          git diff --cached --quiet && exit 0
+          git commit -m "Make StudyEdit evidence-aware across tutor conversations"
+          git push origin HEAD:master
