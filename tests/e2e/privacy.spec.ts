@@ -1,7 +1,5 @@
 import { test, expect } from '@playwright/test';
 
-const currentHomeHeading = /what do you want to work on\?|what do you need today\?/i;
-
 test.describe('privacy page', () => {
   test('renders the current privacy copy and a working contact path', async ({ page }) => {
     await page.goto('/privacy');
@@ -17,6 +15,7 @@ test.describe('privacy page', () => {
     await page.goto('/privacy');
     await page.getByRole('link', { name: /home/i }).click();
     await expect(page).toHaveURL(/\/$/);
-    await expect(page.getByRole('heading', { name: currentHomeHeading })).toBeVisible();
+    await expect(page.locator('section[aria-label="Question"]')).toBeVisible({ timeout: 20_000 });
+    await expect(page.getByRole('button', { name: /choose session focus/i })).toBeVisible();
   });
 });

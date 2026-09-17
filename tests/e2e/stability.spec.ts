@@ -2,7 +2,11 @@ import { test, expect } from '@playwright/test';
 
 const PUBLIC_ROUTES = ['/', '/privacy', '/concept-practice', '/recommended-practice'];
 const FIRST_PARTY_HOSTS = new Set(['studyedit.com', 'www.studyedit.com', '127.0.0.1', 'localhost']);
-const currentHomeHeading = /what do you want to work on\?/i;
+
+async function expectUsableCase(page: any) {
+  await expect(page.locator('section[aria-label="Question"]')).toBeVisible({ timeout: 20_000 });
+  await expect(page.getByRole('button', { name: /choose session focus/i })).toBeVisible();
+}
 
 for (const route of PUBLIC_ROUTES) {
   test(`${route} has no uncaught browser errors or broken first-party assets`, async ({ page }) => {
@@ -43,30 +47,24 @@ test('rapid public navigation never leaves the learner on a blank screen', async
   }
 });
 
-test('reloading the app repeatedly preserves the current learner home', async ({ page }) => {
+test('reloading the app repeatedly preserves the current learner session', async ({ page }) => {
   await page.goto('/');
+  await expectUsableCase(page);
   for (let i = 0; i < 3; i += 1) {
     await page.reload({ waitUntil: 'domcontentloaded' });
-    await expect(page.getByRole('heading', { name: currentHomeHeading })).toBeVisible();
-    await expect(page.getByRole('button', { name: /choose what to practise/i })).toBeVisible();
+    await expectUsableCase(page);
   }
 });
 
 test('production-style launch reaches a real safe case', async ({ page }, testInfo) => {
   test.setTimeout(60_000);
-  await page.goto('/');
-
-  await page.getByRole('button', { name: /choose what to practise/i }).click();
-  await expect(page.getByRole('heading', { name: /practise your way/i })).toBeVisible();
-  const begin = page.getByRole('button', { name: /begin session/i });
-  await expect(begin).toBeEnabled({ timeout: 15_000 });
-
   const startedAt = Date.now();
-  await begin.click();
-  await expect(page.locator('section[aria-label="Question"]')).toBeVisible({ timeout: 20_000 });
+  await page.goto('/');
+  await expectUsableCase(page);
   const startToFirstCaseMs = Date.now() - startedAt;
 
   await expect(page.getByText(/^What do you know about /i)).toHaveCount(0);
+  expect(startToFirstCaseMs, 'Open StudyEdit → first usable case').toBeLessThan(20_000);
   console.log(`[studyedit-production-metric] start_to_first_case_ms=${startToFirstCaseMs}`);
   await testInfo.attach('production-launch-latency.json', {
     body: JSON.stringify({ startToFirstCaseMs }, null, 2),

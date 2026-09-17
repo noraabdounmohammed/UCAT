@@ -1,12 +1,11 @@
 import { test, expect } from '@playwright/test';
 
-const currentHomeHeading = /what do you want to work on\?|what do you need today\?/i;
-
 test.describe('supported routes', () => {
   test('unknown routes recover to the home page instead of dead-ending', async ({ page }) => {
     await page.goto('/definitely-not-a-real-route');
     await expect(page).toHaveURL(/\/$/);
-    await expect(page.getByRole('heading', { name: currentHomeHeading })).toBeVisible();
+    await expect(page.locator('section[aria-label="Question"]')).toBeVisible({ timeout: 20_000 });
+    await expect(page.getByRole('button', { name: /choose session focus/i })).toBeVisible();
   });
 
   test('custom practice route renders without a blank screen', async ({ page }) => {
