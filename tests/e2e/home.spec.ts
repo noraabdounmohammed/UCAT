@@ -1,6 +1,6 @@
-import { test, expect } from '@playwright/test';
+import { test, expect, type Page } from '@playwright/test';
 
-async function dismissCookieConsent(page: any) {
+async function dismissCookieConsent(page: Page) {
   const dialog = page.getByRole('dialog', { name: /cookie consent/i });
   const appeared = await dialog.isVisible({ timeout: 2_000 }).catch(() => false);
   if (!appeared) return;
@@ -16,7 +16,7 @@ async function dismissCookieConsent(page: any) {
   await expect(dialog).toBeHidden();
 }
 
-async function waitForFirstCase(page: any) {
+async function waitForFirstCase(page: Page) {
   await dismissCookieConsent(page);
   const question = page.locator('section[aria-label="Question"]');
   await expect(question).toBeVisible({ timeout: 20_000 });
@@ -52,6 +52,26 @@ test.describe('StudyEdit launch flow', () => {
     await page.getByRole('button', { name: /close practice builder/i }).click();
     await expect(question).toBeVisible();
     await expect(page.getByRole('button', { name: /choose session focus/i })).toBeVisible();
+  });
+
+  test('the session Home control leads to a real destination', async ({ page }) => {
+    await page.goto('/');
+    await waitForFirstCase(page);
+
+    await page.getByRole('button', { name: /go to home/i }).click();
+    const confirmation = page.getByRole('dialog', { name: /end this session/i });
+    await expect(confirmation).toBeVisible();
+    await confirmation.getByRole('button', { name: /go to home/i }).click();
+
+    await expect(page).toHaveURL(/\?home=1$/);
+    await expect(page.getByRole('heading', { name: /your next session/i })).toBeVisible();
+    await expect(page.getByRole('button', { name: /continue recommended/i })).toBeVisible();
+    await expect(page.getByRole('button', { name: /choose a focus/i })).toBeVisible();
+    await expect(page.getByText(/recorded attempts|not a readiness score|concepts evidenced/i)).toHaveCount(0);
+
+    await page.getByRole('button', { name: /continue recommended/i }).click();
+    await waitForFirstCase(page);
+    await expect(page.getByRole('dialog', { name: /end this session/i })).toHaveCount(0);
   });
 
   test('fresh learner focus chooser waits for the catalogue then becomes usable', async ({ page }) => {

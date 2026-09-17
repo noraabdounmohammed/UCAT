@@ -1,5 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { ArrowRight, SlidersHorizontal } from 'lucide-react';
 import { ConceptStoreProvider, useConceptStore } from '@/contexts/ConceptStoreContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { ApplePracticeSession } from '@/components/practice/ApplePracticeSession';
@@ -23,7 +24,55 @@ import './launch-home-embed.css';
 const P = { cream: '#F4ECDF', espresso: '#1F140C', ink: '#2A1E16', muted: '#746354', line: '#E8DCC4', sage: '#8FA379' };
 const selectedFilterValues = (values: string[] | undefined) => (values || []).filter(value => value && value !== 'any');
 const scopeStorageKey = (curriculumId: string) => `${curriculumId}_active_practice_scope_v1`;
+const recentSessionStorageKey = 'studyedit_recent_session_v1';
 const filterLabel = (value: string) => value.replace(/[-_]/g, ' ').replace(/\b\w/g, letter => letter.toUpperCase());
+
+type RecentSession = {
+  answered: number;
+  correct: number;
+  completedAt: number;
+  items: Array<{ title: string; isCorrect: boolean }>;
+};
+
+function readRecentSession(): RecentSession | null {
+  try {
+    const stored = localStorage.getItem(recentSessionStorageKey);
+    if (!stored) return null;
+    const parsed = JSON.parse(stored) as RecentSession;
+    if (!Number.isFinite(parsed.answered) || !Number.isFinite(parsed.correct) || !Array.isArray(parsed.items)) return null;
+    return parsed;
+  } catch {
+    return null;
+  }
+}
+
+function rememberRecentSession(session: RecentSession) {
+  try {
+    localStorage.setItem(recentSessionStorageKey, JSON.stringify(session));
+  } catch {
+    // The Home screen still works when local storage is unavailable.
+  }
+}
+
+function buildRecentSession(answers: SessionAnswer[], questions: QuestionData[]): RecentSession | null {
+  if (!answers.length) return null;
+  const items = answers
+    .slice()
+    .sort((a, b) => a.questionIndex - b.questionIndex)
+    .map(answer => {
+      const question = questions[answer.questionIndex];
+      return {
+        title: String(question?.concept_title || question?.title || question?.topic || `Case ${answer.questionIndex + 1}`),
+        isCorrect: answer.isCorrect,
+      };
+    });
+  return {
+    answered: answers.length,
+    correct: answers.filter(answer => answer.isCorrect).length,
+    completedAt: Date.now(),
+    items,
+  };
+}
 
 function readActivePracticeScope(curriculumId: string): FilterState | null {
   try {
@@ -131,6 +180,11 @@ function HomeContent({ curriculumId }: { curriculumId: string }) {
   const initialDraftRef = useRef(readLaunchSessionDraft());
   const [restoredDraft, setRestoredDraft] = useState<LaunchSessionDraft | null>(initialDraftRef.current);
   const [activeFilters, setActiveFilters] = useState<FilterState | null>(() => initialDraftRef.current ? readActivePracticeScope(curriculumId) : null);
+  const [showHome, setShowHome] = useState(() => new URLSearchParams(window.location.search).get('home') === '1');
+  const [recentSession, setRecentSession] = useState<RecentSession | null>(readRecentSession);
+  const [showSessionOrientation, setShowSessionOrientation] = useState(
+    () => !initialDraftRef.current?.showReview && initialDraftRef.current?.reviewingQuestionIndex == null,
+  );
   const launchedRef = useRef(Boolean(initialDraftRef.current));
   const syncingDraftRef = useRef(false);
   const previousConceptStateRef = useRef<Map<string, string>>(new Map());
@@ -153,6 +207,11 @@ function HomeContent({ curriculumId }: { curriculumId: string }) {
 
   const launchSelection = useCallback((selected: ConceptNode[], count: number, replaceCurrent = false) => {
     if (!selected.length) return;
+    launchedRef.current = true;
+    setShowHome(false);
+    setShowSessionOrientation(true);
+    setExitRequestId(0);
+    navigate('/', { replace: true });
     clearSavedQuestionAnswers();
     clearLaunchSessionDraft();
     setRestoredDraft(null);
@@ -161,7 +220,7 @@ function HomeContent({ curriculumId }: { curriculumId: string }) {
     setSessionInstance(value => value + 1);
     setPracticeSelection(selected.map(concept => concept.concept_id));
     void startPractice({ study_mode: 'smart', target_formats: ['ukmla_sba'], question_count: count, replace_current: replaceCurrent });
-  }, [setPracticeSelection, startPractice]);
+  }, [navigate, setPracticeSelection, startPractice]);
 
   const startRecommended = useCallback((replaceCurrent = false) => {
     if (!concepts?.length) return;
@@ -179,10 +238,10 @@ function HomeContent({ curriculumId }: { curriculumId: string }) {
   }, [concepts, curriculumId, hasEvidence, launchSelection, sessionCount]);
 
   useEffect(() => {
-    if (restoredDraft || launchedRef.current || !concepts?.length) return;
+    if (showHome || restoredDraft || launchedRef.current || !concepts?.length) return;
     launchedRef.current = true;
     startRecommended();
-  }, [concepts, restoredDraft, startRecommended]);
+  }, [concepts, restoredDraft, showHome, startRecommended]);
 
   useEffect(() => {
     if (!user?.id || !restoredDraft || restoredDraft.syncedUserIds?.includes(user.id) || syncingDraftRef.current || !concepts?.length) return;
@@ -260,6 +319,11 @@ function HomeContent({ curriculumId }: { curriculumId: string }) {
   }, []);
 
   const handleComplete = useCallback(() => {
+    const nextRecentSession = buildRecentSession(sessionProgress.answers, displayQuestions);
+    if (nextRecentSession) {
+      setRecentSession(nextRecentSession);
+      rememberRecentSession(nextRecentSession);
+    }
     const completedDraft = readLaunchSessionDraft();
     if (user?.id && completedDraft && !completedDraft.syncedUserIds?.includes(user.id)) {
       void ProgressSyncService.savePracticeSession(user.id, curriculumId, draftSessionPayload(completedDraft))
@@ -270,12 +334,16 @@ function HomeContent({ curriculumId }: { curriculumId: string }) {
     setActiveFilters(null);
     setRestoredDraft(null);
     endPractice();
-    launchedRef.current = false;
+    launchedRef.current = true;
+    setShowHome(true);
+    setShowSessionOrientation(true);
+    setExitRequestId(0);
     setSessionProgress({ currentIndex: 0, answers: [] });
+    navigate('/?home=1', { replace: true });
     window.scrollTo({ top: 0, behavior: 'smooth' });
-  }, [curriculumId, endPractice, user?.id]);
+  }, [curriculumId, displayQuestions, endPractice, navigate, sessionProgress.answers, user?.id]);
 
-  const hasQuestion = Boolean(restoredDraft?.questions.length) || (isPracticing && displayQuestions.length > 0);
+  const hasQuestion = !showHome && (Boolean(restoredDraft?.questions.length) || (isPracticing && displayQuestions.length > 0));
   const scopeLabel = useMemo(() => summarizePracticeScope(activeFilters), [activeFilters]);
 
   return (
@@ -292,13 +360,76 @@ function HomeContent({ curriculumId }: { curriculumId: string }) {
           )}
 
           <div className="mt-0">
-            {!hasQuestion && !practiceError && (
+            {showHome && (
+              <div className="pt-12 sm:pt-20">
+                <section aria-labelledby="studyedit-home-heading">
+                  <div className="text-[11px] font-bold uppercase tracking-[0.18em]" style={{ color: P.muted }}>UKMLA AKT</div>
+                  <h1 id="studyedit-home-heading" className="mt-3 text-[36px] font-light leading-none tracking-[-0.04em] sm:text-[46px]" style={{ color: P.espresso, fontFamily: "'Fraunces', serif" }}>
+                    Your next session
+                  </h1>
+
+                  <div className="mt-8 overflow-hidden rounded-[22px] border" style={{ borderColor: P.line, backgroundColor: '#FFFDF8' }}>
+                    <button
+                      type="button"
+                      onClick={() => startRecommended()}
+                      className="flex min-h-[88px] w-full items-center gap-4 px-5 text-left transition-colors hover:bg-[#FAF5EC] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-[-3px] focus-visible:outline-[#8FA379]"
+                    >
+                      <span className="min-w-0 flex-1">
+                        <span className="block text-[17px] font-bold" style={{ color: P.espresso }}>Continue recommended</span>
+                        <span className="mt-1 block text-[14px]" style={{ color: P.muted }}>{sessionCount} cases</span>
+                      </span>
+                      <ArrowRight className="h-5 w-5 shrink-0" style={{ color: P.muted }} aria-hidden="true" />
+                    </button>
+                    <button
+                      type="button"
+                      onClick={openFilters}
+                      className="flex min-h-[88px] w-full items-center gap-4 border-t px-5 text-left transition-colors hover:bg-[#FAF5EC] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-[-3px] focus-visible:outline-[#8FA379]"
+                      style={{ borderColor: P.line }}
+                    >
+                      <SlidersHorizontal className="h-5 w-5 shrink-0" style={{ color: P.muted }} aria-hidden="true" />
+                      <span className="min-w-0 flex-1">
+                        <span className="block text-[17px] font-bold" style={{ color: P.espresso }}>Choose a focus</span>
+                        <span className="mt-1 block text-[14px]" style={{ color: P.muted }}>Conditions, presentations or weak areas</span>
+                      </span>
+                    </button>
+                  </div>
+                </section>
+
+                {recentSession && (
+                  <section className="mt-10 border-t pt-7" style={{ borderColor: P.line }} aria-labelledby="latest-session-heading">
+                    <div className="flex items-baseline justify-between gap-4">
+                      <h2 id="latest-session-heading" className="text-[14px] font-bold" style={{ color: P.espresso }}>Latest session</h2>
+                      <span className="text-[14px] font-semibold" style={{ color: P.muted }}>
+                        {recentSession.correct} of {recentSession.answered} correct
+                      </span>
+                    </div>
+                    <details className="mt-4">
+                      <summary className="cursor-pointer list-none text-[14px] font-semibold underline underline-offset-4" style={{ color: P.espresso }}>
+                        Review answers
+                      </summary>
+                      <div className="mt-4 overflow-hidden rounded-[18px] border" style={{ borderColor: P.line, backgroundColor: '#FFFDF8' }}>
+                        {recentSession.items.map((item, index) => (
+                          <div key={`${item.title}-${index}`} className="flex items-center gap-3 px-4 py-4" style={{ borderTop: index ? `1px solid ${P.line}` : 'none' }}>
+                            <span className="grid h-7 w-7 shrink-0 place-items-center rounded-full text-[12px] font-bold" style={{ backgroundColor: item.isCorrect ? '#E7ECD9' : '#F9E4DF', color: item.isCorrect ? '#667555' : '#9C655D' }} aria-hidden="true">
+                              {item.isCorrect ? '✓' : '×'}
+                            </span>
+                            <span className="min-w-0 flex-1 truncate text-[14px] font-semibold" style={{ color: P.ink }}>{item.title}</span>
+                            <span className="shrink-0 text-[12px] font-semibold" style={{ color: P.muted }}>{item.isCorrect ? 'Correct' : 'Review'}</span>
+                          </div>
+                        ))}
+                      </div>
+                    </details>
+                  </section>
+                )}
+              </div>
+            )}
+            {!showHome && !hasQuestion && !practiceError && (
               <div className="flex items-center gap-2 pt-8 text-[12px] font-semibold" style={{ color: P.muted }} aria-live="polite">
                 <span className="h-2 w-2 animate-pulse rounded-full" style={{ backgroundColor: P.sage }} aria-hidden="true" />
                 Choosing your first useful case…
               </div>
             )}
-            {practiceError && (
+            {!showHome && practiceError && (
               <div className="max-w-lg border-y border-[#E8DCC4] py-5">
                 <div className="text-[12px] font-semibold text-[#746354]">I couldn’t prepare a reliable case just now.</div>
                 <p className="mt-2 text-[14px] leading-6 text-[#49382B]">{practiceError}</p>
@@ -307,15 +438,17 @@ function HomeContent({ curriculumId }: { curriculumId: string }) {
             )}
             {hasQuestion && (
               <>
-                <SessionOrientation
-                  currentIndex={sessionProgress.currentIndex}
-                  plannedCount={plannedCount}
-                  answeredCount={sessionProgress.answers.length}
-                  scopeLabel={scopeLabel}
-                  isTailored={Boolean(activeFilters)}
-                  onAdjust={openFilters}
-                  onExit={() => setExitRequestId(value => value + 1)}
-                />
+                {showSessionOrientation && (
+                  <SessionOrientation
+                    currentIndex={sessionProgress.currentIndex}
+                    plannedCount={plannedCount}
+                    answeredCount={sessionProgress.answers.length}
+                    scopeLabel={scopeLabel}
+                    isTailored={Boolean(activeFilters)}
+                    onAdjust={openFilters}
+                    onExit={() => setExitRequestId(value => value + 1)}
+                  />
+                )}
                 <div className="studyedit-inline-session">
                   <ApplePracticeSession
                     key={sessionInstance}
@@ -328,6 +461,7 @@ function HomeContent({ curriculumId }: { curriculumId: string }) {
                     currentFormat="ukmla_sba"
                     onAnotherFive={() => startRecommended(true)}
                     onRestartWithFilters={openFilters}
+                    onSessionChromeChange={setShowSessionOrientation}
                     exitRequestId={exitRequestId}
                     persistLaunchState
                     learnerScope={user?.id || 'guest'}

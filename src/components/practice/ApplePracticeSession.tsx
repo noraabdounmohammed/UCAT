@@ -24,7 +24,8 @@ interface PracticeSessionProps {
   defaultFormat?: 'flashcard' | 'sba' | 'ukmla_sba' | 'mindmap';
   currentFormat?: string;
   onChangeFormat?: (format: string) => void;
-  onRestartWithFilters?: (filters?: any) => void;
+  onRestartWithFilters?: (filters?: unknown) => void;
+  onSessionChromeChange?: (visible: boolean) => void;
   exitRequestId?: number;
   persistLaunchState?: boolean;
   learnerScope?: string;
@@ -39,9 +40,9 @@ export function ApplePracticeSession({
   activeFilter = null,
   section,
   defaultFormat = 'ukmla_sba',
-  currentFormat = 'ukmla_sba',
   onChangeFormat,
   onRestartWithFilters,
+  onSessionChromeChange,
   onProgressChange,
   exitRequestId = 0,
   persistLaunchState = false,
@@ -77,6 +78,10 @@ export function ApplePracticeSession({
   useEffect(() => {
     onProgressChange?.(currentIndex, sessionAnswers);
   }, [currentIndex, onProgressChange, sessionAnswers]);
+
+  useEffect(() => {
+    onSessionChromeChange?.(!showReview && reviewingQuestionIndex === null);
+  }, [onSessionChromeChange, reviewingQuestionIndex, showReview]);
 
   useEffect(() => {
     if (exitRequestId > 0) setShowExitConfirmation(true);
@@ -381,16 +386,16 @@ export function ApplePracticeSession({
         <Dialog open={showExitConfirmation}>
           <div className="fixed inset-0 z-50 flex items-end justify-center bg-[#1F140C]/20 p-4 pb-6 sm:items-center sm:p-6" onClick={handleExitCancel}>
             <div role="dialog" aria-modal="true" aria-labelledby="exit-practice-title" className="w-full max-w-[420px] rounded-[28px] border border-[#E8DCC4] bg-[#FFFDF8] px-6 pb-6 pt-7 shadow-[0_18px_55px_rgba(31,20,12,0.16)] sm:px-7 sm:pb-7 sm:pt-8" onClick={(event) => event.stopPropagation()}>
-              <div className="mb-2 text-[10px] font-semibold uppercase tracking-[0.22em] text-[#8A7560]">Pause here?</div>
+              <div className="mb-2 text-[10px] font-semibold uppercase tracking-[0.22em] text-[#8A7560]">Go to Home?</div>
               <h2 id="exit-practice-title" className="text-[30px] font-light leading-[1.08] tracking-[-0.03em] text-[#1F140C]" style={{ fontFamily: "'Fraunces', serif" }}>
-                We can stop here.
+                End this session?
               </h2>
               <p className="mt-3 text-[15px] font-medium leading-6 text-[#8A7560]">
-                I've already kept what we learned from the questions you've answered. You won't lose the useful part of this session.
+                Your completed answers are saved.
               </p>
               <div className="mt-7 flex flex-col gap-2.5 sm:flex-row-reverse">
-                <button onClick={handleExitConfirm} className="flex min-h-[52px] flex-1 items-center justify-center rounded-full bg-[#1F140C] px-5 text-[15px] font-semibold text-[#FAF5EC]">Stop for now</button>
-                <button onClick={handleExitCancel} className="flex min-h-[52px] flex-1 items-center justify-center rounded-full border border-[#E8DCC4] bg-[#FAF5EC] px-5 text-[15px] font-semibold text-[#2A1E16]">Keep going</button>
+                <button onClick={handleExitConfirm} className="flex min-h-[52px] flex-1 items-center justify-center rounded-full bg-[#1F140C] px-5 text-[15px] font-semibold text-[#FAF5EC]">Go to Home</button>
+                <button onClick={handleExitCancel} className="flex min-h-[52px] flex-1 items-center justify-center rounded-full border border-[#E8DCC4] bg-[#FAF5EC] px-5 text-[15px] font-semibold text-[#2A1E16]">Continue session</button>
               </div>
             </div>
           </div>

@@ -41,7 +41,7 @@ describe('SessionOrientation', () => {
     expect(screen.getByText('Weak areas · Cardiology')).toBeInTheDocument();
 
     fireEvent.click(screen.getByRole('button', { name: /choose session focus/i }));
-    fireEvent.click(screen.getByRole('button', { name: /leave this session/i }));
+    fireEvent.click(screen.getByRole('button', { name: /go to home/i }));
     expect(onAdjust).toHaveBeenCalledOnce();
     expect(onExit).toHaveBeenCalledOnce();
   });

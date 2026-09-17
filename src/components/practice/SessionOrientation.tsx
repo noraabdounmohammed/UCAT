@@ -1,5 +1,5 @@
 import React from 'react';
-import { SlidersHorizontal, X } from 'lucide-react';
+import { House, SlidersHorizontal } from 'lucide-react';
 
 type SessionOrientationProps = {
   currentIndex: number;
@@ -26,8 +26,8 @@ export function SessionOrientation({
   return (
     <div className="studyedit-session-spine" aria-label="Session progress">
       <div className="studyedit-session-spine-row">
-        <button type="button" onClick={onExit} className="studyedit-session-icon" aria-label="Leave this session" title="Leave this session">
-          <X className="h-4 w-4" />
+        <button type="button" onClick={onExit} className="studyedit-session-icon" aria-label="Go to Home" title="Go to Home">
+          <House className="h-4 w-4" />
         </button>
         <div className="min-w-0 flex-1">
           <div className="flex items-center justify-between gap-3">
