@@ -1,0 +1,49 @@
+{
+  "runId": 32648403162,
+  "headSha": "291fb913184a97dee53bcedc3c1e14bed339759a",
+  "requested": 100,
+  "generated": 100,
+  "passed": 76,
+  "failed": 24,
+  "passRate": 76,
+  "failedSafetyCount": 1,
+  "byFamily": {
+    "acute-cardiovascular": {"passed":14,"requested":15,"passRate":93.3},
+    "anticoagulation": {"passed":6,"requested":15,"passRate":40},
+    "pregnancy-safety": {"passed":22,"requested":25,"passRate":88},
+    "paediatrics": {"passed":14,"requested":15,"passRate":93.3},
+    "cancer-referral": {"passed":15,"requested":15,"passRate":100},
+    "sepsis-infection": {"passed":5,"requested":15,"passRate":33.3}
+  },
+  "manualAudit": {
+    "method": "Fresh deterministic stratified sample from the completed run: one automated PASS per family and one automated FAIL per family where a failure existed; adversarial review for clinical correctness, safety, source boundary, numerical consistency and SBA integrity.",
+    "sampledPasses": [
+      {"family":"acute-cardiovascular","conceptId":"ukmla-636","result":"publishable"},
+      {"family":"anticoagulation","conceptId":"ukmla-184","result":"publishable","note":"Current NICE NG196 recommendation 1.8.8 still supports heparin at initial presentation in new-onset AF when not therapeutically anticoagulated and no contraindication."},
+      {"family":"cancer-referral","conceptId":"ukmla-4965","result":"publishable"},
+      {"family":"paediatrics","conceptId":"ukmla-2113","result":"publishable"},
+      {"family":"pregnancy-safety","conceptId":"ukmla-4379","result":"critical_evidence_boundary_failure","note":"Automated PASS treated no history/no vaccine as established susceptibility and omitted the decision-critical PEP timing. UKHSA guidance updated 19 March 2026 requires urgent VZV antibody assessment when history/vaccination do not establish immunity; for a susceptible pregnant woman oral aciclovir/valaciclovir is given from day 7 to day 14 after first exposure. PASS therefore did not mean publishable."},
+      {"family":"sepsis-infection","conceptId":"ukmla-4347","result":"publishable"}
+    ],
+    "sampledFailures": [
+      {"family":"acute-cardiovascular","conceptId":"ukmla-1168","result":"true_reject","note":"Keyed fibrinolysis while explanation correctly says PCI is preferred within the stated 90-minute transfer window; internal key/explanation contradiction."},
+      {"family":"anticoagulation","conceptId":"ukmla-414","result":"true_reject","note":"Precomputed named clinical scores in vignette; preserve numerical guard."},
+      {"family":"paediatrics","conceptId":"ukmla-2113","result":"true_reject","note":"Nested oxygen-threshold options create multiple defensible answers."},
+      {"family":"pregnancy-safety","conceptId":"ukmla-4379","result":"true_reject","note":"Timing since exposure insufficient for the decision-critical antiviral schedule."},
+      {"family":"sepsis-infection","conceptId":"ukmla-4362","result":"true_reject","note":"Named CURB-65 total asserted; this family also showed arithmetic-risk examples, so numerical verification guard must remain strict."}
+    ],
+    "criticalAcceptedErrors": 1,
+    "passPrecisionConclusion": "Automated PASS is not yet equivalent to publishable. Highest-priority genuine defect is an incomplete/stale varicella-in-pregnancy evidence boundary, not reviewer strictness."
+  },
+  "highestLeverageDefect": {
+    "type": "evidence_boundary",
+    "conceptId": "ukmla-4379",
+    "description": "Varicella PEP packet collapses susceptibility and omits exact timing, allowing clinically incomplete PASSes.",
+    "requiredFix": "Require immunity/susceptibility assessment, significant exposure definition/timing, and day-7-to-day-14 oral antiviral schedule; VZIG/IVIG only when oral antivirals cannot be used per current UKHSA guidance. Do not weaken any quality gate."
+  },
+  "sourcesChecked": [
+    "UKHSA Guidelines on post-exposure prophylaxis for varicella or shingles, updated 19 March 2026",
+    "NICE NG196 current recommendations including 1.8.8",
+    "NICE NG250 current CURB-65 guidance"
+  ]
+}
