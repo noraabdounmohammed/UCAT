@@ -5,11 +5,12 @@ import { LearningAwareSBA } from './LearningAwareSBA';
 import { ReportQuestionButton } from './ReportQuestionButton';
 import { SessionAnswer } from './SessionProgressDropdown';
 import { triggerAnswerHaptic } from '@/utils/haptics';
+import type { ConfidenceLevel, TutorTurn } from './UkmlaSBAQuestion';
 
 interface QuestionRendererProps {
   question: QuestionData;
   format: string;
-  onAnswer: (isCorrect: boolean) => void;
+  onAnswer: (isCorrect: boolean, selectedOption?: string, confidence?: ConfidenceLevel) => void;
   onNext: () => void;
   onPrevious?: () => void;
   onExit?: () => void;
@@ -23,6 +24,7 @@ interface QuestionRendererProps {
   onFilterSelect?: (filter?: string) => void;
   onChangeFormat?: (format: string) => void;
   onRestartWithFilters?: () => void;
+  onTutorTurnsChange?: (turns: TutorTurn[]) => void;
 }
 
 export const QuestionRenderer: React.FC<QuestionRendererProps> = ({
@@ -41,7 +43,8 @@ export const QuestionRenderer: React.FC<QuestionRendererProps> = ({
   activeFilter,
   onFilterSelect,
   onChangeFormat,
-  onRestartWithFilters
+  onRestartWithFilters,
+  onTutorTurnsChange,
 }) => {
   if (format === 'mindmap' && process.env.NODE_ENV === 'development') {
     console.log('🗺️ Rendering mind map question:', {
@@ -53,9 +56,9 @@ export const QuestionRenderer: React.FC<QuestionRendererProps> = ({
     });
   }
 
-  const handleAnswer = (isCorrect: boolean) => {
+  const handleAnswer = (isCorrect: boolean, selectedOption?: string, confidence?: ConfidenceLevel) => {
     triggerAnswerHaptic(isCorrect);
-    onAnswer(isCorrect);
+    onAnswer(isCorrect, selectedOption, confidence);
   };
 
   const renderSba = () => (
@@ -99,10 +102,9 @@ export const QuestionRenderer: React.FC<QuestionRendererProps> = ({
         currentFormat={format}
         onChangeFormat={onChangeFormat}
         onRestartWithFilters={onRestartWithFilters}
+        onTutorTurnsChange={onTutorTurnsChange}
+        footerControl={<ReportQuestionButton question={question} />}
       />
-      <div className="mt-3 flex justify-end px-1">
-        <ReportQuestionButton question={question} />
-      </div>
     </div>
   );
 

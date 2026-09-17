@@ -7,7 +7,7 @@ import type { Handler } from '@netlify/functions';
  * Response: { bullets: string[] } | { error: string }
  *
  * Prefers `OPENAI_TTS_KEY` (already a real OpenAI key in this project) →
- * falls back to `VITE_OPENAI_API_KEY` (DeepSeek) → 503 if neither is
+ * falls back to the server-only `DEEPSEEK_API_KEY` → 503 if neither is
  * configured. Same proxy pattern as `tts.ts`. Frontend renders nothing
  * on 503, so soft-fails cleanly.
  *
@@ -64,7 +64,7 @@ const handler: Handler = async (event) => {
   }
 
   const openaiKey = process.env.OPENAI_TTS_KEY;
-  const deepseekKey = process.env.VITE_OPENAI_API_KEY;
+  const deepseekKey = process.env.DEEPSEEK_API_KEY || process.env.VITE_OPENAI_API_KEY;
 
   // Prefer real OpenAI when configured; otherwise use DeepSeek (the project
   // already has a key in env).

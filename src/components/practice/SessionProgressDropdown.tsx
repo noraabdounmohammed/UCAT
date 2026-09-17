@@ -7,6 +7,8 @@ export interface SessionAnswer {
   isCorrect: boolean;
   topic?: string;
   selectedOption?: string; // The option ID the user selected
+  confidence?: 'know' | 'unsure' | 'guess';
+  tutorTurns?: Array<{ role: 'student' | 'tutor'; text: string }>;
 }
 
 interface SessionProgressDropdownProps {

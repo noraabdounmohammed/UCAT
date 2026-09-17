@@ -7,7 +7,7 @@ const palette = {
   cream: '#FAF5EC',
   espresso: '#1F140C',
   ink: '#2A1E16',
-  muted: '#8A7560',
+  muted: '#746354',
   blushSoft: '#F9E4DF',
   line: '#E8DCC4',
   paper: '#FFFDF8',
@@ -91,7 +91,16 @@ export function PrivacyPolicy() {
             </a>
           </PolicyCard>
 
-          <PolicyCard number="05" title="Delete your account" tag="Your choice" wide>
+          <PolicyCard number="05" title="AI tutor & voice" tag="Only when used" wide>
+            <p>
+              To answer a tutor message, StudyEdit sends the current question, your answer, your message and a limited learning-history summary to an AI text provider (currently DeepSeek). If you choose premium dictation or audio playback, audio or tutor text may be processed by OpenAI. Browser speech features may instead be handled by your device or browser provider.
+            </p>
+            <p className="mt-3">
+              StudyEdit is not a patient record. Do not enter names, dates of birth, hospital numbers or other information that could identify a real patient.
+            </p>
+          </PolicyCard>
+
+          <PolicyCard number="06" title="Delete your account" tag="Your choice" wide>
             <p>
               Email us with the subject “delete my account” and we will remove the account data we control, including associated learning state and review history, subject to any data we are legally required to retain.
             </p>

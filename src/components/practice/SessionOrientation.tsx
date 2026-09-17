@@ -1,38 +1,58 @@
-import React, { useMemo } from 'react';
+import React from 'react';
+import { SlidersHorizontal, X } from 'lucide-react';
 
 type SessionOrientationProps = {
-  questions: any[];
-  concepts: any[];
+  currentIndex: number;
   plannedCount: number;
+  answeredCount: number;
+  scopeLabel: string;
+  isTailored: boolean;
+  onAdjust: () => void;
+  onExit: () => void;
 };
 
-export function SessionOrientation({ questions, concepts, plannedCount }: SessionOrientationProps) {
-  const { current, assessed, secure } = useMemo(() => {
-    const submitted = questions.filter(question => {
-      try {
-        const saved = sessionStorage.getItem(`sba_answer_${question.id}`);
-        return Boolean(saved && JSON.parse(saved)?.hasSubmitted);
-      } catch { return false; }
-    }).length;
-
-    const assessedConcepts = concepts.filter(concept => Number(concept?.mastery_data?.attempts || 0) > 0);
-    const secureConcepts = assessedConcepts.filter(concept => Number(concept?.mastery_data?.mastery_level || 0) >= 2);
-    return {
-      current: Math.min(Math.max(1, submitted + 1), Math.max(1, plannedCount)),
-      assessed: assessedConcepts.length,
-      secure: secureConcepts.length,
-    };
-  }, [questions, concepts, plannedCount]);
-
-  const progress = Math.min(100, Math.max(0, ((current - 1) / Math.max(1, plannedCount)) * 100));
+export function SessionOrientation({
+  currentIndex,
+  plannedCount,
+  answeredCount,
+  scopeLabel,
+  isTailored,
+  onAdjust,
+  onExit,
+}: SessionOrientationProps) {
+  const current = Math.min(Math.max(1, currentIndex + 1), Math.max(1, plannedCount));
+  const progress = Math.min(100, Math.max(0, (currentIndex / Math.max(1, plannedCount)) * 100));
 
   return (
     <div className="studyedit-session-spine" aria-label="Session progress">
       <div className="studyedit-session-spine-row">
-        <span>Session {current} of {plannedCount}</span>
-        <span>{assessed > 0 ? `UKMLA · ${assessed} assessed · ${secure} secure` : 'UKMLA · building your map'}</span>
+        <button type="button" onClick={onExit} className="studyedit-session-icon" aria-label="Leave this session" title="Leave this session">
+          <X className="h-4 w-4" />
+        </button>
+        <div className="min-w-0 flex-1">
+          <div className="flex items-center justify-between gap-3">
+            <span>Case {current} of {plannedCount}</span>
+            <span>{answeredCount > 0 ? `${answeredCount} assessed` : 'UKMLA AKT'}</span>
+          </div>
+          <div className="studyedit-session-progress" aria-hidden="true"><span style={{ width: `${progress}%` }} /></div>
+          <div className="studyedit-session-scope" title={scopeLabel}>
+            <span className={`studyedit-session-scope-dot ${isTailored ? 'is-tailored' : ''}`} aria-hidden="true" />
+            <span className="truncate">{scopeLabel}</span>
+            <span className="studyedit-session-scope-note">Study Edit adapts within this focus</span>
+          </div>
+        </div>
+        <button
+          type="button"
+          onClick={onAdjust}
+          className="studyedit-session-focus-button"
+          aria-label={`Choose session focus. Current focus: ${scopeLabel}`}
+          title="Choose session focus"
+        >
+          <SlidersHorizontal className="h-4 w-4" />
+          <span className="studyedit-session-focus-long">Choose focus</span>
+          <span className="studyedit-session-focus-short">Focus</span>
+        </button>
       </div>
-      <div className="studyedit-session-progress" aria-hidden="true"><span style={{ width: `${progress}%` }} /></div>
     </div>
   );
 }

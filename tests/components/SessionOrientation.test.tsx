@@ -1,7 +1,7 @@
 import React from 'react';
 import { fireEvent, render, screen } from '@testing-library/react';
 import { vi } from 'vitest';
-import { SessionOrientation } from '../SessionOrientation';
+import { SessionOrientation } from '@/components/practice/SessionOrientation';
 
 describe('SessionOrientation', () => {
   it('makes the recommended focus visible without blocking the first case', () => {
@@ -16,6 +16,7 @@ describe('SessionOrientation', () => {
         onExit={vi.fn()}
       />,
     );
+
     expect(screen.getByText('Case 1 of 5')).toBeInTheDocument();
     expect(screen.getByText('UKMLA AKT')).toBeInTheDocument();
     expect(screen.getByText('Recommended mix')).toBeInTheDocument();
@@ -36,6 +37,7 @@ describe('SessionOrientation', () => {
         onExit={onExit}
       />,
     );
+
     expect(screen.getByText('Case 3 of 5')).toBeInTheDocument();
     expect(screen.getByText('2 assessed')).toBeInTheDocument();
     expect(screen.getByText('Weak areas · Cardiology')).toBeInTheDocument();

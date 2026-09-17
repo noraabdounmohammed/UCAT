@@ -2,23 +2,41 @@
  * Visual Generator Service
  * Generates and caches question visuals using GPT Image Gen
  * 
- * Requires: VITE_OPENAI_IMAGE_KEY in .env (separate from DeepSeek key)
+ * Provider credentials are held by Netlify functions and never shipped to the browser.
  */
 
-import OpenAI from 'openai';
 import { supabase } from '@/lib/supabase';
 
-// Use dedicated OpenAI key for image generation (separate from DeepSeek text API)
-const imageApiKey = import.meta.env.VITE_OPENAI_IMAGE_KEY;
+async function requestImage(prompt: string) {
+  const response = await fetch('/.netlify/functions/image-generate', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ prompt }),
+  });
+  if (!response.ok) throw new Error(`Image generation unavailable (${response.status})`);
+  return response.json();
+}
 
-const openai = imageApiKey ? new OpenAI({
-  apiKey: imageApiKey,
-  dangerouslyAllowBrowser: true
-}) : null;
+async function requestMemoryHook(prompt: string) {
+  const response = await fetch('/.netlify/functions/ai-generate', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      purpose: 'curriculum',
+      messages: [
+        { role: 'system', content: 'Return only one memorable phrase of 4-6 words. No quotation marks.' },
+        { role: 'user', content: prompt },
+      ],
+    }),
+  });
+  if (!response.ok) throw new Error('Memory hook unavailable');
+  const data = await response.json();
+  return String(data?.choices?.[0]?.message?.content || '').trim();
+}
 
 // Check if image generation is available
 export function isImageGenAvailable(): boolean {
-  return !!imageApiKey;
+  return true;
 }
 
 export type VisualType = 'vignette' | 'explanation';
@@ -60,12 +78,6 @@ export async function generateVignetteVisual(
   questionId: string,
   questionStem: string
 ): Promise<CachedVisual | null> {
-  // Check if OpenAI is configured
-  if (!openai) {
-    console.warn('OpenAI image API not configured. Add VITE_OPENAI_IMAGE_KEY to .env');
-    return null;
-  }
-
   // Check cache first
   const cached = await getCachedVisual(questionId, 'vignette');
   if (cached) return cached;
@@ -124,12 +136,7 @@ GOAL: Emotional memory anchor that encodes the disease presentation visually.`;
 
     console.log('🎨 Generating vignette visual...');
     
-    const response = await openai.images.generate({
-      model: "gpt-image-2",
-      prompt,
-      n: 1,
-      size: "1024x1792" // Very tall portrait 9:16 for mobile full-width
-    });
+    const response = await requestImage(prompt);
 
     console.log('🎨 OpenAI response:', response);
     
@@ -181,12 +188,6 @@ export async function generateExplanationVisual(
   explanation: string,
   correctAnswer: string
 ): Promise<CachedVisual | null> {
-  // Check if OpenAI is configured
-  if (!openai) {
-    console.warn('OpenAI image API not configured. Add VITE_OPENAI_IMAGE_KEY to .env');
-    return null;
-  }
-
   // Check cache first
   const cached = await getCachedVisual(questionId, 'explanation');
   if (cached) return cached;
@@ -245,12 +246,7 @@ GOAL: Educational medical infographic that tells a visual story of the disease m
 
     console.log('📊 Generating explanation visual...');
 
-    const response = await openai.images.generate({
-      model: "gpt-image-2",
-      prompt,
-      n: 1,
-      size: "1024x1792" // Tallest portrait (9:16) - maximum vertical space
-    });
+    const response = await requestImage(prompt);
 
     console.log('📊 OpenAI response:', response);
     
@@ -271,15 +267,7 @@ GOAL: Educational medical infographic that tells a visual story of the disease m
     // Generate memory hook
     let memoryHook = conceptTitle;
     try {
-      const hookResponse = await openai.chat.completions.create({
-        model: "gpt-4o-mini",
-        messages: [{
-          role: "user",
-          content: `Create a catchy 4-6 word memory phrase for: "${conceptTitle}" - ${explanation.slice(0, 100)}. Just the phrase, nothing else.`
-        }],
-        max_tokens: 20
-      });
-      memoryHook = hookResponse.choices[0]?.message?.content?.trim() || conceptTitle;
+      memoryHook = await requestMemoryHook(`Create a memory phrase for: "${conceptTitle}" — ${explanation.slice(0, 100)}`) || conceptTitle;
     } catch {}
 
     // Save to Supabase

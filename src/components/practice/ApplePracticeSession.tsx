@@ -9,11 +9,14 @@ import './apple-question-styles.css';
 import { QuestionData } from './questionTypes';
 import { SessionReviewScreen } from './SessionReviewScreen';
 import { SessionAnswer, SessionProgressDropdown } from './SessionProgressDropdown';
+import type { ConfidenceLevel, TutorTurn } from './UkmlaSBAQuestion';
+import { readLaunchSessionDraft, writeLaunchSessionDraft } from '@/lib/launchSessionDraft';
 
 interface PracticeSessionProps {
   questions: QuestionData[];
   onComplete: () => void;
-  onAnswerSubmit?: (questionId: string, isCorrect: boolean) => void;
+  onAnswerSubmit?: (questionId: string, isCorrect: boolean, selectedOption?: string, confidence?: ConfidenceLevel) => void;
+  onProgressChange?: (currentIndex: number, answers: SessionAnswer[]) => void;
   onAnotherFive?: (filter?: string) => void;
   availableFilters?: string[];
   activeFilter?: string | null;
@@ -22,6 +25,9 @@ interface PracticeSessionProps {
   currentFormat?: string;
   onChangeFormat?: (format: string) => void;
   onRestartWithFilters?: (filters?: any) => void;
+  exitRequestId?: number;
+  persistLaunchState?: boolean;
+  learnerScope?: string;
 }
 
 export function ApplePracticeSession({
@@ -35,17 +41,24 @@ export function ApplePracticeSession({
   defaultFormat = 'ukmla_sba',
   currentFormat = 'ukmla_sba',
   onChangeFormat,
-  onRestartWithFilters
+  onRestartWithFilters,
+  onProgressChange,
+  exitRequestId = 0,
+  persistLaunchState = false,
+  learnerScope = 'guest',
 }: PracticeSessionProps) {
-  const [currentIndex, setCurrentIndex] = useState(0);
+  const initialDraft = useMemo(() => persistLaunchState ? readLaunchSessionDraft() : null, [persistLaunchState]);
+  const [currentIndex, setCurrentIndex] = useState(initialDraft?.currentIndex || 0);
   const [showExitConfirmation, setShowExitConfirmation] = useState(false);
-  const [sessionAnswers, setSessionAnswers] = useState<SessionAnswer[]>([]);
-  const [showReview, setShowReview] = useState(false);
-  const [activeQuestions, setActiveQuestions] = useState<QuestionData[]>(questions);
+  const [sessionAnswers, setSessionAnswers] = useState<SessionAnswer[]>(initialDraft?.answers || []);
+  const [showReview, setShowReview] = useState(Boolean(initialDraft?.showReview));
+  const [activeQuestions, setActiveQuestions] = useState<QuestionData[]>(initialDraft?.questions || questions);
   const [sessionKey, setSessionKey] = useState(0);
-  const [reviewingQuestionIndex, setReviewingQuestionIndex] = useState<number | null>(null);
+  const [reviewingQuestionIndex, setReviewingQuestionIndex] = useState<number | null>(initialDraft?.reviewingQuestionIndex ?? null);
+  const sessionStartedAtRef = useRef(initialDraft?.startedAt || Date.now());
+  const completionRecordedRef = useRef(Boolean(initialDraft?.showReview));
 
-  const questionsRef = useRef<QuestionData[]>(questions);
+  const questionsRef = useRef<QuestionData[]>(initialDraft?.questions || questions);
   const containerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -60,6 +73,39 @@ export function ApplePracticeSession({
     if ('scrollRestoration' in history) history.scrollRestoration = 'manual';
     window.scrollTo(0, 0);
   }, []);
+
+  useEffect(() => {
+    onProgressChange?.(currentIndex, sessionAnswers);
+  }, [currentIndex, onProgressChange, sessionAnswers]);
+
+  useEffect(() => {
+    if (exitRequestId > 0) setShowExitConfirmation(true);
+  }, [exitRequestId]);
+
+  useEffect(() => {
+    if (!persistLaunchState || !activeQuestions.length || (!sessionAnswers.length && !showReview)) return;
+    writeLaunchSessionDraft({
+      questions: activeQuestions,
+      answers: sessionAnswers,
+      currentIndex,
+      showReview,
+      reviewingQuestionIndex,
+      startedAt: sessionStartedAtRef.current,
+    });
+  }, [activeQuestions, currentIndex, persistLaunchState, reviewingQuestionIndex, sessionAnswers, showReview]);
+
+  useEffect(() => {
+    if (!showReview || completionRecordedRef.current) return;
+    completionRecordedRef.current = true;
+    try {
+      const key = 'studyedit_completed_sessions_v1';
+      const completedSessions = Math.max(0, Number(localStorage.getItem(key) || 0)) + 1;
+      localStorage.setItem(key, String(completedSessions));
+      window.dispatchEvent(new CustomEvent('studyedit:session-reviewed', { detail: { completedSessions } }));
+    } catch {
+      // Install-prompt timing is an enhancement and must never interrupt review.
+    }
+  }, [showReview]);
 
   const handlePreviousQuestion = useCallback(() => {
     if (currentIndex > 0) setCurrentIndex(currentIndex - 1);
@@ -137,14 +183,20 @@ export function ApplePracticeSession({
     };
   }, [currentQuestion, defaultFormat]);
 
-  const recordAnswer = (isCorrect: boolean, selectedOption?: string) => {
+  const recordAnswer = (isCorrect: boolean, selectedOption?: string, confidence?: ConfidenceLevel) => {
     const q = questionsRef.current[currentIndex];
     const topic = (q?.title || q?.topic || '') as string;
     setSessionAnswers(prev => {
       const without = prev.filter(a => a.questionIndex !== currentIndex);
-      return [...without, { questionIndex: currentIndex, isCorrect, topic, selectedOption }];
+      return [...without, { questionIndex: currentIndex, isCorrect, topic, selectedOption, confidence }];
     });
   };
+
+  const recordTutorTurns = useCallback((turns: TutorTurn[]) => {
+    setSessionAnswers(previous => previous.map(answer =>
+      answer.questionIndex === currentIndex ? { ...answer, tutorTurns: turns } : answer
+    ));
+  }, [currentIndex]);
 
   const handleRetryIncorrect = () => {
     const incorrectIndices = sessionAnswers.filter(a => !a.isCorrect).map(a => a.questionIndex);
@@ -166,9 +218,13 @@ export function ApplePracticeSession({
     window.scrollTo(0, 0);
   };
 
+  const finishSession = useCallback(() => {
+    onComplete();
+  }, [onComplete]);
+
   const handleExitConfirm = () => {
     setShowExitConfirmation(false);
-    onComplete();
+    finishSession();
   };
 
   const handleExitCancel = () => setShowExitConfirmation(false);
@@ -202,9 +258,10 @@ export function ApplePracticeSession({
         answers={sessionAnswers}
         questions={activeQuestions}
         onRetryIncorrect={handleRetryIncorrect}
-        onDone={onComplete}
+        onDone={finishSession}
         onAnotherFive={onAnotherFive}
         onViewQuestion={handleViewQuestion}
+        sessionDuration={Math.max(1, Math.round((Date.now() - sessionStartedAtRef.current) / 1000))}
       />
     );
   }
@@ -240,6 +297,7 @@ export function ApplePracticeSession({
                 totalQuestions={activeQuestions.length}
                 preSelectedAnswer={reviewAnswer?.selectedOption}
                 preSubmitted={true}
+                preTutorTurns={reviewAnswer?.tutorTurns}
                 nextButtonText="Back to review"
               />
             )}
@@ -290,20 +348,20 @@ export function ApplePracticeSession({
             explanation: questionContent.explanation
           }}
           format={questionContent.format}
-          onAnswer={(isCorrect) => {
-            recordAnswer(isCorrect);
+          onAnswer={(isCorrect, selectedOption, confidence) => {
+            recordAnswer(isCorrect, selectedOption, confidence);
             const status = isCorrect ? 'correct' : 'incorrect';
             const topic = currentQuestion.topic || 'Unknown Topic';
             const skill = Array.isArray(currentQuestion.tags) ? currentQuestion.tags[0] : 'Unknown Skill';
             const currentSection = section || 'Unknown Section';
             try {
-              const progressKey = `question_progress_${questionId}`;
-              const progressData = { status, topic: String(topic), skill: String(skill), section: String(currentSection), timestamp: new Date().toISOString() };
+              const progressKey = `question_progress_${learnerScope}_${questionId}`;
+              const progressData = { status, topic: String(topic), skill: String(skill), section: String(currentSection), learnerScope, timestamp: new Date().toISOString() };
               localStorage.setItem(progressKey, JSON.stringify(progressData));
             } catch (error) {
               console.error('Failed to save progress:', error);
             }
-            if (onAnswerSubmit) onAnswerSubmit(questionId, isCorrect);
+            if (onAnswerSubmit) onAnswerSubmit(questionId, isCorrect, selectedOption, confidence);
           }}
           onNext={handleNextQuestion}
           onPrevious={handlePreviousQuestion}
@@ -315,6 +373,7 @@ export function ApplePracticeSession({
           onFilterSelect={onAnotherFive}
           onChangeFormat={onChangeFormat}
           onRestartWithFilters={onRestartWithFilters}
+          onTutorTurnsChange={recordTutorTurns}
         />
       </div>
 

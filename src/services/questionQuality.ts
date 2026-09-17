@@ -165,9 +165,7 @@ async function callReviewer(prompt: string): Promise<any> {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
-      model: 'deepseek-chat',
-      temperature: 0.1,
-      max_tokens: 800,
+      purpose: 'review',
       messages: [
         {
           role: 'system',

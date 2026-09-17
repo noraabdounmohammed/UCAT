@@ -1,77 +1,37 @@
-import { Handler } from '@netlify/functions';
+import type { Config, Handler } from '@netlify/functions';
+import { callDeepSeek, originIsAllowed, parseAiRequest, responseHeaders } from '../lib/ai';
+
+export const config: Config = {
+  rateLimit: {
+    aggregateBy: ['ip'],
+    windowLimit: 30,
+    windowSize: 60,
+  },
+};
 
 const handler: Handler = async (event) => {
-  // Only allow POST requests
+  if (event.httpMethod === 'OPTIONS') {
+    return { statusCode: 204, headers: responseHeaders(event), body: '' };
+  }
+
   if (event.httpMethod !== 'POST') {
-    return {
-      statusCode: 405,
-      body: JSON.stringify({ error: 'Method not allowed' })
-    };
+    return { statusCode: 405, headers: responseHeaders(event), body: JSON.stringify({ error: 'method_not_allowed' }) };
+  }
+
+  if (!originIsAllowed(event)) {
+    return { statusCode: 403, headers: responseHeaders(event), body: JSON.stringify({ error: 'origin_not_allowed' }) };
   }
 
   try {
-    const { messages, model = 'deepseek-chat', temperature = 0.7, max_tokens = 4000 } = JSON.parse(event.body || '{}');
-
-    if (!messages || !Array.isArray(messages)) {
-      return {
-        statusCode: 400,
-        body: JSON.stringify({ error: 'Invalid request: messages array required' })
-      };
-    }
-
-    // Get API key from environment variable (set in Netlify dashboard)
-    const apiKey = process.env.VITE_OPENAI_API_KEY;
-    
-    if (!apiKey) {
-      return {
-        statusCode: 500,
-        body: JSON.stringify({ error: 'API key not configured' })
-      };
-    }
-
-    // Call DeepSeek API
-    const response = await fetch('https://api.deepseek.com/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${apiKey}`
-      },
-      body: JSON.stringify({
-        model,
-        messages,
-        temperature,
-        max_tokens,
-        stream: false
-      })
-    });
-
-    if (!response.ok) {
-      const errorText = await response.text();
-      console.error('DeepSeek API error:', errorText);
-      return {
-        statusCode: response.status,
-        body: JSON.stringify({ error: 'API request failed', details: errorText })
-      };
-    }
-
+    const { upstreamBody } = parseAiRequest(event);
+    const response = await callDeepSeek(upstreamBody, false);
     const data = await response.json();
-
-    return {
-      statusCode: 200,
-      headers: {
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify(data)
-    };
+    return { statusCode: 200, headers: responseHeaders(event), body: JSON.stringify(data) };
   } catch (error) {
-    console.error('Function error:', error);
-    return {
-      statusCode: 500,
-      body: JSON.stringify({ 
-        error: 'Internal server error',
-        message: error instanceof Error ? error.message : 'Unknown error'
-      })
-    };
+    const reason = error instanceof Error ? error.message : 'internal_error';
+    const statusCode = reason.startsWith('invalid_') || reason === 'request_too_large' ? 400 : reason === 'provider_unavailable' ? 503 : 502;
+    if (statusCode >= 500) console.error('AI function failed:', reason);
+    return { statusCode, headers: responseHeaders(event), body: JSON.stringify({ error: statusCode === 400 ? reason : 'ai_unavailable' }) };
   }
 };
 

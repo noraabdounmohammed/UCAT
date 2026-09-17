@@ -66,13 +66,13 @@ describe('real SBA → confidence → tutor flow', () => {
     );
 
     await user.click(screen.getByRole('button', { name: /aortic stenosis/i }));
-    await user.click(screen.getByRole('button', { name: /check answer/i }));
 
-    expect(screen.getByRole('dialog', { name: /how sure were you/i })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /knew it/i })).toBeInTheDocument();
+    expect(screen.getByText(/how sure are you/i)).toBeInTheDocument();
     expect(onAnswer).not.toHaveBeenCalled();
 
     await user.click(screen.getByRole('button', { name: /knew it/i }));
-    expect(onAnswer).toHaveBeenCalledWith(true);
+    expect(onAnswer).toHaveBeenCalledWith(true, 'A', 'know');
 
     await waitFor(() => {
       expect(screen.getByText(/murmur radiating to the carotids is the decisive clue/i)).toBeInTheDocument();

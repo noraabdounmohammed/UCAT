@@ -38,7 +38,8 @@ export function migrateLegacyCurriculumState(userId?: string | null) {
 
   const hasLegacyProgress = CURRICULUM_KEY_SUFFIXES.some(suffix =>
     window.localStorage.getItem(`${LEGACY_CURRICULUM_ID}_${suffix}`) !== null
-  );
+  ) || window.localStorage.getItem('studyedit_learner_events_v2:guest') !== null
+    || Object.keys(window.localStorage).some(key => key.startsWith('question_progress_guest_'));
 
   if (!hasLegacyProgress) {
     window.localStorage.setItem(marker, 'true');
@@ -53,14 +54,35 @@ export function migrateLegacyCurriculumState(userId?: string | null) {
     if (window.localStorage.getItem(newKey) !== null) return;
 
     const legacyValue = window.localStorage.getItem(oldKey);
-    if (legacyValue !== null) window.localStorage.setItem(newKey, legacyValue);
+    if (legacyValue !== null) {
+      window.localStorage.setItem(newKey, legacyValue);
+      window.localStorage.removeItem(oldKey);
+    }
   });
 
   const legacyEmptyFlag = window.localStorage.getItem(`${LEGACY_CURRICULUM_ID}_is_empty`);
   const scopedEmptyKey = `${scopedId}_is_empty`;
   if (legacyEmptyFlag !== null && window.localStorage.getItem(scopedEmptyKey) === null) {
     window.localStorage.setItem(scopedEmptyKey, legacyEmptyFlag);
+    window.localStorage.removeItem(`${LEGACY_CURRICULUM_ID}_is_empty`);
   }
+
+  const guestEventsKey = 'studyedit_learner_events_v2:guest';
+  const userEventsKey = `studyedit_learner_events_v2:${userId}`;
+  const guestEvents = window.localStorage.getItem(guestEventsKey);
+  if (guestEvents && window.localStorage.getItem(userEventsKey) === null) {
+    window.localStorage.setItem(userEventsKey, guestEvents);
+    window.localStorage.removeItem(guestEventsKey);
+  }
+
+  Object.keys(window.localStorage)
+    .filter(key => key.startsWith('question_progress_guest_'))
+    .forEach(key => {
+      const value = window.localStorage.getItem(key);
+      const scopedKey = key.replace('question_progress_guest_', `question_progress_${userId}_`);
+      if (value !== null && window.localStorage.getItem(scopedKey) === null) window.localStorage.setItem(scopedKey, value);
+      window.localStorage.removeItem(key);
+    });
 
   window.localStorage.setItem(marker, 'true');
 }

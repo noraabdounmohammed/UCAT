@@ -11,11 +11,14 @@ export interface LearnerMemoryEventInput {
   created_at?: string;
 }
 
-const LOCAL_KEY = 'studyedit_cloud_learner_events_v1';
+const LOCAL_KEY_PREFIX = 'studyedit_cloud_learner_events_v2:';
 const MAX_LOCAL_EVENTS = 500;
 const HYDRATE_TTL_MS = 5 * 60 * 1000;
 let hydratePromise: Promise<void> | null = null;
 let lastHydratedAt = 0;
+let lastHydratedScope = '';
+
+const localKey = (scope: string) => `${LOCAL_KEY_PREFIX}${scope}`;
 
 function parseArray(value: string | null): any[] {
   if (!value) return [];
@@ -27,10 +30,10 @@ function parseArray(value: string | null): any[] {
   }
 }
 
-function mergeLocalEvents(incoming: any[]) {
+function mergeLocalEvents(scope: string, incoming: any[]) {
   if (typeof window === 'undefined' || !incoming.length) return;
   try {
-    const existing = parseArray(localStorage.getItem(LOCAL_KEY));
+    const existing = parseArray(localStorage.getItem(localKey(scope)));
     const byId = new Map<string, any>();
     [...incoming, ...existing].forEach((event: any) => {
       const id = String(event?.id || `${event?.event_type || 'event'}_${event?.created_at || ''}_${event?.question_id || ''}_${event?.concept_id || ''}`);
@@ -39,16 +42,16 @@ function mergeLocalEvents(incoming: any[]) {
     const compact = Array.from(byId.values())
       .sort((a, b) => new Date(b?.created_at || 0).getTime() - new Date(a?.created_at || 0).getTime())
       .slice(0, MAX_LOCAL_EVENTS);
-    localStorage.setItem(LOCAL_KEY, JSON.stringify(compact));
+    localStorage.setItem(localKey(scope), JSON.stringify(compact));
   } catch {
     // Learner memory must never interrupt practice.
   }
 }
 
-export function readCloudLearnerEvents(): any[] {
+export function readCloudLearnerEvents(scope: string): any[] {
   if (typeof window === 'undefined') return [];
   try {
-    return parseArray(localStorage.getItem(LOCAL_KEY));
+    return parseArray(localStorage.getItem(localKey(scope)));
   } catch {
     return [];
   }
@@ -60,13 +63,13 @@ export async function hydrateLearnerMemoryFromCloud(force = false): Promise<void
   // question), later tutor calls use the local snapshot immediately rather than
   // queueing behind the same network request.
   if (!force && hydratePromise) return;
-  if (!force && lastHydratedAt && Date.now() - lastHydratedAt < HYDRATE_TTL_MS) return;
 
   hydratePromise = (async () => {
     try {
       const { data: authData } = await supabase.auth.getUser();
       const user = authData?.user;
       if (!user) return;
+      if (!force && lastHydratedScope === user.id && lastHydratedAt && Date.now() - lastHydratedAt < HYDRATE_TTL_MS) return;
 
       const { data, error } = await (supabase as any)
         .from('learner_events')
@@ -76,7 +79,8 @@ export async function hydrateLearnerMemoryFromCloud(force = false): Promise<void
         .limit(300);
 
       if (error || !Array.isArray(data)) return;
-      mergeLocalEvents(data);
+      mergeLocalEvents(user.id, data);
+      lastHydratedScope = user.id;
     } catch {
       // Offline or unavailable cloud memory should gracefully fall back to local memory.
     }
@@ -112,7 +116,7 @@ export async function persistLearnerMemoryEvent(event: LearnerMemoryEventInput):
       .select('id,event_type,concept_id,concept_title,question_id,payload,created_at')
       .single();
 
-    if (!error && data) mergeLocalEvents([data]);
+    if (!error && data) mergeLocalEvents(user.id, [data]);
   } catch {
     // Logging is deliberately non-blocking.
   }

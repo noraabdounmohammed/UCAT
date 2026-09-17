@@ -1358,6 +1358,7 @@ export const createConceptStore = (curriculumId: string = 'default') => {
         const targetConcept = currentState.concepts.find(c => c.concept_id === conceptId);
         if (!targetConcept) {
           console.error('❌ Concept not found for mastery update:', conceptId);
+          set({ currentSessionAnswers: updatedSessionAnswers });
           return;
         }
         

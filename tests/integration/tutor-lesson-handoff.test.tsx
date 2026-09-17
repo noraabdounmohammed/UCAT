@@ -1,6 +1,4 @@
 import React from 'react';
-import fs from 'node:fs';
-import path from 'node:path';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
@@ -42,11 +40,6 @@ const question: any = {
   format: 'ukmla_sba',
 };
 
-function installSessionBehavior() {
-  const file = path.resolve(process.cwd(), 'public/studyedit-session-behavior.js');
-  window.eval(fs.readFileSync(file, 'utf8'));
-}
-
 describe('tutor lesson handoff', () => {
   beforeEach(() => {
     vi.clearAllMocks();
@@ -55,7 +48,7 @@ describe('tutor lesson handoff', () => {
     Object.defineProperty(HTMLElement.prototype, 'scrollIntoView', { configurable: true, value: vi.fn() });
   });
 
-  it('shows the learner reply immediately, wraps naturally, and advances only when Next question is chosen', async () => {
+  it('shows the learner reply immediately and offers a deliberate next action', async () => {
     const user = userEvent.setup();
     const onNext = vi.fn();
     const onAnswer = vi.fn();
@@ -82,10 +75,7 @@ describe('tutor lesson handoff', () => {
       </div>,
     );
 
-    installSessionBehavior();
-
     await user.click(screen.getByRole('button', { name: /aortic stenosis/i }));
-    await user.click(screen.getByRole('button', { name: /check answer/i }));
     await user.click(screen.getByRole('button', { name: /unsure/i }));
 
     await screen.findByText(/what single examination finding makes aortic stenosis/i);
@@ -100,12 +90,11 @@ describe('tutor lesson handoff', () => {
     await screen.findByText(/that's the discriminator/i);
 
     await waitFor(() => {
-      expect(screen.getByText(/anything you want to ask before the next case/i)).toBeInTheDocument();
-      expect(screen.getByRole('button', { name: /next question/i })).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: /next now/i })).toBeInTheDocument();
     });
 
     expect(onNext).not.toHaveBeenCalled();
-    await user.click(screen.getByRole('button', { name: /next question/i }));
+    await user.click(screen.getByRole('button', { name: /next now/i }));
     expect(onNext).toHaveBeenCalledTimes(1);
   });
 });

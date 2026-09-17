@@ -225,6 +225,8 @@ export interface PracticeConfig {
   custom_flashcard_prompt?: string;
   study_mode?: StudyMode;
   target_mastery_levels?: number[];
+  /** Replace an already-visible launch session instead of appending generated cases. */
+  replace_current?: boolean;
 }
 
 export interface ConceptPracticeState {

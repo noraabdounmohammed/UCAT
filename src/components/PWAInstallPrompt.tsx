@@ -6,6 +6,29 @@ interface BeforeInstallPromptEvent extends Event {
   userChoice: Promise<{ outcome: 'accepted' | 'dismissed' }>;
 }
 
+const COMPLETED_SESSIONS_KEY = 'studyedit_completed_sessions_v1';
+const DISMISSED_UNTIL_KEY = 'pwa-install-dismissed';
+const MINIMUM_COMPLETED_SESSIONS = 3;
+
+const hasEarnedInstallPrompt = () => {
+  try {
+    return Number(localStorage.getItem(COMPLETED_SESSIONS_KEY) || 0) >= MINIMUM_COMPLETED_SESSIONS;
+  } catch {
+    return false;
+  }
+};
+
+const isInstallPromptDismissed = () => {
+  try {
+    const dismissedUntil = Number(localStorage.getItem(DISMISSED_UNTIL_KEY) || 0);
+    if (dismissedUntil > Date.now()) return true;
+    if (dismissedUntil) localStorage.removeItem(DISMISSED_UNTIL_KEY);
+    return false;
+  } catch {
+    return false;
+  }
+};
+
 /**
  * PWA Install Prompt Component
  * Shows a custom install prompt for users to add the app to their home screen
@@ -13,44 +36,33 @@ interface BeforeInstallPromptEvent extends Event {
 export function PWAInstallPrompt() {
   const [deferredPrompt, setDeferredPrompt] = useState<BeforeInstallPromptEvent | null>(null);
   const [showPrompt, setShowPrompt] = useState(false);
+  const [eligible, setEligible] = useState(hasEarnedInstallPrompt);
 
   useEffect(() => {
     const handler = (e: Event) => {
-      // Prevent the mini-infobar from appearing on mobile
       e.preventDefault();
-      // Stash the event so it can be triggered later
       setDeferredPrompt(e as BeforeInstallPromptEvent);
-      
-      // Check if user has dismissed the prompt before
-      const dismissed = localStorage.getItem('pwa-install-dismissed');
-      if (!dismissed) {
-        // Show prompt after 10 seconds
-        setTimeout(() => setShowPrompt(true), 10000);
-      }
     };
-
-    // Suppress the console warning about preventDefault
-    const originalError = console.error;
-    console.error = (...args) => {
-      if (typeof args[0] === 'string' && args[0].includes('beforeinstallprompt')) {
-        return; // Suppress PWA install prompt warnings
-      }
-      originalError.apply(console, args);
-    };
-
     window.addEventListener('beforeinstallprompt', handler);
-
-    return () => {
-      window.removeEventListener('beforeinstallprompt', handler);
-      console.error = originalError;
-    };
+    return () => window.removeEventListener('beforeinstallprompt', handler);
   }, []);
+
+  useEffect(() => {
+    const handleSessionReview = () => setEligible(hasEarnedInstallPrompt());
+    window.addEventListener('studyedit:session-reviewed', handleSessionReview);
+    return () => window.removeEventListener('studyedit:session-reviewed', handleSessionReview);
+  }, []);
+
+  useEffect(() => {
+    if (!deferredPrompt || !eligible || isInstallPromptDismissed()) return;
+    const timer = window.setTimeout(() => setShowPrompt(true), 1200);
+    return () => window.clearTimeout(timer);
+  }, [deferredPrompt, eligible]);
 
   const handleInstall = async () => {
     if (!deferredPrompt) return;
 
-    // Show the install prompt
-    deferredPrompt.prompt();
+    await deferredPrompt.prompt();
 
     // Wait for the user to respond to the prompt
     const { outcome } = await deferredPrompt.userChoice;
@@ -59,28 +71,19 @@ export function PWAInstallPrompt() {
       console.log('User accepted the install prompt');
     }
 
-    // Clear the deferredPrompt
     setDeferredPrompt(null);
     setShowPrompt(false);
   };
 
   const handleDismiss = () => {
     setShowPrompt(false);
-    // Remember dismissal for 7 days
     const dismissedUntil = Date.now() + 7 * 24 * 60 * 60 * 1000;
-    localStorage.setItem('pwa-install-dismissed', dismissedUntil.toString());
-  };
-
-  // Check if dismissed time has passed
-  useEffect(() => {
-    const dismissed = localStorage.getItem('pwa-install-dismissed');
-    if (dismissed) {
-      const dismissedUntil = parseInt(dismissed);
-      if (Date.now() > dismissedUntil) {
-        localStorage.removeItem('pwa-install-dismissed');
-      }
+    try {
+      localStorage.setItem(DISMISSED_UNTIL_KEY, dismissedUntil.toString());
+    } catch {
+      // Dismissal persistence is optional.
     }
-  }, []);
+  };
 
   if (!showPrompt || !deferredPrompt) return null;
 

@@ -5,8 +5,17 @@ import userEvent from '@testing-library/user-event';
 import { LearningAwareSBA } from '@/components/practice/LearningAwareSBA';
 
 vi.mock('@/components/practice/UkmlaSBAQuestion', () => ({
-  UkmlaSBAQuestion: ({ onAnswer }: { onAnswer: (correct: boolean) => void }) => (
-    <button type="button" onClick={() => onAnswer(true)}>Submit answer</button>
+  UkmlaSBAQuestion: ({
+    collectConfidence,
+    onAnswer,
+  }: {
+    collectConfidence?: boolean;
+    onAnswer: (correct: boolean, selectedOption?: string, confidence?: 'know' | 'unsure' | 'guess') => void;
+  }) => (
+    <>
+      <span>{collectConfidence ? 'Confidence enabled' : 'Confidence disabled'}</span>
+      <button type="button" onClick={() => onAnswer(true, 'A', 'know')}>Submit confident answer</button>
+    </>
   ),
 }));
 
@@ -35,27 +44,21 @@ describe('<LearningAwareSBA />', () => {
     sessionStorage.clear();
   });
 
-  it('asks for confidence before forwarding correctness', async () => {
+  it('enables confidence capture and forwards the complete answer signal', async () => {
     const user = userEvent.setup();
     const onAnswer = vi.fn();
     render(<LearningAwareSBA {...baseProps} onAnswer={onAnswer} />);
 
-    await user.click(screen.getByRole('button', { name: /submit answer/i }));
-
-    expect(screen.getByText(/how sure were you/i)).toBeInTheDocument();
-    expect(onAnswer).not.toHaveBeenCalled();
-
-    await user.click(screen.getByRole('button', { name: /knew it/i }));
-    expect(onAnswer).toHaveBeenCalledWith(true);
-    expect(screen.queryByText(/how sure were you/i)).not.toBeInTheDocument();
+    expect(screen.getByText(/confidence enabled/i)).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: /submit confident answer/i }));
+    expect(onAnswer).toHaveBeenCalledWith(true, 'A', 'know');
   });
 
   it('stores a strong-positive learning signal for correct + knew it', async () => {
     const user = userEvent.setup();
     render(<LearningAwareSBA {...baseProps} />);
 
-    await user.click(screen.getByRole('button', { name: /submit answer/i }));
-    await user.click(screen.getByRole('button', { name: /knew it/i }));
+    await user.click(screen.getByRole('button', { name: /submit confident answer/i }));
 
     const keys = Object.keys(sessionStorage);
     const confidenceKey = keys.find(key => key.includes('answer_confidence_know'));

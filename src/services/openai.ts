@@ -1,7 +1,7 @@
-import OpenAI from 'openai';
 import { hydrateLearnerMemoryFromCloud, persistLearnerMemoryEvent, readCloudLearnerEvents } from '@/services/learnerMemory';
 import { supabase } from '@/lib/supabase';
 import { getLearnerFirstName } from '@/lib/learnerIdentity';
+import { getUserCurriculumId } from '@/utils/curriculumScope';
 
 export interface QuestionContext {
   question: string;
@@ -63,7 +63,7 @@ interface LearnerSnapshot {
 }
 
 const CACHE_EXPIRY_MS = 60 * 60 * 1000;
-const LEARNER_EVENTS_KEY = 'studyedit_learner_events_v1';
+const LEARNER_EVENTS_KEY_PREFIX = 'studyedit_learner_events_v2:';
 const MAX_PERSISTED_EVENTS = 500;
 const responseCache: Record<string, CacheEntry> = {};
 const cloudSyncedEventIds = new Set<string>();
@@ -83,26 +83,33 @@ function safelyParse(value: string | null): any {
   try { return JSON.parse(value); } catch { return null; }
 }
 
-async function currentLearnerFirstName(): Promise<string | null> {
+async function currentLearnerIdentity(): Promise<{ firstName: string | null; scope: string }> {
   try {
     const { data: { session } } = await supabase.auth.getSession();
-    return getLearnerFirstName(session?.user || null);
+    return {
+      firstName: getLearnerFirstName(session?.user || null),
+      scope: session?.user?.id || 'guest',
+    };
   } catch {
-    return null;
+    return { firstName: null, scope: 'guest' };
   }
 }
 
-function readLearnerEvents(): LearnerEvent[] {
+function learnerEventsKey(scope: string) {
+  return `${LEARNER_EVENTS_KEY_PREFIX}${scope}`;
+}
+
+function readLearnerEvents(scope: string): LearnerEvent[] {
   if (typeof window === 'undefined') return [];
   try {
-    const parsed = safelyParse(localStorage.getItem(LEARNER_EVENTS_KEY));
+    const parsed = safelyParse(localStorage.getItem(learnerEventsKey(scope)));
     return Array.isArray(parsed) ? parsed : [];
   } catch {
     return [];
   }
 }
 
-function writeLearnerEvents(events: LearnerEvent[]) {
+function writeLearnerEvents(scope: string, events: LearnerEvent[]) {
   if (typeof window === 'undefined') return;
   try {
     const deduped = new Map<string, LearnerEvent>();
@@ -112,7 +119,7 @@ function writeLearnerEvents(events: LearnerEvent[]) {
     const compact = Array.from(deduped.values())
       .sort((a, b) => new Date(b.at || 0).getTime() - new Date(a.at || 0).getTime())
       .slice(0, MAX_PERSISTED_EVENTS);
-    localStorage.setItem(LEARNER_EVENTS_KEY, JSON.stringify(compact));
+    localStorage.setItem(learnerEventsKey(scope), JSON.stringify(compact));
   } catch {
     // Memory persistence must never interrupt practice.
   }
@@ -169,10 +176,10 @@ function mirrorEventToCloud(event: LearnerEvent) {
   });
 }
 
-function persistSessionLearningSignals() {
+function persistSessionLearningSignals(scope: string) {
   if (typeof window === 'undefined') return;
   try {
-    const existing = readLearnerEvents();
+    const existing = readLearnerEvents(scope);
     const additions: LearnerEvent[] = [];
 
     for (let i = 0; i < sessionStorage.length; i += 1) {
@@ -196,21 +203,21 @@ function persistSessionLearningSignals() {
       }
     }
 
-    if (additions.length) writeLearnerEvents([...additions, ...existing]);
+    if (additions.length) writeLearnerEvents(scope, [...additions, ...existing]);
   } catch {
     // Personalisation memory is opportunistic and must never block learning.
   }
 }
 
-function persistQuestionProgress() {
+function persistQuestionProgress(scope: string) {
   if (typeof window === 'undefined') return;
   try {
-    const existing = readLearnerEvents();
+    const existing = readLearnerEvents(scope);
     const additions: LearnerEvent[] = [];
 
     for (let i = 0; i < localStorage.length; i += 1) {
       const key = localStorage.key(i);
-      if (!key?.startsWith('question_progress_')) continue;
+      if (!key?.startsWith(`question_progress_${scope}_`)) continue;
       const result = safelyParse(localStorage.getItem(key));
       if (!result?.timestamp) continue;
       const event: LearnerEvent = {
@@ -225,13 +232,13 @@ function persistQuestionProgress() {
       mirrorEventToCloud(event);
     }
 
-    if (additions.length) writeLearnerEvents([...additions, ...existing]);
+    if (additions.length) writeLearnerEvents(scope, [...additions, ...existing]);
   } catch {
     // Personalisation memory is opportunistic and must never block learning.
   }
 }
 
-function persistAnswerContext(context: QuestionContext) {
+function persistAnswerContext(scope: string, context: QuestionContext) {
   if (typeof window === 'undefined' || !context.selectedAnswer) return;
   try {
     const questionFingerprint = stableHash(`${context.question}|${context.options.join('|')}`);
@@ -245,21 +252,21 @@ function persistAnswerContext(context: QuestionContext) {
       correctAnswer: correct,
       questionFingerprint,
     };
-    writeLearnerEvents([event, ...readLearnerEvents()]);
+    writeLearnerEvents(scope, [event, ...readLearnerEvents(scope)]);
     mirrorEventToCloud(event);
   } catch {
     // Answer memory must never interrupt feedback.
   }
 }
 
-function syncPersistentLearnerMemory(context?: QuestionContext) {
-  persistSessionLearningSignals();
-  persistQuestionProgress();
-  if (context) persistAnswerContext(context);
+function syncPersistentLearnerMemory(scope: string, context?: QuestionContext) {
+  persistSessionLearningSignals(scope);
+  persistQuestionProgress(scope);
+  if (context) persistAnswerContext(scope, context);
 }
 
-function cloudEventsToLocal(): LearnerEvent[] {
-  return readCloudLearnerEvents().map((event: any): LearnerEvent | null => {
+function cloudEventsToLocal(scope: string): LearnerEvent[] {
+  return readCloudLearnerEvents(scope).map((event: any): LearnerEvent | null => {
     const payload = event?.payload || {};
     const at = event?.created_at || new Date().toISOString();
     const id = String(event?.id || payload.local_event_id || stableHash(JSON.stringify(event)));
@@ -299,12 +306,12 @@ function cloudEventsToLocal(): LearnerEvent[] {
   }).filter(Boolean) as LearnerEvent[];
 }
 
-function buildLearnerSnapshot(): LearnerSnapshot {
+function buildLearnerSnapshot(scope: string): LearnerSnapshot {
   if (typeof window === 'undefined') {
     return { conceptEvidence: [], recentConfidenceSignals: [], recentQuestionResults: [], recentAnswerContexts: [] };
   }
 
-  syncPersistentLearnerMemory();
+  syncPersistentLearnerMemory(scope);
 
   const conceptEvidence: LearnerSnapshot['conceptEvidence'] = [];
   const recentConfidenceSignals: LearnerSnapshot['recentConfidenceSignals'] = [];
@@ -312,11 +319,9 @@ function buildLearnerSnapshot(): LearnerSnapshot {
   const recentAnswerContexts: LearnerSnapshot['recentAnswerContexts'] = [];
 
   try {
-    for (let i = 0; i < localStorage.length; i += 1) {
-      const key = localStorage.key(i);
-      if (!key || !key.endsWith('_user_concepts')) continue;
-      const concepts = safelyParse(localStorage.getItem(key));
-      if (!Array.isArray(concepts)) continue;
+    const curriculumId = getUserCurriculumId(scope === 'guest' ? null : scope);
+    const concepts = safelyParse(localStorage.getItem(`${curriculumId}_user_concepts`));
+    if (Array.isArray(concepts)) {
       concepts.forEach((concept: any) => {
         const md = concept?.mastery_data || {};
         const attempts = Number(md.attempts || 0);
@@ -332,7 +337,7 @@ function buildLearnerSnapshot(): LearnerSnapshot {
       });
     }
 
-    const combinedEvents = [...cloudEventsToLocal(), ...readLearnerEvents()];
+    const combinedEvents = [...(scope === 'guest' ? [] : cloudEventsToLocal(scope)), ...readLearnerEvents(scope)];
     const seen = new Set<string>();
     combinedEvents.forEach(event => {
       const signature = `${event.kind}|${event.at}|${event.concept || ''}|${event.selectedAnswer || ''}|${event.topic || ''}`;
@@ -387,7 +392,7 @@ function buildLearnerSnapshot(): LearnerSnapshot {
 }
 
 export function getLearnerContextSnapshot(): LearnerSnapshot {
-  return buildLearnerSnapshot();
+  return buildLearnerSnapshot('guest');
 }
 
 function compactLearnerContext(snapshot: LearnerSnapshot): string {
@@ -420,8 +425,8 @@ function compactLearnerContext(snapshot: LearnerSnapshot): string {
   ].filter(Boolean).join('\n\n');
 }
 
-function buildCacheKey(userQuery: string, context: QuestionContext, learnerName: string | null): string {
-  const learnerSnapshot = buildLearnerSnapshot();
+function buildCacheKey(userQuery: string, context: QuestionContext, learnerName: string | null, scope: string): string {
+  const learnerSnapshot = buildLearnerSnapshot(scope);
   const fingerprint = JSON.stringify({
     query: userQuery.trim(),
     question: context.question,
@@ -435,9 +440,9 @@ function buildCacheKey(userQuery: string, context: QuestionContext, learnerName:
   return `ai_${stableHash(fingerprint)}`;
 }
 
-function buildUserPrompt(userQuery: string, context: QuestionContext, learnerName: string | null): string {
-  syncPersistentLearnerMemory(context);
-  const learnerContext = compactLearnerContext(buildLearnerSnapshot());
+function buildUserPrompt(userQuery: string, context: QuestionContext, learnerName: string | null, scope: string): string {
+  syncPersistentLearnerMemory(scope, context);
+  const learnerContext = compactLearnerContext(buildLearnerSnapshot(scope));
   return `LEARNER IDENTITY\nFirst name: ${learnerName || 'Not supplied'}\n\nCURRENT QUESTION CONTEXT\n\nQUESTION / VIGNETTE:\n${context.question}\n\nOPTIONS:\n${context.options.join('\n') || 'Not supplied'}\n\nSTUDENT SELECTED:\n${context.selectedAnswer || 'Not supplied'}\n\nCORRECT ANSWER:\n${context.correctAnswer}\n\nGROUNDING EXPLANATION:\n${context.explanation || 'Not supplied'}\n\nLONGITUDINAL LEARNER MEMORY\n${learnerContext}\n\nUSER REQUEST:\n${userQuery}\n\nTEACHING POLICY\n- The current question and grounding explanation are the clinical source of truth. Learner memory is for personalisation, not for inventing medical facts.\n- If a first name is supplied, use it sparingly and naturally. Good moments are a session opening, a meaningful redirect, after resolving a misconception, or at closure. Do not address the learner by name in every reply.\n- Make personalisation visible through teaching choices, not flattery: adapt depth, questioning and examples to the supplied history and current confidence.\n- Treat history as longitudinal evidence, not as a licence to overclaim. Only mention a repeated pattern when multiple supplied observations support it.\n- If the learner repeatedly misses a related concept or discriminator, make that pattern explicit and focus on it.\n- If the learner has repeatedly retrieved prerequisite material successfully, skip basic reteaching and teach the missing layer.\n- A correct low-confidence response is weaker evidence than confident retrieval. A confident incorrect response can indicate a misconception.\n- The selected wrong option is diagnostic information. Explain why it was tempting and the clue or principle that should have shifted the decision when the supplied context supports that.\n- Prefer the shortest explanation that changes this learner's future decision-making.\n- Never expose internal scores, mastery levels, storage fields, event IDs, fingerprints or system terminology to the learner.\n- For visible tutor replies, make exactly ONE teaching move. Usually use 1-3 short sentences. Never give an unsolicited option-by-option review.\n- If you ask a Quick check, it must be ONE free-text question. Do not create A/B/C/D/E options or partial answer lists inside a tutor reply.\n- Never say the learner has made this mistake before, has a recurring pattern, or has a history of an error unless multiple explicit memory observations in LONGITUDINAL LEARNER MEMORY support that exact claim. Prefer not to mention history at all unless it materially improves the teaching move.\n- Finish every visible reply cleanly. Never end on a heading, colon, conjunction, option label, or unfinished sentence.\n- Keep the answer concise and action-oriented.`;
 }
 
@@ -461,7 +466,97 @@ const systemPrompt = `You are StudyEdit, an expert medical education assistant f
 - Do not use motivational filler, emojis, dramatic language or generic AI preambles.
 - If the supplied information is insufficient, say so briefly.`;
 
-let openai: OpenAI | null = null;
+type AiPurpose = 'tutor' | 'assessment' | 'repair';
+
+type ProxyMessage = {
+  role: 'system' | 'user' | 'assistant';
+  content: string;
+};
+
+async function fetchWithTimeout(
+  url: string,
+  init: RequestInit,
+  externalSignal?: AbortSignal,
+  timeoutMs = 18_000,
+) {
+  const controller = new AbortController();
+  const timeout = window.setTimeout(() => controller.abort(new DOMException('Tutor timed out', 'TimeoutError')), timeoutMs);
+  const abortFromExternal = () => controller.abort(externalSignal?.reason);
+  externalSignal?.addEventListener('abort', abortFromExternal, { once: true });
+
+  try {
+    return await fetch(url, { ...init, signal: controller.signal });
+  } finally {
+    window.clearTimeout(timeout);
+    externalSignal?.removeEventListener('abort', abortFromExternal);
+  }
+}
+
+async function requestAi(
+  purpose: AiPurpose,
+  messages: ProxyMessage[],
+  signal?: AbortSignal,
+): Promise<string> {
+  const response = await fetchWithTimeout('/.netlify/functions/ai-generate', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ purpose, messages }),
+  }, signal);
+
+  if (!response.ok) throw new Error(`StudyEdit tutor unavailable (${response.status})`);
+  const data = await response.json();
+  const content = data?.choices?.[0]?.message?.content;
+  if (typeof content !== 'string' || !content.trim()) throw new Error('StudyEdit tutor returned no content');
+  return content.trim();
+}
+
+async function requestTutorStream(
+  messages: ProxyMessage[],
+  onToken: (token: string) => void,
+  signal?: AbortSignal,
+): Promise<string> {
+  const response = await fetchWithTimeout('/.netlify/functions/ai-tutor', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ purpose: 'tutor', messages }),
+  }, signal, 24_000);
+
+  if (!response.ok || !response.body) throw new Error(`StudyEdit tutor unavailable (${response.status})`);
+  const reader = response.body.getReader();
+  const decoder = new TextDecoder();
+  let buffer = '';
+  let fullResponse = '';
+
+  const consumeEvent = (event: string) => {
+    event.split('\n').forEach(line => {
+      const trimmed = line.trim();
+      if (!trimmed.startsWith('data:')) return;
+      const payload = trimmed.slice(5).trim();
+      if (!payload || payload === '[DONE]') return;
+      try {
+        const parsed = JSON.parse(payload);
+        const token = parsed?.choices?.[0]?.delta?.content;
+        if (typeof token !== 'string' || !token) return;
+        fullResponse += token;
+        onToken(token);
+      } catch {
+        // A partial SSE frame remains in `buffer`; malformed complete frames are ignored.
+      }
+    });
+  };
+
+  while (true) {
+    const { value, done } = await reader.read();
+    buffer += decoder.decode(value, { stream: !done });
+    const events = buffer.split(/\r?\n\r?\n/);
+    buffer = events.pop() || '';
+    events.forEach(consumeEvent);
+    if (done) break;
+  }
+  if (buffer.trim()) consumeEvent(buffer);
+  if (!fullResponse.trim()) throw new Error('StudyEdit tutor returned no content');
+  return fullResponse.trim();
+}
 
 function isInvalidTutorOutput(text: string): boolean {
   const clean = String(text || '').trim();
@@ -487,28 +582,20 @@ async function repairTutorOutput(
   userQuery: string,
   context: QuestionContext,
   learnerName: string | null,
+  scope: string,
   draft: string,
 ): Promise<string> {
-  if (!openai) return conciseTutorFallback(context);
   try {
-    const response = await openai.chat.completions.create({
-      model: 'deepseek-chat',
-      messages: [
-        {
-          role: 'system',
-          content: 'You are repairing a StudyEdit tutor turn before it is shown to a medical student. Return ONLY the repaired learner-facing turn. Use the supplied clinical context as ground truth. Make exactly one pedagogical move in 1-3 short sentences. If a check is useful, ask exactly one free-text question prefixed "Quick check:". Never create multiple-choice options. Never claim prior mistakes or recurring history. Never review every option unless the learner explicitly asked. End with a complete sentence or question.',
-        },
-        {
-          role: 'user',
-          content: `${buildUserPrompt(userQuery, context, learnerName)}\n\nDRAFT TO REPAIR:\n${draft}`,
-        },
-      ],
-      temperature: 0.1,
-      max_tokens: 160,
-      top_p: 0.7,
-      stream: false,
-    });
-    const repaired = response.choices[0]?.message?.content?.trim() || '';
+    const repaired = await requestAi('repair', [
+      {
+        role: 'system',
+        content: 'You are repairing a StudyEdit tutor turn before it is shown to a medical student. Return ONLY the repaired learner-facing turn. Use the supplied clinical context as ground truth. Make exactly one pedagogical move in 1-3 short sentences. If a check is useful, ask exactly one free-text question prefixed "Quick check:". Never create multiple-choice options. Never claim prior mistakes or recurring history. Never review every option unless the learner explicitly asked. End with a complete sentence or question.',
+      },
+      {
+        role: 'user',
+        content: `${buildUserPrompt(userQuery, context, learnerName, scope)}\n\nDRAFT TO REPAIR:\n${draft}`,
+      },
+    ]);
     return repaired && !isInvalidTutorOutput(repaired) ? repaired : conciseTutorFallback(context);
   } catch (error) {
     console.error('Tutor repair failed:', error);
@@ -516,42 +603,19 @@ async function repairTutorOutput(
   }
 }
 
-try {
-  const apiKey = import.meta.env.VITE_OPENAI_API_KEY;
-  if (apiKey && apiKey !== 'your-openai-api-key-goes-here') {
-    openai = new OpenAI({
-      apiKey,
-      baseURL: 'https://api.deepseek.com/v1',
-      dangerouslyAllowBrowser: true,
-    });
-  }
-} catch (error) {
-  console.error('Error initializing DeepSeek API client:', error);
-}
-
 function buildFastAssessmentPrompt(userQuery: string, context: QuestionContext): string {
   return `CURRENT QUESTION:\n${context.question}\n\nOPTIONS:\n${context.options.join('\n') || 'Not supplied'}\n\nSTUDENT SELECTED:\n${context.selectedAnswer || 'Not supplied'}\n\nCORRECT ANSWER:\n${context.correctAnswer}\n\nGROUNDING EXPLANATION:\n${context.explanation || 'Not supplied'}\n\nASSESSMENT TASK:\n${userQuery}`;
 }
 
 async function generateFastTutorAssessment(userQuery: string, context: QuestionContext): Promise<string> {
-  if (!openai) return 'PARTIAL';
   try {
-    const response = await openai.chat.completions.create({
-      model: 'deepseek-chat',
-      messages: [
-        {
-          role: 'system',
-          content: 'You are a fast hidden medical tutoring classifier. Return exactly one label: PASS, PARTIAL, FAIL, or CLARIFY. Use only the supplied current-question context. Do not explain your answer.',
-        },
-        { role: 'user', content: buildFastAssessmentPrompt(userQuery, context) },
-      ],
-      temperature: 0,
-      max_tokens: 8,
-      top_p: 1,
-      stream: false,
-    });
-
-    const raw = response.choices[0]?.message?.content?.trim().toUpperCase() || '';
+    const raw = (await requestAi('assessment', [
+      {
+        role: 'system',
+        content: 'You are a fast hidden medical tutoring classifier. Return exactly one label: PASS, PARTIAL, FAIL, or CLARIFY. Use only the supplied current-question context. Do not explain your answer.',
+      },
+      { role: 'user', content: buildFastAssessmentPrompt(userQuery, context) },
+    ])).toUpperCase();
     if (raw.includes('CLARIFY')) return 'CLARIFY';
     if (raw.includes('PASS')) return 'PASS';
     if (raw.includes('FAIL')) return 'FAIL';
@@ -571,16 +635,9 @@ export async function generateAIResponseStream(
   abortSignal?: AbortSignal,
 ): Promise<string> {
   await hydrateLearnerMemoryFromCloud();
-  const learnerName = await currentLearnerFirstName();
+  const { firstName: learnerName, scope } = await currentLearnerIdentity();
 
-  if (!openai) {
-    const fallback = conciseTutorFallback(context);
-    onStart?.();
-    onToken(fallback);
-    return fallback;
-  }
-
-  const cacheKey = buildCacheKey(userQuery, context, learnerName);
+  const cacheKey = buildCacheKey(userQuery, context, learnerName, scope);
   const cached = responseCache[cacheKey];
   if (cached && Date.now() - cached.timestamp < CACHE_EXPIRY_MS && !isInvalidTutorOutput(cached.response)) {
     onStart?.();
@@ -588,46 +645,27 @@ export async function generateAIResponseStream(
     return cached.response;
   }
 
-  let fullResponse = '';
   try {
     onStart?.();
-    const stream = await openai.chat.completions.create({
-      model: 'deepseek-chat',
-      messages: [
+    const fullResponse = await requestTutorStream(
+      [
         { role: 'system', content: systemPrompt },
-        { role: 'user', content: buildUserPrompt(userQuery, context, learnerName) },
+        { role: 'user', content: buildUserPrompt(userQuery, context, learnerName, scope) },
       ],
-      temperature: 0.2,
-      max_tokens: 180,
-      top_p: 0.75,
-      presence_penalty: 0,
-      frequency_penalty: 0.1,
-      response_format: { type: 'text' },
-      stream: true,
-    }, abortSignal ? { signal: abortSignal } : {});
-
-    for await (const chunk of stream as AsyncIterable<{ choices: Array<{ delta?: { content?: string } }> }>) {
-      if (abortSignal?.aborted) throw new Error('Request aborted');
-      const delta = chunk?.choices?.[0]?.delta?.content ?? '';
-      if (!delta) continue;
-      fullResponse += delta;
-    }
+      onToken,
+      abortSignal,
+    );
 
     const safeResponse = isInvalidTutorOutput(fullResponse)
-      ? await repairTutorOutput(userQuery, context, learnerName, fullResponse)
+      ? await repairTutorOutput(userQuery, context, learnerName, scope, fullResponse)
       : fullResponse.trim();
 
-    if (safeResponse) {
-      onToken(safeResponse);
-      responseCache[cacheKey] = { response: safeResponse, timestamp: Date.now() };
-    }
+    if (safeResponse) responseCache[cacheKey] = { response: safeResponse, timestamp: Date.now() };
     return safeResponse;
   } catch (error) {
     if (abortSignal?.aborted) throw error;
     console.error('Error generating AI response stream:', error);
-    const fallback = conciseTutorFallback(context);
-    onToken(fallback);
-    return fallback;
+    throw error;
   }
 }
 
@@ -641,28 +679,17 @@ export async function generateAIResponse(userQuery: string, context: QuestionCon
   }
 
   await hydrateLearnerMemoryFromCloud();
-  const learnerName = await currentLearnerFirstName();
+  const { firstName: learnerName, scope } = await currentLearnerIdentity();
 
-  if (!openai) return generateFallbackResponse(userQuery, context);
-
-  const cacheKey = buildCacheKey(userQuery, context, learnerName);
+  const cacheKey = buildCacheKey(userQuery, context, learnerName, scope);
   const cached = responseCache[cacheKey];
   if (cached && Date.now() - cached.timestamp < CACHE_EXPIRY_MS) return cached.response;
 
   try {
-    const response = await openai.chat.completions.create({
-      model: 'deepseek-chat',
-      messages: [
+    const result = await requestAi('tutor', [
         { role: 'system', content: systemPrompt },
-        { role: 'user', content: buildUserPrompt(userQuery, context, learnerName) },
-      ],
-      temperature: 0.25,
-      max_tokens: 500,
-      top_p: 0.8,
-      stream: false,
-    });
-
-    const result = response.choices[0]?.message?.content?.trim() || '';
+        { role: 'user', content: buildUserPrompt(userQuery, context, learnerName, scope) },
+    ]);
     if (!result) return generateFallbackResponse(userQuery, context);
     responseCache[cacheKey] = { response: result, timestamp: Date.now() };
     return result;

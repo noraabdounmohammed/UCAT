@@ -16,6 +16,7 @@ const signUpSchema = z.object({
   email: z.string().email('Please enter a valid email address'),
   password: z.string().min(6, 'Password must be at least 6 characters'),
   termsAccepted: z.literal(true, { errorMap: () => ({ message: 'You must accept the Terms of Service to continue' }) }),
+  marketingOptIn: z.boolean().optional(),
 });
 
 type SignInData = z.infer<typeof signInSchema>;
@@ -24,6 +25,8 @@ type FormData = SignInData | SignUpData;
 
 interface AuthFormProps {
   onSuccess?: () => void;
+  initialMode?: 'signin' | 'signup';
+  emailRedirectPath?: string;
 }
 
 const T = {
@@ -31,24 +34,28 @@ const T = {
   parchment: '#F4ECDF',
   espresso: '#1F140C',
   ink: '#2A1E16',
-  muted: '#8A7560',
+  muted: '#746354',
   line: '#D9CCB6',
   lineSoft: '#E8DCC4',
   blush: '#E5A89D',
   blushSoft: '#F9E4DF',
 };
 
-export function AuthForm({ onSuccess }: AuthFormProps = {}) {
+export function AuthForm({ onSuccess, initialMode = 'signin', emailRedirectPath = '/' }: AuthFormProps = {}) {
   const { user } = useAuth();
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [mode, setMode] = useState<'signin' | 'signup'>('signin');
+  const [mode, setMode] = useState<'signin' | 'signup'>(initialMode);
   const [capsOn, setCapsOn] = useState(false);
   const [info, setInfo] = useState<string | null>(null);
 
   useEffect(() => {
     if (user && onSuccess) onSuccess();
   }, [user, onSuccess]);
+
+  useEffect(() => {
+    setMode(initialMode);
+  }, [initialMode]);
 
   const { register, handleSubmit, formState: { errors }, reset } = useForm<FormData>({
     resolver: zodResolver(mode === 'signup' ? signUpSchema : signInSchema),
@@ -83,15 +90,16 @@ export function AuthForm({ onSuccess }: AuthFormProps = {}) {
     try {
       if (mode === 'signup') {
         const signUpData = data as SignUpData;
-        const SITE_URL = 'https://studyedit.com';
+        const redirectPath = emailRedirectPath.startsWith('/') && !emailRedirectPath.startsWith('//') ? emailRedirectPath : '/';
+        const emailRedirectTo = `${window.location.origin}${redirectPath}`;
         const { error: signUpError, data: authData } = await supabase.auth.signUp({
           email: signUpData.email,
           password: signUpData.password,
           options: {
-            emailRedirectTo: SITE_URL,
+            emailRedirectTo,
             data: {
               first_name: signUpData.firstName,
-              marketing_consent: true,
+              marketing_consent: Boolean(signUpData.marketingOptIn),
             }
           }
         });
@@ -247,7 +255,7 @@ export function AuthForm({ onSuccess }: AuthFormProps = {}) {
                     }
                     try {
                       const { error: resetError } = await supabase.auth.resetPasswordForEmail(email, {
-                        redirectTo: 'https://studyedit.com/reset-password',
+                        redirectTo: `${window.location.origin}/reset-password`,
                       });
                       if (resetError) throw resetError;
                       setError(null);
@@ -293,7 +301,7 @@ export function AuthForm({ onSuccess }: AuthFormProps = {}) {
                   className="mt-1 h-4 w-4 rounded accent-[#1F140C]"
                 />
                 <span className="text-[12px] leading-[1.55]" style={{ color: T.muted }}>
-                  I agree to the <a href="/terms" target="_blank" className="underline underline-offset-2">Terms of Service</a>, <a href="/privacy" target="_blank" className="underline underline-offset-2">Privacy Policy</a>, and to receive product updates by email. You can unsubscribe at any time.
+                  I agree to the <a href="/terms" target="_blank" rel="noreferrer" className="underline underline-offset-2">Terms of Service</a> and <a href="/privacy" target="_blank" rel="noreferrer" className="underline underline-offset-2">Privacy Policy</a>.
                 </span>
               </label>
               {(errors as any).termsAccepted && (
@@ -301,6 +309,16 @@ export function AuthForm({ onSuccess }: AuthFormProps = {}) {
                   <AlertCircle className="h-3.5 w-3.5" /> {(errors as any).termsAccepted.message}
                 </p>
               )}
+              <label className="mt-4 flex cursor-pointer items-start gap-3">
+                <input
+                  type="checkbox"
+                  {...register('marketingOptIn')}
+                  className="mt-1 h-4 w-4 rounded accent-[#1F140C]"
+                />
+                <span className="text-[12px] leading-[1.55]" style={{ color: T.muted }}>
+                  Email me occasional StudyEdit product updates. Optional; unsubscribe at any time.
+                </span>
+              </label>
             </div>
           )}
 

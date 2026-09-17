@@ -36,7 +36,8 @@ const isHomepage = () => currentPath() === '/';
 const cacheKey = (curriculumId: string) => `studyedit_prefetched_case_v1:${curriculumId}`;
 
 const makeInstantStarter = () => ({
-  id: `instant_starter_${Date.now()}`,
+  id: 'instant_starter_ukmla_1168_v2',
+  concept_id: 'ukmla-1168',
   format: 'ukmla_sba',
   title: 'ST-elevation myocardial infarction',
   topic: 'Cardiology',
@@ -52,12 +53,16 @@ const makeInstantStarter = () => ({
     'Fibrinolysis followed by routine discharge',
     'CT coronary angiography before treatment',
     'Medical therapy alone and outpatient angiography',
+    'Immediate coronary artery bypass grafting without angiography',
   ],
   correct_answer: 0,
   explanation:
     'This is an acute STEMI presenting early, with primary PCI available promptly. Primary PCI is the preferred reperfusion strategy when it can be delivered within the recommended time window. Fibrinolysis is reserved for situations where timely primary PCI is not available.',
   key_fact:
     'In STEMI, use primary PCI when it can be delivered promptly; use fibrinolysis when timely PCI is not available and there are no contraindications.',
+  guideline: 'NICE NG185: Acute coronary syndromes',
+  guideline_url: 'https://www.nice.org.uk/guidance/ng185',
+  source_type: 'NICE',
   __studyeditInstantStarter: true,
 });
 
@@ -124,7 +129,7 @@ export const createConceptStore = (curriculumId: string = 'default') => {
   const progressiveStartPractice = async (practiceConfig?: PracticeConfig) => {
     const thisRun = ++runId;
     const requestedCount = Math.max(1, practiceConfig?.question_count || 10);
-    const replaceCurrent = Boolean((practiceConfig as any)?.replace_current);
+    const replaceCurrent = Boolean(practiceConfig?.replace_current);
 
     if (!isTutorLaunchPath()) return baseStartPractice(practiceConfig);
     if (practiceConfig?.target_formats?.[0] === 'mindmap') return baseStartPractice(practiceConfig);

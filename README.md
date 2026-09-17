@@ -41,11 +41,16 @@ You'll need a `.env.local` with:
 VITE_SUPABASE_URL=https://uivitzexbtsmnspcitgh.supabase.co
 VITE_SUPABASE_ANON_KEY=<from Netlify env>
 SUPABASE_SERVICE_ROLE_KEY=<from Netlify env>   # needed for scripts/*
-VITE_OPENAI_API_KEY=<DeepSeek key, named OpenAI for legacy reasons>
+DEEPSEEK_API_KEY=<server-only DeepSeek key>
 # Optional (no-op if absent):
+OPENAI_IMAGE_KEY=<server-only OpenAI key for visual aids>
+OPENAI_AUDIO_KEY=<server-only OpenAI key for voice>
 VITE_SENTRY_DSN=<sentry.io>
 VITE_POSTHOG_KEY=<posthog.com>
 ```
+
+Only public browser configuration belongs in `VITE_*` variables. AI provider keys
+must stay server-side and are accessed through Netlify Functions.
 
 Pull production env via `netlify env:list --plain > .env.local` (you must `netlify login` first and have access to the `medicu-app` site).
 
@@ -53,7 +58,7 @@ Pull production env via `netlify env:list --plain > .env.local` (you must `netli
 
 | Path | Audience | What |
 |---|---|---|
-| `/` | Anyone | Curriculum carousel + 'Try Study Mode' CTA |
+| `/` | Anyone | Immediate adaptive UKMLA practice, with optional session-focus controls |
 | `/study` | Authed | 3-min FSRS retrieval session |
 | `/mistakes` | Authed | Drill recently-forgotten questions |
 | `/mock` | Authed | 30-min, 20-question timed mock |
@@ -62,6 +67,8 @@ Pull production env via `netlify env:list --plain > .env.local` (you must `netli
 | `/seed` | Creators | Form to add new questions |
 | `/review` | Creators | Mobile inbox to approve/edit/reject draft questions |
 | `/privacy` | Anyone | Privacy + cookie disclosure |
+| `/terms` | Anyone | Terms of service |
+| `/reset-password` | Anyone | Password reset completion |
 
 ## Architecture
 

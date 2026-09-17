@@ -1,14 +1,15 @@
-import React, { useEffect, useMemo, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { ChevronDown, Send, X } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import { generateAIResponse, generateAIResponseStream, QuestionContext } from '@/services/openai';
+import { TutorVoiceControls } from './TutorVoiceControls';
 import type { FilterState } from './PracticeFilterModalParchment';
 import type { QuestionData } from './questionTypes';
 import type { SessionAnswer } from './SessionProgressDropdown';
 
 interface UkmlaSBAQuestionProps {
   question: QuestionData;
-  onAnswer: (isCorrect: boolean) => void;
+  onAnswer: (isCorrect: boolean, selectedOption?: string, confidence?: ConfidenceLevel) => void;
   onNext: () => void;
   onPrevious?: () => void;
   onExit?: () => void;
@@ -25,11 +26,15 @@ interface UkmlaSBAQuestionProps {
   onRestartWithFilters?: (filters?: FilterState) => void;
   preSelectedAnswer?: string;
   preSubmitted?: boolean;
+  preTutorTurns?: TutorTurn[];
   nextButtonText?: string;
+  collectConfidence?: boolean;
+  onTutorTurnsChange?: (turns: TutorTurn[]) => void;
+  footerControl?: React.ReactNode;
 }
 
-type ConfidenceLevel = 'know' | 'unsure' | 'guess';
-type TutorTurn = { role: 'student' | 'tutor'; text: string };
+export type ConfidenceLevel = 'know' | 'unsure' | 'guess';
+export type TutorTurn = { role: 'student' | 'tutor'; text: string };
 type TutorAssessment = 'pass' | 'partial' | 'fail' | 'clarify';
 
 const C = {
@@ -38,7 +43,7 @@ const C = {
   paper: '#FFFDF8',
   espresso: '#1F140C',
   ink: '#2A1E16',
-  muted: '#8A7560',
+  muted: '#746354',
   line: '#E8DCC4',
   blush: '#E5A89D',
   blushSoft: '#F9E4DF',
@@ -138,9 +143,19 @@ function buildVignetteParagraphs(text: string): string[] {
 
 function requiredEvidence(correct: boolean, confidence: ConfidenceLevel | null): number {
   if (correct && confidence === 'know') return 0;
-  if (correct && confidence === 'unsure') return 1;
-  if (correct && confidence === 'guess') return 2;
-  return 2;
+  return 1;
+}
+
+export function tutorNavigationIntent(text: string): 'next' | 'stop' | null {
+  const clean = String(text || '')
+    .trim()
+    .toLowerCase()
+    .replace(/[.!]+$/g, '')
+    .replace(/[–—]/g, '-');
+  if (!clean || clean.includes('?') || clean.length > 90) return null;
+  if (/^(?:i(?:'m| am) )?(?:done|finished)(?: for (?:now|today))?(?: please)?$/.test(clean) || /^(?:stop|end)(?: (?:this|the))? session(?: please)?$/.test(clean)) return 'stop';
+  if (/^(?:(?:i (?:understand|get it)(?: now)?|got it|okay|ok)[,;:\s-]*)?(?:next(?: case| question)?|skip(?: this| it)?|move on|continue|finish(?: (?:this|the) session)?)(?: please)?$/.test(clean)) return 'next';
+  return null;
 }
 
 function parseTutorAssessment(text: string): TutorAssessment {
@@ -283,14 +298,18 @@ export const UkmlaSBAQuestion: React.FC<UkmlaSBAQuestionProps> = ({
   totalQuestions = 0,
   preSelectedAnswer,
   preSubmitted = false,
+  preTutorTurns,
   nextButtonText,
+  collectConfidence = false,
+  onTutorTurnsChange,
+  footerControl,
 }) => {
   const [selectedOption, setSelectedOption] = useState<string | null>(preSelectedAnswer || null);
   const [committedAnswer, setCommittedAnswer] = useState<string | null>(preSubmitted ? preSelectedAnswer || null : null);
   const [hasSubmitted, setHasSubmitted] = useState(preSubmitted);
   const [showAllDistractors, setShowAllDistractors] = useState(false);
   const [questionExpanded, setQuestionExpanded] = useState(!preSubmitted);
-  const [tutorTurns, setTutorTurns] = useState<TutorTurn[]>([]);
+  const [tutorTurns, setTutorTurns] = useState<TutorTurn[]>(preTutorTurns || []);
   const [aiQuestion, setAiQuestion] = useState('');
   const [aiStreaming, setAiStreaming] = useState(false);
   const [tutorAssessing, setTutorAssessing] = useState(false);
@@ -298,12 +317,19 @@ export const UkmlaSBAQuestion: React.FC<UkmlaSBAQuestionProps> = ({
   const [confidenceLevel, setConfidenceLevel] = useState<ConfidenceLevel | null>(null);
   const [passedChecks, setPassedChecks] = useState(0);
   const [advancePending, setAdvancePending] = useState(false);
+  const [tutorError, setTutorError] = useState<string | null>(null);
+  const [composerInput, setComposerInput] = useState<HTMLTextAreaElement | null>(null);
   const abortControllerRef = useRef<AbortController | null>(null);
   const advanceTimerRef = useRef<number | null>(null);
   const scrollRef = useRef<HTMLDivElement | null>(null);
   const tutorRef = useRef<HTMLDivElement | null>(null);
   const inputRef = useRef<HTMLTextAreaElement | null>(null);
+  const rootRef = useRef<HTMLDivElement | null>(null);
   const getStorageKey = () => `sba_answer_${question.id || question.question?.substring(0, 50)}`;
+  const setComposerRef = useCallback((node: HTMLTextAreaElement | null) => {
+    inputRef.current = node;
+    setComposerInput(node);
+  }, []);
 
   const clearAdvanceTimer = () => {
     if (advanceTimerRef.current !== null) {
@@ -341,7 +367,7 @@ export const UkmlaSBAQuestion: React.FC<UkmlaSBAQuestionProps> = ({
       }
     }
     setShowAllDistractors(false);
-    setTutorTurns([]);
+    setTutorTurns(preSubmitted ? preTutorTurns || [] : []);
     setAiQuestion('');
     setAiStreaming(false);
     setTutorAssessing(false);
@@ -349,11 +375,16 @@ export const UkmlaSBAQuestion: React.FC<UkmlaSBAQuestionProps> = ({
     setConfidenceLevel(null);
     setPassedChecks(0);
     setAdvancePending(false);
+    setTutorError(null);
     abortControllerRef.current?.abort();
     clearAdvanceTimer();
     requestAnimationFrame(() => scrollRef.current?.scrollTo({ top: 0 }));
     return () => clearAdvanceTimer();
   }, [question.id, question.question, question.question_stem, preSubmitted, preSelectedAnswer]);
+
+  useEffect(() => {
+    if (hasSubmitted) onTutorTurnsChange?.(tutorTurns);
+  }, [hasSubmitted, onTutorTurnsChange, tutorTurns]);
 
   const options = useMemo(
     () => (question.options || []).map((option: any, index: number) =>
@@ -442,18 +473,20 @@ export const UkmlaSBAQuestion: React.FC<UkmlaSBAQuestionProps> = ({
     startedOverride?: number,
     instructionOverride?: string,
     advanceAfter = false,
+    confidenceOverride?: ConfidenceLevel | null,
   ) => {
     if (aiStreaming) return;
     const selectedId = selectedOverride || committedAnswer;
     if (!selectedId) return;
 
-    const confidence = confidenceLevel || await waitForConfidence(conceptTitle, startedOverride || answerStartedAt || Date.now());
+    const confidence = confidenceOverride || confidenceLevel || await waitForConfidence(conceptTitle, startedOverride || answerStartedAt || Date.now());
     if (confidence && confidence !== confidenceLevel) setConfidenceLevel(confidence);
     const wasCorrect = selectedId === correctAnswerId;
     const priorTurns = tutorTurns.slice(-8);
 
     if (studentText?.trim()) setTutorTurns(previous => [...previous, { role: 'student', text: studentText.trim() }]);
     setAiQuestion('');
+    setTutorError(null);
     setAiStreaming(true);
 
     const context = makeContext(selectedId, confidence);
@@ -472,11 +505,12 @@ export const UkmlaSBAQuestion: React.FC<UkmlaSBAQuestionProps> = ({
     const controller = new AbortController();
     abortControllerRef.current = controller;
     let streamed = '';
+    let succeeded = false;
 
     setTutorTurns(previous => [...previous, { role: 'tutor', text: '' }]);
 
     try {
-      await generateAIResponseStream(
+      const finalResponse = await generateAIResponseStream(
         prompt,
         context,
         token => {
@@ -491,22 +525,31 @@ export const UkmlaSBAQuestion: React.FC<UkmlaSBAQuestionProps> = ({
         () => undefined,
         controller.signal,
       );
+      succeeded = true;
+      if (finalResponse) {
+        setTutorTurns(previous => {
+          const next = [...previous];
+          if (next[next.length - 1]?.role === 'tutor') next[next.length - 1] = { role: 'tutor', text: finalResponse };
+          return next;
+        });
+      }
     } catch (error) {
       if (!controller.signal.aborted) {
         console.error('StudyEdit tutor failed:', error);
         const fallback = forceDirect
           ? (explanation || keyFact || 'Review the decisive clue and correct answer before moving on.')
-          : 'Talk me through what you were thinking, and we can work out the exact gap together.';
+          : (explanation || keyFact || 'Use the marked answer and the decisive clue in the case before moving on.');
         setTutorTurns(previous => {
           const next = [...previous];
           if (next[next.length - 1]?.role === 'tutor') next[next.length - 1] = { role: 'tutor', text: fallback };
           return next;
         });
+        setTutorError('The personalised tutor connection dropped. I’m showing the verified answer explanation instead.');
       }
     } finally {
       if (!controller.signal.aborted) {
         setAiStreaming(false);
-        if (advanceAfter || (!studentText && wasCorrect && confidence === 'know')) scheduleAdvance();
+        if (succeeded && (advanceAfter || (!studentText && wasCorrect && confidence === 'know'))) scheduleAdvance();
       }
       abortControllerRef.current = null;
     }
@@ -515,6 +558,18 @@ export const UkmlaSBAQuestion: React.FC<UkmlaSBAQuestionProps> = ({
   const handleStudentReply = async (studentText: string) => {
     const query = studentText.trim();
     if (!query || aiStreaming || tutorAssessing || !committedAnswer) return;
+
+    const navigationIntent = tutorNavigationIntent(query);
+    if (navigationIntent === 'stop') {
+      cancelAdvance();
+      if (onExit) onExit();
+      else handleNext();
+      return;
+    }
+    if (navigationIntent === 'next') {
+      handleNext();
+      return;
+    }
 
     cancelAdvance();
     setAiQuestion('');
@@ -578,22 +633,24 @@ export const UkmlaSBAQuestion: React.FC<UkmlaSBAQuestionProps> = ({
     }
   };
 
-  const handleCheckAnswer = () => {
+  const handleCheckAnswer = (confidence?: ConfidenceLevel) => {
     if (!selectedOption || hasSubmitted) return;
+    if (collectConfidence && !confidence) return;
     const correct = selectedOption === correctAnswerId;
     const startedAt = Date.now();
     setAnswerStartedAt(startedAt);
     setCommittedAnswer(selectedOption);
     setHasSubmitted(true);
     setQuestionExpanded(false);
+    setConfidenceLevel(confidence || null);
     sessionStorage.setItem(getStorageKey(), JSON.stringify({ selectedOption, hasSubmitted: true }));
-    onAnswer(correct);
-    void runTutor(undefined, false, selectedOption, startedAt);
+    onAnswer(correct, selectedOption, confidence);
+    void runTutor(undefined, false, selectedOption, startedAt, undefined, false, confidence || null);
     window.setTimeout(() => tutorRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 180);
   };
 
   return (
-    <div className="fixed inset-0 flex flex-col overflow-hidden" style={{ backgroundColor: C.parchment, color: C.ink, fontFamily: learningFont }}>
+    <div ref={rootRef} className="fixed inset-0 flex flex-col overflow-hidden" style={{ backgroundColor: C.parchment, color: C.ink, fontFamily: learningFont }}>
       <header className="shrink-0 border-b backdrop-blur-md" style={{ borderColor: 'rgba(232,220,196,.7)', backgroundColor: 'rgba(244,236,223,.92)' }}>
         <div className="mx-auto flex w-full max-w-[700px] items-center justify-between px-5 py-4 sm:px-8">
           <div className="text-[24px] tracking-[-0.04em]" style={{ color: C.espresso, fontFamily: brandFont }}>
@@ -618,7 +675,8 @@ export const UkmlaSBAQuestion: React.FC<UkmlaSBAQuestionProps> = ({
       </header>
 
       <div ref={scrollRef} className="flex-1 overflow-y-auto">
-        <main className="mx-auto w-full max-w-[700px] px-5 pb-16 pt-8 sm:px-8 sm:pt-10">
+        <div className="mx-auto w-full max-w-[700px] px-5 pb-16 pt-8 sm:px-8 sm:pt-10">
+          <h1 className="sr-only">UKMLA practice: {conceptTitle}</h1>
           {!hasSubmitted || questionExpanded ? (
             <section aria-label="Question" className={`animate-[fadeIn_.25s_ease] ${hasSubmitted && questionExpanded ? 'studyedit-case-expanded' : ''}`}>
     {hasSubmitted && questionExpanded ? (
@@ -676,11 +734,27 @@ export const UkmlaSBAQuestion: React.FC<UkmlaSBAQuestionProps> = ({
                 })}
               </div>
 
-              {!hasSubmitted && (
-                <button type="button" onClick={handleCheckAnswer} disabled={!selectedOption} className="mt-6 flex w-full items-center justify-center rounded-full px-6 py-[18px] text-[16px] font-bold disabled:cursor-not-allowed" style={{ backgroundColor: selectedOption ? C.espresso : '#D9CCB6', color: selectedOption ? C.cream : C.muted }}>
+              {!hasSubmitted && (collectConfidence ? (
+                <div className={`studyedit-confidence-prompt mt-6 transition-opacity ${selectedOption ? 'opacity-100' : 'opacity-55'}`} aria-label="Answer confidence">
+                  <div className="mb-3 text-center text-[15px] font-semibold" style={{ color: C.espresso }}>How sure are you?</div>
+                  <div className="grid grid-cols-3 gap-2">
+                    {([
+                      ['know', 'Knew it'],
+                      ['unsure', 'Unsure'],
+                      ['guess', 'Guessed'],
+                    ] as Array<[ConfidenceLevel, string]>).map(([value, label]) => (
+                      <button key={value} type="button" onClick={() => handleCheckAnswer(value)} disabled={!selectedOption} className="min-h-[48px] rounded-full border px-3 text-[14px] font-semibold transition active:scale-[0.99] disabled:cursor-not-allowed" style={{ borderColor: C.line, backgroundColor: C.paper, color: C.espresso }}>
+                        {label}
+                      </button>
+                    ))}
+                  </div>
+                  <div className="mt-2 text-center text-[12px]" style={{ color: '#746354' }}>{selectedOption ? 'Choose one to submit your answer.' : 'Choose an answer first.'}</div>
+                </div>
+              ) : (
+                <button type="button" onClick={() => handleCheckAnswer()} disabled={!selectedOption} className="mt-6 flex w-full items-center justify-center rounded-full px-6 py-[18px] text-[16px] font-bold disabled:cursor-not-allowed" style={{ backgroundColor: selectedOption ? C.espresso : '#D9CCB6', color: selectedOption ? C.cream : '#746354' }}>
                   Check answer
                 </button>
-              )}
+              ))}
             </section>
           ) : (
             <button type="button" onClick={() => setQuestionExpanded(true)} className="studyedit-case-summary flex w-full items-center text-left" aria-label="Expand full case">
@@ -719,12 +793,23 @@ export const UkmlaSBAQuestion: React.FC<UkmlaSBAQuestionProps> = ({
                 {waitingForTutorText && <TutorWorkingIndicator />}
               </div>
 
+              {tutorError && (
+                <div className="mt-5 rounded-[15px] border px-4 py-3 text-[13px] font-semibold leading-5" role="status" style={{ borderColor: '#E4C9C2', backgroundColor: C.blushSoft, color: '#7D4139' }}>
+                  {tutorError}
+                </div>
+              )}
+
               {!preSubmitted && advancePending && (
                 <div className="mt-7 flex items-center justify-between gap-4 border-t pt-4" style={{ borderColor: C.line }}>
                   <span className="text-[12px] font-semibold" style={{ color: C.muted }}>{isFinalQuestion ? 'Wrapping up…' : 'Moving on…'}</span>
-                  <button type="button" onClick={cancelAdvance} className="text-[12px] font-semibold underline decoration-[#BBA995] underline-offset-4" style={{ color: C.muted }}>
-                    Wait — I have a question
-                  </button>
+                  <div className="flex items-center gap-4">
+                    <button type="button" onClick={cancelAdvance} className="text-[12px] font-semibold underline decoration-[#BBA995] underline-offset-4" style={{ color: '#746354' }}>
+                      Wait — I have a question
+                    </button>
+                    <button type="button" onClick={handleNext} className="text-[13px] font-bold underline decoration-[#BBA995] underline-offset-4" style={{ color: C.espresso }}>
+                      {isFinalQuestion ? 'Finish now →' : 'Next now →'}
+                    </button>
+                  </div>
                 </div>
               )}
 
@@ -746,7 +831,7 @@ export const UkmlaSBAQuestion: React.FC<UkmlaSBAQuestionProps> = ({
                     if (query) void handleStudentReply(query);
                   }}>
                     <textarea
-                      ref={inputRef}
+                      ref={setComposerRef}
                       rows={1}
                       value={aiQuestion}
                       onChange={event => {
@@ -764,9 +849,10 @@ export const UkmlaSBAQuestion: React.FC<UkmlaSBAQuestionProps> = ({
                       }}
                       disabled={tutorBusy}
                       placeholder={tutorBusy ? 'StudyEdit is thinking…' : 'Reply or ask anything…'}
-                      className="min-h-[44px] max-h-[180px] min-w-0 flex-1 resize-none bg-transparent py-2.5 text-[16px] font-medium leading-6 outline-none placeholder:text-[#A89582] disabled:cursor-wait"
+                      className="min-h-[44px] max-h-[180px] min-w-0 flex-1 resize-none bg-transparent py-2.5 text-[16px] font-medium leading-6 outline-none placeholder:text-[#766655] disabled:cursor-wait"
                       style={{ color: C.espresso, overflowY: 'hidden' }}
                     />
+                    {composerInput && rootRef.current && !tutorBusy && <TutorVoiceControls input={composerInput} tutorRoot={rootRef.current} />}
                     <button
                       type="submit"
                       disabled={!aiQuestion.trim() || tutorBusy}
@@ -806,9 +892,18 @@ export const UkmlaSBAQuestion: React.FC<UkmlaSBAQuestionProps> = ({
                   {nextButtonText} →
                 </button>
               )}
+
+              <div className="mt-8 flex flex-wrap items-center justify-between gap-3 border-t pt-4 text-[12px] font-semibold" style={{ borderColor: C.line, color: '#746354' }}>
+                {(question as any).guideline_url ? (
+                  <a href={String((question as any).guideline_url)} target="_blank" rel="noreferrer" className="underline decoration-[#BBA995] underline-offset-4">
+                    Source: {String((question as any).guideline || (question as any).source_type || 'clinical guidance')}
+                  </a>
+                ) : <span>Answer grounded in the supplied learning material</span>}
+                {footerControl}
+              </div>
             </section>
           )}
-        </main>
+        </div>
       </div>
     </div>
   );

@@ -256,7 +256,16 @@ export class ProgressSyncService {
         if (sessionsData) {
           const sessions = JSON.parse(sessionsData);
           for (const session of sessions.slice(0, 50)) {
-            await this.savePracticeSession(userId, curriculumId, session);
+            const total = Number(session.total_questions ?? session.totalQuestions ?? 0);
+            const correct = Number(session.correct_answers ?? session.correctAnswers ?? 0);
+            await this.savePracticeSession(userId, curriculumId, {
+              session_date: String(session.session_date ?? session.completedAt ?? session.date ?? new Date().toISOString()),
+              total_questions: total,
+              correct_answers: correct,
+              incorrect_answers: Number(session.incorrect_answers ?? Math.max(0, total - correct)),
+              duration_seconds: Number(session.duration_seconds ?? session.duration ?? 0),
+              concepts_practiced: Array.isArray(session.concepts_practiced) ? session.concepts_practiced : [],
+            });
           }
         }
       }

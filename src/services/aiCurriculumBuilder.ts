@@ -1,24 +1,19 @@
 import { ConceptNode } from '../types/conceptTypes';
-import OpenAI from 'openai';
 
-// Initialize OpenAI client with DeepSeek API (same as your existing setup)
-let openai: OpenAI | null = null;
-
-try {
-  const apiKey = import.meta.env.VITE_OPENAI_API_KEY;
-  
-  if (apiKey && apiKey !== 'your-openai-api-key-goes-here') {
-    openai = new OpenAI({
-      apiKey,
-      baseURL: 'https://api.deepseek.com/v1',  // DeepSeek API base URL
-      dangerouslyAllowBrowser: true
-    });
-    console.log('DeepSeek API client initialized for curriculum builder');
-  } else {
-    console.warn('DeepSeek API key not found. Using fallback parsing/generation.');
-  }
-} catch (error) {
-  console.error('Error initializing DeepSeek API client for curriculum builder:', error);
+async function requestCurriculumAI(prompt: string): Promise<string> {
+  const response = await fetch('/.netlify/functions/ai-generate', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      purpose: 'curriculum',
+      messages: [{ role: 'user', content: prompt }],
+    }),
+  });
+  if (!response.ok) throw new Error(`Curriculum generation unavailable (${response.status})`);
+  const data = await response.json();
+  const content = data?.choices?.[0]?.message?.content;
+  if (typeof content !== 'string' || !content.trim()) throw new Error('Empty curriculum response');
+  return content.trim();
 }
 
 export interface SpecRequirement {
@@ -73,30 +68,7 @@ For "sperm cell adaptations":
 Return only valid JSON:`;
 
   try {
-    if (!openai) {
-      console.warn('DeepSeek API not available, using fallback concept generation');
-      return generateFallbackConcept(specText);
-    }
-
-    console.log('🤖 Sending concept generation request to DeepSeek for:', specText.substring(0, 50) + '...');
-    
-    const response = await openai.chat.completions.create({
-      model: 'deepseek-chat',
-      messages: [
-        { role: 'user', content: prompt }
-      ],
-      temperature: 0.3,
-      max_tokens: 1000,
-      response_format: { type: "text" }
-    });
-
-    const content = response.choices[0].message.content;
-    console.log('🤖 DeepSeek response:', content);
-    
-    if (!content) {
-      console.error('❌ Empty response from DeepSeek');
-      throw new Error('Empty response from DeepSeek');
-    }
+    const content = await requestCurriculumAI(prompt);
 
     // Clean up the response - remove markdown code blocks if present
     let cleanContent = content.trim();
@@ -235,25 +207,7 @@ Example output:
 Return a JSON array of strings only:`;
 
   try {
-    if (!openai) {
-      console.warn('DeepSeek API not available, using fallback parsing');
-      return parseSpecificationFallback(specText);
-    }
-
-    const response = await openai.chat.completions.create({
-      model: 'deepseek-chat',
-      messages: [
-        { role: 'user', content: prompt }
-      ],
-      temperature: 0.3,
-      max_tokens: 1000,
-      response_format: { type: "text" }
-    });
-
-    const content = response.choices[0].message.content;
-    if (!content) {
-      throw new Error('Empty response from DeepSeek');
-    }
+    const content = await requestCurriculumAI(prompt);
 
     // Try to parse as JSON array
     try {

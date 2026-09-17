@@ -32,9 +32,7 @@ async function callOpenAI(prompt: string, systemPrompt?: string): Promise<any> {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        model: 'deepseek-chat',
-        temperature: 0.7,
-        max_tokens: 1200,
+        purpose: 'question',
         messages: [
           {
             role: 'system',
@@ -443,7 +441,7 @@ MANDATORY REQUIREMENTS:
     console.error('Error details:', {
       message: error instanceof Error ? error.message : 'Unknown error',
       concept: concept.title,
-      hasApiKey: !!import.meta.env.VITE_OPENAI_API_KEY
+      usesServerProxy: true
     });
     // Fallback to template-based generation if AI fails
     return generateTemplateQuestion(concept, optionCount);
