@@ -321,6 +321,7 @@ export const UkmlaSBAQuestion: React.FC<UkmlaSBAQuestionProps> = ({
   const [composerInput, setComposerInput] = useState<HTMLTextAreaElement | null>(null);
   const abortControllerRef = useRef<AbortController | null>(null);
   const advanceTimerRef = useRef<number | null>(null);
+  const resetOnFirstTutorTextRef = useRef(false);
   const scrollRef = useRef<HTMLDivElement | null>(null);
   const inputRef = useRef<HTMLTextAreaElement | null>(null);
   const rootRef = useRef<HTMLDivElement | null>(null);
@@ -375,6 +376,7 @@ export const UkmlaSBAQuestion: React.FC<UkmlaSBAQuestionProps> = ({
     setPassedChecks(0);
     setAdvancePending(false);
     setTutorError(null);
+    resetOnFirstTutorTextRef.current = false;
     abortControllerRef.current?.abort();
     clearAdvanceTimer();
     requestAnimationFrame(() => scrollRef.current?.scrollTo({ top: 0 }));
@@ -434,6 +436,12 @@ export const UkmlaSBAQuestion: React.FC<UkmlaSBAQuestionProps> = ({
       scrollRef.current?.scrollTo({ top: 0, behavior: 'auto' });
       window.scrollTo({ top: 0, behavior: 'auto' });
     });
+  };
+
+  const keepFirstTutorTextAtTop = () => {
+    if (!resetOnFirstTutorTextRef.current) return;
+    resetOnFirstTutorTextRef.current = false;
+    scrollToSessionTop();
   };
 
   const scheduleAdvance = () => {
@@ -520,6 +528,7 @@ export const UkmlaSBAQuestion: React.FC<UkmlaSBAQuestionProps> = ({
         prompt,
         context,
         token => {
+          const isFirstVisibleToken = !streamed.trim() && Boolean(token.trim());
           streamed += token;
           setTutorTurns(previous => {
             const next = [...previous];
@@ -527,6 +536,7 @@ export const UkmlaSBAQuestion: React.FC<UkmlaSBAQuestionProps> = ({
             if (last?.role === 'tutor') next[next.length - 1] = { role: 'tutor', text: streamed };
             return next;
           });
+          if (isFirstVisibleToken) keepFirstTutorTextAtTop();
         },
         () => undefined,
         controller.signal,
@@ -538,6 +548,7 @@ export const UkmlaSBAQuestion: React.FC<UkmlaSBAQuestionProps> = ({
           if (next[next.length - 1]?.role === 'tutor') next[next.length - 1] = { role: 'tutor', text: finalResponse };
           return next;
         });
+        keepFirstTutorTextAtTop();
       }
     } catch (error) {
       if (!controller.signal.aborted) {
@@ -551,6 +562,7 @@ export const UkmlaSBAQuestion: React.FC<UkmlaSBAQuestionProps> = ({
           return next;
         });
         setTutorError('The personalised tutor connection dropped. I’m showing the verified answer explanation instead.');
+        keepFirstTutorTextAtTop();
       }
     } finally {
       if (!controller.signal.aborted) {
@@ -651,8 +663,9 @@ export const UkmlaSBAQuestion: React.FC<UkmlaSBAQuestionProps> = ({
     setConfidenceLevel(confidence || null);
     sessionStorage.setItem(getStorageKey(), JSON.stringify({ selectedOption, hasSubmitted: true }));
     onAnswer(correct, selectedOption, confidence);
-    void runTutor(undefined, false, selectedOption, startedAt, undefined, false, confidence || null);
+    resetOnFirstTutorTextRef.current = true;
     scrollToSessionTop();
+    void runTutor(undefined, false, selectedOption, startedAt, undefined, false, confidence || null);
   };
 
   return (

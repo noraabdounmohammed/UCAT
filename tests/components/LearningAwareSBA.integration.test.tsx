@@ -78,10 +78,38 @@ describe('real SBA → confidence → tutor flow', () => {
       expect(screen.getByText(/murmur radiating to the carotids is the decisive clue/i)).toBeInTheDocument();
     });
     await waitFor(() => {
-      expect(window.scrollTo).toHaveBeenCalledWith({ top: 0, behavior: 'auto' });
+      expect(window.scrollTo).toHaveBeenCalledTimes(2);
     });
 
     expect(streamMock).toHaveBeenCalledTimes(1);
     expect(onNext).not.toHaveBeenCalled();
+  });
+
+  it('keeps the verified fallback at the top when the tutor connection drops', async () => {
+    const user = userEvent.setup();
+    const consoleError = vi.spyOn(console, 'error').mockImplementation(() => undefined);
+    streamMock.mockRejectedValueOnce(new Error('connection dropped'));
+
+    try {
+      render(
+        <LearningAwareSBA
+          question={question}
+          onAnswer={vi.fn()}
+          onNext={vi.fn()}
+          currentIndex={0}
+          totalQuestions={5}
+        />,
+      );
+
+      await user.click(screen.getByRole('button', { name: /aortic stenosis/i }));
+      await user.click(screen.getByRole('button', { name: /knew it/i }));
+
+      await waitFor(() => {
+        expect(screen.getByText(/personalised tutor connection dropped/i)).toBeInTheDocument();
+        expect(window.scrollTo).toHaveBeenCalledTimes(2);
+      });
+    } finally {
+      consoleError.mockRestore();
+    }
   });
 });

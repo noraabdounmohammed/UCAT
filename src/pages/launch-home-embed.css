@@ -2,7 +2,7 @@
  * Embedded UKMLA tutor — editorial mode.
  * The page should feel typeset and calm rather than layered, glassy or app-like.
  */
-.studyedit-inline-session { position:relative; margin-left:-1.25rem; margin-right:-1.25rem; }
+.studyedit-inline-session { position:relative; margin-left:-1.25rem; margin-right:-1.25rem; overflow-anchor:none; }
 .studyedit-inline-session > .flex.h-screen.flex-col.overflow-hidden { height:auto!important; min-height:0!important; overflow:visible!important; background:transparent!important; }
 .studyedit-inline-session > .flex.h-screen.flex-col.overflow-hidden > .flex-1 { flex:none!important; overflow:visible!important; }
 .studyedit-inline-session .fixed.inset-0.flex.flex-col.overflow-hidden { position:relative!important; inset:auto!important; width:100%!important; height:auto!important; min-height:0!important; overflow:visible!important; background:transparent!important; }
