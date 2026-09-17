@@ -1,0 +1,57 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#F4ECDF" />
+    <title>Updating StudyEdit…</title>
+    <style>
+      :root { color-scheme: light; font-family: Inter, ui-sans-serif, system-ui, sans-serif; }
+      * { box-sizing: border-box; }
+      body {
+        min-height: 100vh;
+        min-height: 100dvh;
+        margin: 0;
+        display: grid;
+        place-items: center;
+        background: #f4ecdf;
+        color: #2a1e16;
+      }
+      main { width: min(88vw, 360px); text-align: center; }
+      h1 { margin: 0; font-family: Georgia, serif; font-size: 2rem; font-weight: 400; }
+      p { margin: 0.75rem 0 0; color: #746354; line-height: 1.55; }
+      .dot {
+        width: 10px;
+        height: 10px;
+        margin: 1.5rem auto 0;
+        border-radius: 999px;
+        background: #e5a89d;
+        animation: pulse 900ms ease-in-out infinite alternate;
+      }
+      @keyframes pulse { to { opacity: 0.28; transform: scale(0.72); } }
+    </style>
+  </head>
+  <body>
+    <main>
+      <h1>Updating StudyEdit…</h1>
+      <p>Loading the latest practice experience.</p>
+      <div class="dot" aria-hidden="true"></div>
+    </main>
+    <script>
+      (async () => {
+        try {
+          if ('serviceWorker' in navigator) {
+            const registrations = await navigator.serviceWorker.getRegistrations();
+            await Promise.all(registrations.map((registration) => registration.unregister()));
+          }
+          if ('caches' in window) {
+            const keys = await caches.keys();
+            await Promise.all(keys.map((key) => caches.delete(key)));
+          }
+        } finally {
+          window.location.replace('/?updated=20260917');
+        }
+      })();
+    </script>
+  </body>
+</html>

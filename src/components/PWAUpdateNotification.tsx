@@ -1,29 +1,46 @@
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { RefreshCw, X } from 'lucide-react';
 
-// @ts-ignore - virtual module from vite-plugin-pwa
+// @ts-expect-error - virtual module supplied by vite-plugin-pwa at build time
 import { useRegisterSW } from 'virtual:pwa-register/react';
 
 export const PWAUpdateNotification: React.FC = () => {
   const [showNotification, setShowNotification] = useState(false);
+  const registrationRef = useRef<ServiceWorkerRegistration | null>(null);
+
+  const checkForUpdate = useCallback(() => {
+    if (document.visibilityState === 'visible') {
+      void registrationRef.current?.update();
+    }
+  }, []);
 
   const {
     needRefresh: [needRefresh, setNeedRefresh],
     updateServiceWorker,
   } = useRegisterSW({
-    onRegistered(r: any) {
+    onRegistered(r: ServiceWorkerRegistration | undefined) {
       console.log('✅ Service Worker registered');
-      // Check for updates every hour
-      if (r) {
-        setInterval(() => {
-          r.update();
-        }, 60 * 60 * 1000); // Check every hour
-      }
+      registrationRef.current = r ?? null;
+      // Check immediately. Existing tabs previously waited up to an hour, which
+      // could leave a learner on an older interface after a production release.
+      void r?.update();
     },
-    onRegisterError(error: any) {
+    onRegisterError(error: unknown) {
       console.error('❌ Service Worker registration error:', error);
     },
   });
+
+  useEffect(() => {
+    document.addEventListener('visibilitychange', checkForUpdate);
+    window.addEventListener('focus', checkForUpdate);
+    const interval = window.setInterval(checkForUpdate, 15 * 60 * 1000);
+
+    return () => {
+      document.removeEventListener('visibilitychange', checkForUpdate);
+      window.removeEventListener('focus', checkForUpdate);
+      window.clearInterval(interval);
+    };
+  }, [checkForUpdate]);
 
   useEffect(() => {
     if (needRefresh) {
