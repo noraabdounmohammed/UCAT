@@ -34,7 +34,6 @@ test.describe('StudyEdit launch flow', () => {
 
     await waitForFirstCase(page);
     await expect(page.getByText(/recommended mix/i).first()).toBeVisible();
-    await expect(page.getByText(/study edit adapts within this focus/i)).toBeVisible();
     await expect(page.getByText(/^What do you know about /i)).toHaveCount(0);
   });
 
@@ -43,8 +42,11 @@ test.describe('StudyEdit launch flow', () => {
     const question = await waitForFirstCase(page);
     await page.getByRole('button', { name: /choose session focus/i }).click();
 
-    await expect(page.getByRole('heading', { name: /choose what to practise/i })).toBeVisible();
-    await expect(page.getByText(/set the scope\. study edit still chooses the most useful cases inside it/i)).toBeVisible();
+    await expect(page.getByRole('heading', { name: /practise your way/i })).toBeVisible();
+    await expect(page.getByText(/build a focused session in seconds/i)).toBeVisible();
+    await expect(page.getByPlaceholder('Search conditions…')).toBeVisible();
+    await expect(page.getByPlaceholder('Search presentations…')).toBeVisible();
+    await expect(page.getByRole('button', { name: /more filters/i })).toHaveCount(0);
     await expect(page.getByRole('button', { name: /close practice builder/i })).toBeVisible();
 
     await page.getByRole('button', { name: /close practice builder/i }).click();
@@ -59,9 +61,9 @@ test.describe('StudyEdit launch flow', () => {
     await waitForFirstCase(page);
     await page.getByRole('button', { name: /choose session focus/i }).click();
 
-    await expect(page.getByRole('heading', { name: /choose what to practise/i })).toBeVisible();
+    await expect(page.getByRole('heading', { name: /practise your way/i })).toBeVisible();
     await expect(page.getByText(/in specialty/i)).toBeVisible({ timeout: 15_000 });
-    await expect(page.getByRole('button', { name: /start \d+-case session/i })).toBeEnabled({ timeout: 15_000 });
+    await expect(page.getByRole('button', { name: /begin session/i })).toBeEnabled({ timeout: 15_000 });
     await expect(page.getByText(/nothing matches this combination yet/i)).toHaveCount(0);
   });
 

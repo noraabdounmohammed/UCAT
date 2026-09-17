@@ -55,32 +55,30 @@ describe('PracticeFilterModalParchment', () => {
     }));
   });
 
-  it('offers fast intents first and keeps granular choices behind More filters', () => {
+  it('opens with the original focused-session builder and granular filters visible', () => {
     const onApplyFilters = vi.fn();
     render(
       <PracticeFilterModalParchment
         isOpen
         onClose={vi.fn()}
         onApplyFilters={onApplyFilters}
-        defaultSize={3}
       />,
     );
 
-    expect(screen.getByRole('heading', { name: /choose what to practise/i })).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /recommended/i })).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /weak areas/i })).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /unseen/i })).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /needs review/i })).toBeDisabled();
-    expect(screen.queryByPlaceholderText('Search conditions…')).not.toBeInTheDocument();
-
-    fireEvent.click(screen.getByRole('button', { name: /more filters/i }));
+    expect(screen.getByRole('heading', { name: /practise your way/i })).toBeInTheDocument();
+    expect(screen.getByText(/build a focused session in seconds/i)).toBeInTheDocument();
+    expect(screen.getByText(/^anything$/i, { selector: 'span.capitalize' }).closest('button')).toBeInTheDocument();
+    expect(screen.getByText(/^weak$/i, { selector: 'span.capitalize' }).closest('button')).toBeInTheDocument();
+    expect(screen.getByText(/^unseen$/i, { selector: 'span.capitalize' }).closest('button')).toBeInTheDocument();
     expect(screen.getByPlaceholderText('Search conditions…')).toBeInTheDocument();
+    expect(screen.getByPlaceholderText('Search presentations…')).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /more filters/i })).not.toBeInTheDocument();
 
-    fireEvent.click(screen.getByRole('button', { name: /weak areas/i }));
-    fireEvent.click(screen.getByRole('button', { name: /start 1-case session/i }));
+    fireEvent.click(screen.getByText(/^weak$/i, { selector: 'span.capitalize' }).closest('button')!);
+    fireEvent.click(screen.getByRole('button', { name: /begin session/i }));
 
     expect(onApplyFilters).toHaveBeenCalledWith(expect.objectContaining({
-      size: 3,
+      size: 10,
       statuses: ['weak'],
     }));
   });

@@ -351,7 +351,6 @@ function HomeContent({ curriculumId }: { curriculumId: string }) {
         onClose={closeFilters}
         onApplyFilters={startFilteredSession}
         initialFilters={activeFilters}
-        defaultSize={plannedCount}
       />
     </main>
   );
