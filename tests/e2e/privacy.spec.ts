@@ -16,6 +16,7 @@ test.describe('privacy page', () => {
     await page.getByRole('link', { name: /home/i }).click();
     await expect(page).toHaveURL(/\/$/);
     await expect(page.locator('section[aria-label="Question"]')).toBeVisible({ timeout: 20_000 });
-    await expect(page.getByRole('button', { name: /choose session focus/i })).toBeVisible();
+    await expect(page.getByRole('button', { name: /go to home/i })).toBeVisible();
+    await expect(page.getByRole('button', { name: /choose session focus/i })).toHaveCount(0);
   });
 });

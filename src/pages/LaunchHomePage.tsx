@@ -445,7 +445,6 @@ function HomeContent({ curriculumId }: { curriculumId: string }) {
                     answeredCount={sessionProgress.answers.length}
                     scopeLabel={scopeLabel}
                     isTailored={Boolean(activeFilters)}
-                    onAdjust={openFilters}
                     onExit={() => setExitRequestId(value => value + 1)}
                   />
                 )}

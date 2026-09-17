@@ -322,7 +322,6 @@ export const UkmlaSBAQuestion: React.FC<UkmlaSBAQuestionProps> = ({
   const abortControllerRef = useRef<AbortController | null>(null);
   const advanceTimerRef = useRef<number | null>(null);
   const scrollRef = useRef<HTMLDivElement | null>(null);
-  const tutorRef = useRef<HTMLDivElement | null>(null);
   const inputRef = useRef<HTMLTextAreaElement | null>(null);
   const rootRef = useRef<HTMLDivElement | null>(null);
   const getStorageKey = () => `sba_answer_${question.id || question.question?.substring(0, 50)}`;
@@ -428,6 +427,13 @@ export const UkmlaSBAQuestion: React.FC<UkmlaSBAQuestionProps> = ({
     abortControllerRef.current?.abort();
     onNext();
     requestAnimationFrame(() => scrollRef.current?.scrollTo({ top: 0, behavior: 'smooth' }));
+  };
+
+  const scrollToSessionTop = () => {
+    requestAnimationFrame(() => {
+      scrollRef.current?.scrollTo({ top: 0, behavior: 'auto' });
+      window.scrollTo({ top: 0, behavior: 'auto' });
+    });
   };
 
   const scheduleAdvance = () => {
@@ -646,7 +652,7 @@ export const UkmlaSBAQuestion: React.FC<UkmlaSBAQuestionProps> = ({
     sessionStorage.setItem(getStorageKey(), JSON.stringify({ selectedOption, hasSubmitted: true }));
     onAnswer(correct, selectedOption, confidence);
     void runTutor(undefined, false, selectedOption, startedAt, undefined, false, confidence || null);
-    window.setTimeout(() => tutorRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 180);
+    scrollToSessionTop();
   };
 
   return (
@@ -768,7 +774,7 @@ export const UkmlaSBAQuestion: React.FC<UkmlaSBAQuestionProps> = ({
           )}
 
           {hasSubmitted && !questionExpanded && (
-            <section ref={tutorRef} className="mt-8 scroll-mt-24" aria-label="Answer and tutor">
+            <section className="mt-8 scroll-mt-24" aria-label="Answer and tutor">
               <div className="mb-6 text-[11px] font-bold uppercase tracking-[0.18em]" style={{ color: isCorrect ? '#62734F' : '#94483D' }}>
                 {isCorrect ? 'Correct' : 'Not quite'}
               </div>

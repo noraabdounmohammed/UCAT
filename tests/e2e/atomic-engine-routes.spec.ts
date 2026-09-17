@@ -5,7 +5,8 @@ test.describe('supported routes', () => {
     await page.goto('/definitely-not-a-real-route');
     await expect(page).toHaveURL(/\/$/);
     await expect(page.locator('section[aria-label="Question"]')).toBeVisible({ timeout: 20_000 });
-    await expect(page.getByRole('button', { name: /choose session focus/i })).toBeVisible();
+    await expect(page.getByRole('button', { name: /go to home/i })).toBeVisible();
+    await expect(page.getByRole('button', { name: /choose session focus/i })).toHaveCount(0);
   });
 
   test('custom practice route renders without a blank screen', async ({ page }) => {

@@ -1,5 +1,5 @@
 import React from 'react';
-import { House, SlidersHorizontal } from 'lucide-react';
+import { House } from 'lucide-react';
 
 type SessionOrientationProps = {
   currentIndex: number;
@@ -7,7 +7,6 @@ type SessionOrientationProps = {
   answeredCount: number;
   scopeLabel: string;
   isTailored: boolean;
-  onAdjust: () => void;
   onExit: () => void;
 };
 
@@ -17,7 +16,6 @@ export function SessionOrientation({
   answeredCount,
   scopeLabel,
   isTailored,
-  onAdjust,
   onExit,
 }: SessionOrientationProps) {
   const current = Math.min(Math.max(1, currentIndex + 1), Math.max(1, plannedCount));
@@ -41,17 +39,6 @@ export function SessionOrientation({
             <span className="studyedit-session-scope-note">Study Edit adapts within this focus</span>
           </div>
         </div>
-        <button
-          type="button"
-          onClick={onAdjust}
-          className="studyedit-session-focus-button"
-          aria-label={`Choose session focus. Current focus: ${scopeLabel}`}
-          title="Choose session focus"
-        >
-          <SlidersHorizontal className="h-4 w-4" />
-          <span className="studyedit-session-focus-long">Choose focus</span>
-          <span className="studyedit-session-focus-short">Focus</span>
-        </button>
       </div>
     </div>
   );

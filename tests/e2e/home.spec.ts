@@ -20,7 +20,8 @@ async function waitForFirstCase(page: Page) {
   await dismissCookieConsent(page);
   const question = page.locator('section[aria-label="Question"]');
   await expect(question).toBeVisible({ timeout: 20_000 });
-  await expect(page.getByRole('button', { name: /choose session focus/i })).toBeVisible();
+  await expect(page.getByRole('button', { name: /go to home/i })).toBeVisible();
+  await expect(page.getByRole('button', { name: /choose session focus/i })).toHaveCount(0);
   return question;
 }
 
@@ -29,7 +30,7 @@ test.describe('StudyEdit launch flow', () => {
     await context.clearCookies();
   });
 
-  test('cold learner reaches one useful case with focus controls available', async ({ page }) => {
+  test('cold learner reaches one useful case with the session scope visible', async ({ page }) => {
     await page.goto('/');
 
     await waitForFirstCase(page);
@@ -37,10 +38,14 @@ test.describe('StudyEdit launch flow', () => {
     await expect(page.getByText(/^What do you know about /i)).toHaveCount(0);
   });
 
-  test('learner can browse the focus chooser without losing the current case', async ({ page }) => {
+  test('focus chooser lives on Home rather than inside an active session', async ({ page }) => {
     await page.goto('/');
-    const question = await waitForFirstCase(page);
-    await page.getByRole('button', { name: /choose session focus/i }).click();
+    await waitForFirstCase(page);
+    await page.getByRole('button', { name: /go to home/i }).click();
+    const confirmation = page.getByRole('dialog', { name: /end this session/i });
+    await expect(confirmation).toBeVisible();
+    await confirmation.getByRole('button', { name: /go to home/i }).click();
+    await page.getByRole('button', { name: /choose a focus/i }).click();
 
     await expect(page.getByRole('heading', { name: /practise your way/i })).toBeVisible();
     await expect(page.getByText(/build a focused session in seconds/i)).toBeVisible();
@@ -50,8 +55,7 @@ test.describe('StudyEdit launch flow', () => {
     await expect(page.getByRole('button', { name: /close practice builder/i })).toBeVisible();
 
     await page.getByRole('button', { name: /close practice builder/i }).click();
-    await expect(question).toBeVisible();
-    await expect(page.getByRole('button', { name: /choose session focus/i })).toBeVisible();
+    await expect(page.getByRole('heading', { name: /your next session/i })).toBeVisible();
   });
 
   test('the session Home control leads to a real destination', async ({ page }) => {
@@ -77,9 +81,9 @@ test.describe('StudyEdit launch flow', () => {
   test('fresh learner focus chooser waits for the catalogue then becomes usable', async ({ page }) => {
     test.setTimeout(30_000);
     await page.addInitScript(() => localStorage.clear());
-    await page.goto('/');
-    await waitForFirstCase(page);
-    await page.getByRole('button', { name: /choose session focus/i }).click();
+    await page.goto('/?home=1');
+    await dismissCookieConsent(page);
+    await page.getByRole('button', { name: /choose a focus/i }).click();
 
     await expect(page.getByRole('heading', { name: /practise your way/i })).toBeVisible();
     await expect(page.getByText(/in specialty/i)).toBeVisible({ timeout: 15_000 });
@@ -108,6 +112,7 @@ test.describe('StudyEdit launch flow', () => {
     const answerPanel = page.locator('section[aria-label="Answer and tutor"]:visible');
     await expect(answerPanel).toBeVisible();
     await expect(answerPanel).toContainText(/Correct|Not quite/i);
+    await expect.poll(() => page.evaluate(() => window.scrollY)).toBe(0);
     const answerToFeedbackMs = Date.now() - answeredAt;
 
     console.log(`[studyedit-metric] answer_to_feedback_ms=${answerToFeedbackMs}`);

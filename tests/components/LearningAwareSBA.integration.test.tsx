@@ -44,7 +44,7 @@ describe('real SBA → confidence → tutor flow', () => {
       configurable: true,
       value: vi.fn(),
     });
-    Object.defineProperty(HTMLElement.prototype, 'scrollIntoView', {
+    Object.defineProperty(window, 'scrollTo', {
       configurable: true,
       value: vi.fn(),
     });
@@ -76,6 +76,9 @@ describe('real SBA → confidence → tutor flow', () => {
 
     await waitFor(() => {
       expect(screen.getByText(/murmur radiating to the carotids is the decisive clue/i)).toBeInTheDocument();
+    });
+    await waitFor(() => {
+      expect(window.scrollTo).toHaveBeenCalledWith({ top: 0, behavior: 'auto' });
     });
 
     expect(streamMock).toHaveBeenCalledTimes(1);

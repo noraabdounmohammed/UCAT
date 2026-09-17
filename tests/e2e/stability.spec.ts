@@ -5,7 +5,8 @@ const FIRST_PARTY_HOSTS = new Set(['studyedit.com', 'www.studyedit.com', '127.0.
 
 async function expectUsableCase(page: any) {
   await expect(page.locator('section[aria-label="Question"]')).toBeVisible({ timeout: 20_000 });
-  await expect(page.getByRole('button', { name: /choose session focus/i })).toBeVisible();
+  await expect(page.getByRole('button', { name: /go to home/i })).toBeVisible();
+  await expect(page.getByRole('button', { name: /choose session focus/i })).toHaveCount(0);
 }
 
 for (const route of PUBLIC_ROUTES) {

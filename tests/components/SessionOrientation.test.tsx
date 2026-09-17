@@ -12,7 +12,6 @@ describe('SessionOrientation', () => {
         answeredCount={0}
         scopeLabel="Recommended mix"
         isTailored={false}
-        onAdjust={vi.fn()}
         onExit={vi.fn()}
       />,
     );
@@ -20,11 +19,10 @@ describe('SessionOrientation', () => {
     expect(screen.getByText('Case 1 of 5')).toBeInTheDocument();
     expect(screen.getByText('UKMLA AKT')).toBeInTheDocument();
     expect(screen.getByText('Recommended mix')).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /choose session focus/i })).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /choose session focus/i })).not.toBeInTheDocument();
   });
 
-  it('shows the tailored scope and exposes deterministic controls', () => {
-    const onAdjust = vi.fn();
+  it('shows the tailored scope and keeps Home as the only session action', () => {
     const onExit = vi.fn();
     render(
       <SessionOrientation
@@ -33,7 +31,6 @@ describe('SessionOrientation', () => {
         answeredCount={2}
         scopeLabel="Weak areas · Cardiology"
         isTailored
-        onAdjust={onAdjust}
         onExit={onExit}
       />,
     );
@@ -42,9 +39,7 @@ describe('SessionOrientation', () => {
     expect(screen.getByText('2 assessed')).toBeInTheDocument();
     expect(screen.getByText('Weak areas · Cardiology')).toBeInTheDocument();
 
-    fireEvent.click(screen.getByRole('button', { name: /choose session focus/i }));
     fireEvent.click(screen.getByRole('button', { name: /go to home/i }));
-    expect(onAdjust).toHaveBeenCalledOnce();
     expect(onExit).toHaveBeenCalledOnce();
   });
 });
