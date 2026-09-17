@@ -13,5 +13,5 @@ jobs:
           node-version: 20
           cache: npm
       - run: npm ci
-      - run: npm test -- --runInBand
+      - run: npm test
       - run: npm run build
