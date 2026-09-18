@@ -27,6 +27,12 @@ const scopeStorageKey = (curriculumId: string) => `${curriculumId}_active_practi
 const recentSessionStorageKey = 'studyedit_recent_session_v1';
 const filterLabel = (value: string) => value.replace(/[-_]/g, ' ').replace(/\b\w/g, letter => letter.toUpperCase());
 
+type LearningPicture = {
+  evidenced: number;
+  secure: number;
+  needsAttention: number;
+};
+
 type RecentSession = {
   answered: number;
   correct: number;
@@ -52,6 +58,40 @@ function rememberRecentSession(session: RecentSession) {
   } catch {
     // The Home screen still works when local storage is unavailable.
   }
+}
+
+function buildLearningPicture(concepts: ConceptNode[]): LearningPicture {
+  const now = Date.now();
+  return concepts.reduce<LearningPicture>((picture, concept) => {
+    const mastery = concept.mastery_data || {};
+    const attempts = Number(mastery.attempts || 0);
+    const level = Number(mastery.mastery_level || 0);
+    const incorrect = Number(mastery.incorrect || 0);
+    const correct = Number(mastery.correct || 0);
+    const dueAt = mastery.fsrs_due_at ? new Date(mastery.fsrs_due_at).getTime() : Number.POSITIVE_INFINITY;
+    const isDue = Number.isFinite(dueAt) && dueAt <= now;
+    const hasEvidence = attempts > 0 || level > 0;
+
+    if (!hasEvidence) return picture;
+    picture.evidenced += 1;
+    if (level === 2 && !isDue) picture.secure += 1;
+    if (level === 1 || isDue || incorrect > correct) picture.needsAttention += 1;
+    return picture;
+  }, { evidenced: 0, secure: 0, needsAttention: 0 });
+}
+
+function recommendationReason(reasonCounts: Array<{ label: string; count: number }>, hasEvidence: boolean) {
+  if (!hasEvidence) return 'Chosen to reveal your first useful gaps.';
+  const labels: Record<string, (count: number) => string> = {
+    'Needs another look': count => `${count} weak ${count === 1 ? 'area' : 'areas'}`,
+    'Due to revisit': count => `${count} due for review`,
+    'Not tested yet': count => `${count} unseen`,
+    Reinforcement: count => `${count} to reinforce`,
+  };
+  const parts = reasonCounts
+    .map(({ label, count }) => labels[label]?.(count))
+    .filter((value): value is string => Boolean(value));
+  return parts.length ? parts.slice(0, 3).join(' · ') : 'Chosen from your current learning picture.';
 }
 
 function buildRecentSession(answers: SessionAnswer[], questions: QuestionData[]): RecentSession | null {
@@ -199,11 +239,19 @@ function HomeContent({ curriculumId }: { curriculumId: string }) {
     answers: initialDraftRef.current?.answers || [],
   });
 
-  const hasEvidence = useMemo(
-    () => (concepts || []).some(concept => Number(concept.mastery_data?.attempts || 0) > 0),
-    [concepts],
-  );
   const sessionCount = user ? 5 : 3;
+  const learningPicture = useMemo(() => buildLearningPicture(concepts || []), [concepts]);
+  const hasEvidence = learningPicture.evidenced > 0;
+  const recommendedPlan = useMemo(
+    () => buildSpoilerSafeSessionPlan(concepts || [], sessionCount),
+    [concepts, sessionCount],
+  );
+  const recommendedReason = useMemo(
+    () => recommendationReason(recommendedPlan.reasonCounts, hasEvidence),
+    [hasEvidence, recommendedPlan.reasonCounts],
+  );
+  const recommendedMinutes = recommendedPlan.minutes || Math.max(3, sessionCount * 2);
+  const recommendedReady = recommendedPlan.count > 0;
 
   const launchSelection = useCallback((selected: ConceptNode[], count: number, replaceCurrent = false) => {
     if (!selected.length) return;
@@ -354,58 +402,101 @@ function HomeContent({ curriculumId }: { curriculumId: string }) {
             <div className="flex items-center justify-between gap-4">
               <div className="text-[19px] font-extrabold tracking-[-0.03em]" style={{ color: P.espresso }}>studyedit.</div>
               {!user
-                ? <button onClick={() => navigate('/signin?next=/')} className="text-[12px] font-semibold" style={{ color: P.muted }}>Sign in</button>
-                : <button onClick={() => void signOut()} className="text-[12px] font-semibold" style={{ color: P.muted }}>Sign out</button>}
+                ? <button onClick={() => navigate('/signin?next=/')} className="text-[14px] font-semibold" style={{ color: P.muted }}>Sign in</button>
+                : <button onClick={() => void signOut()} className="text-[14px] font-semibold" style={{ color: P.muted }}>Sign out</button>}
             </div>
           )}
 
           <div className="mt-0">
             {showHome && (
-              <div className="pt-12 sm:pt-20">
+              <div className="pt-10 sm:pt-16">
                 <section aria-labelledby="studyedit-home-heading">
-                  <div className="text-[11px] font-bold uppercase tracking-[0.18em]" style={{ color: P.muted }}>UKMLA AKT</div>
-                  <h1 id="studyedit-home-heading" className="mt-3 text-[36px] font-light leading-none tracking-[-0.04em] sm:text-[46px]" style={{ color: P.espresso, fontFamily: "'Fraunces', serif" }}>
-                    Your next session
+                  <div className="text-[13px] font-bold uppercase tracking-[0.16em]" style={{ color: P.muted }}>UKMLA AKT</div>
+                  <h1 id="studyedit-home-heading" className="mt-3 max-w-[650px] text-[36px] font-light leading-[1.05] tracking-[-0.04em] sm:text-[46px]" style={{ color: P.espresso, fontFamily: "'Fraunces', serif" }}>
+                    {hasEvidence ? 'Here’s what to work on next.' : 'Let’s find your most useful gaps.'}
                   </h1>
+                  <p className="mt-4 max-w-[620px] text-[16px] leading-7" style={{ color: P.muted }}>
+                    {hasEvidence
+                      ? 'StudyEdit has chosen the shortest useful next step from your learning picture.'
+                      : 'A short diagnostic builds your learning picture, then StudyEdit adapts after every answer.'}
+                  </p>
 
-                  <div className="mt-8 overflow-hidden rounded-[22px] border" style={{ borderColor: P.line, backgroundColor: '#FFFDF8' }}>
-                    <button
-                      type="button"
-                      onClick={() => startRecommended()}
-                      className="flex min-h-[88px] w-full items-center gap-4 px-5 text-left transition-colors hover:bg-[#FAF5EC] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-[-3px] focus-visible:outline-[#8FA379]"
-                    >
-                      <span className="min-w-0 flex-1">
-                        <span className="block text-[17px] font-bold" style={{ color: P.espresso }}>Continue recommended</span>
-                        <span className="mt-1 block text-[14px]" style={{ color: P.muted }}>{sessionCount} cases</span>
+                  <button
+                    type="button"
+                    onClick={() => startRecommended()}
+                    disabled={!recommendedReady}
+                    aria-busy={!recommendedReady}
+                    className="mt-7 w-full rounded-[24px] px-5 py-5 text-left transition-transform active:scale-[0.99] disabled:cursor-wait disabled:opacity-70 sm:px-6 sm:py-6"
+                    style={{ backgroundColor: P.espresso, color: P.cream, boxShadow: '0 12px 30px rgba(31,20,12,.12)' }}
+                  >
+                    <span className="flex items-center justify-between gap-4 text-[14px] font-semibold">
+                      <span style={{ color: '#D9CCB6' }}>{hasEvidence ? 'Recommended for you' : 'Recommended start'}</span>
+                      <span className="shrink-0" style={{ color: '#F4ECDF' }}>
+                        {recommendedReady ? `${recommendedPlan.count} ${recommendedPlan.count === 1 ? 'case' : 'cases'} · about ${recommendedMinutes} min` : 'Preparing…'}
                       </span>
-                      <ArrowRight className="h-5 w-5 shrink-0" style={{ color: P.muted }} aria-hidden="true" />
-                    </button>
-                    <button
-                      type="button"
-                      onClick={openFilters}
-                      className="flex min-h-[88px] w-full items-center gap-4 border-t px-5 text-left transition-colors hover:bg-[#FAF5EC] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-[-3px] focus-visible:outline-[#8FA379]"
-                      style={{ borderColor: P.line }}
-                    >
-                      <SlidersHorizontal className="h-5 w-5 shrink-0" style={{ color: P.muted }} aria-hidden="true" />
+                    </span>
+                    <span className="mt-5 flex items-end gap-4">
                       <span className="min-w-0 flex-1">
-                        <span className="block text-[17px] font-bold" style={{ color: P.espresso }}>Choose a focus</span>
-                        <span className="mt-1 block text-[14px]" style={{ color: P.muted }}>Conditions, presentations or weak areas</span>
+                        <span className="block text-[21px] font-bold leading-tight">
+                          {hasEvidence ? 'Start recommended session' : 'Start diagnostic'}
+                        </span>
+                        <span className="mt-2 block text-[15px] leading-6" style={{ color: '#D9CCB6' }}>{recommendedReason}</span>
                       </span>
-                    </button>
-                  </div>
+                      <span className="grid h-10 w-10 shrink-0 place-items-center rounded-full" style={{ backgroundColor: P.cream, color: P.espresso }}>
+                        <ArrowRight className="h-5 w-5" aria-hidden="true" />
+                      </span>
+                    </span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={openFilters}
+                    className="mt-3 flex min-h-[82px] w-full items-center gap-4 rounded-[22px] border px-5 text-left transition-colors hover:bg-[#FAF5EC] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-[-3px] focus-visible:outline-[#8FA379]"
+                    style={{ borderColor: P.line, backgroundColor: '#FFFDF8' }}
+                  >
+                    <SlidersHorizontal className="h-5 w-5 shrink-0" style={{ color: P.muted }} aria-hidden="true" />
+                    <span className="min-w-0 flex-1">
+                      <span className="block text-[17px] font-bold" style={{ color: P.espresso }}>Tailor your session</span>
+                      <span className="mt-1 block text-[15px] leading-5" style={{ color: P.muted }}>Specialty, condition, presentation or skill</span>
+                    </span>
+                    <ArrowRight className="h-5 w-5 shrink-0" style={{ color: P.muted }} aria-hidden="true" />
+                  </button>
+                </section>
+
+                <section className="mt-10 border-t pt-7" style={{ borderColor: P.line }} aria-labelledby="learning-picture-heading">
+                  <h2 id="learning-picture-heading" className="text-[14px] font-bold uppercase tracking-[0.12em]" style={{ color: P.muted }}>Your learning picture</h2>
+                  {hasEvidence ? (
+                    <div className="mt-3">
+                      <p className="text-[27px] font-light leading-tight tracking-[-0.025em]" style={{ color: P.espresso, fontFamily: "'Fraunces', serif" }}>
+                        {learningPicture.evidenced} {learningPicture.evidenced === 1 ? 'concept' : 'concepts'} mapped
+                      </p>
+                      <p className="mt-2 text-[15px] leading-6" style={{ color: P.muted }}>
+                        {learningPicture.needsAttention > 0
+                          ? `${learningPicture.needsAttention} ${learningPicture.needsAttention === 1 ? 'needs' : 'need'} attention${learningPicture.secure > 0 ? ` · ${learningPicture.secure} currently secure` : ''}`
+                          : `${learningPicture.secure} currently secure · your next session will extend the map`}
+                      </p>
+                    </div>
+                  ) : (
+                    <div className="mt-3">
+                      <p className="text-[27px] font-light leading-tight tracking-[-0.025em]" style={{ color: P.espresso, fontFamily: "'Fraunces', serif" }}>Your map starts here.</p>
+                      <p className="mt-2 text-[15px] leading-6" style={{ color: P.muted }}>Complete one short session to reveal your first gaps.</p>
+                    </div>
+                  )}
                 </section>
 
                 {recentSession && (
-                  <section className="mt-10 border-t pt-7" style={{ borderColor: P.line }} aria-labelledby="latest-session-heading">
+                  <section className="mt-8 border-t pt-7" style={{ borderColor: P.line }} aria-labelledby="latest-session-heading">
                     <div className="flex items-baseline justify-between gap-4">
-                      <h2 id="latest-session-heading" className="text-[14px] font-bold" style={{ color: P.espresso }}>Latest session</h2>
-                      <span className="text-[14px] font-semibold" style={{ color: P.muted }}>
+                      <h2 id="latest-session-heading" className="text-[15px] font-bold" style={{ color: P.espresso }}>Latest session</h2>
+                      <span className="text-[15px] font-semibold" style={{ color: P.muted }}>
                         {recentSession.correct} of {recentSession.answered} correct
                       </span>
                     </div>
                     <details className="mt-4">
-                      <summary className="cursor-pointer list-none text-[14px] font-semibold underline underline-offset-4" style={{ color: P.espresso }}>
-                        Review answers
+                      <summary className="cursor-pointer list-none text-[15px] font-semibold underline underline-offset-4" style={{ color: P.espresso }}>
+                        {recentSession.answered - recentSession.correct > 0
+                          ? `Review ${recentSession.answered - recentSession.correct} ${recentSession.answered - recentSession.correct === 1 ? 'gap' : 'gaps'}`
+                          : 'Review answers'}
                       </summary>
                       <div className="mt-4 overflow-hidden rounded-[18px] border" style={{ borderColor: P.line, backgroundColor: '#FFFDF8' }}>
                         {recentSession.items.map((item, index) => (
@@ -413,8 +504,8 @@ function HomeContent({ curriculumId }: { curriculumId: string }) {
                             <span className="grid h-7 w-7 shrink-0 place-items-center rounded-full text-[12px] font-bold" style={{ backgroundColor: item.isCorrect ? '#E7ECD9' : '#F9E4DF', color: item.isCorrect ? '#667555' : '#9C655D' }} aria-hidden="true">
                               {item.isCorrect ? '✓' : '×'}
                             </span>
-                            <span className="min-w-0 flex-1 truncate text-[14px] font-semibold" style={{ color: P.ink }}>{item.title}</span>
-                            <span className="shrink-0 text-[12px] font-semibold" style={{ color: P.muted }}>{item.isCorrect ? 'Correct' : 'Review'}</span>
+                            <span className="min-w-0 flex-1 truncate text-[15px] font-semibold" style={{ color: P.ink }}>{item.title}</span>
+                            <span className="shrink-0 text-[13px] font-semibold" style={{ color: P.muted }}>{item.isCorrect ? 'Correct' : 'Review'}</span>
                           </div>
                         ))}
                       </div>
@@ -472,7 +563,7 @@ function HomeContent({ curriculumId }: { curriculumId: string }) {
         </section>
 
         {!hasQuestion && (
-          <footer className="mt-16 flex items-center justify-between border-t pt-5 text-[11px]" style={{ borderColor: P.line, color: P.muted }}>
+          <footer className="mt-14 flex items-center justify-between border-t pt-5 text-[13px]" style={{ borderColor: P.line, color: P.muted }}>
             <div className="flex gap-4"><button onClick={() => navigate('/privacy')}>Privacy</button><button onClick={() => navigate('/terms')}>Terms</button></div>
             <span>UKMLA AKT</span>
           </footer>
