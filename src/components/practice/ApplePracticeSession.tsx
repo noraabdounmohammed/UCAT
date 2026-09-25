@@ -3,7 +3,6 @@ import { X, ChevronLeft, ChevronRight } from 'lucide-react';
 import { QuestionRenderer } from './QuestionRenderer';
 import { ModernFlashcard } from './ModernFlashcard';
 import { UkmlaSBAQuestion } from './UkmlaSBAQuestion';
-import { Dialog } from '@/components/ui/dialog';
 import { cn } from '@/lib/utils';
 import './apple-question-styles.css';
 import { QuestionData } from './questionTypes';
@@ -50,7 +49,6 @@ export function ApplePracticeSession({
 }: PracticeSessionProps) {
   const initialDraft = useMemo(() => persistLaunchState ? readLaunchSessionDraft() : null, [persistLaunchState]);
   const [currentIndex, setCurrentIndex] = useState(initialDraft?.currentIndex || 0);
-  const [showExitConfirmation, setShowExitConfirmation] = useState(false);
   const [sessionAnswers, setSessionAnswers] = useState<SessionAnswer[]>(initialDraft?.answers || []);
   const [showReview, setShowReview] = useState(Boolean(initialDraft?.showReview));
   const [activeQuestions, setActiveQuestions] = useState<QuestionData[]>(initialDraft?.questions || questions);
@@ -84,7 +82,7 @@ export function ApplePracticeSession({
   }, [onSessionChromeChange, reviewingQuestionIndex, showReview]);
 
   useEffect(() => {
-    if (exitRequestId > 0) setShowExitConfirmation(true);
+    if (exitRequestId > 0) onComplete();
   }, [exitRequestId]);
 
   useEffect(() => {
@@ -154,14 +152,14 @@ export function ApplePracticeSession({
           break;
         case 'Escape':
           event.preventDefault();
-          setShowExitConfirmation(true);
+          onComplete();
           break;
       }
     };
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [currentIndex, defaultFormat, handlePreviousQuestion, handleNextQuestion]);
+  }, [currentIndex, defaultFormat, handlePreviousQuestion, handleNextQuestion, onComplete]);
 
   const currentQuestion = useMemo(() => questionsRef.current[currentIndex], [currentIndex]);
   const questionId = useMemo(() => currentQuestion?.id || `question-${currentIndex}`, [currentQuestion, currentIndex]);
@@ -226,13 +224,6 @@ export function ApplePracticeSession({
   const finishSession = useCallback(() => {
     onComplete();
   }, [onComplete]);
-
-  const handleExitConfirm = () => {
-    setShowExitConfirmation(false);
-    finishSession();
-  };
-
-  const handleExitCancel = () => setShowExitConfirmation(false);
 
   useEffect(() => {
     if (questionContent.format === 'flashcard' || questionContent.format === 'sba' || questionContent.format === 'ukmla_sba') {
@@ -319,7 +310,7 @@ export function ApplePracticeSession({
       {!isSba && (
         <header className="sticky top-0 z-10 border-b border-white/30 bg-white/60 backdrop-blur-2xl">
           <div className="mx-auto flex max-w-4xl items-center justify-between px-4 py-3">
-            <button onClick={() => setShowExitConfirmation(true)} className="flex h-8 w-8 items-center justify-center rounded-full transition-colors hover:bg-black/5">
+            <button onClick={onComplete} className="flex h-8 w-8 items-center justify-center rounded-full transition-colors hover:bg-black/5">
               <X className="h-5 w-5 text-zinc-600" />
             </button>
             <div className="flex items-center gap-2">
@@ -370,7 +361,7 @@ export function ApplePracticeSession({
           }}
           onNext={handleNextQuestion}
           onPrevious={handlePreviousQuestion}
-          onExit={() => setShowExitConfirmation(true)}
+          onExit={onComplete}
           currentIndex={currentIndex}
           totalCards={activeQuestions.length}
           availableFilters={availableFilters}
@@ -382,25 +373,6 @@ export function ApplePracticeSession({
         />
       </div>
 
-      {showExitConfirmation && (
-        <Dialog open={showExitConfirmation}>
-          <div className="fixed inset-0 z-50 flex items-end justify-center bg-[#1F140C]/20 p-4 pb-6 sm:items-center sm:p-6" onClick={handleExitCancel}>
-            <div role="dialog" aria-modal="true" aria-labelledby="exit-practice-title" className="w-full max-w-[420px] rounded-[28px] border border-[#E8DCC4] bg-[#FFFDF8] px-6 pb-6 pt-7 shadow-[0_18px_55px_rgba(31,20,12,0.16)] sm:px-7 sm:pb-7 sm:pt-8" onClick={(event) => event.stopPropagation()}>
-              <div className="mb-2 text-[10px] font-semibold uppercase tracking-[0.22em] text-[#8A7560]">Go to Home?</div>
-              <h2 id="exit-practice-title" className="text-[30px] font-light leading-[1.08] tracking-[-0.03em] text-[#1F140C]" style={{ fontFamily: "'Fraunces', serif" }}>
-                End this session?
-              </h2>
-              <p className="mt-3 text-[15px] font-medium leading-6 text-[#8A7560]">
-                Your completed answers are saved.
-              </p>
-              <div className="mt-7 flex flex-col gap-2.5 sm:flex-row-reverse">
-                <button onClick={handleExitConfirm} className="flex min-h-[52px] flex-1 items-center justify-center rounded-full bg-[#1F140C] px-5 text-[15px] font-semibold text-[#FAF5EC]">Go to Home</button>
-                <button onClick={handleExitCancel} className="flex min-h-[52px] flex-1 items-center justify-center rounded-full border border-[#E8DCC4] bg-[#FAF5EC] px-5 text-[15px] font-semibold text-[#2A1E16]">Continue session</button>
-              </div>
-            </div>
-          </div>
-        </Dialog>
-      )}
     </div>
   );
 }
