@@ -152,6 +152,7 @@ function HomeContent({ curriculumId }: { curriculumId: string }) {
     concepts,
     isPracticing,
     practiceQuestions,
+    generatingQuestionCount,
     startPractice,
     endPractice,
     updateMastery,
@@ -475,7 +476,7 @@ function HomeContent({ curriculumId }: { curriculumId: string }) {
                 {showSessionOrientation && (
                   <SessionOrientation
                     currentIndex={sessionProgress.currentIndex}
-                    plannedCount={plannedCount}
+                    plannedCount={!restoredDraft && generatingQuestionCount === 0 && launchedRef.current ? Math.min(plannedCount, displayQuestions.length) : plannedCount}
                     answeredCount={sessionProgress.answers.length}
                     scopeLabel={scopeLabel}
                     isTailored={Boolean(activeFilters)}

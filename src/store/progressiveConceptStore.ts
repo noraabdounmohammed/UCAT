@@ -1,23 +1,8 @@
 import { createConceptStore as createBaseConceptStore } from '@/store/conceptStore';
 import type { PracticeConfig } from '@/types/conceptTypes';
+import { isPlaceholderQuestion as isUnsafeFallback } from '@/lib/practiceQuestionSafety';
 
 const PREFETCH_MAX_AGE_MS = 7 * 24 * 60 * 60 * 1000;
-
-const isUnsafeFallback = (question: any) => {
-  if (!question) return true;
-  if (String(question.id || '').startsWith('fallback_')) return true;
-
-  const prompt = String(question.question || '').trim().toLowerCase();
-  const options = Array.isArray(question.options)
-    ? question.options.map((option: unknown) => String(option).trim().toLowerCase())
-    : [];
-
-  return (
-    prompt.startsWith('what do you know about ') &&
-    options.length === 4 &&
-    options.join('|') === 'a lot|some|a little|nothing'
-  );
-};
 
 const uniqueById = (questions: any[]) => {
   const seen = new Set<string>();

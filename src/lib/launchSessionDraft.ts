@@ -1,5 +1,6 @@
 import type { QuestionData } from '@/components/practice/questionTypes';
 import type { SessionAnswer } from '@/components/practice/SessionProgressDropdown';
+import { isPlaceholderQuestion } from '@/lib/practiceQuestionSafety';
 
 export const LAUNCH_SESSION_DRAFT_KEY = 'studyedit_launch_session_v2';
 const MAX_AGE_MS = 24 * 60 * 60 * 1000;
@@ -22,6 +23,7 @@ export function readLaunchSessionDraft(learnerScope?: string): LaunchSessionDraf
   try {
     const parsed = JSON.parse(window.localStorage.getItem(LAUNCH_SESSION_DRAFT_KEY) || 'null') as LaunchSessionDraft | null;
     if (!parsed || parsed.version !== 2 || !Array.isArray(parsed.questions) || !parsed.questions.length || !Array.isArray(parsed.answers)) return null;
+    if (parsed.questions.some(isPlaceholderQuestion)) return null;
     const owner = parsed.learnerScope || parsed.syncedUserIds?.[0] || 'guest';
     if (learnerScope && owner !== learnerScope && owner !== 'guest') return null;
     if (!parsed.updatedAt || Date.now() - parsed.updatedAt > MAX_AGE_MS) {
