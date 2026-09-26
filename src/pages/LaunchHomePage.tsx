@@ -19,71 +19,34 @@ import { ProgressSyncService } from '@/services/progressSync';
 import { isEssentialConcept } from '@/utils/essentialCurriculum';
 import { getUserCurriculumId, migrateLegacyCurriculumState } from '@/utils/curriculumScope';
 import type { ConceptNode } from '@/types/conceptTypes';
+import { LEARNING_UPDATED_EVENT, readRecentSession, saveSessionLearning, needsRevisit, type RecentSession } from '@/lib/sessionLearning';
+import { SessionLearningList } from '@/components/practice/SessionLearningList';
 import './launch-home-embed.css';
 
 const P = { cream: '#F4ECDF', espresso: '#1F140C', ink: '#2A1E16', muted: '#746354', line: '#E8DCC4', sage: '#8FA379' };
 const selectedFilterValues = (values: string[] | undefined) => (values || []).filter(value => value && value !== 'any');
 const scopeStorageKey = (curriculumId: string) => `${curriculumId}_active_practice_scope_v1`;
-const recentSessionStorageKey = 'studyedit_recent_session_v1';
 const filterLabel = (value: string) => value.replace(/[-_]/g, ' ').replace(/\b\w/g, letter => letter.toUpperCase());
 
-type LearningPicture = {
-  evidenced: number;
-  secure: number;
-  needsAttention: number;
-};
-
-type RecentSession = {
-  answered: number;
-  correct: number;
-  completedAt: number;
-  items: Array<{ title: string; isCorrect: boolean }>;
-};
-
-function readRecentSession(): RecentSession | null {
-  try {
-    const stored = localStorage.getItem(recentSessionStorageKey);
-    if (!stored) return null;
-    const parsed = JSON.parse(stored) as RecentSession;
-    if (!Number.isFinite(parsed.answered) || !Number.isFinite(parsed.correct) || !Array.isArray(parsed.items)) return null;
-    return parsed;
-  } catch {
-    return null;
-  }
-}
-
-function rememberRecentSession(session: RecentSession) {
-  try {
-    localStorage.setItem(recentSessionStorageKey, JSON.stringify(session));
-  } catch {
-    // The Home screen still works when local storage is unavailable.
-  }
-}
-
-function buildLearningPicture(concepts: ConceptNode[]): LearningPicture {
+function buildLearningPicture(concepts: ConceptNode[], recentSession: RecentSession | null) {
+  const statuses = new Map<string, boolean>();
   const now = Date.now();
-  return concepts.reduce<LearningPicture>((picture, concept) => {
+  for (const concept of concepts) {
     const mastery = concept.mastery_data || {};
-    const attempts = Number(mastery.attempts || 0);
-    const level = Number(mastery.mastery_level || 0);
-    const incorrect = Number(mastery.incorrect || 0);
-    const correct = Number(mastery.correct || 0);
-    const dueAt = mastery.fsrs_due_at ? new Date(mastery.fsrs_due_at).getTime() : Number.POSITIVE_INFINITY;
-    const isDue = Number.isFinite(dueAt) && dueAt <= now;
-    const hasEvidence = attempts > 0 || level > 0;
-
-    if (!hasEvidence) return picture;
-    picture.evidenced += 1;
-    if (level === 2 && !isDue) picture.secure += 1;
-    if (level === 1 || isDue || incorrect > correct) picture.needsAttention += 1;
-    return picture;
-  }, { evidenced: 0, secure: 0, needsAttention: 0 });
+    if (!Number(mastery.attempts || 0) && !Number(mastery.mastery_level || 0)) continue;
+    const dueAt = mastery.fsrs_due_at ? new Date(mastery.fsrs_due_at).getTime() : Infinity;
+    statuses.set(concept.concept_id, Number(mastery.mastery_level || 0) === 1 || dueAt <= now || Number(mastery.correct || 0) === 0);
+  }
+  // Include the instant starter and uncertainty, even if a concept is not in the loaded map.
+  for (const item of recentSession?.items || []) statuses.set(item.conceptId || item.title, needsRevisit(item));
+  const needsAttention = [...statuses.values()].filter(Boolean).length;
+  return { evidenced: statuses.size, needsAttention };
 }
 
 function recommendationReason(reasonCounts: Array<{ label: string; count: number }>, hasEvidence: boolean) {
-  if (!hasEvidence) return 'Chosen to reveal your first useful gaps.';
+  if (!hasEvidence) return 'Answer a case, discuss your reasoning, then try a tutor check.';
   const labels: Record<string, (count: number) => string> = {
-    'Needs another look': count => `${count} weak ${count === 1 ? 'area' : 'areas'}`,
+    'Needs another look': count => `${count} ${count === 1 ? 'area' : 'areas'} to revisit`,
     'Due to revisit': count => `${count} due for review`,
     'Not tested yet': count => `${count} unseen`,
     Reinforcement: count => `${count} to reinforce`,
@@ -92,26 +55,6 @@ function recommendationReason(reasonCounts: Array<{ label: string; count: number
     .map(({ label, count }) => labels[label]?.(count))
     .filter((value): value is string => Boolean(value));
   return parts.length ? parts.slice(0, 3).join(' · ') : 'Chosen from your current learning picture.';
-}
-
-function buildRecentSession(answers: SessionAnswer[], questions: QuestionData[]): RecentSession | null {
-  if (!answers.length) return null;
-  const items = answers
-    .slice()
-    .sort((a, b) => a.questionIndex - b.questionIndex)
-    .map(answer => {
-      const question = questions[answer.questionIndex];
-      return {
-        title: String(question?.concept_title || question?.title || question?.topic || `Case ${answer.questionIndex + 1}`),
-        isCorrect: answer.isCorrect,
-      };
-    });
-  return {
-    answered: answers.length,
-    correct: answers.filter(answer => answer.isCorrect).length,
-    completedAt: Date.now(),
-    items,
-  };
 }
 
 function readActivePracticeScope(curriculumId: string): FilterState | null {
@@ -217,11 +160,12 @@ function HomeContent({ curriculumId }: { curriculumId: string }) {
     setPracticeSelection,
   } = useConceptStore();
 
-  const initialDraftRef = useRef(readLaunchSessionDraft());
+  const learnerScope = user?.id || 'guest';
+  const initialDraftRef = useRef(readLaunchSessionDraft(learnerScope));
   const [restoredDraft, setRestoredDraft] = useState<LaunchSessionDraft | null>(initialDraftRef.current);
   const [activeFilters, setActiveFilters] = useState<FilterState | null>(() => initialDraftRef.current ? readActivePracticeScope(curriculumId) : null);
   const [showHome, setShowHome] = useState(() => new URLSearchParams(window.location.search).get('home') === '1');
-  const [recentSession, setRecentSession] = useState<RecentSession | null>(readRecentSession);
+  const [recentSession, setRecentSession] = useState<RecentSession | null>(() => readRecentSession(learnerScope));
   const [showSessionOrientation, setShowSessionOrientation] = useState(
     () => !initialDraftRef.current?.showReview && initialDraftRef.current?.reviewingQuestionIndex == null,
   );
@@ -240,7 +184,17 @@ function HomeContent({ curriculumId }: { curriculumId: string }) {
   });
 
   const sessionCount = user ? 5 : 3;
-  const learningPicture = useMemo(() => buildLearningPicture(concepts || []), [concepts]);
+  const learningPicture = useMemo(() => buildLearningPicture(concepts || [], recentSession), [concepts, recentSession]);
+  useEffect(() => {
+    const refresh = () => setRecentSession(readRecentSession(learnerScope));
+    refresh();
+    window.addEventListener(LEARNING_UPDATED_EVENT, refresh);
+    window.addEventListener('storage', refresh);
+    return () => {
+      window.removeEventListener(LEARNING_UPDATED_EVENT, refresh);
+      window.removeEventListener('storage', refresh);
+    };
+  }, [learnerScope]);
   const hasEvidence = learningPicture.evidenced > 0;
   const recommendedPlan = useMemo(
     () => buildSpoilerSafeSessionPlan(concepts || [], sessionCount),
@@ -290,6 +244,10 @@ function HomeContent({ curriculumId }: { curriculumId: string }) {
     launchedRef.current = true;
     startRecommended();
   }, [concepts, restoredDraft, showHome, startRecommended]);
+
+  useEffect(() => {
+    if (restoredDraft?.answers.length) saveSessionLearning(learnerScope, restoredDraft.questions, restoredDraft.answers, restoredDraft.startedAt, restoredDraft.showReview);
+  }, [learnerScope, restoredDraft?.startedAt]);
 
   useEffect(() => {
     if (!user?.id || !restoredDraft || restoredDraft.syncedUserIds?.includes(user.id) || syncingDraftRef.current || !concepts?.length) return;
@@ -367,29 +325,31 @@ function HomeContent({ curriculumId }: { curriculumId: string }) {
   }, []);
 
   const handleComplete = useCallback(() => {
-    const nextRecentSession = buildRecentSession(sessionProgress.answers, displayQuestions);
-    if (nextRecentSession) {
-      setRecentSession(nextRecentSession);
-      rememberRecentSession(nextRecentSession);
+    const draft = readLaunchSessionDraft(learnerScope);
+    if (draft) {
+      saveSessionLearning(learnerScope, draft.questions, draft.answers, draft.startedAt, draft.showReview);
+      setRestoredDraft(draft);
     }
-    const completedDraft = readLaunchSessionDraft();
-    if (user?.id && completedDraft && !completedDraft.syncedUserIds?.includes(user.id)) {
-      void ProgressSyncService.savePracticeSession(user.id, curriculumId, draftSessionPayload(completedDraft))
-        .catch(error => console.error('Could not save completed practice session:', error));
-    }
-    clearLaunchSessionDraft();
-    rememberActivePracticeScope(curriculumId, null);
-    setActiveFilters(null);
-    setRestoredDraft(null);
     endPractice();
     launchedRef.current = true;
     setShowHome(true);
     setShowSessionOrientation(true);
     setExitRequestId(0);
-    setSessionProgress({ currentIndex: 0, answers: [] });
     navigate('/?home=1', { replace: true });
     window.scrollTo({ top: 0, behavior: 'smooth' });
-  }, [curriculumId, displayQuestions, endPractice, navigate, sessionProgress.answers, user?.id]);
+  }, [endPractice, learnerScope, navigate]);
+
+  const resumable = Boolean(restoredDraft && !restoredDraft.showReview && restoredDraft.answers.length);
+  const resumeSession = () => {
+    const draft = readLaunchSessionDraft(learnerScope);
+    if (!draft) { startRecommended(); return; }
+    setRestoredDraft(draft);
+    setPlannedCount(draft.questions.length);
+    setExitRequestId(0);
+    setSessionInstance(value => value + 1);
+    setShowHome(false);
+    navigate('/', { replace: true });
+  };
 
   const hasQuestion = !showHome && (Boolean(restoredDraft?.questions.length) || (isPracticing && displayQuestions.length > 0));
   const scopeLabel = useMemo(() => summarizePracticeScope(activeFilters), [activeFilters]);
@@ -413,34 +373,34 @@ function HomeContent({ curriculumId }: { curriculumId: string }) {
                 <section aria-labelledby="studyedit-home-heading">
                   <div className="text-[13px] font-bold uppercase tracking-[0.16em]" style={{ color: P.muted }}>UKMLA AKT</div>
                   <h1 id="studyedit-home-heading" className="mt-3 max-w-[650px] text-[36px] font-light leading-[1.05] tracking-[-0.04em] sm:text-[46px]" style={{ color: P.espresso, fontFamily: "'Fraunces', serif" }}>
-                    {hasEvidence ? 'Here’s what to work on next.' : 'Let’s find your most useful gaps.'}
+                    {hasEvidence ? 'Here’s what to work on next.' : 'Your personal UKMLA tutor.'}
                   </h1>
                   <p className="mt-4 max-w-[620px] text-[16px] leading-7" style={{ color: P.muted }}>
                     {hasEvidence
-                      ? 'StudyEdit has chosen the shortest useful next step from your learning picture.'
-                      : 'A short diagnostic builds your learning picture, then StudyEdit adapts after every answer.'}
+                      ? 'Work through clinical cases, understand your mistakes and keep building your learning picture.'
+                      : 'Practise clinical cases, talk through your reasoning and find what to work on next.'}
                   </p>
 
                   <button
                     type="button"
-                    onClick={() => startRecommended()}
-                    disabled={!recommendedReady}
-                    aria-busy={!recommendedReady}
+                    onClick={() => resumable ? resumeSession() : startRecommended()}
+                    disabled={!resumable && !recommendedReady}
+                    aria-busy={!resumable && !recommendedReady}
                     className="mt-7 w-full rounded-[24px] px-5 py-5 text-left transition-transform active:scale-[0.99] disabled:cursor-wait disabled:opacity-70 sm:px-6 sm:py-6"
                     style={{ backgroundColor: P.espresso, color: P.cream, boxShadow: '0 12px 30px rgba(31,20,12,.12)' }}
                   >
                     <span className="flex items-center justify-between gap-4 text-[14px] font-semibold">
-                      <span style={{ color: '#D9CCB6' }}>{hasEvidence ? 'Recommended for you' : 'Recommended start'}</span>
+                      <span style={{ color: '#D9CCB6' }}>{resumable ? 'Pick up where you left off' : hasEvidence ? 'Recommended for you' : 'Try your tutor'}</span>
                       <span className="shrink-0" style={{ color: '#F4ECDF' }}>
-                        {recommendedReady ? `${recommendedPlan.count} ${recommendedPlan.count === 1 ? 'case' : 'cases'} · about ${recommendedMinutes} min` : 'Preparing…'}
+                        {resumable ? `${restoredDraft?.questions.length} cases` : recommendedReady ? `${recommendedPlan.count} ${recommendedPlan.count === 1 ? 'case' : 'cases'} · about ${recommendedMinutes} min` : 'Preparing…'}
                       </span>
                     </span>
                     <span className="mt-5 flex items-end gap-4">
                       <span className="min-w-0 flex-1">
                         <span className="block text-[21px] font-bold leading-tight">
-                          {hasEvidence ? 'Start recommended session' : 'Start diagnostic'}
+                          {resumable ? 'Resume session' : hasEvidence ? 'Start recommended session' : 'Try 3 cases'}
                         </span>
-                        <span className="mt-2 block text-[15px] leading-6" style={{ color: '#D9CCB6' }}>{recommendedReason}</span>
+                        <span className="mt-2 block text-[15px] leading-6" style={{ color: '#D9CCB6' }}>{resumable ? `${restoredDraft?.answers.length} of ${restoredDraft?.questions.length} answered` : recommendedReason}</span>
                       </span>
                       <span className="grid h-10 w-10 shrink-0 place-items-center rounded-full" style={{ backgroundColor: P.cream, color: P.espresso }}>
                         <ArrowRight className="h-5 w-5" aria-hidden="true" />
@@ -468,18 +428,16 @@ function HomeContent({ curriculumId }: { curriculumId: string }) {
                   {hasEvidence ? (
                     <div className="mt-3">
                       <p className="text-[27px] font-light leading-tight tracking-[-0.025em]" style={{ color: P.espresso, fontFamily: "'Fraunces', serif" }}>
-                        {learningPicture.evidenced} {learningPicture.evidenced === 1 ? 'concept' : 'concepts'} mapped
+                        {learningPicture.evidenced} {learningPicture.evidenced === 1 ? 'concept' : 'concepts'} practised
                       </p>
                       <p className="mt-2 text-[15px] leading-6" style={{ color: P.muted }}>
-                        {learningPicture.needsAttention > 0
-                          ? `${learningPicture.needsAttention} ${learningPicture.needsAttention === 1 ? 'needs' : 'need'} attention${learningPicture.secure > 0 ? ` · ${learningPicture.secure} currently secure` : ''}`
-                          : `${learningPicture.secure} currently secure · your next session will extend the map`}
+                        {learningPicture.needsAttention > 0 ? `${learningPicture.needsAttention} to revisit` : 'Keep practising to check what you retain.'}
                       </p>
                     </div>
                   ) : (
                     <div className="mt-3">
-                      <p className="text-[27px] font-light leading-tight tracking-[-0.025em]" style={{ color: P.espresso, fontFamily: "'Fraunces', serif" }}>Your map starts here.</p>
-                      <p className="mt-2 text-[15px] leading-6" style={{ color: P.muted }}>Complete one short session to reveal your first gaps.</p>
+                      <p className="text-[27px] font-light leading-tight tracking-[-0.025em]" style={{ color: P.espresso, fontFamily: "'Fraunces', serif" }}>Your learning picture starts here.</p>
+                      <p className="mt-2 text-[15px] leading-6" style={{ color: P.muted }}>Your first session will show what you practised and what to revisit.</p>
                     </div>
                   )}
                 </section>
@@ -492,24 +450,9 @@ function HomeContent({ curriculumId }: { curriculumId: string }) {
                         {recentSession.correct} of {recentSession.answered} correct
                       </span>
                     </div>
-                    <details className="mt-4">
-                      <summary className="cursor-pointer list-none text-[15px] font-semibold underline underline-offset-4" style={{ color: P.espresso }}>
-                        {recentSession.answered - recentSession.correct > 0
-                          ? `Review ${recentSession.answered - recentSession.correct} ${recentSession.answered - recentSession.correct === 1 ? 'gap' : 'gaps'}`
-                          : 'Review answers'}
-                      </summary>
-                      <div className="mt-4 overflow-hidden rounded-[18px] border" style={{ borderColor: P.line, backgroundColor: '#FFFDF8' }}>
-                        {recentSession.items.map((item, index) => (
-                          <div key={`${item.title}-${index}`} className="flex items-center gap-3 px-4 py-4" style={{ borderTop: index ? `1px solid ${P.line}` : 'none' }}>
-                            <span className="grid h-7 w-7 shrink-0 place-items-center rounded-full text-[12px] font-bold" style={{ backgroundColor: item.isCorrect ? '#E7ECD9' : '#F9E4DF', color: item.isCorrect ? '#667555' : '#9C655D' }} aria-hidden="true">
-                              {item.isCorrect ? '✓' : '×'}
-                            </span>
-                            <span className="min-w-0 flex-1 truncate text-[15px] font-semibold" style={{ color: P.ink }}>{item.title}</span>
-                            <span className="shrink-0 text-[13px] font-semibold" style={{ color: P.muted }}>{item.isCorrect ? 'Correct' : 'Review'}</span>
-                          </div>
-                        ))}
-                      </div>
-                    </details>
+                    {!recentSession.completed && <p className="mt-2 text-[14px]" style={{ color: P.muted }}>In progress · {recentSession.answered} of {recentSession.total} answered</p>}
+                    <SessionLearningList items={recentSession.items} />
+                    {!user && <button type="button" onClick={() => navigate('/signin?mode=signup&reason=save&next=/?home=1')} className="mt-4 min-h-11 text-[15px] font-bold underline underline-offset-4">Save progress to your account</button>}
                   </section>
                 )}
               </div>
@@ -538,6 +481,14 @@ function HomeContent({ curriculumId }: { curriculumId: string }) {
                     isTailored={Boolean(activeFilters)}
                     onExit={() => setExitRequestId(value => value + 1)}
                   />
+                )}
+                {showSessionOrientation && sessionProgress.currentIndex === 0 && sessionProgress.answers.length === 0 && !hasEvidence && (
+                  <section className="pb-5 pt-2" aria-label="Meet your UKMLA tutor">
+                    <p className="text-[14px] font-bold tracking-wide" style={{ color: P.muted }}>STUDYEDIT · UKMLA AKT</p>
+                    <h1 className="mt-2 text-[27px] font-light leading-tight sm:text-[32px]" style={{ color: P.espresso, fontFamily: "'Fraunces', serif" }}>Your personal UKMLA tutor.</h1>
+                    <p className="mt-2 text-[16px] leading-6" style={{ color: P.muted }}>Answer a case, talk through your reasoning and try a follow-up check. Your answers help shape what to practise next.</p>
+                    {!user && <p className="mt-2 text-[14px] font-semibold" style={{ color: P.muted }}>Try 3 cases · no account needed</p>}
+                  </section>
                 )}
                 <div className="studyedit-inline-session">
                   <ApplePracticeSession
@@ -596,5 +547,5 @@ export function LaunchHomePage() {
     );
   }
 
-  return <ConceptStoreProvider curriculumId={curriculumId}><HomeContent curriculumId={curriculumId} /></ConceptStoreProvider>;
+  return <ConceptStoreProvider key={curriculumId} curriculumId={curriculumId}><HomeContent curriculumId={curriculumId} /></ConceptStoreProvider>;
 }

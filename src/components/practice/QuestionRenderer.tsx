@@ -25,6 +25,8 @@ interface QuestionRendererProps {
   onChangeFormat?: (format: string) => void;
   onRestartWithFilters?: () => void;
   onTutorTurnsChange?: (turns: TutorTurn[]) => void;
+  onPassedChecksChange?: (passedChecks: number) => void;
+  restoredAnswer?: SessionAnswer;
 }
 
 export const QuestionRenderer: React.FC<QuestionRendererProps> = ({
@@ -45,6 +47,8 @@ export const QuestionRenderer: React.FC<QuestionRendererProps> = ({
   onChangeFormat,
   onRestartWithFilters,
   onTutorTurnsChange,
+  onPassedChecksChange,
+  restoredAnswer,
 }) => {
   if (format === 'mindmap' && process.env.NODE_ENV === 'development') {
     console.log('🗺️ Rendering mind map question:', {
@@ -103,6 +107,13 @@ export const QuestionRenderer: React.FC<QuestionRendererProps> = ({
         onChangeFormat={onChangeFormat}
         onRestartWithFilters={onRestartWithFilters}
         onTutorTurnsChange={onTutorTurnsChange}
+        onPassedChecksChange={onPassedChecksChange}
+        preSubmitted={Boolean(restoredAnswer)}
+        preSelectedAnswer={restoredAnswer?.selectedOption}
+        preTutorTurns={restoredAnswer?.tutorTurns}
+        preConfidence={restoredAnswer?.confidence}
+        prePassedChecks={restoredAnswer?.passedChecks}
+        nextButtonText={restoredAnswer ? (currentIndex === (totalCards || 0) - 1 ? 'Finish session' : 'Next case') : undefined}
         footerControl={<ReportQuestionButton question={question} />}
       />
     </div>

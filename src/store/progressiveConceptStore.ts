@@ -37,11 +37,12 @@ const cacheKey = (curriculumId: string) => `studyedit_prefetched_case_v1:${curri
 
 const makeInstantStarter = () => ({
   id: 'instant_starter_ukmla_1168_v2',
-  concept_id: 'ukmla-1168',
+  // Match the concept ID used by the learner's local curriculum and progress store.
+  concept_id: 'cardiovascular_concepts_clean.json_886',
   format: 'ukmla_sba',
   title: 'ST-elevation myocardial infarction',
   topic: 'Cardiology',
-  concept_title: 'ST-elevation myocardial infarction',
+  concept_title: 'STEMI: choosing reperfusion',
   clinical_vignette:
     'A 62-year-old man presents with 50 minutes of severe central chest pain radiating to his left arm. He is sweaty and nauseated. ECG shows ST elevation in leads II, III and aVF. A PCI-capable centre can perform coronary intervention within 90 minutes.',
   question_stem:
