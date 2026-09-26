@@ -8,6 +8,7 @@ export interface SessionAnswer {
   topic?: string;
   selectedOption?: string; // The option ID the user selected
   confidence?: 'know' | 'unsure' | 'guess';
+  passedChecks?: number;
   tutorTurns?: Array<{ role: 'student' | 'tutor'; text: string }>;
 }
 

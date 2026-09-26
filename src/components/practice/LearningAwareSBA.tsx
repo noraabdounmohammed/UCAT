@@ -25,8 +25,11 @@ interface LearningAwareSBAProps {
   preSelectedAnswer?: string;
   preSubmitted?: boolean;
   preTutorTurns?: TutorTurn[];
+  prePassedChecks?: number;
+  preConfidence?: ConfidenceLevel;
   nextButtonText?: string;
   onTutorTurnsChange?: (turns: TutorTurn[]) => void;
+  onPassedChecksChange?: (passedChecks: number) => void;
   footerControl?: React.ReactNode;
 }
 

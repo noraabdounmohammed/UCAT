@@ -10,6 +10,7 @@ import { SessionReviewScreen } from './SessionReviewScreen';
 import { SessionAnswer, SessionProgressDropdown } from './SessionProgressDropdown';
 import type { ConfidenceLevel, TutorTurn } from './UkmlaSBAQuestion';
 import { readLaunchSessionDraft, writeLaunchSessionDraft } from '@/lib/launchSessionDraft';
+import { saveSessionLearning } from '@/lib/sessionLearning';
 
 interface PracticeSessionProps {
   questions: QuestionData[];
@@ -47,7 +48,7 @@ export function ApplePracticeSession({
   persistLaunchState = false,
   learnerScope = 'guest',
 }: PracticeSessionProps) {
-  const initialDraft = useMemo(() => persistLaunchState ? readLaunchSessionDraft() : null, [persistLaunchState]);
+  const initialDraft = useMemo(() => persistLaunchState ? readLaunchSessionDraft(learnerScope) : null, [persistLaunchState, learnerScope]);
   const [currentIndex, setCurrentIndex] = useState(initialDraft?.currentIndex || 0);
   const [sessionAnswers, setSessionAnswers] = useState<SessionAnswer[]>(initialDraft?.answers || []);
   const [showReview, setShowReview] = useState(Boolean(initialDraft?.showReview));
@@ -86,7 +87,7 @@ export function ApplePracticeSession({
   }, [exitRequestId]);
 
   useEffect(() => {
-    if (!persistLaunchState || !activeQuestions.length || (!sessionAnswers.length && !showReview)) return;
+    if (!persistLaunchState || !activeQuestions.length) return;
     writeLaunchSessionDraft({
       questions: activeQuestions,
       answers: sessionAnswers,
@@ -94,8 +95,10 @@ export function ApplePracticeSession({
       showReview,
       reviewingQuestionIndex,
       startedAt: sessionStartedAtRef.current,
+      learnerScope,
     });
-  }, [activeQuestions, currentIndex, persistLaunchState, reviewingQuestionIndex, sessionAnswers, showReview]);
+    saveSessionLearning(learnerScope, activeQuestions, sessionAnswers, sessionStartedAtRef.current, showReview);
+  }, [activeQuestions, currentIndex, learnerScope, persistLaunchState, reviewingQuestionIndex, sessionAnswers, showReview]);
 
   useEffect(() => {
     if (!showReview || completionRecordedRef.current) return;
@@ -161,7 +164,7 @@ export function ApplePracticeSession({
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [currentIndex, defaultFormat, handlePreviousQuestion, handleNextQuestion, onComplete]);
 
-  const currentQuestion = useMemo(() => questionsRef.current[currentIndex], [currentIndex]);
+  const currentQuestion = activeQuestions[currentIndex];
   const questionId = useMemo(() => currentQuestion?.id || `question-${currentIndex}`, [currentQuestion, currentIndex]);
 
   const questionContent = useMemo(() => {
@@ -172,7 +175,7 @@ export function ApplePracticeSession({
       return option;
     });
 
-    let correctAnswer = q.correctAnswer || q.correct_answer || 'A';
+    let correctAnswer = q.correctAnswer ?? q.correct_answer ?? 'A';
     if (typeof correctAnswer === 'number') correctAnswer = String.fromCharCode(65 + correctAnswer);
 
     return {
@@ -201,6 +204,11 @@ export function ApplePracticeSession({
     ));
   }, [currentIndex]);
 
+  const recordPassedChecks = useCallback((passedChecks: number) => {
+    setSessionAnswers(previous => previous.map(answer => answer.questionIndex === currentIndex
+      ? { ...answer, passedChecks: Math.max(answer.passedChecks || 0, passedChecks) } : answer));
+  }, [currentIndex]);
+
   const handleRetryIncorrect = () => {
     const incorrectIndices = sessionAnswers.filter(a => !a.isCorrect).map(a => a.questionIndex);
     const incorrectQuestions = incorrectIndices.map(i => activeQuestions[i]).filter(Boolean);
@@ -218,6 +226,8 @@ export function ApplePracticeSession({
     setCurrentIndex(0);
     setShowReview(false);
     setSessionKey(k => k + 1);
+    sessionStartedAtRef.current = Date.now();
+    completionRecordedRef.current = false;
     window.scrollTo(0, 0);
   };
 
@@ -294,6 +304,10 @@ export function ApplePracticeSession({
                 preSelectedAnswer={reviewAnswer?.selectedOption}
                 preSubmitted={true}
                 preTutorTurns={reviewAnswer?.tutorTurns}
+                prePassedChecks={reviewAnswer?.passedChecks}
+                preConfidence={reviewAnswer?.confidence}
+                onTutorTurnsChange={turns => setSessionAnswers(previous => previous.map(answer => answer.questionIndex === reviewingQuestionIndex ? { ...answer, tutorTurns: turns } : answer))}
+                onPassedChecksChange={passedChecks => setSessionAnswers(previous => previous.map(answer => answer.questionIndex === reviewingQuestionIndex ? { ...answer, passedChecks } : answer))}
                 nextButtonText="Back to review"
               />
             )}
@@ -370,6 +384,8 @@ export function ApplePracticeSession({
           onChangeFormat={onChangeFormat}
           onRestartWithFilters={onRestartWithFilters}
           onTutorTurnsChange={recordTutorTurns}
+          onPassedChecksChange={recordPassedChecks}
+          restoredAnswer={sessionKey === 0 ? initialDraft?.answers.find(answer => answer.questionIndex === currentIndex) : undefined}
         />
       </div>
 

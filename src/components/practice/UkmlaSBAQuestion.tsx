@@ -27,9 +27,12 @@ interface UkmlaSBAQuestionProps {
   preSelectedAnswer?: string;
   preSubmitted?: boolean;
   preTutorTurns?: TutorTurn[];
+  prePassedChecks?: number;
+  preConfidence?: ConfidenceLevel;
   nextButtonText?: string;
   collectConfidence?: boolean;
   onTutorTurnsChange?: (turns: TutorTurn[]) => void;
+  onPassedChecksChange?: (passedChecks: number) => void;
   footerControl?: React.ReactNode;
 }
 
@@ -285,8 +288,8 @@ function directExplanationInstruction(): string {
 
 function secureClosingInstruction(isFinalQuestion: boolean): string {
   return isFinalQuestion
-    ? 'The learner has now given enough evidence that this distinction is secure for this session. Confirm the exact thing they now have right in one concise sentence. Do not teach anything new and do not ask another question. End naturally by saying that is enough for today.'
-    : 'The learner has now given enough evidence that this distinction is secure for this session. Confirm the exact thing they now have right in one concise sentence. Do not teach anything new and do not ask another question. End naturally by telling them you have seen enough here and are moving on.';
+    ? 'The learner has now given enough evidence that they can apply this distinction in the current check. Confirm the exact thing they now have right in one concise sentence. Do not teach anything new and do not ask another question. End naturally by saying that is enough for today.'
+    : 'The learner has now given enough evidence that they can apply this distinction in the current check. Confirm the exact thing they now have right in one concise sentence. Do not teach anything new and do not ask another question. End naturally by telling them you have seen enough here and are moving on.';
 }
 
 export const UkmlaSBAQuestion: React.FC<UkmlaSBAQuestionProps> = ({
@@ -299,9 +302,12 @@ export const UkmlaSBAQuestion: React.FC<UkmlaSBAQuestionProps> = ({
   preSelectedAnswer,
   preSubmitted = false,
   preTutorTurns,
+  prePassedChecks = 0,
+  preConfidence,
   nextButtonText,
   collectConfidence = false,
   onTutorTurnsChange,
+  onPassedChecksChange,
   footerControl,
 }) => {
   const [selectedOption, setSelectedOption] = useState<string | null>(preSelectedAnswer || null);
@@ -372,20 +378,22 @@ export const UkmlaSBAQuestion: React.FC<UkmlaSBAQuestionProps> = ({
     setAiStreaming(false);
     setTutorAssessing(false);
     setAnswerStartedAt(0);
-    setConfidenceLevel(null);
-    setPassedChecks(0);
+    setConfidenceLevel(preConfidence || null);
+    setPassedChecks(prePassedChecks);
     setAdvancePending(false);
     setTutorError(null);
     resetOnFirstTutorTextRef.current = false;
     abortControllerRef.current?.abort();
     clearAdvanceTimer();
     requestAnimationFrame(() => scrollRef.current?.scrollTo({ top: 0 }));
-    return () => clearAdvanceTimer();
+    return () => { clearAdvanceTimer(); abortControllerRef.current?.abort(); };
   }, [question.id, question.question, question.question_stem, preSubmitted, preSelectedAnswer]);
 
+  const onTutorTurnsChangeRef = useRef(onTutorTurnsChange);
+  onTutorTurnsChangeRef.current = onTutorTurnsChange;
   useEffect(() => {
-    if (hasSubmitted) onTutorTurnsChange?.(tutorTurns);
-  }, [hasSubmitted, onTutorTurnsChange, tutorTurns]);
+    if (hasSubmitted) onTutorTurnsChangeRef.current?.(tutorTurns);
+  }, [hasSubmitted, tutorTurns]);
 
   const options = useMemo(
     () => (question.options || []).map((option: any, index: number) =>
@@ -625,6 +633,9 @@ export const UkmlaSBAQuestion: React.FC<UkmlaSBAQuestionProps> = ({
       if (assessment === 'pass') {
         const nextPassed = passedChecks + 1;
         setPassedChecks(nextPassed);
+        if (/quick\s*check/i.test([...tutorTurns].reverse().find(turn => turn.role === 'tutor')?.text || '')) {
+          onPassedChecksChange?.(nextPassed);
+        }
         const needed = requiredEvidence(isCorrect, confidence);
 
         if (nextPassed >= needed) {
@@ -832,7 +843,7 @@ export const UkmlaSBAQuestion: React.FC<UkmlaSBAQuestionProps> = ({
                 </div>
               )}
 
-              {!preSubmitted && !advancePending && (
+              {!advancePending && (
                 <>
                   <div className="mt-7 flex justify-end border-t pt-4" style={{ borderColor: C.line }}>
                     <button
@@ -850,6 +861,7 @@ export const UkmlaSBAQuestion: React.FC<UkmlaSBAQuestionProps> = ({
                     if (query) void handleStudentReply(query);
                   }}>
                     <textarea
+                      aria-label="Your reply to the tutor"
                       ref={setComposerRef}
                       rows={1}
                       value={aiQuestion}
@@ -904,12 +916,6 @@ export const UkmlaSBAQuestion: React.FC<UkmlaSBAQuestionProps> = ({
                     </div>
                   )}
                 </div>
-              )}
-
-              {preSubmitted && nextButtonText && (
-                <button type="button" onClick={handleNext} className="mt-9 flex w-full items-center justify-center rounded-full px-6 py-[18px] text-[16px] font-bold" style={{ backgroundColor: C.espresso, color: C.cream }}>
-                  {nextButtonText} →
-                </button>
               )}
 
               <div className="mt-8 flex flex-wrap items-center justify-between gap-3 border-t pt-4 text-[12px] font-semibold" style={{ borderColor: C.line, color: '#746354' }}>

@@ -4,6 +4,8 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import type { QuestionData } from './questionTypes';
 import type { SessionAnswer } from './SessionProgressDropdown';
+import { learningItems, needsRevisit } from '@/lib/sessionLearning';
+import { SessionLearningList } from './SessionLearningList';
 
 interface SessionReviewScreenProps {
   answers: SessionAnswer[];
@@ -76,6 +78,10 @@ export const SessionReviewScreen: React.FC<SessionReviewScreenProps> = ({
   const correct = cases.filter(item => item.isCorrect).length;
   const misses = cases.filter(item => !item.isCorrect);
   const nextSessionSize = Math.max(1, questions.length);
+  const items = useMemo(() => learningItems(answers, questions), [answers, questions]);
+  const toRevisit = items.filter(needsRevisit);
+  const nextItem = toRevisit[0];
+  const followUps = items.filter(item => item.passedChecks > 0).length;
 
   return (
     <main
@@ -102,7 +108,31 @@ export const SessionReviewScreen: React.FC<SessionReviewScreenProps> = ({
             </div>
           ) : null}
 
-          <details className="mt-9 border-t pt-6" style={{ borderColor: T.line }}>
+          <section className="mt-8" aria-labelledby="session-learning-heading">
+            <h2 id="session-learning-heading" className="text-[16px] font-bold">What you practised</h2>
+            <SessionLearningList items={items} onViewQuestion={onViewQuestion} />
+            {followUps > 0 && <p className="mt-3 text-[14px] leading-6" style={{ color: T.muted }}>
+              {followUps} {followUps === 1 ? 'concept checked' : 'concepts checked'} in a tutor follow-up. Revisit later to check recall.
+            </p>}
+          </section>
+
+          <section className="mt-7 rounded-[20px] border p-5" style={{ borderColor: T.line, backgroundColor: T.paper }} aria-labelledby="next-learning-step">
+            <h2 id="next-learning-step" className="text-[16px] font-bold">Your next step</h2>
+            <p className="mt-2 text-[16px] leading-6" style={{ color: T.ink }}>
+              {nextItem ? `Revisit ${nextItem.title}.` : 'Continue with a fresh set of cases.'}
+            </p>
+            <p className="mt-2 text-[14px] leading-6" style={{ color: T.muted }}>
+              {nextItem ? (nextItem.isCorrect
+                ? `You got the answer right but ${nextItem.confidence === 'guess' ? 'guessed' : 'felt unsure'}. Work through a tutor check to test your reasoning.`
+                : 'Work through the reasoning with your tutor, then try its follow-up check.')
+                : 'You answered these cases or their follow-up checks correctly. Future practice will help check what you retain.'}
+            </p>
+            {nextItem && onViewQuestion && <button type="button" onClick={() => onViewQuestion(nextItem.questionIndex)} className="mt-3 min-h-11 text-[15px] font-bold underline underline-offset-4">
+              Revisit with tutor
+            </button>}
+          </section>
+
+          <details className="mt-7 border-t pt-6" style={{ borderColor: T.line }}>
             <summary className="cursor-pointer list-none text-[15px] font-bold underline underline-offset-4" style={{ color: T.espresso }}>
               Review answers
             </summary>
@@ -127,8 +157,8 @@ export const SessionReviewScreen: React.FC<SessionReviewScreenProps> = ({
                     {item.isCorrect ? '✓' : '×'}
                   </span>
                   <span className="min-w-0 flex-1">
-                    <span className="block truncate text-[14px] font-semibold" style={{ color: T.espresso }}>{item.title}</span>
-                    <span className="mt-1 block truncate text-[12px] font-medium" style={{ color: T.muted }}>
+                    <span className="block text-[15px] font-semibold" style={{ color: T.espresso }}>{item.title}</span>
+                    <span className="mt-1 block text-[14px] font-medium" style={{ color: T.muted }}>
                       {item.isCorrect
                         ? `${item.selectedOption || 'Correct'}${item.confidence ? ` · ${item.confidence === 'know' ? 'knew it' : item.confidence === 'guess' ? 'guessed' : 'unsure'}` : ''}`
                         : `Your answer: ${item.selectedOption || '—'}${item.selectedText ? ` · ${item.selectedText}` : ''} · Correct: ${item.correctOption}`}
