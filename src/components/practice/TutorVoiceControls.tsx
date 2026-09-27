@@ -5,6 +5,7 @@ import { Mic, Square, Volume2, X } from 'lucide-react';
 interface Props {
   input: HTMLInputElement | HTMLTextAreaElement;
   tutorRoot: HTMLElement;
+  listenTarget?: HTMLElement | null;
 }
 
 type SpeechRecognitionLike = {
@@ -80,7 +81,7 @@ const Waveform = () => (
   </div>
 );
 
-export function TutorVoiceControls({ input, tutorRoot }: Props) {
+export function TutorVoiceControls({ input, tutorRoot, listenTarget: actionTarget }: Props) {
   const [recording, setRecording] = useState(false);
   const [playing, setPlaying] = useState(false);
   const recognitionRef = useRef<SpeechRecognitionLike | null>(null);
@@ -225,9 +226,11 @@ export function TutorVoiceControls({ input, tutorRoot }: Props) {
     }
   };
 
-  const listenTarget = latestTutorBlock(tutorRoot);
+  const listenTarget = actionTarget || latestTutorBlock(tutorRoot);
   const micClass = 'flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-[#8A7560] transition active:scale-95';
-  const listenClass = 'mt-2 inline-flex items-center gap-1.5 rounded-full px-2 py-1 text-[11px] font-semibold text-[#8A7560] transition hover:text-[#1F140C] active:scale-95';
+  const listenClass = actionTarget
+    ? 'inline-flex h-11 w-10 items-center justify-center rounded-full text-[#8A7560] transition hover:bg-[#EAE0D1] hover:text-[#1F140C] active:scale-95'
+    : 'mt-2 inline-flex items-center gap-1.5 rounded-full px-2 py-1 text-[11px] font-semibold text-[#8A7560] transition hover:text-[#1F140C] active:scale-95';
 
   return (
     <>
@@ -251,8 +254,8 @@ export function TutorVoiceControls({ input, tutorRoot }: Props) {
       {listenTarget && createPortal(
         <div className="flex justify-end" data-studyedit-listen-control="true">
           <button type="button" className={listenClass} onClick={playTutor} aria-label={playing ? 'Stop audio' : 'Listen to this StudyEdit response'} title={playing ? 'Stop audio' : 'Listen to this response'}>
-            {playing ? <Square className="h-3.5 w-3.5 fill-current" /> : <Volume2 className="h-3.5 w-3.5" />}
-            <span>{playing ? 'Stop' : 'Listen'}</span>
+            {playing ? <Square className="h-4 w-4 fill-current" /> : <Volume2 className="h-4 w-4" />}
+            <span className={actionTarget ? 'sr-only' : undefined}>{playing ? 'Stop' : 'Listen'}</span>
           </button>
         </div>,
         listenTarget,
