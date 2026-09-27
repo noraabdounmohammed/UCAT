@@ -18,6 +18,7 @@ describe('track / events wrapper', () => {
     initMock.mockClear();
     identifyMock.mockClear();
     vi.resetModules();
+    localStorage.clear();
   });
 
   afterEach(() => {
@@ -35,12 +36,28 @@ describe('track / events wrapper', () => {
   });
 
   it('track calls posthog.capture with event name and props when key is set', async () => {
+    localStorage.setItem('cookie_consent', 'accepted');
     vi.stubEnv('VITE_POSTHOG_KEY', 'phc_test_key_123');
     const { trackEvent } = await import('@/instrumentation/posthog');
     await trackEvent('atom_rated', { rating: 3, confidence: 'high' });
     expect(initMock).toHaveBeenCalledTimes(1);
     expect(initMock).toHaveBeenCalledWith('phc_test_key_123', expect.any(Object));
     expect(captureMock).toHaveBeenCalledWith('atom_rated', { rating: 3, confidence: 'high' });
+  });
+
+  it('does not initialise or capture before consent, or after consent is declined', async () => {
+    vi.stubEnv('VITE_POSTHOG_KEY', 'phc_test_key_123');
+    const { trackEvent, identifyUser } = await import('@/instrumentation/posthog');
+    await trackEvent('pilot_feedback_opened');
+    expect(initMock).not.toHaveBeenCalled();
+    localStorage.setItem('cookie_consent', 'accepted');
+    await trackEvent('pilot_feedback_opened');
+    expect(captureMock).toHaveBeenCalledTimes(1);
+    localStorage.setItem('cookie_consent', 'declined');
+    await trackEvent('pilot_feedback_submitted');
+    await identifyUser('learner');
+    expect(captureMock).toHaveBeenCalledTimes(1);
+    expect(identifyMock).not.toHaveBeenCalled();
   });
 
   it('TrackedEvent type accepts the documented event names', async () => {

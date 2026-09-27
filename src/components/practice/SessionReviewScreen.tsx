@@ -6,6 +6,7 @@ import type { QuestionData } from './questionTypes';
 import type { SessionAnswer } from './SessionProgressDropdown';
 import { learningItems, needsRevisit } from '@/lib/sessionLearning';
 import { SessionLearningList } from './SessionLearningList';
+import { SessionFeedbackPrompt } from '@/components/feedback/PilotFeedback';
 
 interface SessionReviewScreenProps {
   answers: SessionAnswer[];
@@ -107,6 +108,8 @@ export const SessionReviewScreen: React.FC<SessionReviewScreenProps> = ({
               {cases.length} {cases.length === 1 ? 'case' : 'cases'} · {formatDuration(sessionDuration)}
             </div>
           ) : null}
+
+          <SessionFeedbackPrompt answeredCount={cases.length} caseCount={questions.length} />
 
           <section className="mt-8" aria-labelledby="session-learning-heading">
             <h2 id="session-learning-heading" className="text-[16px] font-bold">What you practised</h2>

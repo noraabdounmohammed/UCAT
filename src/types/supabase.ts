@@ -9,6 +9,11 @@ export type Json =
 export interface Database {
   public: {
     Tables: {
+      pilot_feedback: {
+        Row: { id: string; created_at: string; reaction: string | null; topics: string[]; message: string; used_voice: boolean; source: string; question_id: string | null; answered_count: number | null; case_count: number | null }
+        Insert: { id: string; reaction: string | null; topics: string[]; message: string; used_voice: boolean; source: string; question_id: string | null; answered_count: number | null; case_count: number | null }
+        Update: never
+      }
       questions: {
         Row: {
           id: string
