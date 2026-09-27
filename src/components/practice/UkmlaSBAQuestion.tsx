@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { ChevronDown, Send, X } from 'lucide-react';
+import { ChevronDown, MoreHorizontal, Send, X } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import { generateAIResponse, generateAIResponseStream, QuestionContext } from '@/services/openai';
 import { TutorVoiceControls } from './TutorVoiceControls';
@@ -325,6 +325,7 @@ export const UkmlaSBAQuestion: React.FC<UkmlaSBAQuestionProps> = ({
   const [advancePending, setAdvancePending] = useState(false);
   const [tutorError, setTutorError] = useState<string | null>(null);
   const [composerInput, setComposerInput] = useState<HTMLTextAreaElement | null>(null);
+  const [listenTarget, setListenTarget] = useState<HTMLSpanElement | null>(null);
   const abortControllerRef = useRef<AbortController | null>(null);
   const advanceTimerRef = useRef<number | null>(null);
   const resetOnFirstTutorTextRef = useRef(false);
@@ -845,15 +846,46 @@ export const UkmlaSBAQuestion: React.FC<UkmlaSBAQuestionProps> = ({
 
               {!advancePending && (
                 <>
-                  <div className="mt-7 flex justify-end border-t pt-4" style={{ borderColor: C.line }}>
+                  <div className="mt-5 flex items-center gap-1 border-t pt-2" style={{ borderColor: C.line }} role="group" aria-label="Tutor actions">
+                    <button type="button" onClick={() => void runTutor(undefined, true)} disabled={tutorBusy} className="min-h-11 shrink-0 whitespace-nowrap pr-2 text-[13px] font-semibold transition-colors hover:text-[#1F140C] disabled:opacity-40" style={{ color: C.muted }}>Just explain it</button>
+                    <span ref={setListenTarget} className="flex h-11 w-10 shrink-0 items-center justify-center" />
                     <button
                       type="button"
                       onClick={handleNext}
-                      className="text-[14px] font-bold underline decoration-[#BBA995] underline-offset-4 transition-opacity active:opacity-60"
+                      className="ml-auto min-h-11 shrink-0 whitespace-nowrap px-1 text-[14px] font-bold transition-opacity active:opacity-60"
                       style={{ color: C.espresso }}
                     >
                       {isFinalQuestion ? (nextButtonText || 'Finish session →') : (nextButtonText || 'Next question →')}
                     </button>
+                    <details
+                      key={question.id}
+                      className="relative shrink-0"
+                      onClick={event => {
+                        if (event.target instanceof Element && event.target.closest('button, a')) event.currentTarget.open = false;
+                      }}
+                      onKeyDown={event => {
+                        if (event.key === 'Escape' && event.currentTarget.contains(event.target as Node)) {
+                          event.preventDefault();
+                          event.stopPropagation();
+                          event.currentTarget.open = false;
+                          event.currentTarget.querySelector('summary')?.focus();
+                        }
+                      }}
+                    >
+                      <summary className="flex h-11 w-10 cursor-pointer list-none items-center justify-center rounded-full text-[#8A7560] hover:bg-[#EAE0D1] [&::-webkit-details-marker]:hidden" title="More options">
+                        <MoreHorizontal className="h-5 w-5" aria-hidden="true" /><span className="sr-only">More options</span>
+                      </summary>
+                      <div className="absolute right-0 top-full z-[95] mt-1 w-64 max-w-[calc(100vw-2.5rem)] rounded-2xl border border-[#DCCDBA] bg-[#FFFDF8] p-4 text-[13px] leading-6 text-[#746354] shadow-lg">
+                        {Object.keys(distractors).length > 0 && <button type="button" disabled={tutorBusy} onClick={() => setShowAllDistractors(value => !value)} className="mb-3 min-h-11 text-left font-semibold disabled:opacity-40">{showAllDistractors ? 'Hide other options' : 'Why the other options are wrong'}</button>}
+                        <p className="mb-1 text-[10px] font-bold uppercase tracking-wider">Source</p>
+                        {(question as any).guideline_url ? (
+                          <a href={String((question as any).guideline_url)} target="_blank" rel="noreferrer" className="block py-1 underline decoration-[#BBA995] underline-offset-4">
+                            {String((question as any).guideline || (question as any).source_type || 'Clinical guidance')}
+                          </a>
+                        ) : <p>From this case’s learning material.</p>}
+                        {footerControl && <div className="mt-3 border-t border-[#E8DCC4] pt-2">{footerControl}</div>}
+                      </div>
+                    </details>
                   </div>
                   <form className="mt-5 flex items-end gap-2 rounded-[18px] border bg-[#FFFDF8] p-2 pl-4 shadow-[0_8px_24px_rgba(31,20,12,0.04)]" style={{ borderColor: '#DCCDB8' }} onSubmit={event => {
                     event.preventDefault();
@@ -883,7 +915,7 @@ export const UkmlaSBAQuestion: React.FC<UkmlaSBAQuestionProps> = ({
                       className="min-h-[44px] max-h-[180px] min-w-0 flex-1 resize-none bg-transparent py-2.5 text-[16px] font-medium leading-6 outline-none placeholder:text-[#766655] disabled:cursor-wait"
                       style={{ color: C.espresso, overflowY: 'hidden' }}
                     />
-                    {composerInput && rootRef.current && !tutorBusy && <TutorVoiceControls input={composerInput} tutorRoot={rootRef.current} />}
+                    {composerInput && rootRef.current && !tutorBusy && <TutorVoiceControls input={composerInput} tutorRoot={rootRef.current} listenTarget={listenTarget} />}
                     <button
                       type="submit"
                       disabled={!aiQuestion.trim() || tutorBusy}
@@ -894,16 +926,14 @@ export const UkmlaSBAQuestion: React.FC<UkmlaSBAQuestionProps> = ({
                       <Send className="h-4 w-4" />
                     </button>
                   </form>
-
-                  <button type="button" onClick={() => void runTutor(undefined, true)} disabled={tutorBusy} className="mt-3 text-[12px] font-semibold underline decoration-[#BBA995] underline-offset-4 disabled:opacity-40" style={{ color: C.muted }}>Just explain it</button>
                 </>
               )}
 
-              {Object.keys(distractors).length > 0 && !advancePending && !tutorBusy && (
+              {showAllDistractors && Object.keys(distractors).length > 0 && !advancePending && !tutorBusy && (
                 <div className="mt-8 border-t pt-4" style={{ borderColor: C.line }}>
-                  <button type="button" onClick={() => setShowAllDistractors(value => !value)} className="flex w-full items-center justify-between py-2 text-left text-[14px] font-semibold" style={{ color: C.muted }}>
-                    <span>{showAllDistractors ? 'Hide other options' : 'Why the other options are wrong'}</span>
-                    <ChevronDown className={`h-4 w-4 transition-transform ${showAllDistractors ? 'rotate-180' : ''}`} />
+                  <button type="button" onClick={() => setShowAllDistractors(false)} className="flex w-full items-center justify-between py-2 text-left text-[14px] font-semibold" style={{ color: C.muted }}>
+                    <span>Other options</span>
+                    <X className="h-4 w-4" aria-hidden="true" /><span className="sr-only">Hide other options</span>
                   </button>
                   {showAllDistractors && (
                     <div className="mt-2 divide-y" style={{ borderColor: C.line }}>
@@ -917,15 +947,6 @@ export const UkmlaSBAQuestion: React.FC<UkmlaSBAQuestionProps> = ({
                   )}
                 </div>
               )}
-
-              <div className="mt-8 flex flex-wrap items-center justify-between gap-3 border-t pt-4 text-[12px] font-semibold" style={{ borderColor: C.line, color: '#746354' }}>
-                {(question as any).guideline_url ? (
-                  <a href={String((question as any).guideline_url)} target="_blank" rel="noreferrer" className="underline decoration-[#BBA995] underline-offset-4">
-                    Source: {String((question as any).guideline || (question as any).source_type || 'clinical guidance')}
-                  </a>
-                ) : <span>Answer grounded in the supplied learning material</span>}
-                {footerControl}
-              </div>
             </section>
           )}
         </div>
