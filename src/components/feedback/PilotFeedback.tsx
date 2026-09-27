@@ -73,6 +73,7 @@ export function PilotFeedbackProvider({ children }: { children: ReactNode }) {
       <Dialog.Portal>
         <Dialog.Overlay className="fixed inset-0 z-[100] bg-[#1F140C]/45 backdrop-blur-sm" />
         <Dialog.Content
+          aria-labelledby="pilot-feedback-title"
           className="ph-no-capture fixed left-1/2 top-1/2 z-[101] max-h-[90dvh] w-[calc(100%-2rem)] max-w-lg -translate-x-1/2 -translate-y-1/2 overflow-y-auto rounded-[24px] border border-[#DCCDBA] bg-[#FFFDF8] p-5 text-[#2A1E16] shadow-xl sm:p-7"
           onKeyDown={event => event.stopPropagation()}
           onCloseAutoFocus={event => { event.preventDefault(); trigger.current?.focus(); }}
