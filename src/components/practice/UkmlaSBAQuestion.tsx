@@ -706,7 +706,7 @@ export const UkmlaSBAQuestion: React.FC<UkmlaSBAQuestionProps> = ({
       </header>
 
       <div ref={scrollRef} className="flex-1 overflow-y-auto">
-        <div className="mx-auto w-full max-w-[700px] px-5 pb-16 pt-8 sm:px-8 sm:pt-10">
+        <div className="studyedit-question-body mx-auto w-full max-w-[700px] px-5 pb-16 pt-8 sm:px-8 sm:pt-10">
           <h1 className="sr-only">UKMLA practice: {conceptTitle}</h1>
           {!hasSubmitted || questionExpanded ? (
             <section aria-label="Question" className={`animate-[fadeIn_.25s_ease] ${hasSubmitted && questionExpanded ? 'studyedit-case-expanded' : ''}`}>
