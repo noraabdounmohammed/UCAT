@@ -19,7 +19,7 @@ import { ProgressSyncService } from '@/services/progressSync';
 import { isEssentialConcept } from '@/utils/essentialCurriculum';
 import { getUserCurriculumId, migrateLegacyCurriculumState } from '@/utils/curriculumScope';
 import type { ConceptNode } from '@/types/conceptTypes';
-import { LEARNING_UPDATED_EVENT, readRecentSession, saveSessionLearning, needsRevisit, type RecentSession } from '@/lib/sessionLearning';
+import { LEARNING_UPDATED_EVENT, readRecentSession, saveSessionLearning, type RecentSession } from '@/lib/sessionLearning';
 import { SessionLearningList } from '@/components/practice/SessionLearningList';
 import { PilotFeedbackBanner } from '@/components/feedback/PilotFeedback';
 import './launch-home-embed.css';
@@ -28,21 +28,6 @@ const P = { cream: '#F4ECDF', espresso: '#1F140C', ink: '#2A1E16', muted: '#7463
 const selectedFilterValues = (values: string[] | undefined) => (values || []).filter(value => value && value !== 'any');
 const scopeStorageKey = (curriculumId: string) => `${curriculumId}_active_practice_scope_v1`;
 const filterLabel = (value: string) => value.replace(/[-_]/g, ' ').replace(/\b\w/g, letter => letter.toUpperCase());
-
-function buildLearningPicture(concepts: ConceptNode[], recentSession: RecentSession | null) {
-  const statuses = new Map<string, boolean>();
-  const now = Date.now();
-  for (const concept of concepts) {
-    const mastery = concept.mastery_data || {};
-    if (!Number(mastery.attempts || 0) && !Number(mastery.mastery_level || 0)) continue;
-    const dueAt = mastery.fsrs_due_at ? new Date(mastery.fsrs_due_at).getTime() : Infinity;
-    statuses.set(concept.concept_id, Number(mastery.mastery_level || 0) === 1 || dueAt <= now || Number(mastery.correct || 0) === 0);
-  }
-  // Include the instant starter and uncertainty, even if a concept is not in the loaded map.
-  for (const item of recentSession?.items || []) statuses.set(item.conceptId || item.title, needsRevisit(item));
-  const needsAttention = [...statuses.values()].filter(Boolean).length;
-  return { evidenced: statuses.size, needsAttention };
-}
 
 function recommendationReason(reasonCounts: Array<{ label: string; count: number }>, hasEvidence: boolean) {
   if (!hasEvidence) return 'Answer a case, discuss your reasoning, then try a tutor check.';
@@ -186,7 +171,12 @@ function HomeContent({ curriculumId }: { curriculumId: string }) {
   });
 
   const sessionCount = user ? 5 : 3;
-  const learningPicture = useMemo(() => buildLearningPicture(concepts || [], recentSession), [concepts, recentSession]);
+  const hasEvidence = useMemo(
+    () => Boolean(recentSession?.items.length) || (concepts || []).some(concept =>
+      Boolean(Number(concept.mastery_data?.attempts || 0) || Number(concept.mastery_data?.mastery_level || 0)),
+    ),
+    [concepts, recentSession],
+  );
   useEffect(() => {
     const refresh = () => setRecentSession(readRecentSession(learnerScope));
     refresh();
@@ -197,7 +187,6 @@ function HomeContent({ curriculumId }: { curriculumId: string }) {
       window.removeEventListener('storage', refresh);
     };
   }, [learnerScope]);
-  const hasEvidence = learningPicture.evidenced > 0;
   const recommendedPlan = useMemo(
     () => buildSpoilerSafeSessionPlan(concepts || [], sessionCount),
     [concepts, sessionCount],
@@ -424,25 +413,6 @@ function HomeContent({ curriculumId }: { curriculumId: string }) {
                     </span>
                     <ArrowRight className="h-5 w-5 shrink-0" style={{ color: P.muted }} aria-hidden="true" />
                   </button>
-                </section>
-
-                <section className="mt-10 border-t pt-7" style={{ borderColor: P.line }} aria-labelledby="learning-picture-heading">
-                  <h2 id="learning-picture-heading" className="text-[14px] font-bold uppercase tracking-[0.12em]" style={{ color: P.muted }}>Your learning picture</h2>
-                  {hasEvidence ? (
-                    <div className="mt-3">
-                      <p className="text-[27px] font-light leading-tight tracking-[-0.025em]" style={{ color: P.espresso, fontFamily: "'Fraunces', serif" }}>
-                        {learningPicture.evidenced} {learningPicture.evidenced === 1 ? 'concept' : 'concepts'} practised
-                      </p>
-                      <p className="mt-2 text-[15px] leading-6" style={{ color: P.muted }}>
-                        {learningPicture.needsAttention > 0 ? `${learningPicture.needsAttention} to revisit` : 'Keep practising to check what you retain.'}
-                      </p>
-                    </div>
-                  ) : (
-                    <div className="mt-3">
-                      <p className="text-[27px] font-light leading-tight tracking-[-0.025em]" style={{ color: P.espresso, fontFamily: "'Fraunces', serif" }}>Your learning picture starts here.</p>
-                      <p className="mt-2 text-[15px] leading-6" style={{ color: P.muted }}>Your first session will show what you practised and what to revisit.</p>
-                    </div>
-                  )}
                 </section>
 
                 {recentSession && (
