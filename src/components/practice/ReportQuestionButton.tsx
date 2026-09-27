@@ -157,7 +157,10 @@ export const ReportQuestionButton: React.FC<ReportQuestionButtonProps> = ({ ques
         Report question
       </Button>
 
-      <DialogContent className="max-w-md">
+      <DialogContent
+        overlayClassName="z-[100]"
+        className="z-[101] max-h-[90dvh] w-[calc(100%-2rem)] max-w-md overflow-y-auto rounded-2xl"
+      >
         {submitted ? (
           <div className="space-y-4 py-2">
             <div className="flex items-center gap-2">
