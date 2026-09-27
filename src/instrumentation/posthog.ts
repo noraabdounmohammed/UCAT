@@ -3,6 +3,8 @@
  * so dev/test environments don't pollute analytics counters.
  */
 
+import { hasConsented } from './consent';
+
 let initialized = false;
 // `any` is intentional — posthog-js typings vary by version; we only call
 // .capture / .identify which are stable.
@@ -12,11 +14,17 @@ let phCache: any | null = null;
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 async function ensurePosthog(): Promise<any | null> {
   const key = import.meta.env.VITE_POSTHOG_KEY;
-  if (!key) return null;
+  if (!key || !hasConsented()) return null;
   if (initialized) return phCache;
   const ph = await import('posthog-js');
+  if (!hasConsented()) return null;
+  if (initialized) return phCache;
   ph.default.init(key, {
     api_host: import.meta.env.VITE_POSTHOG_HOST ?? 'https://eu.posthog.com',
+    autocapture: false,
+    disable_session_recording: true,
+    capture_pageview: false,
+    capture_pageleave: false,
   });
   phCache = ph.default;
   initialized = true;
@@ -33,7 +41,7 @@ export async function trackEvent(
   props?: Record<string, any>,
 ): Promise<void> {
   const ph = await ensurePosthog();
-  if (!ph) return; // No-op without key
+  if (!ph || !hasConsented()) return;
   ph.capture(name, props);
 }
 
@@ -43,6 +51,6 @@ export async function identifyUser(
   traits?: Record<string, any>,
 ): Promise<void> {
   const ph = await ensurePosthog();
-  if (!ph) return;
+  if (!ph || !hasConsented()) return;
   ph.identify(userId, traits);
 }

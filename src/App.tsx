@@ -7,6 +7,7 @@ import { StorageNotification } from '@/components/StorageNotification';
 import { PWAInstallPrompt } from '@/components/PWAInstallPrompt';
 import { PWAUpdateNotification } from '@/components/PWAUpdateNotification';
 import { LearnerErrorBoundary } from '@/components/LearnerErrorBoundary';
+import { PilotFeedbackProvider } from '@/components/feedback/PilotFeedback';
 import '@/styles/font-sizes.css';
 
 const LaunchHomePage = lazy(() => import('@/pages/LaunchHomePage').then(m => ({ default: m.LaunchHomePage })));
@@ -37,7 +38,7 @@ function App() {
             <StorageNotification />
             <PWAInstallPrompt />
             <PWAUpdateNotification />
-            <Routes>
+            <PilotFeedbackProvider><Routes>
               <Route path="/" element={withFallback(<LaunchHomePage />)} />
               <Route path="/recommended-practice" element={withFallback(<RecommendedPracticePage />)} />
               <Route path="/concept-practice" element={withFallback(<CustomPracticePage />)} />
@@ -46,7 +47,7 @@ function App() {
               <Route path="/terms" element={withFallback(<TermsOfService />)} />
               <Route path="/reset-password" element={withFallback(<ResetPasswordPage />)} />
               <Route path="*" element={<Navigate to="/" replace />} />
-            </Routes>
+            </Routes></PilotFeedbackProvider>
           </FontSizeProvider>
         </ThemeProvider>
       </AuthProvider>

@@ -42,7 +42,7 @@ export function PrivacyPolicy() {
           <p className="mt-4 max-w-2xl text-base font-medium leading-7 sm:text-lg">
             StudyEdit only uses the information needed to run your account, personalise your learning and keep the app reliable.
           </p>
-          <p className="mt-3 text-xs" style={{ color: palette.muted }}>Last updated 23 August 2026</p>
+          <p className="mt-3 text-xs" style={{ color: palette.muted }}>Last updated 27 September 2026</p>
         </section>
 
         <section className="mt-10 overflow-hidden rounded-[30px] p-7 sm:p-9" style={{ backgroundColor: palette.blushSoft }}>
@@ -61,6 +61,7 @@ export function PrivacyPolicy() {
               <li>• Your email and the name you choose to provide when you sign up through Supabase Auth.</li>
               <li>• Your answer and learning history, used to personalise practice and spaced retrieval.</li>
               <li>• Optional aggregate product analytics and crash reports, only after you consent.</li>
+              <li>• Feedback you choose to send, including your reaction, selected topics, message and basic context (the screen, case identifier and number of cases answered). No account or email is required.</li>
             </ul>
           </PolicyCard>
 
@@ -93,11 +94,16 @@ export function PrivacyPolicy() {
 
           <PolicyCard number="05" title="AI tutor & voice" tag="Only when used" wide>
             <p>
-              To answer a tutor message, StudyEdit sends the current question, your answer, your message and a limited learning-history summary to an AI text provider (currently DeepSeek). If you choose premium dictation or audio playback, audio or tutor text may be processed by OpenAI. Browser speech features may instead be handled by your device or browser provider.
+              To answer a tutor message, StudyEdit sends the current question, your answer, your message and a limited learning-history summary to an AI text provider (currently DeepSeek). If you choose dictation or audio playback, audio or tutor text may be processed by OpenAI. Browser speech features may instead be handled by your device or browser provider.
             </p>
             <p className="mt-3">
               StudyEdit is not a patient record. Do not enter names, dates of birth, hospital numbers or other information that could identify a real patient.
             </p>
+          </PolicyCard>
+
+          <PolicyCard number="07" title="Early-access feedback" tag="Optional & private" wide>
+            <p>Feedback is stored privately in Supabase for the StudyEdit team to review. Other learners cannot read it. Voice input is converted to text that you can review and edit before sending. StudyEdit does not receive or store a feedback audio recording. Your device or browser provider processes dictation under its own data practices.</p>
+            <p className="mt-3">Feedback works even if you decline analytics. We do not send your feedback text or voice recording to our optional analytics tools. Please avoid personal or patient details in your message.</p>
           </PolicyCard>
 
           <PolicyCard number="06" title="Delete your account" tag="Your choice" wide>

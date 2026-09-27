@@ -21,6 +21,7 @@ import { getUserCurriculumId, migrateLegacyCurriculumState } from '@/utils/curri
 import type { ConceptNode } from '@/types/conceptTypes';
 import { LEARNING_UPDATED_EVENT, readRecentSession, saveSessionLearning, needsRevisit, type RecentSession } from '@/lib/sessionLearning';
 import { SessionLearningList } from '@/components/practice/SessionLearningList';
+import { PilotFeedbackBanner } from '@/components/feedback/PilotFeedback';
 import './launch-home-embed.css';
 
 const P = { cream: '#F4ECDF', espresso: '#1F140C', ink: '#2A1E16', muted: '#746354', line: '#E8DCC4', sage: '#8FA379' };
@@ -368,6 +369,7 @@ function HomeContent({ curriculumId }: { curriculumId: string }) {
             </div>
           )}
 
+          <PilotFeedbackBanner context={{ source: hasQuestion ? (showSessionOrientation ? 'practice' : 'session_complete') : 'home', questionId: hasQuestion ? displayQuestions[sessionProgress.currentIndex]?.id : undefined, answeredCount: hasQuestion ? sessionProgress.answers.length : undefined, caseCount: hasQuestion ? displayQuestions.length : undefined }} />
           <div className="mt-0">
             {showHome && (
               <div className="pt-10 sm:pt-16">
@@ -475,6 +477,7 @@ function HomeContent({ curriculumId }: { curriculumId: string }) {
               <>
                 {showSessionOrientation && (
                   <SessionOrientation
+                    questionId={displayQuestions[sessionProgress.currentIndex]?.id}
                     currentIndex={sessionProgress.currentIndex}
                     plannedCount={!restoredDraft && generatingQuestionCount === 0 && launchedRef.current ? Math.min(plannedCount, displayQuestions.length) : plannedCount}
                     answeredCount={sessionProgress.answers.length}

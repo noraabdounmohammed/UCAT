@@ -11,6 +11,7 @@ import { SessionAnswer, SessionProgressDropdown } from './SessionProgressDropdow
 import type { ConfidenceLevel, TutorTurn } from './UkmlaSBAQuestion';
 import { readLaunchSessionDraft, writeLaunchSessionDraft } from '@/lib/launchSessionDraft';
 import { saveSessionLearning } from '@/lib/sessionLearning';
+import { track } from '@/instrumentation/events';
 
 interface PracticeSessionProps {
   questions: QuestionData[];
@@ -57,6 +58,22 @@ export function ApplePracticeSession({
   const [reviewingQuestionIndex, setReviewingQuestionIndex] = useState<number | null>(initialDraft?.reviewingQuestionIndex ?? null);
   const sessionStartedAtRef = useRef(initialDraft?.startedAt || Date.now());
   const completionRecordedRef = useRef(Boolean(initialDraft?.showReview));
+  const startTrackedRef = useRef(false);
+  const tutorTrackedRef = useRef(false);
+
+  useEffect(() => {
+    if (startTrackedRef.current || !questions.length || initialDraft?.showReview) return;
+    startTrackedRef.current = true;
+    let returning = false;
+    try { returning = Number(localStorage.getItem('studyedit_completed_sessions_v1') || 0) > 0; } catch { /* Optional context. */ }
+    track('pilot_session_started', { case_count: questions.length, resumed: Boolean(initialDraft?.answers.length), returning });
+  }, [initialDraft, questions.length]);
+
+  useEffect(() => {
+    if (tutorTrackedRef.current || !sessionAnswers.some(answer => answer.tutorTurns?.some(turn => turn.role === 'student'))) return;
+    tutorTrackedRef.current = true;
+    track('pilot_tutor_used');
+  }, [sessionAnswers]);
 
   const questionsRef = useRef<QuestionData[]>(initialDraft?.questions || questions);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -103,6 +120,7 @@ export function ApplePracticeSession({
   useEffect(() => {
     if (!showReview || completionRecordedRef.current) return;
     completionRecordedRef.current = true;
+    track('pilot_session_completed', { case_count: activeQuestions.length, answered_count: sessionAnswers.length });
     try {
       const key = 'studyedit_completed_sessions_v1';
       const completedSessions = Math.max(0, Number(localStorage.getItem(key) || 0)) + 1;
@@ -111,7 +129,7 @@ export function ApplePracticeSession({
     } catch {
       // Install-prompt timing is an enhancement and must never interrupt review.
     }
-  }, [showReview]);
+  }, [showReview, activeQuestions.length, sessionAnswers.length]);
 
   const handlePreviousQuestion = useCallback(() => {
     if (currentIndex > 0) setCurrentIndex(currentIndex - 1);

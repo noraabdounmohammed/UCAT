@@ -1,5 +1,6 @@
 import React from 'react';
 import { House } from 'lucide-react';
+import { PilotFeedbackButton } from '@/components/feedback/PilotFeedback';
 
 type SessionOrientationProps = {
   currentIndex: number;
@@ -8,6 +9,7 @@ type SessionOrientationProps = {
   scopeLabel: string;
   isTailored: boolean;
   onExit: () => void;
+  questionId?: string;
 };
 
 export function SessionOrientation({
@@ -17,6 +19,7 @@ export function SessionOrientation({
   scopeLabel,
   isTailored,
   onExit,
+  questionId,
 }: SessionOrientationProps) {
   const current = Math.min(Math.max(1, currentIndex + 1), Math.max(1, plannedCount));
   const progress = Math.min(100, Math.max(0, (currentIndex / Math.max(1, plannedCount)) * 100));
@@ -39,6 +42,7 @@ export function SessionOrientation({
             <span className="studyedit-session-scope-note">Study Edit adapts within this focus</span>
           </div>
         </div>
+        <PilotFeedbackButton context={{ source: 'practice', questionId, answeredCount, caseCount: plannedCount }} />
       </div>
     </div>
   );

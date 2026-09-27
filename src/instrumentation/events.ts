@@ -13,7 +13,12 @@ export type TrackedEvent =
   | 'paywall_shown'
   | 'upgrade_clicked'
   | 'nps_submitted'
-  | 'voice_session_started';
+  | 'voice_session_started'
+  | 'pilot_feedback_opened'
+  | 'pilot_feedback_submitted'
+  | 'pilot_session_started'
+  | 'pilot_session_completed'
+  | 'pilot_tutor_used';
 
 /**
  * Fire-and-forget. Never await this in render paths — instrumentation must
