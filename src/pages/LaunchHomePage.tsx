@@ -369,7 +369,7 @@ function HomeContent({ curriculumId }: { curriculumId: string }) {
                   </h1>
                   <p className="mt-4 max-w-[620px] text-[16px] leading-7" style={{ color: P.muted }}>
                     {hasEvidence
-                      ? 'Work through clinical cases, understand your mistakes and keep building your learning picture.'
+                      ? <>Work through clinical cases.<br />Learn from your mistakes.</>
                       : 'Practise clinical cases, talk through your reasoning and find what to work on next.'}
                   </p>
 
@@ -409,7 +409,7 @@ function HomeContent({ curriculumId }: { curriculumId: string }) {
                     <SlidersHorizontal className="h-5 w-5 shrink-0" style={{ color: P.muted }} aria-hidden="true" />
                     <span className="min-w-0 flex-1">
                       <span className="block text-[17px] font-bold" style={{ color: P.espresso }}>Tailor your session</span>
-                      <span className="mt-1 block text-[15px] leading-5" style={{ color: P.muted }}>Specialty, condition, presentation or skill</span>
+                      <span className="mt-1 block text-[15px] leading-5" style={{ color: P.muted }}>By topic or skill</span>
                     </span>
                     <ArrowRight className="h-5 w-5 shrink-0" style={{ color: P.muted }} aria-hidden="true" />
                   </button>
