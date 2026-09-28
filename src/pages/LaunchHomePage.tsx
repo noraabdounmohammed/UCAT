@@ -30,7 +30,7 @@ const scopeStorageKey = (curriculumId: string) => `${curriculumId}_active_practi
 const filterLabel = (value: string) => value.replace(/[-_]/g, ' ').replace(/\b\w/g, letter => letter.toUpperCase());
 
 function recommendationReason(reasonCounts: Array<{ label: string; count: number }>, hasEvidence: boolean) {
-  if (!hasEvidence) return 'Answer a case, discuss your reasoning, then try a tutor check.';
+  if (!hasEvidence) return 'Choose an answer. Explain your reasoning.';
   const labels: Record<string, (count: number) => string> = {
     'Needs another look': count => `${count} ${count === 1 ? 'area' : 'areas'} to revisit`,
     'Due to revisit': count => `${count} due for review`,
@@ -365,12 +365,12 @@ function HomeContent({ curriculumId }: { curriculumId: string }) {
                 <section aria-labelledby="studyedit-home-heading">
                   <div className="text-[13px] font-bold uppercase tracking-[0.16em]" style={{ color: P.muted }}>UKMLA AKT</div>
                   <h1 id="studyedit-home-heading" className="mt-3 max-w-[650px] text-[36px] font-light leading-[1.05] tracking-[-0.04em] sm:text-[46px]" style={{ color: P.espresso, fontFamily: "'Fraunces', serif" }}>
-                    {hasEvidence ? 'Your next session' : 'Your personal UKMLA tutor.'}
+                    {hasEvidence ? 'Your next session' : 'Learn to think clinically.'}
                   </h1>
                   <p className="mt-4 max-w-[620px] text-[16px] leading-7" style={{ color: P.muted }}>
                     {hasEvidence
                       ? <>Work through clinical cases.<br />Learn from your mistakes.</>
-                      : 'Practise clinical cases, talk through your reasoning and find what to work on next.'}
+                      : <>Connect the clues. Explain your thinking.<br />Your AI tutor helps you understand why.</>}
                   </p>
 
                   <button
@@ -459,8 +459,8 @@ function HomeContent({ curriculumId }: { curriculumId: string }) {
                 {showSessionOrientation && sessionProgress.currentIndex === 0 && sessionProgress.answers.length === 0 && !hasEvidence && (
                   <section className="pb-5 pt-2" aria-label="Meet your UKMLA tutor">
                     <p className="text-[14px] font-bold tracking-wide" style={{ color: P.muted }}>STUDYEDIT · UKMLA AKT</p>
-                    <h1 className="mt-2 text-[27px] font-light leading-tight sm:text-[32px]" style={{ color: P.espresso, fontFamily: "'Fraunces', serif" }}>Your personal UKMLA tutor.</h1>
-                    <p className="mt-2 text-[16px] leading-6" style={{ color: P.muted }}>Answer a case, talk through your reasoning and try a follow-up check. Your answers help shape what to practise next.</p>
+                    <h1 className="mt-2 text-[27px] font-light leading-tight sm:text-[32px]" style={{ color: P.espresso, fontFamily: "'Fraunces', serif" }}>Learn to think clinically.</h1>
+                    <p className="mt-2 text-[16px] leading-6" style={{ color: P.muted }}>Choose an answer, then explain your thinking. Your AI tutor helps you connect the clues and checks your understanding.</p>
                     {!user && <p className="mt-2 text-[14px] font-semibold" style={{ color: P.muted }}>Try 3 cases · no account needed</p>}
                   </section>
                 )}

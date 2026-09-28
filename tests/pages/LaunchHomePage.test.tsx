@@ -67,7 +67,7 @@ describe('LaunchHomePage', () => {
 
     render(<MemoryRouter><LaunchHomePage /></MemoryRouter>);
 
-    expect(screen.getByRole('heading', { name: /your personal UKMLA tutor/i })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: /learn to think clinically/i })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /try 3 cases/i })).toHaveTextContent('3 cases · about 6 min');
     expect(screen.getByRole('button', { name: /tailor your session/i })).toBeInTheDocument();
   });
