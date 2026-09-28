@@ -369,7 +369,7 @@ function HomeContent({ curriculumId }: { curriculumId: string }) {
                   </h1>
                   <p className="mt-4 max-w-[620px] text-[16px] leading-7" style={{ color: P.muted }}>
                     {hasEvidence
-                      ? <>Work through clinical cases.<br className="sm:hidden" /> Learn from your mistakes.</>
+                      ? <>Work through clinical cases.<br />Learn from your mistakes.</>
                       : 'Practise clinical cases, talk through your reasoning and find what to work on next.'}
                   </p>
 
