@@ -81,7 +81,7 @@ describe('LaunchHomePage', () => {
 
     render(<MemoryRouter><LaunchHomePage /></MemoryRouter>);
 
-    expect(screen.getByRole('heading', { name: /your next session/i })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: /learn to think clinically/i })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /start session/i })).toHaveTextContent('1 area to revisit');
     expect(screen.queryByText(/currently secure/i)).not.toBeInTheDocument();
   });

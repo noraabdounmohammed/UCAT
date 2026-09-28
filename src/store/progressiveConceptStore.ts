@@ -1,8 +1,8 @@
 import { createConceptStore as createBaseConceptStore } from '@/store/conceptStore';
 import type { PracticeConfig } from '@/types/conceptTypes';
 import { isPlaceholderQuestion as isUnsafeFallback } from '@/lib/practiceQuestionSafety';
-
-const PREFETCH_MAX_AGE_MS = 7 * 24 * 60 * 60 * 1000;
+import { readLaunchSessionDraft } from '@/lib/launchSessionDraft';
+import { readPracticeHistory, rememberPreparedQuestions } from '@/lib/practiceHistory';
 
 const uniqueById = (questions: any[]) => {
   const seen = new Set<string>();
@@ -17,8 +17,6 @@ const uniqueById = (questions: any[]) => {
 const currentPath = () => (typeof window === 'undefined' ? '' : window.location.pathname);
 const isTutorLaunchPath = () => currentPath() === '/' || currentPath() === '/recommended-practice';
 const isHomepage = () => currentPath() === '/';
-
-const cacheKey = (curriculumId: string) => `studyedit_prefetched_case_v1:${curriculumId}`;
 
 const makeInstantStarter = () => ({
   id: 'instant_starter_ukmla_1168_v2',
@@ -52,31 +50,13 @@ const makeInstantStarter = () => ({
   __studyeditInstantStarter: true,
 });
 
-const takePrefetchedCase = (curriculumId: string) => {
-  if (typeof window === 'undefined') return null;
+const hasPreviousPractice = (curriculumId: string) => {
   try {
-    const key = cacheKey(curriculumId);
-    const raw = window.localStorage.getItem(key);
-    if (!raw) return null;
-    window.localStorage.removeItem(key);
-    const parsed = JSON.parse(raw);
-    if (!parsed?.question || isUnsafeFallback(parsed.question)) return null;
-    if (!parsed.cachedAt || Date.now() - Number(parsed.cachedAt) > PREFETCH_MAX_AGE_MS) return null;
-    return parsed.question;
+    if (localStorage.getItem(`${curriculumId}_instant_starter_seen_v1`) || readPracticeHistory(curriculumId).length) return true;
+    const concepts = JSON.parse(localStorage.getItem(`${curriculumId}_user_concepts`) || '[]');
+    return Array.isArray(concepts) && concepts.some(concept => Number(concept.mastery_data?.attempts || 0) > 0);
   } catch {
-    return null;
-  }
-};
-
-const savePrefetchedCase = (curriculumId: string, question: any) => {
-  if (typeof window === 'undefined' || !question || isUnsafeFallback(question)) return;
-  try {
-    window.localStorage.setItem(
-      cacheKey(curriculumId),
-      JSON.stringify({ question, cachedAt: Date.now() }),
-    );
-  } catch {
-    // Prefetching is an optimization only; never block practice on storage access.
+    return false;
   }
 };
 
@@ -86,9 +66,14 @@ export const createConceptStore = (curriculumId: string = 'default') => {
   const baseStartPractice = store.getState().startPractice;
   const baseEndPractice = store.getState().endPractice;
   let runId = 0;
+  let bootstrapCaseId: string | null = null;
 
-  if (isHomepage()) {
-    const readyCase = takePrefetchedCase(curriculumId) || makeInstantStarter();
+  if (isHomepage() && new URLSearchParams(window.location.search).get('home') !== '1'
+    && !readLaunchSessionDraft() && !hasPreviousPractice(curriculumId)) {
+    const readyCase = makeInstantStarter();
+    bootstrapCaseId = readyCase.id;
+    try { localStorage.setItem(`${curriculumId}_instant_starter_seen_v1`, 'true'); } catch { /* Optional device history. */ }
+    rememberPreparedQuestions(curriculumId, [readyCase], []);
     store.setState({
       isLoading: false,
       isPracticing: true,
@@ -132,9 +117,11 @@ export const createConceptStore = (curriculumId: string = 'default') => {
       ? initial.practiceQuestions[0]
       : null;
 
-    // Normal launch keeps the instant case. An explicit Adjust session request must
-    // replace it, otherwise changing specialty/direction appears to do nothing.
-    if (existingHomepageCase && !replaceCurrent) {
+    // Only preserve the case shown during this store's first cold visit. A later
+    // start must use its new selection, even if the previous session is still mounted.
+    const keepBootstrap = existingHomepageCase?.id === bootstrapCaseId && bootstrapCaseId !== null && !replaceCurrent;
+    bootstrapCaseId = null;
+    if (existingHomepageCase && keepBootstrap) {
       store.setState({
         isLoading: false,
         isPracticing: true,
@@ -147,14 +134,14 @@ export const createConceptStore = (curriculumId: string = 'default') => {
       } as any);
 
       const remainingIds = candidates.filter((id: string) => id !== existingHomepageCase.concept_id);
-      if (!remainingIds.length || requestedCount <= 0) {
+      if (!remainingIds.length || requestedCount <= 1) {
         store.setState({ generatingQuestionCount: 0 } as any);
         return;
       }
 
       const backgroundStore = createGenerationStore(initial, remainingIds);
       try {
-        const generationCount = Math.min(requestedCount, remainingIds.length);
+        const generationCount = Math.min(requestedCount - 1, remainingIds.length);
         await backgroundStore.getState().startPractice({ ...practiceConfig, question_count: generationCount });
         if (thisRun !== runId || !(store.getState() as any).isPracticing) return;
 
@@ -162,8 +149,6 @@ export const createConceptStore = (curriculumId: string = 'default') => {
           .filter((question: any) => !isUnsafeFallback(question));
         const sessionSlots = Math.max(0, requestedCount - 1);
         const sessionQuestions = generated.slice(0, sessionSlots);
-        const reservedForNextVisit = generated[sessionSlots];
-        if (reservedForNextVisit) savePrefetchedCase(curriculumId, reservedForNextVisit);
 
         const currentQuestions = (store.getState() as any).practiceQuestions || [];
         store.setState({

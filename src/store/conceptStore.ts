@@ -18,6 +18,7 @@ import { supabase } from '@/lib/supabase';
 import { getAllowedQuestionCount, recordQuestionsGenerated, getRemainingQuestions, hasUnlimitedAccess } from '@/utils/questionLimits';
 import { createFsrsScheduler } from '@/fsrs/scheduler';
 import type { FsrsCardState } from '@/fsrs/types';
+import { conceptIdentity, questionFingerprint, readPracticeHistory, rememberPreparedQuestions } from '@/lib/practiceHistory';
 
 const fsrsScheduler = createFsrsScheduler();
 
@@ -1064,6 +1065,11 @@ export const createConceptStore = (curriculumId: string = 'default') => {
           const seenKey = getCurriculumKey(curriculumId, 'seen_question_ids');
           const seenRaw = localStorage.getItem(seenKey);
           const seenQuestionIds: Set<string> = new Set(seenRaw ? JSON.parse(seenRaw) : []);
+          const preparedHistory = readPracticeHistory(curriculumId);
+          const seenStems = new Set(preparedHistory.map(item => item.fingerprint));
+          const avoidRepeatedCase = targetFormat === 'ukmla_sba';
+          const wasSeen = (question: any) => seenQuestionIds.has(question.id)
+            || (avoidRepeatedCase && seenStems.has(questionFingerprint(question)));
 
           // Fetch featured questions first (pre-generated with images)
           const featuredQuestions = await questionCacheService.getFeaturedQuestions();
@@ -1106,7 +1112,7 @@ export const createConceptStore = (curriculumId: string = 'default') => {
           for (const concept of conceptsForQuestions) {
             const titleKey = concept.title?.toLowerCase() || '';
             const featuredByTitle = cachedByTitle[titleKey] || [];
-            const unseenFeatured = featuredByTitle.filter(q => !seenQuestionIds.has(q.id));
+            const unseenFeatured = featuredByTitle.filter(q => !wasSeen(q));
             
             if (unseenFeatured.length > 0) {
               cachedCount++;
@@ -1114,7 +1120,7 @@ export const createConceptStore = (curriculumId: string = 'default') => {
             }
             
             const allCachedForConcept = cachedByConcept[concept.concept_id] || [];
-            const unseenCached = allCachedForConcept.filter(q => !seenQuestionIds.has(q.id));
+            const unseenCached = allCachedForConcept.filter(q => !wasSeen(q));
             
             if (unseenCached.length > 0) {
               cachedCount++;
@@ -1140,7 +1146,7 @@ export const createConceptStore = (curriculumId: string = 'default') => {
             const featuredByTitle = cachedByTitle[titleKey] || [];
             // Filter by format AND unseen
             const unseenFeatured = featuredByTitle.filter(q => 
-              !seenQuestionIds.has(q.id) && q.question_format === targetFormat
+              !wasSeen(q) && q.question_format === targetFormat
             );
             
             if (unseenFeatured.length > 0) {
@@ -1171,7 +1177,7 @@ export const createConceptStore = (curriculumId: string = 'default') => {
             
             // Filter by format AND unseen - only use questions that match the user's selected format
             const unseenCached = allCachedForConcept.filter(q => 
-              !seenQuestionIds.has(q.id) && q.question_format === targetFormat
+              !wasSeen(q) && q.question_format === targetFormat
             );
             
             if (unseenCached.length > 0) {
@@ -1213,12 +1219,21 @@ export const createConceptStore = (curriculumId: string = 'default') => {
             
             // Generate with AI and cache
             try {
-              const generated = await generateQuestionWithConfig({
-                concept,
-                format: targetFormat as 'flashcard' | 'ukmla_sba' | 'sba' | 'emq' | 'true_false' | 'ranking',
-                customPrompt: practiceConfig?.custom_prompt,
-                customFlashcardPrompt: practiceConfig?.custom_flashcard_prompt
-              });
+              const previousQuestions = preparedHistory.filter(item => item.conceptId === concept.concept_id
+                || item.conceptKey === conceptIdentity(concept)).slice(-3).map(item => item.stem);
+              let generated: Awaited<ReturnType<typeof generateQuestionWithConfig>> | null = null;
+              for (let attempt = 0; attempt < 2; attempt += 1) {
+                generated = await generateQuestionWithConfig({
+                  concept,
+                  format: targetFormat as 'flashcard' | 'ukmla_sba' | 'sba' | 'emq' | 'true_false' | 'ranking',
+                  customPrompt: practiceConfig?.custom_prompt,
+                  customFlashcardPrompt: practiceConfig?.custom_flashcard_prompt,
+                  previousQuestions,
+                });
+                if (!avoidRepeatedCase || !seenStems.has(questionFingerprint(generated))) break;
+                if (attempt === 1) throw new Error('Question repeated a previously prepared case');
+              }
+              if (!generated) throw new Error('No question generated');
               
               // Save to cache (fire and forget)
               questionCacheService.saveQuestion({
@@ -1260,10 +1275,12 @@ export const createConceptStore = (curriculumId: string = 'default') => {
           });
 
           const questions = await Promise.all(questionPromises);
+          rememberPreparedQuestions(curriculumId, questions, conceptsForQuestions);
           
           // Persist newly seen question IDs so user won't get the same q again
           if (newlySeenIds.length > 0) {
-            const updatedSeen = [...seenQuestionIds, ...newlySeenIds];
+            const currentSeen: string[] = JSON.parse(localStorage.getItem(seenKey) || '[]');
+            const updatedSeen = [...new Set([...currentSeen, ...newlySeenIds])];
             // Cap at 2000 entries to avoid unbounded growth (oldest dropped first)
             const capped = updatedSeen.slice(-2000);
             localStorage.setItem(seenKey, JSON.stringify(capped));

@@ -5,6 +5,8 @@ const LEGACY_OWNER_KEY = 'studyedit_legacy_progress_owner_v1';
 const CURRICULUM_KEY_SUFFIXES = [
   'user_concepts',
   'seen_question_ids',
+  'prepared_questions_v1',
+  'instant_starter_seen_v1',
   'practice_sessions_history',
   'custom_filters',
   'filter_categories',
