@@ -365,7 +365,7 @@ function HomeContent({ curriculumId }: { curriculumId: string }) {
                 <section aria-labelledby="studyedit-home-heading">
                   <div className="text-[13px] font-bold uppercase tracking-[0.16em]" style={{ color: P.muted }}>UKMLA AKT</div>
                   <h1 id="studyedit-home-heading" className="mt-3 max-w-[650px] text-[36px] font-light leading-[1.05] tracking-[-0.04em] sm:text-[46px]" style={{ color: P.espresso, fontFamily: "'Fraunces', serif" }}>
-                    {hasEvidence ? 'Here’s what to work on next.' : 'Your personal UKMLA tutor.'}
+                    {hasEvidence ? 'Your next session' : 'Your personal UKMLA tutor.'}
                   </h1>
                   <p className="mt-4 max-w-[620px] text-[16px] leading-7" style={{ color: P.muted }}>
                     {hasEvidence
@@ -390,7 +390,7 @@ function HomeContent({ curriculumId }: { curriculumId: string }) {
                     <span className="mt-5 flex items-end gap-4">
                       <span className="min-w-0 flex-1">
                         <span className="block text-[21px] font-bold leading-tight">
-                          {resumable ? 'Resume session' : hasEvidence ? 'Start recommended session' : 'Try 3 cases'}
+                          {resumable ? 'Resume session' : hasEvidence ? 'Start session' : 'Try 3 cases'}
                         </span>
                         <span className="mt-2 block text-[15px] leading-6" style={{ color: '#D9CCB6' }}>{resumable ? `${restoredDraft?.answers.length} of ${restoredDraft?.questions.length} answered` : recommendedReason}</span>
                       </span>
