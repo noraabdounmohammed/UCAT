@@ -1,3 +1,5 @@
+import { conceptIdentity, RECENT_PRACTICE_MS } from '@/lib/practiceHistory';
+
 export type SessionBlueprintCase = {
   system: string;
   skill: string;
@@ -132,12 +134,49 @@ export function conceptPriority(concept: any, now = Date.now()) {
   return coverageNeed + weakness + explicitWeakness + forgetting + lapseSignal + uncertainty + examBoost + safetyBoost + coreBoost + jitter;
 }
 
-export function chooseRecommendedConcepts(concepts: any[], count: number) {
-  return [...(concepts || [])]
-    .map(concept => ({ concept, score: conceptPriority(concept) }))
-    .sort((a, b) => b.score - a.score)
-    .slice(0, Math.min(count, concepts?.length || 0))
-    .map(item => item.concept);
+type SelectionOptions = { now?: number; recentConceptIds?: string[]; recentConceptKeys?: string[] };
+
+export function chooseRecommendedConcepts(concepts: any[], count: number, options: SelectionOptions = {}) {
+  const now = options.now ?? Date.now();
+  const recentIds = new Set(options.recentConceptIds || []);
+  const recentKeys = new Set(options.recentConceptKeys || []);
+  const unique = new Map<string, any>();
+  for (const concept of concepts || []) {
+    const key = conceptIdentity(concept);
+    const previous = unique.get(key);
+    // Overlapping legacy files describe the same learning objective. Keep the
+    // most recently practised copy, so an untouched alias cannot bypass review history.
+    const last = Date.parse(concept.mastery_data?.last_practiced || '') || 0;
+    const previousLast = Date.parse(previous?.mastery_data?.last_practiced || '') || 0;
+    if (!previous || last > previousLast || (last === previousLast
+      && Number(concept.mastery_data?.attempts || 0) > Number(previous.mastery_data?.attempts || 0))) unique.set(key, concept);
+    if (recentIds.has(concept.concept_id)) recentKeys.add(key);
+  }
+  const ranked = [...unique.entries()]
+    .map(([key, concept]) => {
+      const last = Date.parse(concept.mastery_data?.last_practiced || '');
+      const recent = recentKeys.has(key) || (Number.isFinite(last) && now - last < RECENT_PRACTICE_MS);
+      return { concept, recent, score: conceptPriority(concept, now) };
+    })
+    // Keep due/weak review priorities, but give recent cases a short break when
+    // other eligible concepts exist. Narrow tailored pools can still be filled.
+    .sort((a, b) => Number(a.recent) - Number(b.recent) || b.score - a.score);
+  const selected = ranked.slice(0, Math.max(0, count));
+  // Selecting the entire pool as "weak" upstream used to defeat the generation
+  // store's mixed-session policy. Reserve space for new learning here, before truncation.
+  const unseen = ranked.filter(item => !item.recent && Number(item.concept.mastery_data?.attempts || 0) === 0);
+  const newTarget = count > 1 ? Math.min(unseen.length, Math.max(1, Math.round(selected.length * 0.3))) : 0;
+  let newCount = selected.filter(item => Number(item.concept.mastery_data?.attempts || 0) === 0).length;
+  for (const candidate of unseen) {
+    if (newCount >= newTarget) break;
+    if (selected.includes(candidate)) continue;
+    let replaceIndex = selected.length - 1;
+    while (replaceIndex >= 0 && Number(selected[replaceIndex].concept.mastery_data?.attempts || 0) === 0) replaceIndex -= 1;
+    if (replaceIndex < 0) break;
+    selected[replaceIndex] = candidate;
+    newCount += 1;
+  }
+  return selected.map(item => item.concept);
 }
 
 function tagsFor(concept: any): string[] {
@@ -227,8 +266,8 @@ function conceptMatchesRequest(concept: any, systems: string[], skills: string[]
   return generic.split(' ').some(word => word.length >= 3 && searchable.includes(word));
 }
 
-export function buildSpoilerSafeSessionPlan(concepts: any[], count: number): SpoilerSafeSessionPlan {
-  const selected = chooseRecommendedConcepts(concepts, count);
+export function buildSpoilerSafeSessionPlan(concepts: any[], count: number, options: SelectionOptions = {}): SpoilerSafeSessionPlan {
+  const selected = chooseRecommendedConcepts(concepts, count, options);
   const cases = selected.map(concept => ({ system: systemFor(concept), skill: skillFor(concept) }));
   const systems = cases.map(item => item.system);
   const skills = cases.map(item => item.skill);
