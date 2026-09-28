@@ -70,7 +70,6 @@ describe('LaunchHomePage', () => {
     expect(screen.getByRole('heading', { name: /your personal UKMLA tutor/i })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /try 3 cases/i })).toHaveTextContent('3 cases · about 6 min');
     expect(screen.getByRole('button', { name: /tailor your session/i })).toBeInTheDocument();
-    expect(screen.getByText(/your learning picture starts here/i)).toBeInTheDocument();
   });
 
   it('turns prior evidence into an actionable returning-learner home', () => {
@@ -84,12 +83,10 @@ describe('LaunchHomePage', () => {
 
     expect(screen.getByRole('heading', { name: /what to work on next/i })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /start recommended session/i })).toHaveTextContent('1 area to revisit');
-    expect(screen.getByText(/2 concepts practised/i)).toBeInTheDocument();
-    expect(screen.getByText('1 to revisit')).toBeInTheDocument();
     expect(screen.queryByText(/currently secure/i)).not.toBeInTheDocument();
   });
 
-  it('includes an uncertain starter in progress and allows resume before the curriculum loads', () => {
+  it('shows an uncertain starter in the latest session and allows resume before the curriculum loads', () => {
     state.concepts = [];
     const questions = [{ id: 'starter', concept_id: 'stemi', concept_title: 'STEMI: choosing reperfusion', options: [] }];
     const answers = [{ questionIndex: 0, isCorrect: true, confidence: 'unsure' as const }];
@@ -97,8 +94,6 @@ describe('LaunchHomePage', () => {
 
     render(<MemoryRouter><LaunchHomePage /></MemoryRouter>);
 
-    expect(screen.getByText('1 concept practised')).toBeInTheDocument();
-    expect(screen.getByText('1 to revisit')).toBeInTheDocument();
     expect(screen.getByText('STEMI: choosing reperfusion')).toBeInTheDocument();
     expect(screen.getByText('Correct answer · unsure')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /resume session/i })).toBeEnabled();
