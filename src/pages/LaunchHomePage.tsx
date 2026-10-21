@@ -415,6 +415,13 @@ function HomeContent({ curriculumId }: { curriculumId: string }) {
                   </button>
                 </section>
 
+                <section className="mt-7 border-t pt-6" style={{ borderColor: P.line }} aria-labelledby="curriculum-assurance-heading">
+                  <div className="text-[11px] font-bold uppercase tracking-[0.16em]" style={{ color: P.muted }}>Curriculum & reliability</div>
+                  <h2 id="curriculum-assurance-heading" className="mt-2 text-[20px] font-semibold" style={{ color: P.espresso }}>Know what your practice is based on</h2>
+                  <p className="mt-2 max-w-[620px] text-[14px] leading-6" style={{ color: P.muted }}>StudyEdit organises practice around UKMLA concepts, but complete alignment with every GMC content-map entry and independent clinical review of every generated question have not yet been established. Check each case's sources and review status in its More options menu.</p>
+                  <a href="https://www.gmc-uk.org/-/media/documents/251015---mla-content-map--english--112647970.pdf" target="_blank" rel="noreferrer" className="mt-3 inline-block min-h-11 py-2 text-[14px] font-semibold underline underline-offset-4" style={{ color: P.espresso }}>Read the official GMC MLA content map ↗</a>
+                </section>
+
                 {recentSession && (
                   <section className="mt-8 border-t pt-7" style={{ borderColor: P.line }} aria-labelledby="latest-session-heading">
                     <div className="flex items-baseline justify-between gap-4">
