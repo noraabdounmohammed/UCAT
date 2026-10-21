@@ -877,12 +877,20 @@ export const UkmlaSBAQuestion: React.FC<UkmlaSBAQuestionProps> = ({
                       </summary>
                       <div className="absolute right-0 top-full z-[95] mt-1 w-64 max-w-[calc(100vw-2.5rem)] rounded-2xl border border-[#DCCDBA] bg-[#FFFDF8] p-4 text-[13px] leading-6 text-[#746354] shadow-lg">
                         {Object.keys(distractors).length > 0 && <button type="button" disabled={tutorBusy} onClick={() => setShowAllDistractors(value => !value)} className="mb-3 min-h-11 text-left font-semibold disabled:opacity-40">{showAllDistractors ? 'Hide other options' : 'Why the other options are wrong'}</button>}
-                        <p className="mb-1 text-[10px] font-bold uppercase tracking-wider">Source</p>
-                        {(question as any).guideline_url ? (
-                          <a href={String((question as any).guideline_url)} target="_blank" rel="noreferrer" className="block py-1 underline decoration-[#BBA995] underline-offset-4">
-                            {String((question as any).guideline || (question as any).source_type || 'Clinical guidance')}
-                          </a>
-                        ) : <p>From this case’s learning material.</p>}
+                        <p className="mb-1 text-[10px] font-bold uppercase tracking-wider">Curriculum & reliability</p>
+                        <p className="mb-2 text-[12px]">Topic: {conceptTitle}</p>
+                        <a href="https://www.gmc-uk.org/-/media/documents/251015---mla-content-map--english--112647970.pdf" target="_blank" rel="noreferrer" className="block py-1 underline decoration-[#BBA995] underline-offset-4">Official GMC MLA content map (September 2026 onwards) ↗</a>
+                        <p className="mb-2 text-[11px]">This is the official curriculum reference, not proof that this specific question has been individually mapped or reviewed.</p>
+                        <p className="mb-1 text-[10px] font-bold uppercase tracking-wider">Clinical evidence</p>
+                        {(question as any).guideline_url && /^https:\/\//i.test(String((question as any).guideline_url)) ? (
+                          <>
+                            <a href={String((question as any).guideline_url)} target="_blank" rel="noreferrer" className="block break-words py-1 underline decoration-[#BBA995] underline-offset-4">
+                              {String((question as any).guideline || (question as any).source_type || 'Supplied reference')} ↗
+                            </a>
+                            <p className="text-[11px]">Reference supplied; its support for this answer has not been independently verified here.</p>
+                          </>
+                        ) : <p className="text-[11px]">No clinical source linked to this case. Treat this AI-generated teaching as unverified.</p>}
+                        <p className="mt-2 border-t border-[#E8DCC4] pt-2 text-[11px] font-semibold">Review status: not independently clinician-reviewed in StudyEdit.</p>
                         {footerControl && <div className="mt-3 border-t border-[#E8DCC4] pt-2">{footerControl}</div>}
                       </div>
                     </details>
