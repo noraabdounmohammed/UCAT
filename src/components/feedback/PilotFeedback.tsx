@@ -132,14 +132,26 @@ export function PilotFeedbackProvider({ children }: { children: ReactNode }) {
   </Feedback.Provider>;
 }
 
+const FEEDBACK_BANNER_DISMISSED = 'studyedit_feedback_banner_dismissed_v1';
+
 export function PilotFeedbackBanner({ context }: { context: FeedbackContext }) {
   const open = useContext(Feedback);
-  if (!open) return null;
-  return <button type="button" onClick={() => open(context)} className="mb-5 mt-4 flex w-full items-center gap-3 rounded-[18px] border border-[#BCC8AD] bg-[#E7ECD9] px-4 py-3 text-left text-[#35462F] hover:bg-[#DFE6CE]" aria-label="Early access: give feedback and help shape StudyEdit">
-    <MessageSquare className="h-5 w-5 shrink-0" aria-hidden="true" />
-    <span className="min-w-0 flex-1"><span className="block text-[10px] font-bold uppercase tracking-[.13em]">Early access · Feedback phase</span><span className="mt-0.5 block text-[15px] font-bold">Help shape StudyEdit</span><span className="mt-0.5 block text-xs">A few taps, a voice note, or a message.</span></span>
-    <span className="shrink-0 text-xs font-bold underline underline-offset-4">Give feedback</span>
-  </button>;
+  const [dismissed, setDismissed] = useState(() => {
+    try { return localStorage.getItem(FEEDBACK_BANNER_DISMISSED) === '1'; } catch { return false; }
+  });
+  if (!open || dismissed) return null;
+  const dismiss = () => {
+    setDismissed(true);
+    try { localStorage.setItem(FEEDBACK_BANNER_DISMISSED, '1'); } catch { /* still dismiss this visit */ }
+  };
+  return <div className="relative mb-5 mt-4 rounded-[18px] border border-[#BCC8AD] bg-[#E7ECD9] text-[#35462F]">
+    <button type="button" onClick={() => open(context)} className="flex w-full items-center gap-3 rounded-[18px] px-4 py-3 pr-12 text-left hover:bg-[#DFE6CE]" aria-label="Early access: give feedback and help shape StudyEdit">
+      <MessageSquare className="h-5 w-5 shrink-0" aria-hidden="true" />
+      <span className="min-w-0 flex-1"><span className="block text-[10px] font-bold uppercase tracking-[.13em]">Early access · Feedback phase</span><span className="mt-0.5 block text-[15px] font-bold">Help shape StudyEdit</span><span className="mt-0.5 block text-xs">A few taps, a voice note, or a message.</span></span>
+      <span className="shrink-0 text-xs font-bold underline underline-offset-4">Give feedback</span>
+    </button>
+    <button type="button" onClick={dismiss} aria-label="Dismiss feedback invitation" title="Don't show this again" className="absolute right-1 top-1 grid h-10 w-10 place-items-center rounded-full text-[#526744] hover:bg-[#D7E1CA] focus-visible:outline focus-visible:outline-2 focus-visible:outline-[#526744]"><X className="h-4 w-4" aria-hidden="true" /></button>
+  </div>;
 }
 
 export function PilotFeedbackButton({ context }: { context: FeedbackContext }) {
