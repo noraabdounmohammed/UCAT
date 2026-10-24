@@ -1,0 +1,92 @@
+{
+  "auditDate": "2026-08-23",
+  "sourceRunId": 32632153112,
+  "sourceArtifactId": 9491502612,
+  "purpose": "Fresh stratified adversarial audit of the latest run with substantive generated questions; the newer run generated zero questions because its error handler crashed while reading browser-only import.meta.env and is classified as infrastructure failure rather than question-quality evidence.",
+  "automatedPassesReviewed": [
+    {
+      "conceptId": "ukmla-20",
+      "family": "acute-cardiovascular",
+      "verdict": "publishable",
+      "notes": "Diagnostic STEMI ECG plus ischaemic symptoms; urgent reperfusion assessment without waiting for troponin is uniquely defensible and the alternatives clearly delay/misclassify care."
+    },
+    {
+      "conceptId": "ukmla-636",
+      "family": "acute-cardiovascular",
+      "verdict": "publishable",
+      "notes": "Severe acidaemic cardiogenic pulmonary oedema after failed initial treatment; immediate NIV is supported and no competing option is an equivalent parent/subtype formulation in the audited variant."
+    },
+    {
+      "conceptId": "ukmla-1237",
+      "family": "pregnancy-safety",
+      "verdict": "publishable",
+      "notes": "Postpartum breastfeeding scenario cleanly tests warfarin compatibility; mechanical-valve context makes stopping/switching distractors unsafe rather than defensible."
+    },
+    {
+      "conceptId": "ukmla-1423",
+      "family": "paediatrics",
+      "verdict": "publishable",
+      "notes": "Suspected cerebral oedema during paediatric DKA is explicit; immediate hypertonic saline is uniquely best and CT/senior review do not delay emergency treatment."
+    },
+    {
+      "conceptId": "ukmla-1882",
+      "family": "cancer-referral",
+      "verdict": "publishable",
+      "notes": "Unexplained dysphagia directly supports suspected-cancer-pathway referral; trial treatment and routine/non-cancer pathways are not equivalent alternatives."
+    },
+    {
+      "conceptId": "ukmla-4347",
+      "family": "sepsis-infection",
+      "verdict": "publishable",
+      "notes": "Non-pregnant adult acute-hospital sepsis risk stratification cleanly tests NEWS2 plus clinical judgement versus qSOFA/single-sign/paediatric alternatives."
+    }
+  ],
+  "criticalErrorsInAuditedAutomatedPasses": 0,
+  "automatedFailuresReviewed": [
+    {
+      "conceptId": "ukmla-5666",
+      "family": "paediatrics",
+      "verdict": "correctly rejected",
+      "taxonomy": ["single-best-answer", "parent-subtype-overlap", "missing-decision-context"],
+      "notes": "Isotonic crystalloid and 0.9% saline options overlap, and shock status is not explicit enough to make the rate distinction uniquely defensible."
+    },
+    {
+      "conceptId": "ukmla-4348",
+      "family": "sepsis-infection",
+      "verdict": "correctly rejected",
+      "taxonomy": ["single-best-answer", "multiple-defensible-actions"],
+      "notes": "Antibiotic/fluid and oxygen actions are not cleanly mutually exclusive in the stated COPD/sepsis context; oxygen target context is insufficient."
+    },
+    {
+      "conceptId": "ukmla-4965",
+      "family": "cancer-referral",
+      "verdict": "correctly rejected",
+      "taxonomy": ["single-best-answer", "pathway-overlap"],
+      "notes": "The option set did not cleanly distinguish urgent cancer referral from urgent ultrasound and the explanation used an unsupported exclusivity claim."
+    },
+    {
+      "conceptId": "ukmla-5146",
+      "family": "cancer-referral",
+      "verdict": "false rejection / evidence-boundary defect",
+      "taxonomy": ["evidence-boundary", "numeric-threshold", "semantic-context", "false-fail"],
+      "notes": "The vignette explicitly gives a 3-month history of ovarian-cancer-suggestive symptoms and CA125 28 IU/mL at age 72. NICE NG12 2026 threshold is 25 IU/mL for age 70-79, so urgent direct-access ultrasound is supported. The packet only said age-specific thresholds without carrying the exact table, and the reviewer treated '3-month history' as if persistence were absent."
+    }
+  ],
+  "highestLeverageNewDefect": {
+    "class": "verified evidence-boundary granularity plus literal-context matching",
+    "description": "A strict reviewer can falsely reject a clinically correct numerical item when a packet references an age-specific table without carrying the exact values, or when explicit semantically equivalent facts satisfy required context without repeating packet wording.",
+    "fix": "Carry the exact verified NICE NG12 2026 CA125 age thresholds into the eval evidence packet and instruct the reviewer that required context may be satisfied by explicit semantically equivalent facts while still forbidding unstated inference. No safety or support gate is weakened."
+  },
+  "sourceVerification": {
+    "authority": "NICE NG12 2026",
+    "recommendation": "1.5.9",
+    "thresholds": {
+      "40-49": 35,
+      "50-59": 31,
+      "60-69": 24,
+      "70-79": 25,
+      "80+": 31
+    },
+    "unit": "IU/mL"
+  }
+}

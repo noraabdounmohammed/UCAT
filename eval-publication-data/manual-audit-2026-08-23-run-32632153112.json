@@ -1,0 +1,79 @@
+{
+  "runId": 32632153112,
+  "artifactId": 9491502612,
+  "headShaAudited": "142eb0e6e5f4428597ff1abc37c47d8a4fef0b60",
+  "auditDate": "2026-08-23",
+  "evaluation": {
+    "requested": 100,
+    "generated": 45,
+    "passed": 34,
+    "failed": 66,
+    "passRate": 34,
+    "replicateSummary": [
+      {"replicate": 1, "requested": 20, "generated": 20, "passed": 14, "passRate": 70},
+      {"replicate": 2, "requested": 20, "generated": 20, "passed": 16, "passRate": 80},
+      {"replicate": 3, "requested": 20, "generated": 5, "passed": 4, "passRate": 20},
+      {"replicate": 4, "requested": 20, "generated": 0, "passed": 0, "passRate": 0},
+      {"replicate": 5, "requested": 20, "generated": 0, "passed": 0, "passRate": 0}
+    ],
+    "interpretation": "The aggregate 34% is not a valid estimate of question quality because generation stopped after provider/API balance exhaustion. The two fully generated replicates reached 70% and 80% two-attempt acceptance respectively."
+  },
+  "freshAdversarialAudit": {
+    "automatedPassesReviewed": [
+      {
+        "conceptId": "ukmla-176",
+        "topic": "Atrial fibrillation - long-term stroke prevention anticoagulants",
+        "verdict": "publishable",
+        "notes": "Applied vignette, required decision context present, one defensible DOAC answer, plausible alternatives, explanation stays within verified decision boundary."
+      },
+      {
+        "conceptId": "ukmla-4957",
+        "topic": "Ectopic pregnancy - ultrasound and hCG interpretation",
+        "verdict": "publishable",
+        "notes": "Stable pregnancy of unknown location with hCG below discriminatory threshold; repeat hCG at approximately 48 hours is clearly best and source-aligned."
+      },
+      {
+        "conceptId": "ukmla-1307",
+        "topic": "Hyperthyroidism in pregnancy - antithyroid drug choice",
+        "verdict": "publishable",
+        "notes": "First-trimester context is explicit and PTU is uniquely best; no unsafe missing discriminator identified."
+      },
+      {
+        "conceptId": "ukmla-4254",
+        "topic": "Malaria in pregnancy - artemisinin combination therapy",
+        "verdict": "publishable",
+        "notes": "Clinical state and gestation are explicit; automated pass appears clinically coherent and non-ambiguous on manual review."
+      }
+    ],
+    "automatedFailuresReviewed": [
+      {
+        "conceptId": "ukmla-414",
+        "topic": "ACS with separate indication for anticoagulation - antiplatelet strategy",
+        "verdict": "correctly rejected",
+        "defect": "Generic 'individualise' key versus obviously unsafe alternatives; missing decision-critical bleeding/antithrombotic context makes the item non-discriminating and potentially unsupported."
+      },
+      {
+        "conceptId": "ukmla-2113",
+        "topic": "Bronchiolitis - oxygen supplementation",
+        "verdict": "correctly rejected",
+        "defect": "Nested threshold options are simultaneously true in the stated patient: 'start oxygen', 'start oxygen only if below 92%', and 'start oxygen only if below 90%' all collapse to the same action at SpO2 89%."
+      },
+      {
+        "conceptId": "ukmla-4362",
+        "topic": "Pneumonia - CURB-65 interpretation",
+        "verdict": "correctly rejected",
+        "defect": "Key/explanation inconsistency plus overlapping category options: explanation calculates CURB-65=1/low risk while keyed option indicates score 2/intermediate risk; low-risk options also overlap."
+      }
+    ],
+    "criticalErrorsInAuditedAutomatedPasses": 0,
+    "highestLeverageDefect": {
+      "class": "single-best-answer option-set integrity",
+      "description": "Generator/reviewer still permits nested or overlapping alternatives, especially threshold/category options, and can emit a keyed answer inconsistent with the explanation's own calculation.",
+      "recommendedScalableFix": "Add deterministic pre-review rejection for semantically nested threshold/category options and for explicit answer-key/explanation numeric-category contradictions; keep the hostile reviewer as a second independent gate. Do not hand-edit individual generated questions."
+    }
+  },
+  "blocker": {
+    "type": "provider/API balance exhaustion",
+    "effect": "Replicates 3-5 could not generate a complete 100-variant sample, so a fresh full evaluation cannot currently validate the next compiler/reviewer change."
+  }
+}

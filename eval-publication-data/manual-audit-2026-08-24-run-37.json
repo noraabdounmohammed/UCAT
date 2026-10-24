@@ -1,0 +1,131 @@
+{
+  "source_run_id": 32782932530,
+  "source_artifact": "launch-eval-100-report",
+  "completed_at": "2026-08-24T22:34:08.197Z",
+  "requested": 100,
+  "generated": 100,
+  "passed": 72,
+  "failed": 28,
+  "pass_rate": 72.0,
+  "failed_safety_count": 1,
+  "by_family": {
+    "acute-cardiovascular": {"passed": 14, "requested": 15, "pass_rate": 93.3},
+    "anticoagulation": {"passed": 12, "requested": 15, "pass_rate": 80.0},
+    "pregnancy-safety": {"passed": 20, "requested": 25, "pass_rate": 80.0},
+    "paediatrics": {"passed": 8, "requested": 15, "pass_rate": 53.3},
+    "cancer-referral": {"passed": 12, "requested": 15, "pass_rate": 80.0},
+    "sepsis-infection": {"passed": 6, "requested": 15, "pass_rate": 40.0}
+  },
+  "manual_audit": {
+    "accepted_sample": [
+      {
+        "family": "acute-cardiovascular",
+        "concept": "ST-elevation myocardial infarction – diagnosis and urgent reperfusion",
+        "publishable": true,
+        "critical_error": false,
+        "note": "Diagnostic STEMI presentation and urgent reperfusion decision are single-best-answer and do not depend on troponin positivity."
+      },
+      {
+        "family": "anticoagulation",
+        "concept": "Atrial fibrillation – Initial anticoagulation in new-onset AF",
+        "publishable": true,
+        "critical_error": false,
+        "note": "NICE NG196 1.8.8 supports heparin at initial presentation until stroke/bleeding risk assessment and appropriate therapy are established."
+      },
+      {
+        "family": "pregnancy-safety",
+        "concept": "Warfarin – pregnancy and breastfeeding",
+        "publishable": true,
+        "critical_error": false,
+        "note": "Mechanical-valve anticoagulation in pregnancy is specialist/individualised; the item avoids the unsafe claim that warfarin is absolutely contraindicated in every pregnancy."
+      },
+      {
+        "family": "paediatrics",
+        "concept": "Bronchiolitis – oxygen supplementation",
+        "publishable": true,
+        "critical_error": false,
+        "note": "The stem explicitly establishes persistent room-air saturation 89% in a 4-month-old without high-risk comorbidity; NICE NG9 uses persistent <90% for oxygen in children aged 6 weeks and over."
+      },
+      {
+        "family": "cancer-referral",
+        "concept": "Ovarian cancer – CA125 is interpreted with age-specific thresholds",
+        "publishable": true,
+        "critical_error": false,
+        "note": "Current NICE NG12 (2026) uses an urgent ultrasound threshold of CA125 >=25 IU/mL for age 70–79; 26 IU/mL is correctly above the threshold."
+      },
+      {
+        "family": "sepsis-infection",
+        "concept": "Sepsis – adult hospital risk stratification",
+        "publishable": true,
+        "critical_error": false,
+        "note": "The keyed principle—NEWS2 together with clinical judgement for non-pregnant adults in acute hospital settings—is aligned with NICE NG253."
+      }
+    ],
+    "false_positive_passes": [
+      {
+        "family": "anticoagulation",
+        "concept": "Atrial fibrillation – Long-term stroke prevention anticoagulants",
+        "automated_score": 95,
+        "publishable_under_eval_contract": false,
+        "critical_error": false,
+        "defect": "Explanation explicitly assigns CHA2DS2-VASc component points and gives a generated total of 3 despite the evidence contract requiring raw components without generated score arithmetic. This is a PASS-precision failure even though the resulting anticoagulation decision happens to be clinically concordant."
+      },
+      {
+        "family": "sepsis-infection",
+        "concept": "Pneumonia – CURB-65 score interpretation",
+        "automated_score": 95,
+        "publishable_under_eval_contract": false,
+        "critical_error": false,
+        "defect": "Explanation explicitly counts 'two CURB-65 criteria' and maps the generated count to a category despite the packet forbidding precomputed totals/counts. The reviewer false-passed a direct contract violation."
+      }
+    ],
+    "rejected_sample": [
+      {
+        "family": "acute-cardiovascular",
+        "concept": "STEMI – reperfusion strategy",
+        "genuine_defect": "Competing reperfusion/angiography options can remain defensible because timing and downstream strategy are not fully separated by the verified packet."
+      },
+      {
+        "family": "anticoagulation",
+        "concept": "ACS with a separate indication for anticoagulation – antiplatelet strategy",
+        "genuine_defect": "Concrete fixed-duration triple-therapy distractors conflict with a packet whose tested principle is individualisation and can become independently defensible."
+      },
+      {
+        "family": "pregnancy-safety",
+        "concept": "Varicella exposure in pregnancy – post-exposure prophylaxis",
+        "genuine_defect": "Timing decision is not reproducible unless the first day of exposure is explicitly anchored; later attempt also showed option-length cueing."
+      },
+      {
+        "family": "paediatrics",
+        "concept": "Paediatric DKA – suspected cerebral oedema",
+        "genuine_defect": "Hypertonic saline and mannitol are both packet-supported immediate treatments, so selecting one without an availability/context discriminator creates two defensible answers."
+      },
+      {
+        "family": "cancer-referral",
+        "concept": "Endometrial cancer – current NICE referral criteria",
+        "genuine_defect": "HRT modifier appears despite the hardened packet requiring this target to omit HRT rather than infer non-attribution."
+      },
+      {
+        "family": "sepsis-infection",
+        "concept": "Sepsis – early management is risk- and population-specific",
+        "genuine_defect": "Generated NEWS2 arithmetic/risk category is not reproducible from raw observations in multiple attempts, making the keyed antibiotic timing wrong or unsupported."
+      }
+    ],
+    "accepted_sample_summary": {
+      "audited_publishable_examples": 6,
+      "publishable": 6,
+      "critical_clinical_safety_ambiguity_errors": 0,
+      "additional_automated_passes_found_nonpublishable_under_contract": 2
+    }
+  },
+  "failure_taxonomy": {
+    "derived_score_or_numeric_related": 14,
+    "timing_related": 9,
+    "context_contract_related": 8,
+    "option_overlap_or_alternative_defensibility_related": 8,
+    "cueing_related": 3
+  },
+  "highest_leverage_defect": "Automated PASS precision remains unsafe for generated named-score arithmetic: prompt-only arithmetic instructions and the prior deterministic exemption for score-focused concepts allow direct evidence-contract violations to pass.",
+  "fix_applied": "Added run-37 generation instructions forbidding any generated named-score totals, point assignments, or counted criteria, plus a deterministic fail-closed DERIVED_SCORE_ARITHMETIC guard that applies even to score-focused concepts. Reviewer and all existing safety/ambiguity/source gates remain unchanged or stricter.",
+  "next_eval": "Triggered automatically from the launch-eval-100 branch after the run-37 guard commits; evaluate PASS precision before optimising overall pass rate."
+}

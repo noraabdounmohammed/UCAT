@@ -1,0 +1,39 @@
+{
+  "run": 30,
+  "workflow_run_id": 32765059457,
+  "summary": {
+    "requested": 100,
+    "generated": 100,
+    "passed": 65,
+    "failed": 35,
+    "pass_rate": 65.0,
+    "failed_safety_count": 6
+  },
+  "manual_audit": {
+    "design": "Fresh stratified adversarial review after completed genuine 100-question evaluation: two automated PASS variants and one automated failure were inspected from each of the six clinical families.",
+    "automated_passes_reviewed": 12,
+    "critical_clinical_safety_or_ambiguity_errors_in_passes": 0,
+    "automated_failures_reviewed": 6,
+    "failure_gate_assessment": "The sampled failures were appropriately fail-closed under the current evidence boundary; no gate relaxation is justified.",
+    "families": [
+      "acute-cardiovascular",
+      "anticoagulation",
+      "pregnancy-safety",
+      "paediatrics",
+      "cancer-referral",
+      "sepsis-infection"
+    ]
+  },
+  "highest_leverage_defect": {
+    "class": "evidence-contract/generator inconsistency",
+    "finding": "Several packets still request or permit named clinical score content while the hardened launch compiler correctly rejects precomputed named-score assertions. Other repeated failures arise because packet context is less explicit than deterministic gates (e.g. varicella timing requires first-day reference; endometrial target requires complete HRT omission).",
+    "examples": [
+      "ukmla-176 required CHA2DS2-VASc score while launch rules require raw components only",
+      "ukmla-4362 allowed a stated CURB-65 score while launch rules forbid precomputed totals",
+      "ukmla-4379 requested timing since exposure while deterministic validation requires an explicit first-day anchor",
+      "ukmla-4965 repeatedly mentioned HRT negatively despite a modifier-free target",
+      "ukmla-414 repeatedly inferred bleeding risk rather than stating a concrete explicit factor"
+    ],
+    "repair": "Align packet required-context language with the strict compiler, strengthen literal omission/reference-point rules, and add a generic option-uniqueness/state-consistency self-audit. No reviewer, safety, ambiguity, numerical, support, fallback-template or SBA gate is weakened."
+  }
+}

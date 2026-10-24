@@ -1,0 +1,38 @@
+{
+  "run_id": 32651737332,
+  "run_number": 18,
+  "completed_at": "2026-08-23T16:53:37Z",
+  "requested": 100,
+  "generated": 85,
+  "accepted": 60,
+  "reported_acceptance_percent": 60,
+  "interpretation": "Not a valid 100-generated quality estimate because DeepSeek balance exhausted during replicate 5. Replicates 1-4 were complete and achieved 70%, 70%, 80%, 70% two-attempt acceptance.",
+  "provider_blocker": "DeepSeek returned HTTP 402 Payment Required / Insufficient Balance beginning in replicate 5, after 5/20 first-attempt items; second attempt generated 0/20.",
+  "fresh_stratified_pass_audit": [
+    {"family":"acute-cardiovascular","concept_id":"ukmla-20","verdict":"publishable","critical_error":false},
+    {"family":"anticoagulation","concept_id":"ukmla-184","verdict":"publishable","critical_error":false,"note":"Acute new-onset AF heparin recommendation cross-checked against NICE NG196 section 1.8.8."},
+    {"family":"pregnancy-safety","concept_id":"ukmla-1237","verdict":"publishable","critical_error":false},
+    {"family":"paediatrics","concept_id":"ukmla-1423","verdict":"publishable","critical_error":false},
+    {"family":"cancer-referral","concept_id":"ukmla-1882","verdict":"publishable","critical_error":false},
+    {"family":"sepsis-infection","concept_id":"ukmla-4347","verdict":"publishable","critical_error":false}
+  ],
+  "accepted_sample_summary": {"audited":6,"publishable":6,"critical_clinical_safety_ambiguity_errors":0},
+  "fresh_stratified_failure_audit": [
+    {"family":"acute-cardiovascular","concept_id":"ukmla-1168","defect":"option-length cueing"},
+    {"family":"anticoagulation","concept_id":"ukmla-414","defect":"overlapping concrete antithrombotic strategies despite packet forbidding exact regimen testing"},
+    {"family":"pregnancy-safety","concept_id":"ukmla-4379","defect":"first-exposure timing/significant-exposure context not explicit enough for day-7 PEP decision"},
+    {"family":"paediatrics","concept_id":"ukmla-5666","defect":"sampled generated failures included ambiguity/support rejection; no gate relaxation indicated"},
+    {"family":"cancer-referral","concept_id":"ukmla-4965","defect":"misapplied direct-access ultrasound criterion to PMB plus thrombocytosis; 2WW referral also defensible"},
+    {"family":"sepsis-infection","concept_id":"ukmla-4348","defect":"named NEWS2 total emitted and/or fluid indication insufficiently established"}
+  ],
+  "failure_taxonomy": {
+    "generation_or_provider_failure": 19,
+    "numeric_or_named_score_related": 17,
+    "support_or_evidence_boundary_related": 9,
+    "single_best_answer_or_overlap_related": 7,
+    "timing_related": 3
+  },
+  "highest_leverage_genuine_defect": "Named clinical-score totals are still being generated in vignettes/options/explanations despite raw-component evidence boundaries. The deterministic numerical-safety guard correctly rejects them, disproportionately depressing anticoagulation and sepsis acceptance. Fix generation upstream; do not weaken rejection.",
+  "implemented_fix": "Added eval-only generator instructions forbidding precomputed CHA2DS2-VASc, HAS-BLED, NEWS2 and CURB-65 totals anywhere in output; score-interpretation items must use raw components, mutually exclusive category/action options, and explanations that reason from components without stating a named total. Existing deterministic/reviewer gates remain unchanged or stricter.",
+  "launch_ready": false
+}
