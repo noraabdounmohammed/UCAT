@@ -266,7 +266,7 @@ function generateSimpleSBATemplate(concept: ConceptNode, optionCount: number = 5
 }
 
 // Generate UKMLA question using AI
-export async function generateUKMLAQuestionWithAI(concept: ConceptNode, customPrompt?: string): Promise<GeneratedQuestion> {
+export async function generateUKMLAQuestionWithAI(concept: ConceptNode, customPrompt?: string, previousQuestions: string[] = []): Promise<GeneratedQuestion> {
   const defaultInstructions = `You are writing a UK Medical Licensing Assessment (MLA) Applied Knowledge Test question. Mirror the exact style of official MLA AKT past papers.
 
 VIGNETTE (the "vignette" field):
@@ -386,7 +386,8 @@ MANDATORY REQUIREMENTS:
 `;
 
   try {
-    const aiResponse = await callOpenAI(prompt);
+    const variation = previousQuestions.length ? `\n\nThe learner has already worked through these cases:\n${JSON.stringify(previousQuestions)}\nCreate a meaningfully different clinical scenario for the same learning objective. Change the clinical context or decision where the supplied content supports it. Do not repeat a prior case or merely change its age, name, or answer order. Stay within the supplied concept content.` : '';
+    const aiResponse = await callOpenAI(prompt + variation);
     
     // Validate that AI generated the correct number of options
     if (!aiResponse.options || aiResponse.options.length !== optionCount) {
@@ -788,10 +789,14 @@ interface QuestionGenerationConfig {
   format: 'ukmla_sba' | 'sba' | 'flashcard' | 'emq' | 'true_false' | 'ranking';
   customPrompt?: string;
   customFlashcardPrompt?: string;
+  previousQuestions?: string[];
 }
 
 // Type-safe wrapper function to prevent parameter issues
 export async function generateQuestionWithConfig(config: QuestionGenerationConfig): Promise<GeneratedQuestion> {
+  if (config.format === 'ukmla_sba') {
+    return generateUKMLAQuestionWithAI(config.concept, config.customPrompt, config.previousQuestions);
+  }
   return generateQuestionFromConcept(
     config.concept,
     config.format,

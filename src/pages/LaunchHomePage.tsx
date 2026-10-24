@@ -22,6 +22,7 @@ import type { ConceptNode } from '@/types/conceptTypes';
 import { LEARNING_UPDATED_EVENT, readRecentSession, saveSessionLearning, type RecentSession } from '@/lib/sessionLearning';
 import { SessionLearningList } from '@/components/practice/SessionLearningList';
 import { PilotFeedbackBanner } from '@/components/feedback/PilotFeedback';
+import { recentPracticeExclusions } from '@/lib/practiceHistory';
 import './launch-home-embed.css';
 
 const P = { cream: '#F4ECDF', espresso: '#1F140C', ink: '#2A1E16', muted: '#746354', line: '#E8DCC4', sage: '#8FA379' };
@@ -188,8 +189,8 @@ function HomeContent({ curriculumId }: { curriculumId: string }) {
     };
   }, [learnerScope]);
   const recommendedPlan = useMemo(
-    () => buildSpoilerSafeSessionPlan(concepts || [], sessionCount),
-    [concepts, sessionCount],
+    () => buildSpoilerSafeSessionPlan(concepts || [], sessionCount, recentPracticeExclusions(curriculumId)),
+    [concepts, sessionCount, curriculumId, showHome],
   );
   const recommendedReason = useMemo(
     () => recommendationReason(recommendedPlan.reasonCounts, hasEvidence),
@@ -219,7 +220,7 @@ function HomeContent({ curriculumId }: { curriculumId: string }) {
     if (!concepts?.length) return;
     setActiveFilters(null);
     rememberActivePracticeScope(curriculumId, null);
-    const plan = buildSpoilerSafeSessionPlan(concepts, sessionCount);
+    const plan = buildSpoilerSafeSessionPlan(concepts, sessionCount, recentPracticeExclusions(curriculumId));
     if (!plan.count) return;
     rememberPlannedSession(plan);
     try {
@@ -292,7 +293,7 @@ function HomeContent({ curriculumId }: { curriculumId: string }) {
       return true;
     });
     const count = Math.max(1, filters.size || sessionCount);
-    const plan = buildSpoilerSafeSessionPlan(matchingConcepts, count);
+    const plan = buildSpoilerSafeSessionPlan(matchingConcepts, count, recentPracticeExclusions(curriculumId));
     if (!plan.count) return;
     rememberPlannedSession(plan);
     setActiveFilters(filters);
@@ -365,17 +366,15 @@ function HomeContent({ curriculumId }: { curriculumId: string }) {
                 <section aria-labelledby="studyedit-home-heading">
                   <div className="text-[13px] font-bold uppercase tracking-[0.16em]" style={{ color: P.muted }}>UKMLA AKT</div>
                   <h1 id="studyedit-home-heading" className="mt-3 max-w-[650px] text-[36px] font-light leading-[1.05] tracking-[-0.04em] sm:text-[46px]" style={{ color: P.espresso, fontFamily: "'Fraunces', serif" }}>
-                    {hasEvidence ? 'Your next session' : 'Learn to think clinically.'}
+                    Learn to think clinically.
                   </h1>
                   <p className="mt-4 max-w-[620px] text-[16px] leading-7" style={{ color: P.muted }}>
-                    {hasEvidence
-                      ? <>Work through clinical cases.<br />Learn from your mistakes.</>
-                      : <>Connect the clues. Explain your thinking.<br />Your AI tutor helps you understand why.</>}
+                    Connect the clues. Explain your thinking.<br />Your AI tutor helps you understand why.
                   </p>
 
                   <button
                     type="button"
-                    onClick={() => resumable ? resumeSession() : startRecommended()}
+                    onClick={() => resumable ? resumeSession() : startRecommended(true)}
                     disabled={!resumable && !recommendedReady}
                     aria-busy={!resumable && !recommendedReady}
                     className="mt-7 w-full rounded-[24px] px-5 py-5 text-left transition-transform active:scale-[0.99] disabled:cursor-wait disabled:opacity-70 sm:px-6 sm:py-6"

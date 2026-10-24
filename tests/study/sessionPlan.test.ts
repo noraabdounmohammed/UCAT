@@ -4,6 +4,7 @@ import {
   PLANNED_SESSION_IDS_KEY,
   buildSessionPlanFromRequest,
   buildSpoilerSafeSessionPlan,
+  chooseRecommendedConcepts,
   rememberPlannedSession,
   resolvePlannedConcepts,
 } from '@/lib/sessionPlan';
@@ -26,7 +27,7 @@ function concept(
       correct,
       incorrect,
       mastery_level: incorrect > correct ? 1 : 0,
-      last_practiced: null,
+      last_practiced: null as string | null,
     },
   };
 }
@@ -95,5 +96,39 @@ describe('agent session planning', () => {
     const resolved = resolvePlannedConcepts(curriculum, 3);
 
     expect(resolved.map(item => item.concept_id)).toEqual(plan.selected.map(item => item.concept_id));
+  });
+
+  it('moves on after a missed case, then allows a due review after a break', () => {
+    const now = Date.now();
+    const missed = concept('missed', 'Recently missed case', ['cardiology'], 1, 0, 1);
+    Object.assign(missed.mastery_data, { last_practiced: new Date(now).toISOString(), fsrs_due_at: new Date(now - 1000).toISOString() });
+    const fresh = curriculum.slice(1, 5);
+    expect(chooseRecommendedConcepts([missed, ...fresh], 3).map(item => item.concept_id)).not.toContain('missed');
+    missed.mastery_data.last_practiced = new Date(now - 60 * 60 * 1000).toISOString();
+    expect(chooseRecommendedConcepts([missed, ...fresh], 3).map(item => item.concept_id)).toContain('missed');
+  });
+
+  it('treats duplicate curriculum entries as one concept and carries forward their recent practice', () => {
+    const original = concept('endo_1', 'Thyroid case', ['endocrinology'], 1, 0, 1);
+    Object.assign(original.mastery_data, { last_practiced: new Date().toISOString(), fsrs_due_at: new Date(Date.now() - 1000).toISOString() });
+    const duplicate = { ...concept('endo_copy_1', 'Thyroid case', ['endocrinology']), content: original.content };
+    const pool = [original, duplicate, ...curriculum];
+    expect(chooseRecommendedConcepts(pool, 3).some(item => item.title === 'Thyroid case')).toBe(false);
+    expect(chooseRecommendedConcepts([original, duplicate], 3)).toHaveLength(1);
+  });
+
+  it('keeps narrow tailored sessions usable when all their concepts were recently practised', () => {
+    const pool = curriculum.slice(0, 2).map(item => ({ ...item, mastery_data: { ...item.mastery_data, last_practiced: new Date().toISOString() } }));
+    expect(chooseRecommendedConcepts(pool, 3)).toHaveLength(2);
+  });
+
+  it('leaves room for new material even when several older mistakes are due', () => {
+    const due = Array.from({ length: 6 }, (_, index) => ({
+      ...concept(`due-${index}`, `Due case ${index}`, ['cardiology'], 3, 0, 3),
+      mastery_data: { attempts: 3, incorrect: 3, mastery_level: 1, last_practiced: new Date(Date.now() - 86400000).toISOString(), fsrs_due_at: new Date(Date.now() - 1000).toISOString() },
+    }));
+    const plan = chooseRecommendedConcepts([...due, ...curriculum.slice(1)], 3);
+    expect(plan.filter(item => item.mastery_data.attempts === 0)).toHaveLength(1);
+    expect(plan.filter(item => item.concept_id.startsWith('due-'))).toHaveLength(2);
   });
 });
